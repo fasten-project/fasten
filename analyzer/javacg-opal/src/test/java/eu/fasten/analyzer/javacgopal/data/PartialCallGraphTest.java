@@ -23,8 +23,9 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import eu.fasten.analyzer.javacgopal.data.exceptions.MissingArtifactException;
-import eu.fasten.analyzer.javacgopal.data.exceptions.OPALException;
+import eu.fasten.core.data.opal.MavenCoordinate;
+import eu.fasten.core.data.opal.exceptions.MissingArtifactException;
+import eu.fasten.core.data.opal.exceptions.OPALException;
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.JavaScope;
 import eu.fasten.core.data.FastenJavaURI;
@@ -69,6 +70,14 @@ class PartialCallGraphTest {
         singleCallCG = new PartialCallGraph(new CallGraphConstructor(
                 new File(Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
                         .getResource("SingleSourceToTarget.class")).getFile()), "", "CHA"),
+            true);
+    }
+
+    @Test
+    void testAnnotations() throws OPALException {
+        PartialCallGraph annotatedClass = new PartialCallGraph(new CallGraphConstructor(
+            new File(Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
+                .getResource("PackageApi.class")).getFile()), "", "CHA"),
             true);
     }
 
@@ -129,12 +138,10 @@ class PartialCallGraphTest {
         var graph = singleCallCG.getGraph();
 
         assertNotNull(graph);
-        Assertions.assertEquals(1, graph.getInternalCalls().size());
-        Assertions.assertEquals(1, graph.getExternalCalls().size());
-        Assertions.assertEquals(0, graph.getResolvedCalls().size());
+        Assertions.assertEquals(2, graph.getCallSites().size());
 
         // Check internal calls
-        var internalCalls = graph.getInternalCalls();
+        var internalCalls = graph.getCallSites();
 
         var call = IntIntPair.of(1, 2);
         

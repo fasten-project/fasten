@@ -18,36 +18,28 @@
 
 package eu.fasten.analyzer.qualityanalyzer.data;
 
-import org.jooq.JSONB;
-import org.jooq.Record;
+import eu.fasten.core.data.metadatadb.codegen.tables.records.CallablesRecord;
 import org.json.JSONObject;
 
 public class CallableHolder {
 
     //Fields in the callables table
-    private Long callableId = null;
-    private Long moduleId = null;
-    private String fastenUri = null;
-    private boolean is_internal_call = false;
-    private Long createdAt = null;
-    private Integer line_start = null;
-    private Integer line_end = null;
-    private JSONObject callableMetadata = null;
+    private final Long callableId;
+    private final Long moduleId;
+    private final String fastenUri;
+    private final boolean is_internal_call;
+    private final Integer line_start;
+    private final Integer line_end;
+    private JSONObject callableMetadata;
 
-    public CallableHolder(Record dbRecord) {
-
-        callableId = (Long) dbRecord.get(0);
-        moduleId = (Long) dbRecord.get(1);
-        fastenUri = (String) dbRecord.get(2);
-        is_internal_call = (boolean) dbRecord.get(3);
-
-        createdAt = (Long) dbRecord.get(4);
-        line_start = (Integer) dbRecord.get(5);
-        line_end = (Integer) dbRecord.get(6);
-
-        JSONB metadata = (JSONB) dbRecord.get(7);
-        callableMetadata = new JSONObject(metadata.data());
-
+    public CallableHolder(CallablesRecord cr) {
+        callableId = cr.getId();
+        moduleId = cr.getModuleId();
+        fastenUri = cr.getFastenUri();
+        is_internal_call = cr.getIsInternalCall();
+        line_start = cr.getLineStart();
+        line_end = cr.getLineEnd();
+        callableMetadata = new JSONObject(cr.getMetadata().data());
     }
 
     public Long getCallableId() {
@@ -66,15 +58,11 @@ public class CallableHolder {
         return is_internal_call;
     }
 
-    public Long getCreatedAt() {
-        return createdAt;
-    }
-
-    public Integer getLine_start() {
+    public Integer getLineStart() {
         return line_start;
     }
 
-    public Integer getLine_end() {
+    public Integer getLineEnd() {
         return line_end;
     }
 

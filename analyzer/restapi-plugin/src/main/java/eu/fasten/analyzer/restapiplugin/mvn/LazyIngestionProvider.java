@@ -67,7 +67,7 @@ public class LazyIngestionProvider {
         var artifactId = packageName.split(Constants.mvnCoordinateSeparator)[0];
         ingestArtifactIfNecessary(packageName, version, null, null);
         var mavenResolver = new MavenResolver();
-        var dependencies = mavenResolver.resolveFullDependencySetOnline(groupId, artifactId, version);
+        var dependencies = mavenResolver.resolveDependencies(groupId + ":" + artifactId + ":" + version);
         ingestArtifactIfNecessary(packageName, version, null, null);
         dependencies.forEach(d -> ingestArtifactIfNecessary(d.groupId + Constants.mvnCoordinateSeparator + d.artifactId, d.version.toString(), null, null));
     }

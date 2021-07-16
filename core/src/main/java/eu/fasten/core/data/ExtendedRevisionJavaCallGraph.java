@@ -84,6 +84,7 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Enu
      */
     public ExtendedRevisionJavaCallGraph(final JSONObject json) throws JSONException {
         super(json, ExtendedRevisionJavaCallGraph.class);
+        this.graph = new JavaGraph(json.getJSONArray("call-sites"));
     }
 
     /**
@@ -95,7 +96,9 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Enu
         return new ExtendedBuilderJava();
     }
 
-
+    public JavaGraph getGraph() {
+        return (JavaGraph) this.graph;
+    }
 
     /**
      * Creates a class hierarchy for the given JSONObject.
@@ -270,6 +273,22 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Enu
         return artifactId + "_" + groupId + "_" + this.version;
     }
 
+    public JSONObject toJSON() {
+        final var result = new JSONObject();
+        result.put("forge", forge);
+        result.put("product", product);
+        result.put("version", version);
+        result.put("generator", cgGenerator);
+        if (timestamp >= 0) {
+            result.put("timestamp", timestamp);
+        }
+        result.put(classHierarchyJSONKey, classHierarchyToJSON(classHierarchy));
+        result.put("call-sites", graph.toJSON());
+        result.put("nodes", nodeCount);
+
+        return result;
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -336,24 +355,11 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Enu
      * @param erjcg an {@link ExtendedRevisionJavaCallGraph}.
      * @return a directed graph based on the local identifiers of {@code erjcg}.
      */
-    public static DirectedGraph toLocalDirectedGraph(final ExtendedRevisionJavaCallGraph erjcg,
-                                                     boolean alsoExternals) {
-        FastenDefaultDirectedGraph dg = new FastenDefaultDirectedGraph();
-        erjcg.getClassHierarchy().get(JavaScope.internalTypes).entrySet().
-                stream().forEach(t -> t.getValue().getMethods().keySet().forEach(m -> dg.addInternalNode(m)));
-        erjcg.getClassHierarchy().get(JavaScope.resolvedTypes).entrySet().
-                stream().forEach(t -> t.getValue().getMethods().keySet().forEach(m -> dg.addInternalNode(m)));
-
-        if (!alsoExternals) {
-            erjcg.getGraph().getExternalCalls().keySet().forEach(p -> dg.addEdge((long) p.firstInt(), (long) p.secondInt()));
-        }
-        erjcg.getGraph().getInternalCalls().keySet().forEach(p -> dg.addEdge((long) p.firstInt(), (long) p.secondInt()));
-        erjcg.getGraph().getResolvedCalls().keySet().forEach(p -> dg.addEdge((long)p.firstInt(), (long)p.secondInt()));
+    public static DirectedGraph toLocalDirectedGraph(final ExtendedRevisionJavaCallGraph erjcg) {
+        MergedDirectedGraph dg = new MergedDirectedGraph();
+        erjcg.getClassHierarchy().get(JavaScope.internalTypes).forEach((key, value) -> value.getMethods().keySet().forEach(dg::addInternalNode));
+        erjcg.getClassHierarchy().get(JavaScope.resolvedTypes).forEach((key, value) -> value.getMethods().keySet().forEach(dg::addInternalNode));
 
         return dg;
-    }
-
-    public static DirectedGraph toLocalDirectedGraph(final ExtendedRevisionJavaCallGraph erjcg) {
-        return toLocalDirectedGraph(erjcg,true);
     }
 }

@@ -48,7 +48,7 @@ public class QualityAnalyzerPlugin extends Plugin {
     public static class QualityAnalyzer implements KafkaPlugin, DBConnector {
 
         private final Logger logger = LoggerFactory.getLogger(QualityAnalyzer.class.getName());
-        private String consumerTopic = "fasten.RapidPlugin.out";
+        private String consumerTopic = "fasten.RapidPlugin.callable.out";
         private static MetadataUtils utils = null;
         private Exception pluginError = null;
 
@@ -101,35 +101,31 @@ public class QualityAnalyzerPlugin extends Plugin {
                 setPluginError(null);
                 try {
                     recordId = utils.updateMetadataInDB(forge, jsonRecord);
-                } catch (RuntimeException e) {
+                }
+                catch(DataAccessException e) {
+                    logger.info("Data access exception");
+                    // Database connection error
+                    if (e.getCause() instanceof BatchUpdateException) {
+                        var exception = ((BatchUpdateException) e.getCause())
+                                .getNextException();
+                        setPluginError(exception);
+                    }
 
+                    logger.info("Restarting transaction for '" + recordId + "'");
+                    // It could be a deadlock, so restart transaction
+                    restartTransaction = true;
+                }
+                catch(IllegalStateException e) {
+                    logger.info("Illegal state exception");
+                    //do not restart transaction, callable list is empty
+                    restartTransaction = false;
+                    setPluginError(e);
+                }
+                catch (RuntimeException e) {
                     processedRecord = false;
                     restartTransaction = false;
-
                     logger.error("Error saving to the database: '" + forge + "'", e);
                     setPluginError(e);
-
-                    if (e instanceof DataAccessException) {
-                        logger.info("Data access exception");
-                        // Database connection error
-                        if (e.getCause() instanceof BatchUpdateException) {
-                            var exception = ((BatchUpdateException) e.getCause())
-                                    .getNextException();
-                            setPluginError(exception);
-                        }
-
-                        logger.info("Restarting transaction for '" + recordId + "'");
-                        // It could be a deadlock, so restart transaction
-                        restartTransaction = true;
-                    }
-
-                    if (e instanceof IllegalStateException) {
-                        logger.info("Illegal state exception");
-                        //do not restart transaction, callable list is empty
-                        restartTransaction = false;
-                        setPluginError(e);
-                    }
-
                 }
 
                 if (getPluginError() == null) {
@@ -186,7 +182,6 @@ public class QualityAnalyzerPlugin extends Plugin {
 
         @Override
         public void freeResource() {
-            utils.freeResource();
         }
 
         public void setPluginError(Exception throwable) {
@@ -199,6 +194,4 @@ public class QualityAnalyzerPlugin extends Plugin {
         }
 
     }
-
-
 }

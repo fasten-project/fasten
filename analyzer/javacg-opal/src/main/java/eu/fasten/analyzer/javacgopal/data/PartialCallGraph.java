@@ -19,16 +19,17 @@
 package eu.fasten.analyzer.javacgopal.data;
 
 import com.google.common.collect.Lists;
+import eu.fasten.core.data.opal.MavenCoordinate;
 import eu.fasten.analyzer.javacgopal.data.analysis.OPALClassHierarchy;
 import eu.fasten.analyzer.javacgopal.data.analysis.OPALMethod;
 import eu.fasten.analyzer.javacgopal.data.analysis.OPALType;
-import eu.fasten.analyzer.javacgopal.data.exceptions.MissingArtifactException;
-import eu.fasten.analyzer.javacgopal.data.exceptions.OPALException;
-import eu.fasten.core.data.Constants;
-import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
-import eu.fasten.core.data.Graph;
-import eu.fasten.core.data.JavaScope;
-import eu.fasten.core.data.JavaType;
+import eu.fasten.core.data.opal.exceptions.MissingArtifactException;
+import eu.fasten.core.data.opal.exceptions.OPALException;
+import eu.fasten.core.data.*;
+import org.apache.commons.lang3.tuple.Pair;
+import org.apache.commons.text.StringEscapeUtils;
+import org.opalj.br.*;
+import org.opalj.br.analyses.Project;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -40,9 +41,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.opalj.br.Method;
-import org.opalj.br.ObjectType;
-import org.opalj.br.analyses.Project;
+import org.opalj.collection.immutable.RefArray;
 import org.opalj.tac.AITACode;
 import org.opalj.tac.ComputeTACAIKey$;
 import org.opalj.tac.DUVar;
@@ -63,7 +62,7 @@ public class PartialCallGraph {
     private static final Logger logger = LoggerFactory.getLogger(PartialCallGraph.class);
 
     private final EnumMap<JavaScope, Map<String, JavaType>> classHierarchy;
-    private final Graph graph;
+    private final JavaGraph graph;
     private final int nodeCount;
 
     public PartialCallGraph(CallGraphConstructor constructor) throws OPALException{
@@ -77,7 +76,7 @@ public class PartialCallGraph {
      * @param constructor call graph constructor
      */
     public PartialCallGraph(CallGraphConstructor constructor, boolean callSiteOnly) throws OPALException {
-        this.graph = new Graph();
+        this.graph = new JavaGraph();
 
         try {
             final var cha = createInternalCHA(constructor.getProject());
@@ -105,7 +104,7 @@ public class PartialCallGraph {
         return classHierarchy;
     }
 
-    public Graph getGraph() {
+    public JavaGraph getGraph() {
         return graph;
     }
 
@@ -160,7 +159,31 @@ public class PartialCallGraph {
         final var objs = Lists.newArrayList(JavaConverters.asJavaIterable(project.allClassFiles()));
         objs.sort(Comparator.comparing(Object::toString));
 
+        var opalAnnotations = new HashMap<String, List<Pair<String, String>>>();
         for (final var classFile : objs) {
+            var annotations = JavaConverters.asJavaIterable(classFile.annotations());
+            if (annotations != null) {
+                for (Annotation annotation : annotations) {
+                    final var annotationPackage =
+                        OPALMethod.getPackageName(annotation.annotationType());
+                    final var annotationClass = OPALMethod.getClassName(annotation.annotationType());
+
+                    var valueList = new ArrayList<Pair<String, String>>();
+                    final var values = JavaConverters.asJavaIterable(annotation.elementValuePairs());
+                    if (values != null) {
+                        for (ElementValuePair value : values) {
+                            try {
+                                final var valuePackage = OPALMethod.getPackageName(value.value().valueType());
+                                final var valueClass = OPALMethod.getClassName(value.value().valueType());
+                                final var valueContent = StringEscapeUtils.escapeJava(value.value().toJava());
+                                valueList.add(Pair.of(valuePackage + "/" + valueClass, valueContent));
+                            } catch (NullPointerException ignored) {
+                            }
+                        }
+                    }
+                    opalAnnotations.put(annotationPackage + "/" + annotationClass, valueList);
+                }
+            }
             final var currentClass = classFile.thisType();
             final var methods = getMethodsMap(methodNum.get(),
                     JavaConverters.asJavaIterable(classFile.methods()));
@@ -172,7 +195,8 @@ public class PartialCallGraph {
                     classFile.sourceFile().isDefined()
                             ? filepath + "/" + classFile.sourceFile().get()
                             : "NotFound",
-                    classFile.isPublic() ? "public" : "packagePrivate", classFile.isFinal());
+                    classFile.isPublic() ? "public" : "packagePrivate", classFile.isFinal(),
+                    opalAnnotations);
 
             result.put(currentClass, type);
             methodNum.addAndGet(methods.size());

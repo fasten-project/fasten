@@ -17,11 +17,18 @@
 
 package eu.fasten.core.utils;
 
+import static eu.fasten.core.utils.VariableLengthByteCoder.readByteArray;
+import static eu.fasten.core.utils.VariableLengthByteCoder.readLong;
+import static eu.fasten.core.utils.VariableLengthByteCoder.readString;
+import static eu.fasten.core.utils.VariableLengthByteCoder.writeByteArray;
+import static eu.fasten.core.utils.VariableLengthByteCoder.writeLong;
+import static eu.fasten.core.utils.VariableLengthByteCoder.writeString;
+import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 
 import java.io.IOException;
 
-import org.junit.Test;
+import org.junit.jupiter.api.Test;
 
 import it.unimi.dsi.fastutil.io.FastByteArrayInputStream;
 import it.unimi.dsi.fastutil.io.FastByteArrayOutputStream;
@@ -45,31 +52,51 @@ public class VariableLengthByteCoderTest {
 	@Test
 	public void testBounds() throws IOException {
 		final FastByteArrayOutputStream fbaos = new FastByteArrayOutputStream();
-		for (final long x : TEST_SEQUENCE) VariableLengthByteCoder.encode(x, fbaos);
+		for (final long x : TEST_SEQUENCE) writeLong(x, fbaos);
 		fbaos.flush();
 		final FastByteArrayInputStream fbais = new FastByteArrayInputStream(fbaos.array, 0, fbaos.length);
-		for (final long x : TEST_SEQUENCE) assertEquals(x, VariableLengthByteCoder.decode(fbais));
+		for (final long x : TEST_SEQUENCE) assertEquals(x, readLong(fbais));
 	}
 
 	@Test
 	public void testRandomLongs() throws IOException {
 		final XoRoShiRo128PlusRandomGenerator r = new XoRoShiRo128PlusRandomGenerator(0);
 		final FastByteArrayOutputStream fbaos = new FastByteArrayOutputStream();
-		for (int i = 0; i < 100000; i++) VariableLengthByteCoder.encode(r.nextLong() & (-1L >>> 1), fbaos);
+		for (int i = 0; i < 100000; i++) writeLong(r.nextLong() & (-1L >>> 1), fbaos);
 		fbaos.flush();
 		r.setSeed(0);
 		final FastByteArrayInputStream fbais = new FastByteArrayInputStream(fbaos.array, 0, fbaos.length);
-		for (int i = 0; i < 100000; i++) assertEquals(r.nextLong() & (-1L >>> 1), VariableLengthByteCoder.decode(fbais));
+		for (int i = 0; i < 100000; i++) assertEquals(r.nextLong() & (-1L >>> 1), readLong(fbais));
 	}
 
 	@Test
 	public void testRandomInts() throws IOException {
 		final XoRoShiRo128PlusRandomGenerator r = new XoRoShiRo128PlusRandomGenerator(0);
 		final FastByteArrayOutputStream fbaos = new FastByteArrayOutputStream();
-		for (int i = 0; i < 100000; i++) VariableLengthByteCoder.encode(r.nextInt() & (-1L >>> 32), fbaos);
+		for (int i = 0; i < 100000; i++) writeLong(r.nextInt() & (-1L >>> 32), fbaos);
 		fbaos.flush();
 		r.setSeed(0);
 		final FastByteArrayInputStream fbais = new FastByteArrayInputStream(fbaos.array, 0, fbaos.length);
-		for (int i = 0; i < 100000; i++) assertEquals(r.nextInt() & (-1L >>> 32), VariableLengthByteCoder.decode(fbais));
+		for (int i = 0; i < 100000; i++) assertEquals(r.nextInt() & (-1L >>> 32), readLong(fbais));
+	}
+
+	@Test
+	public void testByteArrays() throws IOException {
+		final FastByteArrayOutputStream fbaos = new FastByteArrayOutputStream();
+		byte[] a = { 1, 7, 3, 5 };
+		writeByteArray(a, fbaos);
+		fbaos.flush();
+		final FastByteArrayInputStream fbais = new FastByteArrayInputStream(fbaos.array, 0, fbaos.length);
+		assertArrayEquals(a, readByteArray(fbais));
+	}
+
+	@Test
+	public void testStrings() throws IOException {
+		final FastByteArrayOutputStream fbaos = new FastByteArrayOutputStream();
+		String s = "abcd\u0410";
+		writeString(s, fbaos);
+		fbaos.flush();
+		final FastByteArrayInputStream fbais = new FastByteArrayInputStream(fbaos.array, 0, fbaos.length);
+		assertEquals(s, readString(fbais));
 	}
 }

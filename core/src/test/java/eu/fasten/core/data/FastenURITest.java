@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.net.URISyntaxException;
+
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -113,6 +114,11 @@ public class FastenURITest {
         u = FastenURI.create("mvn!prod", "foo", "Bar");
         assertEquals("fasten://mvn!prod/foo/Bar", u.toString());
 
+		u = FastenURI.create(null, null, null, "/foo/Bar");
+		assertEquals("fasten:/foo/Bar", u.toString());
+
+		u = FastenURI.create("mvn", "prod", null, "/foo/Bar");
+		assertEquals("fasten://mvn!prod/foo/Bar", u.toString());
     }
 
     @Test
@@ -230,5 +236,4 @@ public class FastenURITest {
         assertEquals("fasten://mvn$a/foo/" + u, v.resolve(v.relativize(u)).toString());
         assertEquals(v.relativize(u), v.relativize(v.resolve(u)));
     }
-
 }

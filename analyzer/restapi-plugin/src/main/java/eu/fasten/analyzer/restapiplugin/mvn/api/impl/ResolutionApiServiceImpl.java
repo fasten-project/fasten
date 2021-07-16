@@ -26,9 +26,10 @@ import eu.fasten.core.data.DirectedGraph;
 import eu.fasten.core.maven.GraphMavenResolver;
 import eu.fasten.core.maven.MavenResolver;
 import eu.fasten.core.maven.data.Revision;
-import eu.fasten.core.merge.DatabaseMerger;
+import eu.fasten.core.merge.CGMerger;
 import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenHashSet;
 import org.json.JSONArray;
+import org.json.JSONException;
 import org.json.JSONObject;
 import org.rocksdb.RocksDBException;
 import org.slf4j.Logger;
@@ -37,6 +38,11 @@ import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.sql.Timestamp;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -77,14 +83,14 @@ public class ResolutionApiServiceImpl implements ResolutionApiService {
                     artifactId, version, timestamp, KnowledgeBaseConnector.dbContext, transitive);
         } else {
             var mavenResolver = new MavenResolver();
-            depSet = mavenResolver.resolveFullDependencySetOnline(groupId, artifactId, version, timestamp, KnowledgeBaseConnector.dbContext);
+            depSet = mavenResolver.resolveDependencies(groupId + ":" + artifactId + ":" + version);
         }
         var jsonArray = new JSONArray();
         depSet.stream().map(Revision::toJSON).peek(json -> {
             var group = json.getString("groupId");
             var artifact = json.getString("artifactId");
             var ver = json.getString("version");
-            var url = String.format("%s/mvn/%s/%s/%s_%s_%s.json", KnowledgeBaseConnector.rcgBaseUrl,
+            var url = String.format("%smvn/%s/%s/%s_%s_%s.json", KnowledgeBaseConnector.rcgBaseUrl,
                     artifact.charAt(0), artifact, artifact, group, ver);
             json.put("url", url);
         }).forEach(jsonArray::put);
@@ -104,7 +110,7 @@ public class ResolutionApiServiceImpl implements ResolutionApiService {
             var group = json.getString("groupId");
             var artifact = json.getString("artifactId");
             var ver = json.getString("version");
-            var url = String.format("%s/mvn/%s/%s/%s_%s_%s.json", KnowledgeBaseConnector.rcgBaseUrl,
+            var url = String.format("%smvn/%s/%s/%s_%s_%s.json", KnowledgeBaseConnector.rcgBaseUrl,
                     artifact.charAt(0), artifact, artifact, group, ver);
             json.put("url", url);
         }).forEach(jsonArray::put);
@@ -129,7 +135,7 @@ public class ResolutionApiServiceImpl implements ResolutionApiService {
         var jsonArray = new JSONArray();
         depSet.stream().map(r -> {
             var json = new JSONObject();
-            var url = String.format("%s/mvn/%s/%s/%s_%s_%s.json", KnowledgeBaseConnector.rcgBaseUrl,
+            var url = String.format("%smvn/%s/%s/%s_%s_%s.json", KnowledgeBaseConnector.rcgBaseUrl,
                     r.artifactId.charAt(0), r.artifactId, r.artifactId, r.groupId, r.version);
             json.put(String.valueOf(r.id), url);
             return json;
@@ -153,7 +159,7 @@ public class ResolutionApiServiceImpl implements ResolutionApiService {
             var depSet = this.graphResolver.resolveDependencies(groupId,
                     artifactId, version, timestamp, KnowledgeBaseConnector.dbContext, true);
             var depIds = depSet.stream().map(r -> r.id).collect(Collectors.toSet());
-            var databaseMerger = new DatabaseMerger(depIds, KnowledgeBaseConnector.dbContext, KnowledgeBaseConnector.graphDao);
+            var databaseMerger = new CGMerger(depIds, KnowledgeBaseConnector.dbContext, KnowledgeBaseConnector.graphDao);
             graph = databaseMerger.mergeWithCHA(packageVersionId);
         } else {
             try {
@@ -179,128 +185,29 @@ public class ResolutionApiServiceImpl implements ResolutionApiService {
     }
 
     @Override
-    public ResponseEntity<String> getTransitiveVulnerabilities(String package_name, String version, boolean precise) {
+    public ResponseEntity<String> getTransitiveVulnerabilities(String package_name, String version) {
 
-        if (!KnowledgeBaseConnector.kbDao.assertPackageExistence(package_name, version)) {
-            try {
-                LazyIngestionProvider.ingestArtifactWithDependencies(package_name, version);
-            } catch (IllegalArgumentException e) {
-                return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
-            }
-            return new ResponseEntity<>("Package version not found, but should be processed soon. Try again later", HttpStatus.CREATED);
+        // TODO: move this to the plugin's arguments.
+        var baseDir = "/mnt/fasten/vuln-paths-cache";
+        var split = package_name.split(Constants.mvnCoordinateSeparator);
+        var firstLetter = split[0].substring(0, 1);
+        var path = baseDir + File.separator + firstLetter +
+                File.separator + split[0] +
+                File.separator + split[1] +
+                File.separator + version + ".json";
+
+        try {
+            JSONObject jsonObject = new JSONObject(Files.readString(Path.of(path)));
+            return new ResponseEntity<>(jsonObject.toString(), HttpStatus.OK);
+        } catch (IOException e) {
+            logger.error("Vulnerability Cache File Not Found for " + package_name + Constants.mvnCoordinateSeparator + version, e);
+            // TODO: enforce processor to create one for this artifact?
+            return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
+        } catch (JSONException e) {
+            logger.error("Couldn't parse JSON from Vulnerability Cache File", e);
+            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
         }
 
-        var groupId = package_name.split(Constants.mvnCoordinateSeparator)[0];
-        var artifactId = package_name.split(Constants.mvnCoordinateSeparator)[1];
-
-        // Get all transitive dependencies
-        var depSet = this.graphResolver.resolveDependencies(groupId, artifactId, version, -1L, KnowledgeBaseConnector.dbContext, true);
-        var depIds = depSet.stream().map(r -> r.id).collect(Collectors.toSet());
-        var vulnerableDependencies = KnowledgeBaseConnector.kbDao.findVulnerablePackageVersions(depIds);
-
-        logger.info("Created depSet ({}), depIds ({}), vulnerableDependencies ({})", depSet.size(), depIds.size(), vulnerableDependencies.size());
-
-        if (!precise) {
-            // Leave only those dependencies that are in any path from the artifact to any of its vulnerable dependencies
-            var vulnerablePathDeps = new HashSet<Revision>();
-            var source = new Revision(groupId, artifactId, version, new Timestamp(-1));
-            for (var vulnerableDependency : vulnerableDependencies) {
-                var target = revisionIdToRevision(depSet, vulnerableDependency);
-                if (target != null) {
-                    vulnerablePathDeps.addAll(this.graphResolver.findAllRevisionsInThePath(source, target));
-                }
-            }
-            var vulnerableDepsIds = vulnerablePathDeps.stream().map(r -> r.id).collect(Collectors.toSet());
-            depIds = depIds.stream().filter(vulnerableDepsIds::contains).collect(Collectors.toSet());
-        }
-        var databaseMerger = new DatabaseMerger(depIds, KnowledgeBaseConnector.dbContext, KnowledgeBaseConnector.graphDao);
-        // Get stitched (with dependencies) graph
-        var graph = databaseMerger.mergeWithCHA(package_name + Constants.mvnCoordinateSeparator + version);
-
-        // Find all vulnerable callables (nodes) in the graph
-        var vulnerabilities = KnowledgeBaseConnector.kbDao.findVulnerableCallables(vulnerableDependencies, graph.nodes());
-
-        // Get all internal callables
-        var internalCallables = KnowledgeBaseConnector.kbDao.getPackageInternalCallableIDs(package_name, version);
-
-        // Find all paths between any internal node and any vulnerable node in the graph
-        var vulnerablePaths = new ArrayList<List<Long>>();
-        for (var internal : internalCallables) {
-            for (var vulnerable : vulnerabilities.keySet()) {
-                vulnerablePaths.addAll(getPathsToVulnerableNode(graph, internal, vulnerable, new HashSet<>(), new ArrayList<>(), new ArrayList<>()));
-            }
-        }
-
-        // Group vulnerable path by the vulnerabilities
-        var vulnerabilitiesMap = new HashMap<String, List<List<Long>>>();
-        for (var path : vulnerablePaths) {
-            var pathVulnerabilities = vulnerabilities.get(path.get(path.size() - 1)).keySet();
-            for (var vulnerability : pathVulnerabilities) {
-                if (vulnerabilitiesMap.containsKey(vulnerability)) {
-                    var paths = vulnerabilitiesMap.get(vulnerability);
-                    var updatedPaths = new ArrayList<>(paths);
-                    updatedPaths.add(path);
-                    vulnerabilitiesMap.remove(vulnerability);
-                    vulnerabilitiesMap.put(vulnerability, updatedPaths);
-                } else {
-                    var paths = new ArrayList<List<Long>>();
-                    paths.add(path);
-                    vulnerabilitiesMap.put(vulnerability, paths);
-                }
-            }
-        }
-
-        // Get FASTEN URIs of all callables in all vulnerable paths
-        var pathNodes = new HashSet<Long>();
-        vulnerablePaths.forEach(pathNodes::addAll);
-        var fastenUris = KnowledgeBaseConnector.kbDao.getFullFastenUris(new ArrayList<>(pathNodes));
-
-        // Generate JSON response
-        var json = new JSONObject();
-        for (var entry : vulnerabilitiesMap.entrySet()) {
-            var pathsJson = new JSONArray();
-            for (var path : entry.getValue()) {
-                var pathJson = new JSONArray();
-                for (var node : path) {
-                    var jsonNode = new JSONObject();
-                    jsonNode.put("id", node);
-                    jsonNode.put("fasten_uri", fastenUris.get(node));
-                    pathJson.put(jsonNode);
-                }
-                pathsJson.put(pathJson);
-            }
-            json.put(entry.getKey(), pathsJson);
-        }
-        return new ResponseEntity<>(json.toString(), HttpStatus.OK);
     }
 
-    private Revision revisionIdToRevision(Collection<Revision> revisions, long id) {
-        for (var revision : revisions) {
-            if (revision.id == id) {
-                return revision;
-            }
-        }
-        return null;
-    }
-
-    List<List<Long>> getPathsToVulnerableNode(DirectedGraph graph, long source, long target,
-                                              Set<Long> visited, List<Long> path, List<List<Long>> vulnerablePaths) {
-        if (path.isEmpty()) {
-            path.add(source);
-        }
-        if (source == target) {
-            vulnerablePaths.add(new ArrayList<>(path));
-            return vulnerablePaths;
-        }
-        visited.add(source);
-        for (var node : graph.successors(source)) {
-            if (!visited.contains(node)) {
-                path.add(node);
-                getPathsToVulnerableNode(graph, node, target, visited, path, vulnerablePaths);
-                path.remove(node);
-            }
-        }
-        visited.remove(source);
-        return vulnerablePaths;
-    }
 }

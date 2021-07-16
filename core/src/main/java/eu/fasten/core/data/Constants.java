@@ -1,7 +1,5 @@
 package eu.fasten.core.data;
 
-import java.util.List;
-
 public class Constants {
 
     public static final String mvnCoordinateSeparator = ":";
@@ -28,4 +26,7 @@ public class Constants {
 
     public static final int MIN_COMPRESSED_GRAPH_SIZE = 100;
 
+    public static final String fastenApiUrlEnvVariable = "FASTEN_API_URL";
+
+    public static final String fastenApiUrlDefault = "https://api.fasten.eu/api/";
 }

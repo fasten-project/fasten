@@ -1,9 +1,9 @@
 package eu.fasten.analyzer.licensedetector;
 
-import eu.fasten.analyzer.licensedetector.license.DetectedLicense;
-import eu.fasten.analyzer.licensedetector.license.DetectedLicenseSource;
-import eu.fasten.analyzer.licensedetector.license.DetectedLicenses;
-import eu.fasten.core.maven.data.Revision;
+import com.google.common.collect.Sets;
+import eu.fasten.core.data.metadatadb.license.DetectedLicense;
+import eu.fasten.core.data.metadatadb.license.DetectedLicenseSource;
+import eu.fasten.core.data.metadatadb.license.DetectedLicenses;
 import eu.fasten.core.plugins.KafkaPlugin;
 import org.apache.maven.model.License;
 import org.apache.maven.model.Model;
@@ -18,15 +18,17 @@ import org.pf4j.PluginWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
+import javax.annotation.Nullable;
+import java.io.*;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.ProtocolException;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
-import java.sql.Timestamp;
 import java.util.*;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 
 public class LicenseDetectorPlugin extends Plugin {
@@ -45,7 +47,7 @@ public class LicenseDetectorPlugin extends Plugin {
         /**
          * The topic this plugin consumes.
          */
-        protected String consumerTopic = "fasten.RepoCloner.out";
+        protected String consumerTopic = "fasten.SyncJava.out";
 
         /**
          * TODO
@@ -68,26 +70,27 @@ public class LicenseDetectorPlugin extends Plugin {
 
                 this.pluginError = null;
 
-                logger.info("License detector started");
+                logger.info("License detector started.");
+
+                // TODO Checking whether the repository has already been scanned (by querying the KB)
 
                 // Retrieving the repository path on the shared volume
                 String repoPath = extractRepoPath(record);
 
-                // Retrieving the Maven coordinate of this input record
-                Revision coordinate = extractMavenCoordinate(record);
+                // Retrieving the repo URL
+                String repoUrl = extractRepoURL(record);
 
-                // Retrieving the `pom.xml` file
-                File pomFile = retrievePomFile(repoPath);
-
-                // TODO Checking whether the repository has already been scanned (by querying the KB)
-
-                // Retrieving the outbound license
-                detectedLicenses.setOutbound(getOutboundLicenses(pomFile));
-                logger.info(
-                        detectedLicenses.getOutbound().size() + " outbound license" +
-                                (detectedLicenses.getOutbound().size() == 1 ? "" : "s") + " detected: " +
-                                detectedLicenses.getOutbound()
-                );
+                // Outbound license detection
+                detectedLicenses.setOutbound(getOutboundLicenses(repoPath, repoUrl));
+                if (detectedLicenses.getOutbound() == null || detectedLicenses.getOutbound().isEmpty()) {
+                    logger.warn("No outbound licenses were detected.");
+                } else {
+                    logger.info(
+                            detectedLicenses.getOutbound().size() + " outbound license" +
+                                    (detectedLicenses.getOutbound().size() == 1 ? "" : "s") + " detected: " +
+                                    detectedLicenses.getOutbound()
+                    );
+                }
 
                 // Detecting inbound licenses by scanning the project
                 String scanResultPath = scanProject(repoPath);
@@ -100,14 +103,55 @@ public class LicenseDetectorPlugin extends Plugin {
                     logger.warn("Scanner hasn't detected any licenses in " + scanResultPath + ".");
                 }
 
-                // TODO Unzipping the JAR to determine which files actually form the package
-                // TODO Use the `sourcesUrl` field in the `fasten.RepoCloner.out` input record
-
-
             } catch (Exception e) { // Fasten error-handling guidelines
                 logger.error(e.getMessage(), e.getCause());
                 setPluginError(e);
             }
+        }
+
+        /**
+         * Retrieves the outbound license(s) of the input project.
+         *
+         * @param repoPath the repository path whose outbound license(s) is(are) of interest.
+         * @param repoUrl  the input repository URL. Might be `null`.
+         * @return the set of detected outbound licenses.
+         */
+        protected Set<DetectedLicense> getOutboundLicenses(String repoPath, @Nullable String repoUrl) {
+
+            try {
+
+                // Retrieving the `pom.xml` file
+                File pomFile = retrievePomFile(repoPath);
+
+                // Retrieving the outbound license(s) from the `pom.xml` file
+                return getLicensesFromPomFile(pomFile);
+
+            } catch (FileNotFoundException | RuntimeException | XmlPullParserException e) {
+
+                // In case retrieving the outbound license from the local `pom.xml` file was not possible
+                logger.warn(e.getMessage(), e.getCause()); // why wasn't it possible
+                logger.info("Retrieving outbound license from GitHub...");
+                if ((detectedLicenses.getOutbound() == null || detectedLicenses.getOutbound().isEmpty())
+                        && repoUrl != null) {
+
+                    // Retrieving licenses from the GitHub API
+                    try {
+                        DetectedLicense licenseFromGitHub = getLicenseFromGitHub(repoUrl);
+                        if (licenseFromGitHub != null) {
+                            return Sets.newHashSet(licenseFromGitHub);
+                        } else {
+                            logger.warn("Couldn't retrieve the outbound license from GitHub.");
+                        }
+                    } catch (IllegalArgumentException | IOException ex) { // not a valid GitHub repo URL
+                        logger.warn(e.getMessage(), e.getCause());
+                    } catch (@SuppressWarnings({"TryWithIdenticalCatches", "RedundantSuppression"})
+                            RuntimeException ex) {
+                        logger.warn(e.getMessage(), e.getCause()); // could not contact GitHub API
+                    }
+                }
+            }
+
+            return Collections.emptySet();
         }
 
         /**
@@ -146,11 +190,6 @@ public class LicenseDetectorPlugin extends Plugin {
                             license.getName(),
                             DetectedLicenseSource.LOCAL_POM)));
 
-                    String licenseName = "Apache 2.0 license";
-                    if (Pattern.compile(Pattern.quote(licenseName), Pattern.CASE_INSENSITIVE).matcher("apache").find()) {
-
-                    }
-
                     return result;
                 }
             } catch (IOException e) {
@@ -166,26 +205,82 @@ public class LicenseDetectorPlugin extends Plugin {
         }
 
         /**
-         * Retrieves outbound licenses of the analyzed project.
+         * Retrieves the outbound license of a GitHub project using its API.
          *
-         * @param pomFile the repository `pom.xml` file.
-         * @return a set of detected outbound licenses.
-         * @throws XmlPullParserException in case the `pom.xml` file couldn't be parsed as an XML file.
+         * @param repoUrl the repository URL whose license is of interest.
+         * @return the outbound license retrieved from GitHub's API.
+         * @throws IllegalArgumentException in case the repository is not hosted on GitHub.
+         * @throws IOException              in case there was a problem contacting the GitHub API.
          */
-        protected Set<DetectedLicense> getOutboundLicenses(File pomFile) throws XmlPullParserException {
+        protected DetectedLicense getLicenseFromGitHub(String repoUrl)
+                throws IllegalArgumentException, IOException {
 
-            // Retrieving outbound licenses from the local `pom.xml` file.
-            Set<DetectedLicense> licenses = getLicensesFromPomFile(pomFile);
+            // Adding "https://" in case it's missing
+            if (!Pattern.compile(Pattern.quote("http"), Pattern.CASE_INSENSITIVE).matcher(repoUrl).find()) {
+                repoUrl = "https://" + repoUrl;
+            }
 
-            // TODO Retrieving licenses from Maven central
-//            if (licenses.isEmpty()) { // in case no licenses have been found in the local `pom.xml` file
-//
-//            }
+            // Checking whether the repo URL is a valid URL or not
+            URL parsedRepoUrl;
+            try {
+                parsedRepoUrl = new URL(repoUrl);
+            } catch (MalformedURLException e) {
+                throw new MalformedURLException("Repo URL " + repoUrl + " is not a valid URL: " + e.getMessage());
+            }
 
-            // TODO Retrieving licenses from the GitHub API
+            // Checking whether the repo is hosted on GitHub
+            if (!Pattern.compile(Pattern.quote("github"), Pattern.CASE_INSENSITIVE).matcher(repoUrl).find()) {
+                throw new IllegalArgumentException("Repo URL " + repoUrl + " is not hosted on GitHub.");
+            }
 
-            // Return all detected licenses
-            return licenses;
+            // Parsing the GitHub repo URL
+            String path = parsedRepoUrl.getPath();
+            String[] splitPath = path.split("/");
+            if (splitPath.length < 3) { // should be: ["/", "owner", "repo"]
+                throw new MalformedURLException(
+                        "Repo URL " + repoUrl + " has no valid path: " + Arrays.toString(splitPath));
+            }
+            String owner = splitPath[1];
+            String repo = splitPath[2].replaceAll(".git", "");
+            logger.info("Retrieving outbound license from GitHub. Owner: " + owner + ", repo: " + repo + ".");
+
+            // Result
+            DetectedLicense repoLicense;
+
+            // Querying the GitHub API
+            try {
+
+                // Format: "https://api.github.com/repos/`owner`/`repo`/license"
+                URL url = new URL("https://api.github.com/repos/" + owner + "/" + repo + "/license");
+                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+                conn.setRequestMethod("GET");
+                conn.setRequestProperty("Accept", "application/json");
+                if (conn.getResponseCode() != 200) {
+                    throw new RuntimeException("HTTP query failed. Error code: " + conn.getResponseCode());
+                }
+                InputStreamReader in = new InputStreamReader(conn.getInputStream());
+                BufferedReader br = new BufferedReader(in);
+                String jsonOutput = br.lines().collect(Collectors.joining());
+
+                // Retrieving the license SDPX ID
+                var jsonOutputPayload = new JSONObject(jsonOutput);
+                if (jsonOutputPayload.has("license")) {
+                    jsonOutputPayload = jsonOutputPayload.getJSONObject("license");
+                }
+                repoLicense = new DetectedLicense(jsonOutputPayload.getString("spdx_id"), DetectedLicenseSource.GITHUB);
+
+                conn.disconnect();
+            } catch (ProtocolException e) {
+                throw new ProtocolException(
+                        "Couldn't set the GET method while retrieving an outbound license from GitHub: " +
+                                e.getMessage());
+            } catch (IOException e) {
+                throw new IOException(
+                        "Couldn't get data from the HTTP response returned by GitHub's API: " + e.getMessage(),
+                        e.getCause());
+            }
+
+            return repoLicense;
         }
 
         /**
@@ -197,6 +292,9 @@ public class LicenseDetectorPlugin extends Plugin {
          */
         protected String extractRepoPath(String record) throws IllegalArgumentException {
             var payload = new JSONObject(record);
+            if (payload.has("fasten.RepoCloner.out")) {
+                payload = payload.getJSONObject("fasten.RepoCloner.out");
+            }
             if (payload.has("payload")) {
                 payload = payload.getJSONObject("payload");
             }
@@ -208,33 +306,21 @@ public class LicenseDetectorPlugin extends Plugin {
         }
 
         /**
-         * Retrieves the Maven coordinate of the input record.
+         * Retrieves the repository URL from the input record.
          *
          * @param record the input record containing repository information.
-         * @return the Maven coordinate of the input record.
-         * @throws IllegalArgumentException in case the function couldn't find coordinate information
-         *                                  in the input record.
+         * @return the input repository URL.
          */
-        protected Revision extractMavenCoordinate(String record) {
+        @Nullable
+        protected String extractRepoURL(String record) {
             var payload = new JSONObject(record);
+            if (payload.has("fasten.RepoCloner.out")) {
+                payload = payload.getJSONObject("fasten.RepoCloner.out");
+            }
             if (payload.has("payload")) {
                 payload = payload.getJSONObject("payload");
             }
-            String groupId = payload.getString("groupId");
-            if (groupId == null) {
-                throw new IllegalArgumentException("Invalid repository information: missing coordinate group ID.");
-            }
-            String artifactId = payload.getString("artifactId");
-            if (artifactId == null) {
-                throw new IllegalArgumentException("Invalid repository information: missing coordinate artifact ID.");
-            }
-            String version = payload.getString("version");
-            if (version == null) {
-                throw new IllegalArgumentException("Invalid repository information: missing coordinate version.");
-            }
-            long createdAt = payload.getLong("date");
-            // TODO Is the timestamp conversion right?
-            return new Revision(groupId, artifactId, version, new Timestamp(createdAt));
+            return payload.getString("repoUrl");
         }
 
         /**
@@ -257,36 +343,21 @@ public class LicenseDetectorPlugin extends Plugin {
             if (pomFiles == null) {
                 throw new RuntimeException("Path " + repoPath + " does not denote a directory.");
             }
-            logger.info("Found " + pomFiles.length + " pom.xml file" +
+            logger.trace("Found " + pomFiles.length + " pom.xml file" +
                     ((pomFiles.length == 1) ? "" : "s") + ": " + Arrays.toString(pomFiles));
-            if (pomFiles.length == 0) {
-                logger.error("No pom.xml file found in " + repoFolder.getAbsolutePath() + ".");
-            } else if (pomFiles.length == 1) {
+            if (pomFiles.length == 1) {
                 pomFile = Optional.ofNullable(pomFiles[0]);
-            } else {
+            } else if (pomFiles.length > 1) {
                 // Retrieving the pom.xml file having the shortest path (closest to it repository's root path)
                 pomFile = Arrays.stream(pomFiles).min(Comparator.comparingInt(f -> f.getAbsolutePath().length()));
                 logger.info("Multiple pom.xml files found. Using " + pomFile.get());
             }
 
             if (pomFile.isEmpty()) {
-                throw new FileNotFoundException("No file named pom.xml found in " + repoPath + ". " +
-                        "This plugin only analyzes Maven projects.");
+                throw new FileNotFoundException("No file named pom.xml found in " + repoPath + ".");
             }
 
             return pomFile.get();
-        }
-
-        /**
-         * Pretty-prints Maven coordinates.
-         *
-         * @param groupId    the maven coordinate's group ID.
-         * @param artifactId the maven coordinate's artifact ID.
-         * @param version    the maven coordinate's version.
-         * @return a pretty String representation of the input Maven coordinate.
-         */
-        protected static String constructMavenArtifactName(String groupId, String artifactId, String version) {
-            return groupId + ":" + artifactId + ":" + version;
         }
 
         /**

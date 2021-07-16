@@ -57,7 +57,7 @@ public final class ExtendedBuilderJava extends ExtendedBuilder<EnumMap<JavaScope
         return this;
     }
 
-    public ExtendedBuilderJava graph(final Graph graph) {
+    public ExtendedBuilderJava graph(final JavaGraph graph) {
         this.graph = graph;
         return this;
     }

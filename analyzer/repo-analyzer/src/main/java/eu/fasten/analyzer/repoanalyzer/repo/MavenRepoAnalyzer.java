@@ -18,14 +18,18 @@
 
 package eu.fasten.analyzer.repoanalyzer.repo;
 
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStreamWriter;
+import java.io.StringReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 import org.dom4j.DocumentException;
+import org.dom4j.Element;
 import org.dom4j.io.SAXReader;
 
 public class MavenRepoAnalyzer extends RepoAnalyzer {
@@ -38,6 +42,132 @@ public class MavenRepoAnalyzer extends RepoAnalyzer {
      */
     public MavenRepoAnalyzer(final Path path, final BuildManager buildManager) {
         super(path, buildManager);
+    }
+
+    @Override
+    protected Map<TestCoverageType, Float> getTestCoverage(Path root) {
+        var ranTests = false;
+        try {
+            var oldPom = addJacocoPluginToPomFile(Path.of(root.toString(), "pom.xml"));
+            ranTests = true;
+            var successful = runMvnTest(root);
+            if (!successful) {
+                return null;
+            }
+            Files.writeString(Path.of(root.toString(), "pom.xml"), oldPom);
+            return extractTestCoverageFromReport(root);
+        } catch (IOException | DocumentException | InterruptedException e) {
+            if (!ranTests) {
+                try {
+                    if (!runMvnTest(root)) {
+                        return null;
+                    }
+                } catch (IOException | InterruptedException ioException) {
+                    return null;
+                }
+            }
+            return Collections.emptyMap();
+        }
+    }
+
+    private Map<TestCoverageType, Float> extractTestCoverageFromReport(Path root) throws IOException, DocumentException {
+        var reportPath = Path.of(root.toString(), "target", "site", "jacoco", "jacoco.xml");
+        var reportRoot = new SAXReader().read(new StringReader(Files.readString(reportPath))).getRootElement();
+        var coverageNodes = reportRoot.selectNodes("./*[local-name()='counter']");
+        if (coverageNodes != null) {
+            var map = new HashMap<TestCoverageType, Float>();
+            for (var node : coverageNodes) {
+                var elem = (Element) node;
+                switch (elem.attributeValue("type")) {
+                    case "INSTRUCTION": {
+                        var missed = elem.attributeValue("missed");
+                        var covered = elem.attributeValue("covered");
+                        var coverage = Float.parseFloat(covered) / (Float.parseFloat(missed) + Float.parseFloat(covered));
+                        map.put(TestCoverageType.instructionCoverage, coverage);
+                    }
+                    case "BRANCH": {
+                        var missed = elem.attributeValue("missed");
+                        var covered = elem.attributeValue("covered");
+                        var coverage = Float.parseFloat(covered) / (Float.parseFloat(missed) + Float.parseFloat(covered));
+                        map.put(TestCoverageType.branchCoverage, coverage);
+                    }
+                    case "LINE": {
+                        var missed = elem.attributeValue("missed");
+                        var covered = elem.attributeValue("covered");
+                        var coverage = Float.parseFloat(covered) / (Float.parseFloat(missed) + Float.parseFloat(covered));
+                        map.put(TestCoverageType.lineCoverage, coverage);
+                    }
+                    case "COMPLEXITY": {
+                        var missed = elem.attributeValue("missed");
+                        var covered = elem.attributeValue("covered");
+                        var coverage = Float.parseFloat(covered) / (Float.parseFloat(missed) + Float.parseFloat(covered));
+                        map.put(TestCoverageType.complexityCoverage, coverage);
+                    }
+                    case "METHOD": {
+                        var missed = elem.attributeValue("missed");
+                        var covered = elem.attributeValue("covered");
+                        var coverage = Float.parseFloat(covered) / (Float.parseFloat(missed) + Float.parseFloat(covered));
+                        map.put(TestCoverageType.methodCoverage, coverage);
+                    }
+                    case "CLASS": {
+                        var missed = elem.attributeValue("missed");
+                        var covered = elem.attributeValue("covered");
+                        var coverage = Float.parseFloat(covered) / (Float.parseFloat(missed) + Float.parseFloat(covered));
+                        map.put(TestCoverageType.classCoverage, coverage);
+                    }
+                }
+            }
+            return map;
+        }
+        return Collections.emptyMap();
+    }
+
+    private String addJacocoPluginToPomFile(Path pomPath) throws IOException, DocumentException {
+        var pomContent = Files.readString(pomPath);
+        var pomRoot = new SAXReader().read(new StringReader(pomContent)).getRootElement();
+        var build = pomRoot.selectSingleNode("./*[local-name()='build']");
+        if (build == null) {
+            build = pomRoot.addElement("build");
+        }
+        var plugins = (Element) build.selectSingleNode("./*[local-name()='plugins']");
+        if (plugins == null) {
+            plugins = ((Element) build).addElement("plugins");
+        }
+        var plugin = plugins.addElement("plugin");
+        var group = plugin.addElement("groupId");
+        group.setText("org.jacoco");
+        var artifact = plugin.addElement("artifactId");
+        artifact.setText("jacoco-maven-plugin");
+        var version = plugin.addElement("version");
+        version.setText("0.8.2");
+        var executions = plugin.addElement("executions");
+        var execution1 = executions.addElement("execution");
+        var goals1 = execution1.addElement("goals");
+        var goal1 = goals1.addElement("goal");
+        goal1.setText("prepare-agent");
+        var execution2 = executions.addElement("execution");
+        var id2 = execution2.addElement("id");
+        id2.setText("report");
+        var phase = execution2.addElement("phase");
+        phase.setText("test");
+        var goals2 = execution2.addElement("goals");
+        var goal2 = goals2.addElement("goal");
+        goal2.setText("report");
+        var document = pomRoot.getDocument();
+        var writer = new OutputStreamWriter(new FileOutputStream(pomPath.toFile()));
+        document.write(writer);
+        writer.close();
+        return pomContent;
+    }
+
+    private boolean runMvnTest(Path root) throws IOException, InterruptedException {
+        var cmd = new String[] {
+                "bash",
+                "-c",
+                "mvn clean test"
+        };
+        var process = new ProcessBuilder(cmd).directory(root.toFile()).start();
+        return process.waitFor(3, TimeUnit.MINUTES);
     }
 
     @Override

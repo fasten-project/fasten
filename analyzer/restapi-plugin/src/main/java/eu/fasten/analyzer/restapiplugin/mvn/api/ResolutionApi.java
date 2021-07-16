@@ -21,7 +21,12 @@ package eu.fasten.analyzer.restapiplugin.mvn.api;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 
 @Lazy
@@ -39,7 +44,7 @@ public class ResolutionApi {
                                                @PathVariable("pkg_ver") String package_version,
                                                @RequestParam(required = false, defaultValue = "true") boolean transitive,
                                                @RequestParam(required = false, defaultValue = "-1") long timestamp,
-                                               @RequestParam(required = false, defaultValue = "false") boolean useDepGraph) {
+                                               @RequestParam(required = false, defaultValue = "true") boolean useDepGraph) {
         return service.resolveDependencies(package_name, package_version, transitive, timestamp, useDepGraph);
     }
 
@@ -65,8 +70,7 @@ public class ResolutionApi {
 
     @GetMapping(value = "/__INTERNAL__/packages/{pkg}/{pkg_ver}/vulnerabilities", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<String> getTransitiveVulnerabilities(@PathVariable("pkg") String package_name,
-                                                        @PathVariable("pkg_ver") String package_version,
-                                                        @RequestParam(required = false, defaultValue = "false") boolean precise) {
-        return service.getTransitiveVulnerabilities(package_name, package_version, precise);
+                                                        @PathVariable("pkg_ver") String package_version) {
+        return service.getTransitiveVulnerabilities(package_name, package_version);
     }
 }

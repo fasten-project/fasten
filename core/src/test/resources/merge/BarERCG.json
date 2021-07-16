@@ -53,22 +53,18 @@
     },
     "resolvedTypes": {}
   },
-  "graph": {
-    "internalCalls": [],
-    "externalCalls": [
+  "call-sites": [
       [
         "200",
         "202",
         {
           "1": {
-            "receiver": "/java.lang/Object",
+            "receiver": "[/java.lang/Object]",
             "type": "invokespecial",
             "line": 4
           }
         }
       ]
     ],
-    "resolvedCalls": []
-  },
   "timestamp": 0
 }

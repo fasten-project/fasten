@@ -45,7 +45,7 @@ public class Main implements Runnable {
     @CommandLine.Option(names = {"-d", "--database"},
             paramLabel = "DB_URL",
             description = "Database URL for connection",
-            defaultValue = "jdbc:postgresql:postgres")
+            defaultValue = "jdbc:postgresql:fasten_java")
     String dbUrl;
 
     @CommandLine.Option(names = {"-u", "--user"},
@@ -66,22 +66,26 @@ public class Main implements Runnable {
     }
 
     public MetadataDBExtension getMetadataDBExtension() {
-        if (language.equals("java"))
-            return new MetadataDatabaseJavaPlugin.MetadataDBJavaExtension();
-        else if (language.equals("c"))
-            return new MetadataDatabaseCPlugin.MetadataDBCExtension();
-        else if (language.equals("python"))
-            return new MetadataDatabasePythonPlugin.MetadataDBPythonExtension();
+        switch (language) {
+            case "java":
+                return new MetadataDatabaseJavaPlugin.MetadataDBJavaExtension();
+            case "c":
+                return new MetadataDatabaseCPlugin.MetadataDBCExtension();
+            case "python":
+                return new MetadataDatabasePythonPlugin.MetadataDBPythonExtension();
+        }
         return null;
     }
 
     public String getForge() {
-        if (language.equals("java"))
-            return Constants.mvnForge;
-        else if (language.equals("c"))
-            return Constants.debianForge;
-        else if (language.equals("python"))
-            return Constants.pypiForge;
+        switch (language) {
+            case "java":
+                return Constants.mvnForge;
+            case "c":
+                return Constants.debianForge;
+            case "python":
+                return Constants.pypiForge;
+        }
         return null;
     }
 

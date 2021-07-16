@@ -20,7 +20,7 @@ The FASTEN-server is a component necessary for running [FASTEN-specific plugins]
 - `-h` `--help` Show this help message and exit;
 - `-k` `--kafka_server` Kafka server to connect to. Use multiple times for clusters;
     - `-ks` `--skip_offsets` Adds one to offset of all the partitions of the consumers;
-    - `-kt` `--topic` Kay-value pairs of Plugin and topic to consume from. Example: `OPAL=fasten.maven.pkg`;
+    - `-kt` `--topic` Kay-value pairs of Plugin and topic to consume from. Example: `OPAL=fasten.OPAL.out`;
 - `-la` `--list_all` List all values and extensions;
 - `-m` `--mode` Deployment or Development mode
 - `-p` `--plugin_dir` Directory to load plugins from.

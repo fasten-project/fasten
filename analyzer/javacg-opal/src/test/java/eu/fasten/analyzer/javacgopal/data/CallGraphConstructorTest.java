@@ -18,24 +18,12 @@
 
 package eu.fasten.analyzer.javacgopal.data;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import eu.fasten.analyzer.javacgopal.data.exceptions.MissingArtifactException;
-import eu.fasten.analyzer.javacgopal.data.exceptions.OPALException;
-import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
-import eu.fasten.core.maven.utils.MavenUtilities;
-import eu.fasten.core.merge.LocalMerger;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Objects;
+import eu.fasten.core.data.opal.exceptions.OPALException;
 import org.apache.commons.lang.StringUtils;
 import org.junit.jupiter.api.Test;
+import java.io.File;
+import java.util.Objects;
+import static org.junit.jupiter.api.Assertions.*;
 
 class CallGraphConstructorTest {
 

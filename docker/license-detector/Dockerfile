@@ -8,11 +8,19 @@ ARG SCANCODE_INSTALLATION_FOLDER="/home"
 #############################################
 
 FROM maven:3.8.1-jdk-11-slim AS build-jars
+
 COPY . /home/app
+
 # Building the server JAR
-RUN mvn --file /home/app/pom.xml clean install --projects server --also-make
+# - Skips integration tests requiring Testcontainers (hence, Docker)
+#   Integration tests are run by the CI anyways.
+RUN mvn --file /home/app/pom.xml install --projects server --also-make -Dtest=\!MetadataDaoTest,\!PostgresConnectorTest
+
+# Building the generic analyzer plugin JAR
+RUN mvn --file /home/app/pom.xml install --projects analyzer
+
 # Building the license plugin JAR
-RUN mvn --file /home/app/pom.xml clean install --projects analyzer,:license-detector
+RUN mvn --file /home/app/pom.xml install --projects :license-detector
 
 ################################################
 # STAGE 1b: Downloading and unzipping scancode #

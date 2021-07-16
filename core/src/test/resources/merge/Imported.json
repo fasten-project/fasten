@@ -45,18 +45,14 @@
         }},
         "resolvedTypes": {}
     },
-    "graph": {
-        "internalCalls": [],
-        "externalCalls": [[
+    "call-sites": [[
             "0",
             "2",
             {"1": {
-                "receiver": "/java.lang/Object",
+                "receiver": "[/java.lang/Object]",
                 "type": "invokespecial",
                 "line": 4
             }}
         ]],
-        "resolvedCalls": []
-    },
     "timestamp": 0
 }

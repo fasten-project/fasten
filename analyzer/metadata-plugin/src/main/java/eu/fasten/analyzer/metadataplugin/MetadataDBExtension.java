@@ -27,8 +27,10 @@ import eu.fasten.core.data.Graph;
 import eu.fasten.core.data.graphdb.ExtendedGidGraph;
 import eu.fasten.core.data.graphdb.GidGraph;
 import eu.fasten.core.data.metadatadb.MetadataDao;
+import eu.fasten.core.data.metadatadb.codegen.enums.Access;
+import eu.fasten.core.data.metadatadb.codegen.enums.CallableType;
+import eu.fasten.core.data.metadatadb.codegen.tables.records.CallSitesRecord;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.CallablesRecord;
-import eu.fasten.core.data.metadatadb.codegen.tables.records.EdgesRecord;
 import eu.fasten.core.maven.utils.MavenUtilities;
 import eu.fasten.core.plugins.DBConnector;
 import eu.fasten.core.plugins.KafkaPlugin;
@@ -52,6 +54,11 @@ import org.json.JSONObject;
 import org.json.JSONTokener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 public class MetadataDBExtension implements KafkaPlugin, DBConnector {
 
@@ -239,7 +246,9 @@ public class MetadataDBExtension implements KafkaPlugin, DBConnector {
                 callGraph.getCgGenerator(), callGraph.version, artifactRepoId, null,
                 getProperTimestamp(callGraph.timestamp), new JSONObject());
 
-        var allCallables = insertDataExtractCallables(callGraph, metadataDao, packageVersionId);
+        var namespaceMap = getNamespaceMap(callGraph, metadataDao);
+        var allCallables = insertDataExtractCallables(callGraph, metadataDao,
+                packageVersionId, namespaceMap);
         var callables = allCallables.getLeft();
         var numInternal = allCallables.getRight();
 
@@ -254,7 +263,7 @@ public class MetadataDBExtension implements KafkaPlugin, DBConnector {
         }
 
         // Insert all the edges
-        var edges = insertEdges(callGraph.getGraph(), lidToGidMap, metadataDao);
+        var edges = insertEdges(callGraph.getGraph(), lidToGidMap, namespaceMap, metadataDao);
 
         // Remove duplicate nodes
         var internalIds = new LongArrayList(numInternal);
@@ -276,21 +285,28 @@ public class MetadataDBExtension implements KafkaPlugin, DBConnector {
         callables.forEach(c -> gid2uriMap.put(lidToGidMap.get(c.getId().longValue()), c.getFastenUri()));
 
         // Create a GID Graph for production
+        var typesMap = new HashMap<Long, String>(namespaceMap.size());
+        namespaceMap.forEach((k, v) -> typesMap.put(v, k));
         this.gidGraph = new ExtendedGidGraph(packageVersionId, callGraph.product, callGraph.version,
-                callablesIds, numInternal, edges, gid2uriMap);
+                callablesIds, numInternal, edges, gid2uriMap, typesMap);
         return packageVersionId;
+    }
+
+    protected Map<String, Long> getNamespaceMap(ExtendedRevisionCallGraph graph, MetadataDao metadataDao) {
+        return new HashMap<>();
     }
 
     // All classes that implements this class must provide an implementation
     // for this method. We cannot convert this class to an abstract class.
     public Pair<ArrayList<CallablesRecord>, Integer> insertDataExtractCallables(
-            ExtendedRevisionCallGraph callgraph, MetadataDao metadataDao, long packageVersionId) {
+            ExtendedRevisionCallGraph callgraph, MetadataDao metadataDao, long packageVersionId,
+            Map<String, Long> namespaceMap) {
         return new ImmutablePair<>(new ArrayList<>(), 0);
     }
 
-    protected List<EdgesRecord> insertEdges(Graph graph,
-                                            Long2LongOpenHashMap lidToGidMap, MetadataDao metadataDao) {
-        return new ArrayList<EdgesRecord>();
+    protected List<CallSitesRecord> insertEdges(Graph graph, Long2LongOpenHashMap lidToGidMap,
+                                                Map<String, Long> namespaceMap, MetadataDao metadataDao) {
+        return new ArrayList<>();
     }
 
     protected Timestamp getProperTimestamp(long timestamp) {
@@ -302,6 +318,28 @@ public class MetadataDBExtension implements KafkaPlugin, DBConnector {
             } else {
                 return new Timestamp(timestamp);
             }
+        }
+    }
+
+    protected CallableType getCallableType(String type) {
+        switch (type) {
+            case "internalBinary": return CallableType.internalBinary;
+            case "externalProduct": return CallableType.externalProduct;
+            case "externalStaticFunction": return CallableType.externalStaticFunction;
+            case "externalUndefined": return CallableType.externalUndefined;
+            case "internalStaticFunction": return CallableType.internalStaticFunction;
+            default: return null;
+        }
+    }
+
+    protected Access getAccess(String access) {
+        switch (access) {
+            case "private": return Access.private_;
+            case "public": return Access.public_;
+            case "packagePrivate": return Access.packagePrivate;
+            case "static": return Access.static_;
+            case "protected" : return Access.protected_;
+            default: return null;
         }
     }
 

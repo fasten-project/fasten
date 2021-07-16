@@ -18,9 +18,6 @@
 
 package eu.fasten.core.data;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
 import java.util.HashMap;
 import org.json.JSONObject;
@@ -166,7 +163,7 @@ public class Graph {
      *
      * @return the corresponding JSON representation.
      */
-    public JSONObject toJSON() {
+    public Object toJSON() {
         final var result = new JSONObject();
         final var internalCallsJSON = new JSONArray();
         for (final var entry : this.internalCalls.entrySet()) {

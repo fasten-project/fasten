@@ -1,13 +1,13 @@
 package eu.fasten.analyzer.javacgopal.data;
 
-import eu.fasten.analyzer.javacgopal.data.exceptions.MissingArtifactException;
-import eu.fasten.analyzer.javacgopal.data.exceptions.OPALException;
-import eu.fasten.core.data.ExtendedBuilder;
+import eu.fasten.core.data.opal.MavenCoordinate;
+import eu.fasten.core.data.opal.exceptions.MissingArtifactException;
+import eu.fasten.core.data.opal.exceptions.OPALException;
 import eu.fasten.core.data.ExtendedBuilderJava;
 import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
 import eu.fasten.core.data.JSONUtils;
 import eu.fasten.core.maven.utils.MavenUtilities;
-import eu.fasten.core.merge.LocalMerger;
+import eu.fasten.core.merge.CGMerger;
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
@@ -53,7 +53,7 @@ class JSONUtilsTest {
             "", "CHA", 1574072773, MavenUtilities.MAVEN_CENTRAL_REPO, true);
         final var deps = new ArrayList<>(Collections.singletonList(dependency));
         deps.add(artifact);
-        final var merger = new LocalMerger(deps);
+        final var merger = new CGMerger(deps);
         merger.mergeWithCHA(artifact);
 
         coords =
@@ -77,7 +77,7 @@ class JSONUtilsTest {
             builder.timestamp(-1).classHierarchy(graph.getClassHierarchy()).graph(graph.getGraph())
                 .forge(graph.forge).cgGenerator(graph.getCgGenerator()).version(graph.version).product(graph.product).build();
         final var rcgString = JSONUtils.toJSONString(rcg);
-        Assertions.assertTrue(rcgString.endsWith("]}}"));
+        Assertions.assertTrue(rcgString.endsWith("]]}"));
         JSONAssert.assertEquals(rcg.toJSON().toString(), rcgString,
             JSONCompareMode.STRICT);
     }

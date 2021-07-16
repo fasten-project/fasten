@@ -19,19 +19,20 @@
 package eu.fasten.core.maven.utils;
 
 import eu.fasten.core.data.Constants;
+import eu.fasten.core.maven.data.Revision;
 import org.apache.commons.io.FileUtils;
+import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
+import javax.annotation.Nullable;
+import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.UnknownHostException;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
+import java.sql.Timestamp;
 import java.util.*;
 
 /**
@@ -145,6 +146,30 @@ public class MavenUtilities {
         }
     }
 
+    public static String sendGetRequest(String url) {
+        return MavenUtilities.downloadPomFile(url).flatMap(MavenUtilities::fileToString).orElse(null);
+    }
+
+    /**
+     * Utility function that reads the contents of a file to a String.
+     */
+    private static Optional<String> fileToString(final File f) {
+        logger.trace("Loading file as string: " + f.toString());
+        try {
+            final var fr = new BufferedReader(new FileReader(f));
+            final StringBuilder result = new StringBuilder();
+            String line;
+            while ((line = fr.readLine()) != null) {
+                result.append(line);
+            }
+            fr.close();
+            return Optional.of(result.toString());
+        } catch (IOException e) {
+            logger.error("Cannot read from file: " + f.toString(), e);
+            return Optional.empty();
+        }
+    }
+
     /**
      * Force-deletes the file or directory.
      *
@@ -176,4 +201,28 @@ public class MavenUtilities {
         }
     }
 
+    /**
+     * Pretty-prints Maven coordinates.
+     *
+     * @param groupId    the maven coordinate's group ID.
+     * @param artifactId the maven coordinate's artifact ID.
+     * @return a pretty String representation of the input Maven coordinate.
+     */
+    public static String getMavenCoordinateName(String groupId, @Nullable String artifactId) {
+        return groupId +
+                (artifactId == null || artifactId.compareTo("") == 0 ?
+                        "" : Constants.mvnCoordinateSeparator + artifactId);
+    }
+
+    /**
+     * Pretty-prints Maven coordinates (with version).
+     *
+     * @param groupId    the maven coordinate's group ID.
+     * @param artifactId the maven coordinate's artifact ID.
+     * @param version    the maven coordinate's version.
+     * @return a pretty String representation of the input Maven coordinate.
+     */
+    public static String getMavenCoordinateName(String groupId, String artifactId, String version) {
+        return getMavenCoordinateName(groupId, artifactId) + Constants.mvnCoordinateSeparator + version;
+    }
 }

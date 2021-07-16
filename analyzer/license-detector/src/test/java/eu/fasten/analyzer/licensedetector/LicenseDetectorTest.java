@@ -1,12 +1,13 @@
 package eu.fasten.analyzer.licensedetector;
 
 import com.google.common.collect.Sets;
-import eu.fasten.analyzer.licensedetector.license.DetectedLicense;
-import eu.fasten.analyzer.licensedetector.license.DetectedLicenseSource;
+import eu.fasten.core.data.metadatadb.license.DetectedLicense;
+import eu.fasten.core.data.metadatadb.license.DetectedLicenseSource;
 import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
@@ -22,6 +23,13 @@ import java.util.stream.Stream;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class LicenseDetectorTest {
+
+    private LicenseDetectorPlugin.LicenseDetector licenseDetector;
+
+    @BeforeEach
+    public void setup() {
+        licenseDetector = new LicenseDetectorPlugin.LicenseDetector();
+    }
 
     @Test
     public void givenRepoClonerRecordContainingRepoPath_whenExtractingRepoPath_thenRepoPathIsExtracted() {
@@ -54,7 +62,7 @@ public class LicenseDetectorTest {
             // Extracting repository path
             assertEquals(
                     expectedExtractedRepoPath,
-                    new LicenseDetectorPlugin.LicenseDetector().extractRepoPath(recordContent),
+                    licenseDetector.extractRepoPath(recordContent),
                     "Extracted repository path did not match test record content."
             );
         });
@@ -87,18 +95,18 @@ public class LicenseDetectorTest {
 
             try {
                 assertTrue(
-                        new LicenseDetectorPlugin.LicenseDetector().retrievePomFile(repoAbsolutePath).exists(),
+                        licenseDetector.retrievePomFile(repoAbsolutePath).exists(),
                         "pom.xml file does not exist."
                 );
 
                 assertTrue(
-                        new LicenseDetectorPlugin.LicenseDetector().retrievePomFile(repoAbsolutePath).isFile(),
+                        licenseDetector.retrievePomFile(repoAbsolutePath).isFile(),
                         "Retrieved pom.xml file is a directory."
                 );
 
                 assertEquals(
                         expectedRetrievedPomFile,
-                        new LicenseDetectorPlugin.LicenseDetector().retrievePomFile(repoAbsolutePath),
+                        licenseDetector.retrievePomFile(repoAbsolutePath),
                         "Retrieved pom.xml file is not the one the test expected."
                 );
             } catch (FileNotFoundException e) {
@@ -149,7 +157,7 @@ public class LicenseDetectorTest {
 
             try {
                 assertEquals(
-                        new LicenseDetectorPlugin.LicenseDetector().getOutboundLicenses(pomFile),
+                        licenseDetector.getLicensesFromPomFile(pomFile),
                         expectedDetectedLicenses,
                         "Retrieved and expected outbound licenses do not match."
                 );
@@ -179,8 +187,7 @@ public class LicenseDetectorTest {
             try {
 
                 // Parsing the scan result
-                JSONArray fileLicenses =
-                        new LicenseDetectorPlugin.LicenseDetector().parseScanResult(absoluteScanResultPath);
+                JSONArray fileLicenses = licenseDetector.parseScanResult(absoluteScanResultPath);
 
                 // All test cases contain results with at least one file
                 assertNotNull(fileLicenses, "Test case should contain at least one scanned file.");
@@ -210,7 +217,6 @@ public class LicenseDetectorTest {
                 .put("outbound", expectedOutboundLicenses).put("files", files).toString();
 
         // Pre-fill license detector with the licenses declared above
-        LicenseDetectorPlugin.LicenseDetector licenseDetector = new LicenseDetectorPlugin.LicenseDetector();
         licenseDetector.detectedLicenses.setOutbound(Sets.newHashSet(outboundLicense));
         licenseDetector.detectedLicenses.addFiles(files);
 
@@ -222,5 +228,38 @@ public class LicenseDetectorTest {
 
         // Checking whether the JSON result is the expected one or not
         assertEquals(expectedJsonResult.compareToIgnoreCase(result.get()), 0);
+    }
+
+    @Test
+    public void givenRepoUrls_whenRetrievingOutboundLicenseFromGitHub_thenOutboudLicenseIsCorrectlyRetrieved() {
+
+        // GitHub repo URL -> its SPDX license ID
+        Map<String, String> inputToExpected = Map.ofEntries(
+                Map.entry("HTTPS://GITHUB.COM/EsotericSoftware/reflectasm.git", "BSD-3-Clause"),
+                Map.entry("https://github.com/EsotericSoftware/reflectasm.git", "BSD-3-Clause"),
+                Map.entry("https://github.com/EsotericSoftware/reflectasm/", "BSD-3-Clause"),
+                Map.entry("https://github.com/EsotericSoftware/reflectasm", "BSD-3-Clause"),
+                Map.entry("http://github.com/EsotericSoftware/reflectasm", "BSD-3-Clause"),
+                Map.entry("github.com/EsotericSoftware/reflectasm", "BSD-3-Clause"),
+                Map.entry("https://github.com/remkop/picocli/tree/master", "Apache-2.0"),
+                Map.entry("https://github.com/remkop/picocli", "Apache-2.0"),
+                Map.entry("https://tomakehurst@github.com/tomakehurst/wiremock.git", "Apache-2.0")
+        );
+
+        inputToExpected.forEach((repoUrl, expectedLicense) -> {
+            try {
+
+                // Retrieving the outbound license from GitHub
+                DetectedLicense retrievedLicense = licenseDetector.getLicenseFromGitHub(repoUrl);
+
+                // Checking whether the retrieved license is equal to the expected one or not
+                assertEquals(expectedLicense.compareToIgnoreCase(retrievedLicense.getName()), 0,
+                        "The outbound license retrieved from GitHub is not equal to the expected one.");
+            } catch (IllegalArgumentException | IOException e) { // not a valid GitHub repo URL
+                fail("Invalid GitHub URL: " + e.getMessage(), e.getCause());
+            } catch (@SuppressWarnings({"TryWithIdenticalCatches", "RedundantSuppression"}) RuntimeException e) {
+                fail("Could not contact GitHub API: " + e.getMessage(), e.getCause());
+            }
+        });
     }
 }

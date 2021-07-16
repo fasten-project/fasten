@@ -21,6 +21,7 @@ package eu.fasten.analyzer.metadataplugin;
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
 import eu.fasten.core.data.metadatadb.MetadataDao;
+import eu.fasten.core.data.metadatadb.codegen.enums.Access;
 import org.jooq.DSLContext;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -101,23 +102,25 @@ public class MetadataDatabaseJavaPluginTest {
                 "        },\n" +
                 "        \"resolvedTypes\": {}\n" +
                 "    },\n" +
-                "    \"graph\": {\n" +
-                "        \"internalCalls\": [],\n" +
-                "        \"externalCalls\": [\n" +
+                "    \"call-sites\": [\n" +
                 "            [\n" +
                 "                \"2\",\n" +
                 "                \"1\",\n" +
                 "                {\"1\": {\n" +
-                "                    \"receiver\": \"/java.lang/Object\",\n" +
+                "                    \"receiver\": \"[/java.lang/Object]\",\n" +
                 "                    \"line\": 42,\n" +
                 "                    \"type\": \"invokespecial\"\n" +
                 "                }}\n" +
                 "            ]\n" +
-                "        ],\n" +
-                "        \"resolvedCalls\": []\n" +
-                "    },\n" +
+                "    ],\n" +
                 "    \"timestamp\": 123\n" +
                 "}\n");
+        var namespacesMap = new HashMap<String, Long>(2);
+        namespacesMap.put("/internal.package/B", 1L);
+        namespacesMap.put("/internal.package/BInterface", 3L);
+        namespacesMap.put("/external.package/A", 2L);
+        namespacesMap.put("/java.lang/Object", 4L);
+        Mockito.when(metadataDao.insertNamespaces(Mockito.anySet())).thenReturn(namespacesMap);
         long packageId = 8;
         Mockito.when(metadataDao.insertPackage(json.getString("product"), Constants.mvnForge)).thenReturn(packageId);
         long packageVersionId = 42;
@@ -127,14 +130,8 @@ public class MetadataDatabaseJavaPluginTest {
         Mockito.when(metadataDao.insertFile(packageVersionId, "B.java")).thenReturn(fileId);
         Mockito.when(metadataDao.insertCallablesSeparately(Mockito.anyList(), Mockito.anyInt())).thenReturn(List.of(64L, 65L));
         long internalModuleId = 17;
-        var internalModuleMetadata = new JSONObject("{" +
-                "\"access\": \"public\"," +
-                "\"final\": false," +
-                "\"superInterfaces\": [\"/internal.package/BInterface\"]," +
-                "\"superClasses\": [\"/java.lang/Object\"]" +
-                "}");
-        Mockito.when(metadataDao.insertModule(packageVersionId, "/internal.package/B", null,
-                internalModuleMetadata)).thenReturn(internalModuleId);
+        Mockito.when(metadataDao.insertModule(packageVersionId, 1L, false, Access.public_, new Long[]{3L}, new Long[]{4L},
+                null, null)).thenReturn(internalModuleId);
         long id = metadataDBExtension.saveToDatabase(new ExtendedRevisionJavaCallGraph(json), metadataDao);
         assertEquals(packageVersionId, id);
         Mockito.verify(metadataDao).insertPackage(json.getString("product"), Constants.mvnForge);
