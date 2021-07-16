@@ -39,6 +39,17 @@ public class AntRepoAnalyzer extends RepoAnalyzer {
     }
 
     @Override
+    protected boolean canExecuteTests(Path root) throws IOException, InterruptedException {
+        var cmd = new String[] {
+                "bash",
+                "-c",
+                "ant junit"
+        };
+        var process = new ProcessBuilder(cmd).directory(root.toFile()).start();
+        return process.waitFor() == 0;
+    }
+
+    @Override
     protected Path getPathToSourcesRoot(final Path root) throws IOException, DocumentException {
         var reader = new SAXReader();
         var buildContent = reader.read(Path.of(root.toAbsolutePath().toString(), "build.xml").toFile());

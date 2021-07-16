@@ -18,16 +18,13 @@
 
 package eu.fasten.analyzer.repoanalyzer.repo;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Objects;
 import org.dom4j.DocumentException;
 import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 class RepoAnalyzerTest {
 
@@ -42,7 +39,7 @@ class RepoAnalyzerTest {
     }
 
     @Test
-    void analyze() throws IOException, DocumentException {
+    void analyze() throws IOException, DocumentException, InterruptedException {
         var root = new File(Objects.requireNonNull(RepoAnalyzerTest.class.getClassLoader()
                 .getResource("completeMavenProject")).getFile()).getAbsolutePath();
         var repoAnalyzerFactory = new RepoAnalyzerFactory();
@@ -76,6 +73,7 @@ class RepoAnalyzerTest {
         assertEquals(0.333, module1.getDouble("unitTestsToFunctionsRatio"));
         assertEquals(0.5, module1.getDouble("testToSourceRatio"));
         assertEquals(0, module1.getDouble("unitTestsMockingRatio"));
+        assertTrue(module1.getBoolean("canExecuteTests"));
 
         var module2 = modules.getJSONObject(module2Index);
         assertEquals(1, module2.getInt("unitTestsWithMocks"));
@@ -88,5 +86,6 @@ class RepoAnalyzerTest {
         assertEquals(3, module2.getDouble("unitTestsToFunctionsRatio"));
         assertEquals(2, module2.getDouble("testToSourceRatio"));
         assertEquals(0.333, module2.getDouble("unitTestsMockingRatio"));
+        assertTrue(module1.getBoolean("canExecuteTests"));
     }
 }

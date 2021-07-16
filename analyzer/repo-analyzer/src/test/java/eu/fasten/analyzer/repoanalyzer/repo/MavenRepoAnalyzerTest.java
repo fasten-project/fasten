@@ -64,4 +64,11 @@ class MavenRepoAnalyzerTest {
                 Path.of(root, "module2"), Path.of(root, "module3"));
         assertEquals(roots, analyzer.extractModuleRoots(Path.of(root)));
     }
+
+    @Test
+    void canExecuteTests() throws IOException, InterruptedException {
+        assertTrue(analyzer.canExecuteTests(Path.of(root, "module1", "submodule1")));
+        assertTrue(analyzer.canExecuteTests(Path.of(root, "module2")));
+        assertTrue(analyzer.canExecuteTests(Path.of(root, "module3")));
+    }
 }

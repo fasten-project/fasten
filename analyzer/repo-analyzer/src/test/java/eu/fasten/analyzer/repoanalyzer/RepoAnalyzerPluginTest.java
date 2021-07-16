@@ -52,7 +52,7 @@ class RepoAnalyzerPluginTest {
     }
 
     @Test
-    void consume() throws IOException, DocumentException {
+    void consume() throws IOException, DocumentException, InterruptedException {
         assertTrue(plugin.produce().isEmpty());
 
         var repoPath = new File(Objects.requireNonNull(RepoAnalyzerPluginTest.class.getClassLoader()

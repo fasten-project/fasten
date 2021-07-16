@@ -40,6 +40,17 @@ public class GradleRepoAnalyzer extends RepoAnalyzer {
     }
 
     @Override
+    protected boolean canExecuteTests(Path root) throws IOException, InterruptedException {
+        var cmd = new String[] {
+                "bash",
+                "-c",
+                "gradle test"
+        };
+        var process = new ProcessBuilder(cmd).directory(root.toFile()).start();
+        return process.waitFor() == 0;
+    }
+
+    @Override
     protected Path getPathToSourcesRoot(final Path root) {
         return Path.of(root.toAbsolutePath().toString(), DEFAULT_SOURCES_PATH);
     }

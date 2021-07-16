@@ -18,9 +18,6 @@
 
 package eu.fasten.analyzer.repoanalyzer.repo;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -29,6 +26,7 @@ import java.util.Set;
 import org.dom4j.DocumentException;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 class GradleRepoAnalyzerTest {
 
@@ -71,5 +69,14 @@ class GradleRepoAnalyzerTest {
                 .getResource("simpleGradleKotlinRepo")).getFile()).getAbsolutePath();
         var repoAnalyzerFactory = new RepoAnalyzerFactory();
         analyzer = repoAnalyzerFactory.getAnalyzer(root);
+    }
+
+    @Test
+    void canExecuteTests() throws IOException, InterruptedException {
+        root = new File(Objects.requireNonNull(GradleRepoAnalyzerTest.class.getClassLoader()
+                .getResource("simpleGradleRepo")).getFile()).getAbsolutePath();
+        assertFalse(analyzer.canExecuteTests(Path.of(root)));
+        assertFalse(analyzer.canExecuteTests(Path.of(root, "subprojects/module1")));
+        assertFalse(analyzer.canExecuteTests(Path.of(root, "subprojects/module2")));
     }
 }

@@ -60,7 +60,7 @@ public abstract class RepoAnalyzer {
      * @return JSON with statistics of the repository
      * @throws IOException if I/O exception occurs when accessing root file
      */
-    public JSONObject analyze() throws IOException, DocumentException {
+    public JSONObject analyze() throws IOException, DocumentException, InterruptedException {
         var payload = new JSONObject();
         payload.put("repoPath", this.rootPath);
         payload.put("buildManager", this.buildManager);
@@ -71,6 +71,8 @@ public abstract class RepoAnalyzer {
         for (var module : moduleRoots) {
             var statistics = new JSONObject();
             statistics.put("path", module.toAbsolutePath().toString());
+
+            statistics.put("canExecuteTests", canExecuteTests(module));
 
             var sourceFiles = getJavaFiles(getPathToSourcesRoot(module));
             statistics.put("sourceFiles", sourceFiles.size());
@@ -130,6 +132,14 @@ public abstract class RepoAnalyzer {
             return new HashSet<>();
         }
     }
+
+    /**
+     * Checks whether tests can be ran automatically.
+     *
+     * @param root Path to project's root
+     * @return true if was able to execute the tests and they succeeded, false otherwise
+     */
+    protected abstract boolean canExecuteTests(final Path root) throws IOException, InterruptedException;
 
     /**
      * Get absolute path to the source files root. Extracts source file directory from pom.xml or

@@ -41,6 +41,17 @@ public class MavenRepoAnalyzer extends RepoAnalyzer {
     }
 
     @Override
+    protected boolean canExecuteTests(Path root) throws IOException, InterruptedException {
+        var cmd = new String[] {
+                "bash",
+                "-c",
+                "mvn test"
+        };
+        var process = new ProcessBuilder(cmd).directory(root.toFile()).start();
+        return process.waitFor() == 0;
+    }
+
+    @Override
     protected Path getPathToSourcesRoot(final Path root) throws IOException {
         var pomContent = Files.readString(Path.of(root.toString(), "pom.xml"));
         var sourcePath = StringUtils.substringBetween(pomContent, "<sourceDirectory>", "</sourceDirectory>");
