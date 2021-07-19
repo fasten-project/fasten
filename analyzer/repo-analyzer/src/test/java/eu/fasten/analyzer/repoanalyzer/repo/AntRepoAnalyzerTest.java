@@ -60,9 +60,4 @@ class AntRepoAnalyzerTest {
     void extractModuleRoots() throws IOException, DocumentException {
         assertEquals(Set.of(Path.of(root)), analyzer.extractModuleRoots(Path.of(root)));
     }
-
-    @Test
-    void canExecuteTests() throws IOException, InterruptedException {
-        assertFalse(analyzer.canExecuteTests(Path.of(root)));
-    }
 }

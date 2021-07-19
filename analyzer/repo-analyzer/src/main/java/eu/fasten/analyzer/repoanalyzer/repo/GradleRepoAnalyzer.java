@@ -22,9 +22,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class GradleRepoAnalyzer extends RepoAnalyzer {
@@ -40,14 +38,23 @@ public class GradleRepoAnalyzer extends RepoAnalyzer {
     }
 
     @Override
-    protected boolean canExecuteTests(Path root) throws IOException, InterruptedException {
-        var cmd = new String[] {
-                "bash",
-                "-c",
-                "gradle test"
-        };
-        var process = new ProcessBuilder(cmd).directory(root.toFile()).start();
-        return process.waitFor() == 0;
+    protected Map<TestCoverageType, Float> getTestCoverage(Path root) {
+        return Collections.emptyMap();
+    }
+
+    @Override
+    protected boolean canExecuteTests(Path root) {
+        try {
+            var cmd = new String[]{
+                    "bash",
+                    "-c",
+                    "gradle test"
+            };
+            var process = new ProcessBuilder(cmd).directory(root.toFile()).start();
+            return process.waitFor() == 0;
+        } catch (IOException | InterruptedException e) {
+            return false;
+        }
     }
 
     @Override

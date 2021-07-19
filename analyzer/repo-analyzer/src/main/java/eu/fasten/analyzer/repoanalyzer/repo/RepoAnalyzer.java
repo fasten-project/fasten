@@ -74,6 +74,8 @@ public abstract class RepoAnalyzer {
 
             statistics.put("canExecuteTests", canExecuteTests(module));
 
+            statistics.put("testCoverage", getTestCoverage(module));
+
             var sourceFiles = getJavaFiles(getPathToSourcesRoot(module));
             statistics.put("sourceFiles", sourceFiles.size());
 
@@ -108,6 +110,7 @@ public abstract class RepoAnalyzer {
             var mockingRatio = roundTo3((double) numberOfUnitTestsWithMocks / (double) numberOfUnitTests);
             statistics.put("unitTestsMockingRatio", mockingRatio);
 
+
             if (sourceFiles.size() > 0) {
                 results.put(statistics);
             }
@@ -140,6 +143,14 @@ public abstract class RepoAnalyzer {
      * @return true if was able to execute the tests and they succeeded, false otherwise
      */
     protected abstract boolean canExecuteTests(final Path root) throws IOException, InterruptedException;
+
+    /**
+     * Integrates JaCoCO plugin, runs the test suite and returns the test coverage.
+     *
+     * @param root Path to project's root
+     * @return Test coverage
+     */
+    protected abstract Map<TestCoverageType, Float> getTestCoverage(final Path root);
 
     /**
      * Get absolute path to the source files root. Extracts source file directory from pom.xml or

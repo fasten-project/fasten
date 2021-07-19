@@ -20,6 +20,8 @@ package eu.fasten.analyzer.repoanalyzer.repo;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Collections;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.dom4j.DocumentException;
@@ -39,14 +41,23 @@ public class AntRepoAnalyzer extends RepoAnalyzer {
     }
 
     @Override
-    protected boolean canExecuteTests(Path root) throws IOException, InterruptedException {
-        var cmd = new String[] {
-                "bash",
-                "-c",
-                "ant junit"
-        };
-        var process = new ProcessBuilder(cmd).directory(root.toFile()).start();
-        return process.waitFor() == 0;
+    protected Map<TestCoverageType, Float> getTestCoverage(Path root) {
+        return Collections.emptyMap();
+    }
+
+    @Override
+    protected boolean canExecuteTests(Path root) {
+        try {
+            var cmd = new String[]{
+                    "bash",
+                    "-c",
+                    "ant junit"
+            };
+            var process = new ProcessBuilder(cmd).directory(root.toFile()).start();
+            return process.waitFor() == 0;
+        } catch (IOException | InterruptedException e) {
+            return false;
+        }
     }
 
     @Override

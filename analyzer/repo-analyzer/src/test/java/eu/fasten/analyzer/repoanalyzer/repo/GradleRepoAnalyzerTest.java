@@ -70,13 +70,4 @@ class GradleRepoAnalyzerTest {
         var repoAnalyzerFactory = new RepoAnalyzerFactory();
         analyzer = repoAnalyzerFactory.getAnalyzer(root);
     }
-
-    @Test
-    void canExecuteTests() throws IOException, InterruptedException {
-        root = new File(Objects.requireNonNull(GradleRepoAnalyzerTest.class.getClassLoader()
-                .getResource("simpleGradleRepo")).getFile()).getAbsolutePath();
-        assertFalse(analyzer.canExecuteTests(Path.of(root)));
-        assertFalse(analyzer.canExecuteTests(Path.of(root, "subprojects/module1")));
-        assertFalse(analyzer.canExecuteTests(Path.of(root, "subprojects/module2")));
-    }
 }
