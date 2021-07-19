@@ -224,10 +224,6 @@ public class RocksDao implements Closeable {
 	 */
     public DirectedGraph saveToRocksDb(final long index, List<Long> nodes, int numInternal, final List<List<Long>> edges)
             throws IOException, RocksDBException {
-        if (this.getGraphData(index) != null) {
-            logger.info("Graph with index {} is already in the database", index);
-            return null;
-        }
         final var internalIds = new LongArrayList(numInternal);
         final var externalIds = new LongArrayList(nodes.size() - numInternal);
         for (int i = 0; i < numInternal; i++) {

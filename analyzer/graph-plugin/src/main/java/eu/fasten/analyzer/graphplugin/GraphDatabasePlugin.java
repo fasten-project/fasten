@@ -146,7 +146,7 @@ public class GraphDatabasePlugin extends Plugin {
                     + artifactId + File.separator + product + ".json";
             try {
                 rocksDao.saveToRocksDb(gidGraph);
-            } catch (RocksDBException | IOException e) {
+            } catch (Exception e) {
                 logger.error("Could not save GID graph of '" + artifact + "' into RocksDB", e);
                 setPluginError(e);
                 return;
