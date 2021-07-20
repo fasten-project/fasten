@@ -25,6 +25,7 @@ import java.io.StringReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.StringUtils;
 import org.dom4j.DocumentException;
@@ -148,20 +149,20 @@ public class MavenRepoAnalyzer extends RepoAnalyzer {
     @Override
     protected boolean canExecuteTests(Path root) {
         try {
-            return runMvnTest(root) == 0;
+            return runMvnTest(root);
         } catch (IOException | InterruptedException e) {
             return false;
         }
     }
 
-    private int runMvnTest(Path root) throws IOException, InterruptedException {
+    private boolean runMvnTest(Path root) throws IOException, InterruptedException {
         var cmd = new String[] {
                 "bash",
                 "-c",
                 "mvn clean test"
         };
         var process = new ProcessBuilder(cmd).directory(root.toFile()).start();
-        return process.waitFor();
+        return process.waitFor(10, TimeUnit.MINUTES);
     }
 
     @Override
