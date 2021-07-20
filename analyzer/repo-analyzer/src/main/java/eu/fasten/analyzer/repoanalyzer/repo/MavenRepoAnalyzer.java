@@ -46,12 +46,26 @@ public class MavenRepoAnalyzer extends RepoAnalyzer {
 
     @Override
     protected Map<TestCoverageType, Float> getTestCoverage(Path root) {
+        var ranTests = false;
         try {
             var oldPom = addJacocoPluginToPomFile(Path.of(root.toString(), "pom.xml"));
-            runMvnTest(root);
+            ranTests = true;
+            var successful = runMvnTest(root);
+            if (!successful) {
+                return null;
+            }
             Files.writeString(Path.of(root.toString(), "pom.xml"), oldPom);
             return extractTestCoverageFromReport(root);
         } catch (IOException | DocumentException | InterruptedException e) {
+            if (!ranTests) {
+                try {
+                    if (!runMvnTest(root)) {
+                        return null;
+                    }
+                } catch (IOException | InterruptedException ioException) {
+                    return null;
+                }
+            }
             return Collections.emptyMap();
         }
     }
@@ -146,15 +160,6 @@ public class MavenRepoAnalyzer extends RepoAnalyzer {
         return pomContent;
     }
 
-    @Override
-    protected boolean canExecuteTests(Path root) {
-        try {
-            return runMvnTest(root);
-        } catch (IOException | InterruptedException e) {
-            return false;
-        }
-    }
-
     private boolean runMvnTest(Path root) throws IOException, InterruptedException {
         var cmd = new String[] {
                 "bash",
@@ -162,7 +167,7 @@ public class MavenRepoAnalyzer extends RepoAnalyzer {
                 "mvn clean test"
         };
         var process = new ProcessBuilder(cmd).directory(root.toFile()).start();
-        return process.waitFor(10, TimeUnit.MINUTES);
+        return process.waitFor(5, TimeUnit.MINUTES);
     }
 
     @Override

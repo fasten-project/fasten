@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 public class GradleRepoAnalyzer extends RepoAnalyzer {
@@ -39,11 +40,6 @@ public class GradleRepoAnalyzer extends RepoAnalyzer {
 
     @Override
     protected Map<TestCoverageType, Float> getTestCoverage(Path root) {
-        return Collections.emptyMap();
-    }
-
-    @Override
-    protected boolean canExecuteTests(Path root) {
         try {
             var cmd = new String[]{
                     "bash",
@@ -51,9 +47,13 @@ public class GradleRepoAnalyzer extends RepoAnalyzer {
                     "gradle test"
             };
             var process = new ProcessBuilder(cmd).directory(root.toFile()).start();
-            return process.waitFor() == 0;
+            if (process.waitFor(5, TimeUnit.MINUTES)) {
+                return Collections.emptyMap();
+            } else {
+                return null;
+            }
         } catch (IOException | InterruptedException e) {
-            return false;
+            return null;
         }
     }
 

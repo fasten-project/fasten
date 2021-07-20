@@ -23,6 +23,7 @@ import java.nio.file.Path;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.dom4j.DocumentException;
 import org.dom4j.Element;
@@ -42,11 +43,6 @@ public class AntRepoAnalyzer extends RepoAnalyzer {
 
     @Override
     protected Map<TestCoverageType, Float> getTestCoverage(Path root) {
-        return Collections.emptyMap();
-    }
-
-    @Override
-    protected boolean canExecuteTests(Path root) {
         try {
             var cmd = new String[]{
                     "bash",
@@ -54,9 +50,13 @@ public class AntRepoAnalyzer extends RepoAnalyzer {
                     "ant junit"
             };
             var process = new ProcessBuilder(cmd).directory(root.toFile()).start();
-            return process.waitFor() == 0;
+            if (process.waitFor(5, TimeUnit.MINUTES)) {
+                return Collections.emptyMap();
+            } else {
+                return null;
+            }
         } catch (IOException | InterruptedException e) {
-            return false;
+            return null;
         }
     }
 
