@@ -376,25 +376,27 @@ public class LicenseDetectorPlugin extends Plugin {
 
             // `scancode` command to be executed
             List<String> cmd = Arrays.asList(
-                    "scancode",
+                    "/bin/bash",
+                    "-c",
+                    "scancode " +
                     // Scan for licenses
-                    "--license",
+                    "--license " +
                     // Report full, absolute paths
-                    "--full-root",
-                    // Scan using n parallel processes // FIXME use $(nproc)
-                    "--processes", "1",
+                    "--full-root " +
+                    // Scan using n parallel processes
+                    "--processes " + "$(nproc) " +
                     // Write scan output as a compact JSON file
-                    "--json", resultPath,
+                    "--json " + resultPath + " " +
                     // SPDX RDF file
-                    // "--spdx-rdf", repoPath + "/scancode.spdx.rdf",
+                    // "--spdx-rdf " + repoPath + "/scancode.spdx.rdf" + " " +
                     // SPDX tag/value file
-                    // "--spdx-tv", repoPath + "/scancode.spdx.tv ",
+                    // "--spdx-tv " + repoPath + "/scancode.spdx.tv " + " " +
                     /*  Only return files or directories with findings for the requested scans.
                         Files and directories without findings are omitted
                         (file information is not treated as findings). */
-                    "--only-findings",
+                    "--only-findings " +
                     // TODO Scancode timeout?
-                    // "--timeout", "600.0",
+                    // "--timeout " + "600.0 " +
                     // Repository directory
                     repoPath
             );
