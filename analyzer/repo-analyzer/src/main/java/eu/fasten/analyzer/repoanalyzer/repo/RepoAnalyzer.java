@@ -59,16 +59,16 @@ public abstract class RepoAnalyzer {
         payload.put("repoPath", this.rootPath);
         payload.put("buildManager", this.buildManager);
 
+        var testCoverage = getTestCoverage(this.rootPath);
+        payload.put("canExecuteTests", testCoverage != null);
+        payload.put("testCoverage", testCoverage != null ? testCoverage : Collections.emptyMap());
+
         var moduleRoots = extractModuleRoots(this.rootPath);
 
         var results = new JSONArray();
         for (var module : moduleRoots) {
             var statistics = new JSONObject();
             statistics.put("path", module.toAbsolutePath().toString());
-
-            var testCoverage = getTestCoverage(module);
-            statistics.put("canExecuteTests", testCoverage != null);
-            statistics.put("testCoverage", testCoverage != null ? testCoverage : Collections.emptyMap());
 
             var sourceFiles = getJavaFiles(getPathToSourcesRoot(module));
             statistics.put("sourceFiles", sourceFiles.size());

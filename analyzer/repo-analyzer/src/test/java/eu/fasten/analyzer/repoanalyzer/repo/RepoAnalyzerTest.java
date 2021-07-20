@@ -50,6 +50,7 @@ class RepoAnalyzerTest {
 
         assertEquals(BuildManager.maven, result.get("buildManager"));
         assertEquals(root, result.get("repoPath").toString());
+        assertTrue(result.getBoolean("canExecuteTests"));
 
         var modules = result.getJSONArray("modules");
         assertEquals(2, modules.length());
@@ -73,7 +74,6 @@ class RepoAnalyzerTest {
         assertEquals(0.333, module1.getDouble("unitTestsToFunctionsRatio"));
         assertEquals(0.5, module1.getDouble("testToSourceRatio"));
         assertEquals(0, module1.getDouble("unitTestsMockingRatio"));
-        assertTrue(module1.getBoolean("canExecuteTests"));
 
         var module2 = modules.getJSONObject(module2Index);
         assertEquals(1, module2.getInt("unitTestsWithMocks"));
@@ -86,6 +86,5 @@ class RepoAnalyzerTest {
         assertEquals(3, module2.getDouble("unitTestsToFunctionsRatio"));
         assertEquals(2, module2.getDouble("testToSourceRatio"));
         assertEquals(0.333, module2.getDouble("unitTestsMockingRatio"));
-        assertTrue(module1.getBoolean("canExecuteTests"));
     }
 }
