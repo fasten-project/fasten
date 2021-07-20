@@ -47,7 +47,7 @@ public class GradleRepoAnalyzer extends RepoAnalyzer {
                     "gradle test"
             };
             var process = new ProcessBuilder(cmd).directory(root.toFile()).start();
-            if (process.waitFor(5, TimeUnit.MINUTES)) {
+            if (process.waitFor(3, TimeUnit.MINUTES)) {
                 return Collections.emptyMap();
             } else {
                 return null;

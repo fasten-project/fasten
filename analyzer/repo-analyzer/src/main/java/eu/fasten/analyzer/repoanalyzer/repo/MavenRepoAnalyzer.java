@@ -167,7 +167,7 @@ public class MavenRepoAnalyzer extends RepoAnalyzer {
                 "mvn clean test"
         };
         var process = new ProcessBuilder(cmd).directory(root.toFile()).start();
-        return process.waitFor(5, TimeUnit.MINUTES);
+        return process.waitFor(3, TimeUnit.MINUTES);
     }
 
     @Override

@@ -50,7 +50,7 @@ public class AntRepoAnalyzer extends RepoAnalyzer {
                     "ant junit"
             };
             var process = new ProcessBuilder(cmd).directory(root.toFile()).start();
-            if (process.waitFor(5, TimeUnit.MINUTES)) {
+            if (process.waitFor(3, TimeUnit.MINUTES)) {
                 return Collections.emptyMap();
             } else {
                 return null;
