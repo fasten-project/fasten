@@ -18,9 +18,6 @@
 
 package eu.fasten.analyzer.repoanalyzer.repo;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
@@ -29,6 +26,7 @@ import java.util.Set;
 import org.dom4j.DocumentException;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 class MavenRepoAnalyzerTest {
 
@@ -66,9 +64,9 @@ class MavenRepoAnalyzerTest {
     }
 
     @Test
-    void canExecuteTests() throws IOException, InterruptedException {
-        assertTrue(analyzer.canExecuteTests(Path.of(root, "module1", "submodule1")));
-        assertTrue(analyzer.canExecuteTests(Path.of(root, "module2")));
-        assertTrue(analyzer.canExecuteTests(Path.of(root, "module3")));
+    void canExecuteTests() {
+        assertNotNull(analyzer.getTestCoverage(Path.of(root, "module1", "submodule1")));
+        assertNotNull(analyzer.getTestCoverage(Path.of(root, "module2")));
+        assertNotNull(analyzer.getTestCoverage(Path.of(root, "module3")));
     }
 }
