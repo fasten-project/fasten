@@ -124,7 +124,7 @@ public class LicenseFeederPlugin extends Plugin {
             JSONArray outboundLicenses = payload.getJSONArray("outbound");
             metadataDao.insertPackageOutboundLicenses(
                     coordinates,
-                    outboundLicenses.toString()
+                    new JSONObject().put("licenses", outboundLicenses).toString()
             );
         }
 
