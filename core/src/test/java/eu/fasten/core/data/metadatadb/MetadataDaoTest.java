@@ -5,9 +5,12 @@ import eu.fasten.core.data.metadatadb.license.DetectedLicense;
 import eu.fasten.core.data.metadatadb.license.DetectedLicenseSource;
 import eu.fasten.core.data.metadatadb.license.DetectedLicenses;
 import eu.fasten.core.maven.data.Revision;
+import eu.fasten.core.maven.utils.MavenUtilities;
 import org.jooq.DSLContext;
 import org.jooq.SQLDialect;
 import org.jooq.impl.DSL;
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.junit.ClassRule;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -24,6 +27,8 @@ import java.sql.Timestamp;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+
+import static org.junit.jupiter.api.Assertions.fail;
 
 class MetadataDaoTest {
 
@@ -126,9 +131,30 @@ class MetadataDaoTest {
 
             // Checking whether the updated package version's metadata field has been updated correctly or not
             JSONAssert.assertEquals(
-                    "Outbound licenses have not been inserted successfully.",
+                    "The returned metadata field has not been updated successfully.",
                     expectedMetadataField,
                     updatedMetadata,
+                    JSONCompareMode.NON_EXTENSIBLE
+            );
+
+            // Querying the database again, making sure that not only the previously-returned metadata was updated
+            JSONObject packageMetadataQueryResponse = new JSONObject(metadataDao.getPackageMetadata(
+                    MavenUtilities.getMavenCoordinateName(coordinates.groupId, coordinates.artifactId),
+                    coordinates.version.toString()
+            ));
+            if (!packageMetadataQueryResponse.has("metadata")) {
+                fail("Package version's metadata query didn't return any metadata.");
+            }
+            JSONObject retrievedPackageMetadata = packageMetadataQueryResponse.getJSONObject("metadata");
+            if (!retrievedPackageMetadata.has("outbound")) {
+                fail("Package version's metedata doesn't have outbound licenses.");
+            }
+            JSONArray retrievedOutboundLicenses = retrievedPackageMetadata.getJSONArray("outbound");
+            System.out.println("retrievedOutboundLicenses: " + retrievedOutboundLicenses);
+            JSONAssert.assertEquals(
+                    "Outbound licenses have not been inserted successfully.",
+                    new JSONObject(expectedMetadataField).getJSONArray("outbound"),
+                    retrievedOutboundLicenses,
                     JSONCompareMode.NON_EXTENSIBLE
             );
         });
