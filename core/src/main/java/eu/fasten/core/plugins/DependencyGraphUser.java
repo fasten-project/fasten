@@ -15,4 +15,5 @@ public interface DependencyGraphUser {
      * @param depGraphPath Path to the serialized dependency graph
      */
     void loadGraphResolver(DSLContext dbContext, String depGraphPath);
+
 }
