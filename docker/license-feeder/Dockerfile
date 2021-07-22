@@ -21,25 +21,19 @@ COPY pom.xml /home/app/
 COPY core/pom.xml /home/app/core/
 COPY server/pom.xml /home/app/server/
 COPY --from=list-analyzers-pom-files /home/ /home/app/analyzer/
-RUN ls -al /home/app/analyzer
-RUN ls -al /home/app/analyzer/graph-plugin
-# FIXME Enable tests
 RUN mvn --file /home/app/pom.xml install --projects :parent
 
 # Building core
+# - Skips integration tests requiring Testcontainers (hence, Docker).
+#   Integration tests are run by the CI anyways.
 COPY core/ /home/app/core
-# FIXME Enable tests
 RUN mvn --file /home/app/pom.xml install --projects core -Dtest=\!MetadataDaoTest,\!PostgresConnectorTest
 
 # Building server
-# - Skips integration tests requiring Testcontainers (hence, Docker).
-#   Integration tests are run by the CI anyways.
 COPY server/ /home/app/server
-# FIXME Enable tests
 RUN mvn --file /home/app/pom.xml install --projects :server
 
 # Building the generic analyzer plugin JAR
-# FIXME Enable tests
 RUN mvn --file /home/app/pom.xml install --projects analyzer
 
 # Building the license plugin JAR
