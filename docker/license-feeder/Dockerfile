@@ -1,17 +1,45 @@
+#################################################################################
+# Stage 0: layer with analyzers' pom.xml files only. Used for caching purposes. #
+#################################################################################
+
+FROM alpine:3.14.0 AS list-analyzers-pom-files
+
+# Copying the entirety of all analyzers
+COPY analyzer /home
+
+# Finding and removing non-pom.xml files
+RUN find /home \! -name "pom.xml" -mindepth 2 -maxdepth 2 -print | xargs rm -rf
+
 #############################################
 # Stage 1a: building all the necessary JARs #
 #############################################
 
 FROM maven:3.8.1-jdk-11-slim AS build-jars
 
-COPY . /home/app
+# Building parent
+COPY pom.xml /home/app/
+COPY core/pom.xml /home/app/core/
+COPY server/pom.xml /home/app/server/
+COPY --from=list-analyzers-pom-files /home/ /home/app/analyzer/
+RUN ls -al /home/app/analyzer
+RUN ls -al /home/app/analyzer/graph-plugin
+# FIXME Enable tests
+RUN mvn --file /home/app/pom.xml install --projects :parent
 
-# Building the server JAR
+# Building core
+COPY core/ /home/app/core
+# FIXME Enable tests
+RUN mvn --file /home/app/pom.xml install --projects core -Dtest=\!MetadataDaoTest,\!PostgresConnectorTest
+
+# Building server
 # - Skips integration tests requiring Testcontainers (hence, Docker).
 #   Integration tests are run by the CI anyways.
-RUN mvn --file /home/app/pom.xml install --projects server --also-make -Dtest=\!MetadataDaoTest,\!PostgresConnectorTest
+COPY server/ /home/app/server
+# FIXME Enable tests
+RUN mvn --file /home/app/pom.xml install --projects :server
 
 # Building the generic analyzer plugin JAR
+# FIXME Enable tests
 RUN mvn --file /home/app/pom.xml install --projects analyzer
 
 # Building the license plugin JAR
@@ -20,6 +48,7 @@ RUN mvn --file /home/app/pom.xml install --projects analyzer
 # - Doesn't fail in absence of tests, since the license feeder doesn't have unit tests yet
 #   (the functions used in the MetadataDao do have unit tests)
 #   TODO Delete `-DfailIfNoTests=false` upon creating unit tests for the license feeder class
+COPY analyzer/license-feeder/ /home/app/analyzer/license-feeder
 RUN mvn --file /home/app/pom.xml install --projects :license-feeder -Dtest=\!*IntegrationTest -DfailIfNoTests=false
 
 #######################
