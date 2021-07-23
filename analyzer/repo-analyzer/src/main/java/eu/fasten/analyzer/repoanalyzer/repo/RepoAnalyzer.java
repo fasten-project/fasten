@@ -21,13 +21,7 @@ package eu.fasten.analyzer.repoanalyzer.repo;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -64,6 +58,10 @@ public abstract class RepoAnalyzer {
         var payload = new JSONObject();
         payload.put("repoPath", this.rootPath);
         payload.put("buildManager", this.buildManager);
+
+        var testCoverage = getTestCoverage(this.rootPath);
+        payload.put("canExecuteTests", testCoverage != null);
+        payload.put("testCoverage", testCoverage != null ? testCoverage : Collections.emptyMap());
 
         var moduleRoots = extractModuleRoots(this.rootPath);
 
@@ -106,6 +104,7 @@ public abstract class RepoAnalyzer {
             var mockingRatio = roundTo3((double) numberOfUnitTestsWithMocks / (double) numberOfUnitTests);
             statistics.put("unitTestsMockingRatio", mockingRatio);
 
+
             if (sourceFiles.size() > 0) {
                 results.put(statistics);
             }
@@ -130,6 +129,14 @@ public abstract class RepoAnalyzer {
             return new HashSet<>();
         }
     }
+
+    /**
+     * Integrates JaCoCO plugin, runs the test suite and returns the test coverage.
+     *
+     * @param root Path to project's root
+     * @return Test coverage
+     */
+    protected abstract Map<TestCoverageType, Float> getTestCoverage(final Path root);
 
     /**
      * Get absolute path to the source files root. Extracts source file directory from pom.xml or

@@ -20,7 +20,10 @@ package eu.fasten.analyzer.repoanalyzer.repo;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Collections;
+import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.dom4j.DocumentException;
 import org.dom4j.Element;
@@ -36,6 +39,25 @@ public class AntRepoAnalyzer extends RepoAnalyzer {
      */
     public AntRepoAnalyzer(final Path path, final BuildManager buildManager) {
         super(path, buildManager);
+    }
+
+    @Override
+    protected Map<TestCoverageType, Float> getTestCoverage(Path root) {
+        try {
+            var cmd = new String[]{
+                    "bash",
+                    "-c",
+                    "ant junit"
+            };
+            var process = new ProcessBuilder(cmd).directory(root.toFile()).start();
+            if (process.waitFor(3, TimeUnit.MINUTES)) {
+                return Collections.emptyMap();
+            } else {
+                return null;
+            }
+        } catch (IOException | InterruptedException e) {
+            return null;
+        }
     }
 
     @Override

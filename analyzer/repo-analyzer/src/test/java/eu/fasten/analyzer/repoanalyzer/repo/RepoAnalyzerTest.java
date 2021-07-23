@@ -18,16 +18,13 @@
 
 package eu.fasten.analyzer.repoanalyzer.repo;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Objects;
 import org.dom4j.DocumentException;
 import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.*;
 
 class RepoAnalyzerTest {
 
@@ -42,7 +39,7 @@ class RepoAnalyzerTest {
     }
 
     @Test
-    void analyze() throws IOException, DocumentException {
+    void analyze() throws IOException, DocumentException, InterruptedException {
         var root = new File(Objects.requireNonNull(RepoAnalyzerTest.class.getClassLoader()
                 .getResource("completeMavenProject")).getFile()).getAbsolutePath();
         var repoAnalyzerFactory = new RepoAnalyzerFactory();
@@ -53,6 +50,7 @@ class RepoAnalyzerTest {
 
         assertEquals(BuildManager.maven, result.get("buildManager"));
         assertEquals(root, result.get("repoPath").toString());
+        assertTrue(result.getBoolean("canExecuteTests"));
 
         var modules = result.getJSONArray("modules");
         assertEquals(2, modules.length());

@@ -22,9 +22,8 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 public class GradleRepoAnalyzer extends RepoAnalyzer {
@@ -37,6 +36,25 @@ public class GradleRepoAnalyzer extends RepoAnalyzer {
      */
     public GradleRepoAnalyzer(final Path path, final BuildManager buildManager) {
         super(path, buildManager);
+    }
+
+    @Override
+    protected Map<TestCoverageType, Float> getTestCoverage(Path root) {
+        try {
+            var cmd = new String[]{
+                    "bash",
+                    "-c",
+                    "gradle test"
+            };
+            var process = new ProcessBuilder(cmd).directory(root.toFile()).start();
+            if (process.waitFor(3, TimeUnit.MINUTES)) {
+                return Collections.emptyMap();
+            } else {
+                return null;
+            }
+        } catch (IOException | InterruptedException e) {
+            return null;
+        }
     }
 
     @Override
