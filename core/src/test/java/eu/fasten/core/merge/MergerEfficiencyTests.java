@@ -80,7 +80,7 @@ public class MergerEfficiencyTests {
 
         Assertions.assertTrue(
                 secondsTaken < 25, "CPU time used for merging should be less than 25 seconds, but was " + secondsTaken);
-        Assertions.assertEquals(50513, numNodes);
+        Assertions.assertEquals(50515, numNodes);
         Assertions.assertEquals(764288, numEdges);
     }
 
