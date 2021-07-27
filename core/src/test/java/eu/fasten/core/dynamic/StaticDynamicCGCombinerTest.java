@@ -2,6 +2,7 @@ package eu.fasten.core.dynamic;
 
 import eu.fasten.core.data.ArrayImmutableDirectedGraph;
 import eu.fasten.core.dynamic.data.DynamicJavaCG;
+import eu.fasten.core.dynamic.data.HybridDirectedGraph;
 import it.unimi.dsi.fastutil.Pair;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongLongImmutablePair;
@@ -73,15 +74,15 @@ public class StaticDynamicCGCombinerTest {
 
         var inverseUris = new Object2LongOpenHashMap<String>(uris.size());
         uris.forEach((k, v) -> inverseUris.put(v, k.longValue()));
-        assertTrue(result.isStaticCall(LongLongPair.of(
+        assertEquals(HybridDirectedGraph.CallOrigin.staticAndDynamicCgs, result.getCallOrigin(LongLongPair.of(
                 inverseUris.getLong("/name.space/SingleSourceToTarget.sourceMethod()%2Fjava.lang%2FVoidType"),
                 inverseUris.getLong("/name.space/SingleSourceToTarget.targetMethod()%2Fjava.lang%2FVoidType")
         )));
-        assertTrue(result.isStaticCall(LongLongPair.of(
+        assertEquals(HybridDirectedGraph.CallOrigin.staticCg, result.getCallOrigin(LongLongPair.of(
                 inverseUris.getLong("/name.space/SingleSourceToTarget.SingleSourceToTarget()%2Fjava.lang%2FVoidType"),
                 inverseUris.getLong("/java.lang/Object.Object()VoidType")
         )));
-        assertFalse(result.isStaticCall(LongLongPair.of(
+        assertEquals(HybridDirectedGraph.CallOrigin.dynamicCg, result.getCallOrigin(LongLongPair.of(
                 inverseUris.getLong("/name.space/SingleSourceToTarget.targetMethod()%2Fjava.lang%2FVoidType"),
                 inverseUris.getLong("/java.lang/Object.Object()VoidType")
         )));

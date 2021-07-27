@@ -24,11 +24,13 @@ public class CGCombinerRunner implements Runnable {
 
     @CommandLine.Option(names = {"-df", "--dynamic-cg-file"},
             paramLabel = "JSON_FILE",
+            required = true,
             description = "Path to JSON file which dynamic CG")
     String dynamicCgPath;
 
     @CommandLine.Option(names = {"-sf", "--static-cg-files"},
             paramLabel = "JSON_FILE1,JSON_FILE2,...",
+            required = true,
             description = "List of paths to static ERCG JSON files of the dependency set",
             split = ",")
     List<String> staticCgsPaths;
@@ -96,7 +98,7 @@ public class CGCombinerRunner implements Runnable {
         for (var edge : combinedCg.edgeSet()) {
             var jsonEdge = new JSONObject();
             jsonEdge.put("call", List.of(edge.firstLong(), edge.secondLong()));
-            jsonEdge.put("isStatic", combinedCg.isStaticCall(edge));
+            jsonEdge.put("origin", combinedCg.getCallOrigin(edge));
             edges.put(jsonEdge);
         }
         json.put("calls", edges);

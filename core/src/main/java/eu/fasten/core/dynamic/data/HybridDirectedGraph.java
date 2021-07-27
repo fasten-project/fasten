@@ -15,20 +15,30 @@ import java.util.stream.Collectors;
 
 public class HybridDirectedGraph extends DefaultDirectedGraph<Long, LongLongPair> implements DirectedGraph, Serializable {
 
-    private final Map<LongLongPair, Boolean> isStaticCallMap;
+    private final Map<LongLongPair, CallOrigin> callOriginMap;
 
-    public HybridDirectedGraph(final Map<LongLongPair, Boolean> isStaticCallMap) {
-        this(HybridEdge.class, isStaticCallMap);
+    public HybridDirectedGraph(final Map<LongLongPair, CallOrigin> callOriginMap) {
+        this(HybridEdge.class, callOriginMap);
     }
 
     public HybridDirectedGraph(Class<? extends LongLongPair> edgeClass,
-                               final Map<LongLongPair, Boolean> isStaticCallMap) {
+                               final Map<LongLongPair, CallOrigin> callOriginMap) {
         super(edgeClass);
-        this.isStaticCallMap = isStaticCallMap;
+        this.callOriginMap = callOriginMap;
     }
 
-    public boolean isStaticCall(LongLongPair call) {
-        return this.isStaticCallMap.get(call);
+    public enum CallOrigin {
+        dynamicCg,
+        staticCg,
+        staticAndDynamicCgs
+    }
+
+    public Map<LongLongPair, CallOrigin> getCallOriginMap() {
+        return callOriginMap;
+    }
+
+    public CallOrigin getCallOrigin(LongLongPair call) {
+        return this.callOriginMap.get(call);
     }
 
     @Override
