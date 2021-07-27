@@ -6,6 +6,7 @@ import eu.fasten.core.dynamic.data.DynamicJavaCG;
 import eu.fasten.core.dynamic.data.HybridDirectedGraph;
 import eu.fasten.core.maven.utils.MavenUtilities;
 import eu.fasten.core.merge.CGMerger;
+import it.unimi.dsi.fastutil.longs.LongLongPair;
 import org.json.JSONObject;
 import org.json.JSONTokener;
 import org.slf4j.Logger;
@@ -100,11 +101,11 @@ public class CombinerEvaluator implements Runnable {
         var combinedCg = combiner.combineCGs();
         logger.info("Successfully combined the CGs");
         System.out.println("Combined CG has " + combinedCg.numNodes() + " nodes and " + combinedCg.numArcs() + " calls");
-        System.out.println("Number of calls from static CG: " + combinedCg.getCallOriginMap().values().stream()
-                .filter(origin -> origin.equals(HybridDirectedGraph.CallOrigin.staticCg)).count());
-        System.out.println("Number of calls from dynamic CG: " + combinedCg.getCallOriginMap().values().stream()
-                .filter(origin -> origin.equals(HybridDirectedGraph.CallOrigin.dynamicCg)).count());
-        System.out.println("Number of calls from both CGs: " + combinedCg.getCallOriginMap().values().stream()
-                .filter(origin -> origin.equals(HybridDirectedGraph.CallOrigin.staticAndDynamicCgs)).count());
+        System.out.println("Number of calls from static CG: " + combinedCg.edgeSet().stream()
+                .filter(c -> combinedCg.getCallOrigin(c).equals(HybridDirectedGraph.CallOrigin.staticCg)).count());
+        System.out.println("Number of calls from dynamic CG: " + combinedCg.edgeSet().stream()
+                .filter(c -> combinedCg.getCallOrigin(c).equals(HybridDirectedGraph.CallOrigin.dynamicCg)).count());
+        System.out.println("Number of calls from both CGs: " + combinedCg.edgeSet().stream()
+                .filter(c -> combinedCg.getCallOrigin(c).equals(HybridDirectedGraph.CallOrigin.staticAndDynamicCgs)).count());
     }
 }

@@ -33,12 +33,8 @@ public class HybridDirectedGraph extends DefaultDirectedGraph<Long, LongLongPair
         staticAndDynamicCgs
     }
 
-    public Map<LongLongPair, CallOrigin> getCallOriginMap() {
-        return callOriginMap;
-    }
-
     public CallOrigin getCallOrigin(LongLongPair call) {
-        return this.callOriginMap.get(call);
+        return this.callOriginMap.get(LongLongPair.of(call.leftLong(), call.rightLong()));
     }
 
     @Override
