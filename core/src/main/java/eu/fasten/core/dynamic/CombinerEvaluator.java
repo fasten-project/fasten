@@ -20,11 +20,18 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 @CommandLine.Command(name = "CombinerEvaluator")
 public class CombinerEvaluator implements Runnable {
 
     private static final Logger logger = LoggerFactory.getLogger(CombinerEvaluator.class);
+
+    @CommandLine.Option(names = {"-c", "--coordinate"},
+            paramLabel = "MVN_COORDINATE",
+            required = true,
+            description = "Maven coordinate of the project under analysis")
+    String coordinate;
 
     @CommandLine.Option(names = {"-sf", "--static-cg-files"},
             paramLabel = "JSON_FILE1,JSON_FILE2,...",
@@ -101,11 +108,30 @@ public class CombinerEvaluator implements Runnable {
         var combinedCg = combiner.combineCGs();
         logger.info("Successfully combined the CGs");
         System.out.println("Combined CG has " + combinedCg.numNodes() + " nodes and " + combinedCg.numArcs() + " calls");
-        System.out.println("Number of calls from static CG: " + combinedCg.edgeSet().stream()
-                .filter(c -> combinedCg.getCallOrigin(c).equals(HybridDirectedGraph.CallOrigin.staticCg)).count());
-        System.out.println("Number of calls from dynamic CG: " + combinedCg.edgeSet().stream()
-                .filter(c -> combinedCg.getCallOrigin(c).equals(HybridDirectedGraph.CallOrigin.dynamicCg)).count());
-        System.out.println("Number of calls from both CGs: " + combinedCg.edgeSet().stream()
-                .filter(c -> combinedCg.getCallOrigin(c).equals(HybridDirectedGraph.CallOrigin.staticAndDynamicCgs)).count());
+        var staticCalls = combinedCg.edgeSet().stream()
+                .filter(c -> combinedCg.getCallOrigin(c).equals(HybridDirectedGraph.CallOrigin.staticCg)).collect(Collectors.toSet());
+        System.out.println("Number of calls from static CG: " + staticCalls.size());
+        var dynamicCalls = combinedCg.edgeSet().stream()
+                .filter(c -> combinedCg.getCallOrigin(c).equals(HybridDirectedGraph.CallOrigin.dynamicCg)).collect(Collectors.toSet());
+        System.out.println("Number of calls from dynamic CG: " + dynamicCalls.size());
+        var staticAndDynamicCalls = combinedCg.edgeSet().stream()
+                .filter(c -> combinedCg.getCallOrigin(c).equals(HybridDirectedGraph.CallOrigin.staticAndDynamicCgs)).collect(Collectors.toSet());
+        System.out.println("Number of calls from both CGs: " + staticAndDynamicCalls.size());
+
+        logger.info("Filtering out external calls");
+        var uriMap = combiner.getAllUrisMap();
+        var uriStart = "fasten://mvn!" + this.coordinate.split(":")[0] + ":" + this.coordinate.split(":")[1] + "$" + this.coordinate.split(":")[2];
+        var filteredStaticCalls = staticCalls.stream()
+                .filter(c -> uriMap.get(c.firstLong()).startsWith(uriStart) && uriMap.get(c.secondLong()).startsWith(uriStart))
+                .collect(Collectors.toSet());
+        System.out.println("Number of internal calls from static CG: " + filteredStaticCalls.size());
+        var filteredDynamicCalls = dynamicCalls.stream()
+                .filter(c -> uriMap.get(c.firstLong()).startsWith(uriStart) && uriMap.get(c.secondLong()).startsWith(uriStart))
+                .collect(Collectors.toSet());
+        System.out.println("Number of internal calls from dynamic CG: " + filteredDynamicCalls.size());
+        var filteredStaticAndDynamicCalls = staticAndDynamicCalls.stream()
+                .filter(c -> uriMap.get(c.firstLong()).startsWith(uriStart) && uriMap.get(c.secondLong()).startsWith(uriStart))
+                .collect(Collectors.toSet());
+        System.out.println("Number of internal calls from both CGs: " + filteredStaticAndDynamicCalls.size());
     }
 }
