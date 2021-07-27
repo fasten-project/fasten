@@ -39,6 +39,7 @@ import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import java.sql.Timestamp;
 import java.util.*;
 
@@ -192,7 +193,7 @@ public class MetadataDao {
         return insertPackageOutboundLicenses(
                 coordinates.groupId,
                 coordinates.artifactId,
-                coordinates.version.toString(), // FIXME
+                coordinates.version.toString(),
                 outboundLicenses);
     }
 
@@ -225,6 +226,8 @@ public class MetadataDao {
      */
     public String insertPackageOutboundLicenses(String packageName, String packageVersion, String outboundLicenses) {
 
+        logger.debug("Inserting outbound licenses for " + packageName + ":" + packageVersion + ": " + outboundLicenses);
+
         /*  Warning!
             The `concat()` method casts the first argument to `VARCHAR`, causing errors!
 
@@ -251,8 +254,90 @@ public class MetadataDao {
                 "    RETURNING pv.metadata;", JSONB.valueOf(outboundLicenses), packageName, packageVersion);
 
         // Updated metadata field
+        logger.debug("`updatedMetadata`: " + updatedMetadata);
         assert updatedMetadata != null; // FIXME
         return updatedMetadata.toString();
+    }
+
+    /**
+     * Inserts scanned licenses at the file level.
+     *
+     * @param coordinates  the Maven coordinates to which the file belongs.
+     * @param filePath     the path of the file whose scanned licenses are about to be inserte.
+     * @param fileLicenses the scanned licenses of the file.
+     * @return the updated metadata field. Can be `null` in case the file is not present in the DB.
+     */
+    @Nullable
+    public String insertFileLicenses(Revision coordinates,
+                                     String filePath,
+                                     String fileLicenses) {
+        return insertFileLicenses(
+                coordinates.groupId,
+                coordinates.artifactId,
+                coordinates.version.toString(),
+                filePath,
+                fileLicenses);
+    }
+
+    /**
+     * Inserts scanned licenses at the file level.
+     *
+     * @param groupId        the group ID of the package to which the file belongs.
+     * @param artifactId     the artifact ID of the package to which the file belongs.
+     * @param packageVersion the version of the package to which the file belongs.
+     * @param filePath       the path of the file whose scanned licenses are about to be inserte.
+     * @param fileLicenses   the scanned licenses of the file.
+     * @return the updated metadata field. Can be `null` in case the file is not present in the DB.
+     */
+    @Nullable
+    public String insertFileLicenses(String groupId,
+                                     String artifactId,
+                                     String packageVersion,
+                                     String filePath,
+                                     String fileLicenses) {
+        return insertFileLicenses(
+                MavenUtilities.getMavenCoordinateName(groupId, artifactId),
+                packageVersion,
+                filePath,
+                fileLicenses);
+    }
+
+    /**
+     * Inserts scanned licenses at the file level.
+     *
+     * @param packageName    the name of the package to which the file belongs.
+     * @param packageVersion the version of the package to which the file belongs.
+     * @param filePath       the path of the file whose scanned licenses are about to be inserte.
+     * @param fileLicenses   the scanned licenses of the file.
+     * @return the updated metadata field. Can be `null` in case the file is not present in the DB.
+     */
+    @Nullable
+    public String insertFileLicenses(String packageName,
+                                     String packageVersion,
+                                     String filePath,
+                                     String fileLicenses) {
+
+        logger.debug("Inserting file licenses for " + packageName + ":" + packageVersion + ", file" +
+                filePath + ": " + fileLicenses);
+
+        // Can be `null` in case the DB does not have this file
+        @Nullable Object updatedMetadata = context.fetchValue("UPDATE files f\n" +
+                        "SET metadata = (CASE WHEN f.metadata IS NULL THEN '{}'::jsonb ELSE f.metadata END) || {0}\n" +
+                        "    FROM packages p JOIN package_versions pv ON p.id = pv.package_id\n" +
+                        "WHERE f.package_version_id = pv.package_id\n" +
+                        "  AND p.package_name = LOWER({1})\n" +
+                        "  AND pv.version = LOWER({2})\n" +
+                        "  AND {3} ILIKE '%' || f.path || '%'\n" +
+                        "    RETURNING f.metadata;\n",
+                JSONB.valueOf(fileLicenses),
+                packageName,
+                packageVersion,
+                filePath);
+
+        logger.debug("`updatedMetadata`: " + updatedMetadata);
+
+        // Updated metadata field
+        return updatedMetadata == null ? null : updatedMetadata.toString();
     }
 
     /**

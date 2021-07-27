@@ -62,6 +62,7 @@ public class LicenseFeederPlugin extends Plugin {
                 dslContext.transaction(transaction -> {
                     metadataDao.setContext(DSL.using(transaction));
                     insertOutboundLicenses(coordinates, record, metadataDao);
+                    insertFileLicenses(coordinates, record, metadataDao);
                 });
 
                 // TODO Inserting licenses in files
@@ -122,10 +123,36 @@ public class LicenseFeederPlugin extends Plugin {
                 payload = payload.getJSONObject("payload");
             }
             JSONArray outboundLicenses = payload.getJSONArray("outbound");
+            logger.info("About to insert outbound licenses...");
             metadataDao.insertPackageOutboundLicenses(
                     coordinates,
                     new JSONObject().put("licenses", outboundLicenses).toString()
             );
+            logger.info("...outbound licenses inserted.");
+        }
+
+        protected void insertFileLicenses(Revision coordinates, String record, MetadataDao metadataDao) {
+            var payload = new JSONObject(record);
+            if (payload.has("payload")) {
+                payload = payload.getJSONObject("payload");
+            }
+            JSONArray fileLicenses = payload.getJSONArray("files");
+            logger.info("About to insert file licenses...");
+            fileLicenses.forEach(f -> {
+                logger.debug("(cycling files) Object f: " + f);
+                JSONObject file = (JSONObject) f;
+                logger.debug("(cycling files) JSONObject f: " + file + " has " +
+                        (file.has("path") ? "" : "no ") + "path and " +
+                        (file.has("licenses") ? file.getJSONArray("licenses").length() : "no") + " licenses.");
+                if (file.has("path") && file.has("licenses")) {
+                    metadataDao.insertFileLicenses(
+                            coordinates,
+                            file.getString("path"),
+                            new JSONObject().put("licenses", file.getJSONArray("licenses")).toString()
+                    );
+                }
+            });
+            logger.info("...file licenses inserted.");
         }
 
         @Override
