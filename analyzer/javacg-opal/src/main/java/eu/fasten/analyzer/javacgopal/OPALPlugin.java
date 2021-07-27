@@ -50,7 +50,7 @@ public class OPALPlugin extends Plugin {
 
         private final Logger logger = LoggerFactory.getLogger(getClass());
 
-        private String consumeTopic = "fasten.maven.pkg";
+        private String consumeTopic = "fasten.POMAnalyzer.out";
         private Exception pluginError;
         private ExtendedRevisionJavaCallGraph graph;
         private String outputPath;
