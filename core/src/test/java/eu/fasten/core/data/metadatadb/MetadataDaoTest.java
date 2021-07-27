@@ -20,6 +20,7 @@ import org.skyscreamer.jsonassert.JSONCompareMode;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
 
+import javax.annotation.Nullable;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.SQLException;
@@ -157,6 +158,122 @@ class MetadataDaoTest {
                     retrievedOutboundLicenses,
                     JSONCompareMode.NON_EXTENSIBLE
             );
+        });
+    }
+
+    @Test
+    void givenPackageVersionInDB_whenInsertingFileLicenses_thenFileLicensesAreAppended() {
+
+        // One license case (from scancode)
+        String firstSpdxId = "BSD-3-Clause";
+        String singleLicenseEntry = "{\"spdx_license_key\": \"" + firstSpdxId + "\"}";
+        String singleLicenseArray = "\"licenses\": [" + singleLicenseEntry + "]";
+
+        // Multiple licenses case (from scancode)
+        String secondSpdxId = "GPL-2.0-only";
+        String secondLicenseEntry = "{\"spdx_license_key\": \"" + secondSpdxId + "\"}";
+        String multipleLicensesEntry = singleLicenseEntry + "," + secondLicenseEntry;
+        String multipleLicensesArray = "\"licenses\": [" + multipleLicensesEntry + "]";
+
+        // File with an empty metadata field
+        String fileWithEmptyMetadataPath = "/mnt/fasten/c/com.esotericsoftware/reflectasm/src/" +
+                "com/esotericsoftware/reflectasm/AccessClassLoader.java";
+
+        // File with a not-empty metadata field
+        String notEmptyMetadataField = "\"not\": \"empty\"";
+        String fileWithNotEmptyMetadataPath = "/mnt/fasten/c/com.esotericsoftware/reflectasm/src/" +
+                "com/esotericsoftware/reflectasm/FieldAccess.java";
+
+        // Test coordinates (all files above belong to these coordinates)
+        Revision fileCoordinates = new Revision("com.esotericsoftware", "reflectasm", "1.11.8", new Timestamp(-1));
+
+        // Input file licenses
+        JSONObject jsonObjectForFileWithOneLicense =
+                new JSONObject().put("licenses", new JSONArray()
+                        .put(new JSONObject().put("spdx_license_key", firstSpdxId)));
+        JSONObject jsonObjectForFileWithMultipleLicenses =
+                new JSONObject().put("licenses", new JSONArray()
+                        .put(new JSONObject().put("spdx_license_key", firstSpdxId))
+                        .put(new JSONObject().put("spdx_license_key", secondSpdxId)));
+
+        // Expected metadata field cases
+        String expectedMetadataFieldForFileWithOneLicenseWithEmptyMetadataField =
+                "{" + singleLicenseArray + "}";
+        String expectedMetadataFieldForFileWithOneLicenseWithNotEmptyMetadataField =
+                "{" + notEmptyMetadataField + "," + singleLicenseArray + "}";
+        String expectedMetadataFieldForFileWitMultipleLicensesWithEmptyMetadataField =
+                "{" + multipleLicensesArray + "}";
+        ;
+        String expectedMetadataFieldForFileWitMultipleLicensesWithNotEmptyMetadataField =
+                "{" + notEmptyMetadataField + "," + multipleLicensesArray + "}";
+
+        // Coordinates, filePath, fileLicenses -> expected updated metadata field
+        Map<Map.Entry<Revision, Map.Entry<String, String>>, String> inputToExpected = Map.ofEntries(
+                // One license with empty metadata field
+                Map.entry(Map.entry(
+                        // coordinates
+                        fileCoordinates,
+                        Map.entry(
+                                // filePath
+                                fileWithEmptyMetadataPath,
+                                // fileLicenses
+                                jsonObjectForFileWithOneLicense.toString())),
+                        // expectedMetadataField
+                        expectedMetadataFieldForFileWithOneLicenseWithEmptyMetadataField),
+                // One license with not empty metadata field
+                Map.entry(Map.entry(
+                        // coordinates
+                        fileCoordinates,
+                        Map.entry(
+                                // filePath
+                                fileWithNotEmptyMetadataPath,
+                                // fileLicenses
+                                jsonObjectForFileWithOneLicense.toString())),
+                        // expectedMetadataField
+                        expectedMetadataFieldForFileWithOneLicenseWithNotEmptyMetadataField),
+                // Multiple licenses with empty metadata field
+                Map.entry(Map.entry(
+                        // coordinates
+                        fileCoordinates,
+                        Map.entry(
+                                // filePath
+                                fileWithEmptyMetadataPath,
+                                // fileLicenses
+                                jsonObjectForFileWithMultipleLicenses.toString())),
+                        // expectedMetadataField
+                        expectedMetadataFieldForFileWitMultipleLicensesWithEmptyMetadataField),
+                // Multiple licenses with not empty metadata field
+                Map.entry(Map.entry(
+                        // coordinates
+                        fileCoordinates,
+                        Map.entry(
+                                // filePath
+                                fileWithNotEmptyMetadataPath,
+                                // fileLicenses
+                                jsonObjectForFileWithMultipleLicenses.toString())),
+                        // expectedMetadataField
+                        expectedMetadataFieldForFileWitMultipleLicensesWithNotEmptyMetadataField)
+        );
+
+        inputToExpected.forEach((input, expectedMetadataField) -> {
+
+            // Input fields
+            Revision coordinates = input.getKey();
+            String filePath = input.getValue().getKey();
+            String fileLicenses = input.getValue().getValue();
+
+            // Inserting file licenses into the database
+            @Nullable String updatedMetadataField = metadataDao.insertFileLicenses(coordinates, filePath, fileLicenses);
+
+            // Checking whether the updated file's metadata field has been updated correctly or not
+            if (updatedMetadataField != null) { // file exists in DB
+                JSONAssert.assertEquals(
+                        "File licenses have not been inserted successfully.",
+                        expectedMetadataField,
+                        updatedMetadataField,
+                        JSONCompareMode.NON_EXTENSIBLE
+                );
+            }
         });
     }
 

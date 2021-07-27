@@ -2128,7 +2128,8 @@ INSERT INTO public.edges VALUES (239, 363, '{"(404,special,[/com.esotericsoftwar
 --
 
 INSERT INTO public.files VALUES (6, 1, 'com/esotericsoftware/reflectasm/AccessClassLoader.java', NULL, NULL, NULL);
-INSERT INTO public.files VALUES (16, 1, 'com/esotericsoftware/reflectasm/FieldAccess.java', NULL, NULL, NULL);
+-- The following file has a JSONB in its `metadata` field for testing purposes
+INSERT INTO public.files VALUES (16, 1, 'com/esotericsoftware/reflectasm/FieldAccess.java', NULL, NULL, cast('{"not": "empty"}' as jsonb));
 INSERT INTO public.files VALUES (1, 1, 'NotFound', NULL, NULL, NULL);
 INSERT INTO public.files VALUES (14, 1, 'com/esotericsoftware/reflectasm/ConstructorAccess.java', NULL, NULL, NULL);
 INSERT INTO public.files VALUES (23, 1, 'com/esotericsoftware/reflectasm/PublicConstructorAccess.java', NULL, NULL, NULL);
