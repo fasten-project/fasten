@@ -42,7 +42,7 @@ class OPALPluginTest {
     @Test
     public void testConsumerTopic() {
         assertTrue(plugin.consumeTopic().isPresent());
-        assertEquals("fasten.maven.pkg", plugin.consumeTopic().get().get(0));
+        assertEquals("fasten.POMAnalyzer.out", plugin.consumeTopic().get().get(0));
     }
 
     @Test

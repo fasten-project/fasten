@@ -86,7 +86,7 @@ public class FastenServer implements Runnable {
     @Option(names = {"-kt", "--topic"},
             paramLabel = "topic",
             description = "Kay-value pairs of Plugin and topic to consume from. Example - "
-                    + "OPAL=fasten.maven.pkg",
+                    + "OPAL=fasten.OPAL.out",
             split = ",")
     Map<String, String> pluginTopic;
 
