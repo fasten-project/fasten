@@ -59,7 +59,12 @@ public abstract class RepoAnalyzer {
         payload.put("repoPath", this.rootPath);
         payload.put("buildManager", this.buildManager);
 
-        var testCoverage = getTestCoverage(this.rootPath);
+        Map<TestCoverageType, Float> testCoverage = null;
+        try {
+            testCoverage = getTestCoverage(this.rootPath);
+        } catch (Exception e) {
+            System.err.println("Error getting the test coverage\n" + e);
+        }
         payload.put("canExecuteTests", testCoverage != null);
         payload.put("testCoverage", testCoverage != null ? testCoverage : Collections.emptyMap());
 
