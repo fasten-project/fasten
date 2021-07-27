@@ -83,7 +83,7 @@ public class ResolutionApiServiceImpl implements ResolutionApiService {
                     artifactId, version, timestamp, KnowledgeBaseConnector.dbContext, transitive);
         } else {
             var mavenResolver = new MavenResolver();
-            depSet = mavenResolver.resolveFullDependencySetOnline(groupId, artifactId, version, timestamp, KnowledgeBaseConnector.dbContext);
+            depSet = mavenResolver.resolveDependencies(groupId + ":" + artifactId + ":" + version);
         }
         var jsonArray = new JSONArray();
         depSet.stream().map(Revision::toJSON).peek(json -> {
