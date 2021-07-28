@@ -48,18 +48,6 @@ public class CGCombinerRunner implements Runnable {
 
     @Override
     public void run() {
-        if (this.dynamicCgPath == null) {
-            logger.error("Dynamic CG path is not set");
-            return;
-        }
-        if (this.staticCgsPaths == null || this.staticCgsPaths.isEmpty()) {
-            logger.error("Static CGs paths are not set");
-            return;
-        }
-        if (this.outputPath == null) {
-            logger.error("Output path is not set");
-            return;
-        }
         logger.info("Reading dynamic CG");
         DynamicJavaCG dynamicCg;
         try {
@@ -88,7 +76,7 @@ public class CGCombinerRunner implements Runnable {
         var combinedCg = combiner.combineCGs();
         var uriMap = combiner.getAllUrisMap();
 
-        logger.info("Writing combined CG to JSON file");
+        logger.info("Writing combined CG to JSON format");
         var json = new JSONObject();
         var methods = new JSONObject(combinedCg.numNodes());
         for (var node : combinedCg.nodes()) {
@@ -105,12 +93,15 @@ public class CGCombinerRunner implements Runnable {
             edges.put(jsonEdge);
         }
         json.put("calls", edges);
-        try {
-            Files.writeString(Path.of(outputPath), json.toString());
-        } catch (IOException e) {
-            logger.error("Error writing combined CG to {}", outputPath, e);
-            return;
-        }
         logger.info("Done");
+        if (outputPath != null) {
+            try {
+                Files.writeString(Path.of(outputPath), json.toString());
+            } catch (IOException e) {
+                logger.error("Error writing combined CG to {}", outputPath, e);
+            }
+        } else {
+            System.out.println(json);
+        }
     }
 }
