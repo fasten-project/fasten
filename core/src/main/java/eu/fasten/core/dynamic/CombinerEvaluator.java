@@ -121,6 +121,10 @@ public class CombinerEvaluator implements Runnable {
         logger.info("Filtering out external calls");
         var uriMap = combiner.getAllUrisMap();
         var uriStart = "fasten://mvn!" + this.coordinate.split(":")[0] + ":" + this.coordinate.split(":")[1] + "$" + this.coordinate.split(":")[2];
+        var filteredCalls = combinedCg.edgeSet().stream()
+                .filter(c -> uriMap.get(c.firstLong()).startsWith(uriStart) && uriMap.get(c.secondLong()).startsWith(uriStart))
+                .collect(Collectors.toSet());
+        System.out.println("Total number of internal calls: " + filteredCalls.size());
         var filteredStaticCalls = staticCalls.stream()
                 .filter(c -> uriMap.get(c.firstLong()).startsWith(uriStart) && uriMap.get(c.secondLong()).startsWith(uriStart))
                 .collect(Collectors.toSet());

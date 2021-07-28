@@ -72,8 +72,8 @@ public class Revision extends MavenProduct implements Serializable {
 
     @Override
     public String toString() {
-        return String.format("%s%s%s%s%s (%s)", groupId, Constants.mvnCoordinateSeparator,
-                artifactId, Constants.mvnCoordinateSeparator, version, createdAt);
+        return String.format("%s%s%s%s%s", groupId, Constants.mvnCoordinateSeparator,
+                artifactId, Constants.mvnCoordinateSeparator, version);
     }
 
     public JSONObject toJSON() {
