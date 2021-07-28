@@ -2,6 +2,7 @@ package eu.fasten.core.dynamic;
 
 import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
 import eu.fasten.core.dynamic.data.DynamicJavaCG;
+import eu.fasten.core.dynamic.data.HybridDirectedGraph;
 import eu.fasten.core.merge.CGMerger;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -98,7 +99,9 @@ public class CGCombinerRunner implements Runnable {
         for (var edge : combinedCg.edgeSet()) {
             var jsonEdge = new JSONObject();
             jsonEdge.put("call", List.of(edge.firstLong(), edge.secondLong()));
-            jsonEdge.put("origin", combinedCg.getCallOrigin(edge));
+            var origin = combinedCg.getCallOrigin(edge);
+            jsonEdge.put("static", origin.equals(HybridDirectedGraph.CallOrigin.staticCg) || origin.equals(HybridDirectedGraph.CallOrigin.staticAndDynamicCgs));
+            jsonEdge.put("dynamic", origin.equals(HybridDirectedGraph.CallOrigin.dynamicCg) || origin.equals(HybridDirectedGraph.CallOrigin.staticAndDynamicCgs));
             edges.put(jsonEdge);
         }
         json.put("calls", edges);
