@@ -64,11 +64,19 @@ public class LicenseDetectorPlugin extends Plugin {
             this.consumerTopic = topicName;
         }
 
+        /**
+         * Resets the internal state of this plugin.
+         */
+        protected void reset() {
+            pluginError = null;
+            detectedLicenses = new DetectedLicenses();
+        }
+
         @Override
         public void consume(String record) {
             try { // Fasten error-handling guidelines
 
-                this.pluginError = null;
+                reset();
 
                 logger.info("License detector started.");
 
