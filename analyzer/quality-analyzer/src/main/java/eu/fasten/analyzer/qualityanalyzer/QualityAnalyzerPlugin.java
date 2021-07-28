@@ -48,7 +48,7 @@ public class QualityAnalyzerPlugin extends Plugin {
     public static class QualityAnalyzer implements KafkaPlugin, DBConnector {
 
         private final Logger logger = LoggerFactory.getLogger(QualityAnalyzer.class.getName());
-        private String consumerTopic = "fasten.RapidPlugin.out";
+        private String consumerTopic = "fasten.RapidPlugin.callable.out";
         private static MetadataUtils utils = null;
         private Exception pluginError = null;
 
