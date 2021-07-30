@@ -327,7 +327,9 @@ public class MetadataDao {
                         "WHERE f.package_version_id = pv.id\n" +
                         "  AND p.package_name = LOWER({1})\n" +
                         "  AND pv.version = LOWER({2})\n" +
-                        "  AND {3} ILIKE '%' || f.path || '%'\n" +
+                        "  AND f.path ILIKE '%' || array_to_string(" +
+                        "    (regexp_split_to_array({3}, '/'))[(array_length(regexp_split_to_array({3}, '/'), 1) - 1):],\n" +
+                        "    '/')\n" +
                         "    RETURNING f.metadata;\n",
                 JSONB.valueOf(fileLicenses),
                 packageName,
