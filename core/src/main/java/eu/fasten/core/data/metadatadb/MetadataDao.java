@@ -324,7 +324,7 @@ public class MetadataDao {
         @Nullable Object updatedMetadata = context.fetchValue("UPDATE files f\n" +
                         "SET metadata = (CASE WHEN f.metadata IS NULL THEN '{}'::jsonb ELSE f.metadata END) || {0}\n" +
                         "    FROM packages p JOIN package_versions pv ON p.id = pv.package_id\n" +
-                        "WHERE f.package_version_id = pv.package_id\n" +
+                        "WHERE f.package_version_id = pv.id\n" +
                         "  AND p.package_name = LOWER({1})\n" +
                         "  AND pv.version = LOWER({2})\n" +
                         "  AND {3} ILIKE '%' || f.path || '%'\n" +
