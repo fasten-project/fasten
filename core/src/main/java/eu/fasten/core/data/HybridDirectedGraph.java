@@ -1,6 +1,5 @@
-package eu.fasten.core.dynamic.data;
+package eu.fasten.core.data;
 
-import eu.fasten.core.data.DirectedGraph;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.longs.LongIterator;
 import it.unimi.dsi.fastutil.longs.LongList;

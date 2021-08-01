@@ -2,7 +2,7 @@ package eu.fasten.core.dynamic;
 
 import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
 import eu.fasten.core.dynamic.data.DynamicJavaCG;
-import eu.fasten.core.dynamic.data.HybridDirectedGraph;
+import eu.fasten.core.data.HybridDirectedGraph;
 import eu.fasten.core.merge.CGMerger;
 import org.json.JSONArray;
 import org.json.JSONObject;

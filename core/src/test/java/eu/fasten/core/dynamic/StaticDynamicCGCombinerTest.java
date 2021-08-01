@@ -2,7 +2,7 @@ package eu.fasten.core.dynamic;
 
 import eu.fasten.core.data.ArrayImmutableDirectedGraph;
 import eu.fasten.core.dynamic.data.DynamicJavaCG;
-import eu.fasten.core.dynamic.data.HybridDirectedGraph;
+import eu.fasten.core.data.HybridDirectedGraph;
 import it.unimi.dsi.fastutil.Pair;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongLongImmutablePair;
