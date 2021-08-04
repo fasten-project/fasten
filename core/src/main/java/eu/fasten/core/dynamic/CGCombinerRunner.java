@@ -1,6 +1,7 @@
 package eu.fasten.core.dynamic;
 
 import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
+import eu.fasten.core.data.utils.HybridDirectedGraphSerializer;
 import eu.fasten.core.dynamic.data.DynamicJavaCG;
 import eu.fasten.core.data.HybridDirectedGraph;
 import eu.fasten.core.merge.CGMerger;
@@ -76,32 +77,19 @@ public class CGCombinerRunner implements Runnable {
         var combinedCg = combiner.combineCGs();
         var uriMap = combiner.getAllUrisMap();
 
-        logger.info("Writing combined CG to JSON format");
-        var json = new JSONObject();
-        var methods = new JSONObject(combinedCg.numNodes());
-        for (var node : combinedCg.nodes()) {
-            methods.put(String.valueOf(node), uriMap.get(node.longValue()));
-        }
-        json.put("methods", methods);
-        var edges = new JSONArray();
-        for (var edge : combinedCg.edgeSet()) {
-            var jsonEdge = new JSONObject();
-            jsonEdge.put("call", List.of(edge.firstLong(), edge.secondLong()));
-            var origin = combinedCg.getCallOrigin(edge);
-            jsonEdge.put("static", origin.equals(HybridDirectedGraph.CallOrigin.staticCg) || origin.equals(HybridDirectedGraph.CallOrigin.staticAndDynamicCgs));
-            jsonEdge.put("dynamic", origin.equals(HybridDirectedGraph.CallOrigin.dynamicCg) || origin.equals(HybridDirectedGraph.CallOrigin.staticAndDynamicCgs));
-            edges.put(jsonEdge);
-        }
-        json.put("calls", edges);
+        logger.info("Serializing combined CG into JSON format");
+        var serializer = new HybridDirectedGraphSerializer();
+        var result = serializer.graphToJson(combinedCg, uriMap);
         logger.info("Done");
         if (outputPath != null) {
             try {
-                Files.writeString(Path.of(outputPath), json.toString());
+                Files.writeString(Path.of(outputPath), result);
+                logger.info("Wrote the combined CG to {}", outputPath);
             } catch (IOException e) {
                 logger.error("Error writing combined CG to {}", outputPath, e);
             }
         } else {
-            System.out.println(json);
+            System.out.println(result);
         }
     }
 }
