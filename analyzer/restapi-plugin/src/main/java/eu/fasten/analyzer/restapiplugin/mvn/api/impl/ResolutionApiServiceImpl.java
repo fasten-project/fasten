@@ -201,7 +201,11 @@ public class ResolutionApiServiceImpl implements ResolutionApiService {
             return new ResponseEntity<>(jsonObject.toString(), HttpStatus.OK);
         } catch (IOException e) {
             logger.error("Vulnerability Cache File Not Found for " + package_name + Constants.mvnCoordinateSeparator + version, e);
-            // TODO: enforce processor to create one for this artifact?
+            try {
+                LazyIngestionProvider.ingestArtifactWithDependencies(package_name, version);
+            } catch (IllegalArgumentException ill) {
+                return new ResponseEntity<>(ill.getMessage(), HttpStatus.BAD_REQUEST);
+            }
             return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
         } catch (JSONException e) {
             logger.error("Couldn't parse JSON from Vulnerability Cache File", e);
