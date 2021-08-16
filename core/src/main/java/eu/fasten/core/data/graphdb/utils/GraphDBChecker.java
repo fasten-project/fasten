@@ -22,12 +22,14 @@ import eu.fasten.core.data.graphdb.RocksDao;
 import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
 import eu.fasten.core.dbconnectors.PostgresConnector;
 import eu.fasten.core.dbconnectors.RocksDBConnector;
-import org.jooq.DSLContext;
 import org.jooq.Record1;
 import org.rocksdb.RocksDBException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.LongStream;
 
 @CommandLine.Command(name = "GraphDBChecker")
 public class GraphDBChecker implements Runnable {
@@ -46,6 +48,12 @@ public class GraphDBChecker implements Runnable {
             defaultValue = "jdbc:postgresql:fasten_java")
     String metadataDbUrl;
 
+    @CommandLine.Option(names = {"-n", "--no-db"},
+            paramLabel = "BOOL",
+            description = "Flag for not using database",
+            defaultValue = "false")
+    Boolean noDb;
+
     @CommandLine.Option(names = {"-u", "--user"},
             paramLabel = "DB_USER",
             description = "Database user name",
@@ -59,17 +67,26 @@ public class GraphDBChecker implements Runnable {
 
     @Override
     public void run() {
-        DSLContext metadataDb;
+        List<Long> packageVersionIds;
+        if (!noDb) {
+            try {
+                var metadataDb = PostgresConnector.getDSLContext(metadataDbUrl, metadataDbUser, true);
+                packageVersionIds = metadataDb.select(PackageVersions.PACKAGE_VERSIONS.ID).from(PackageVersions.PACKAGE_VERSIONS).fetch().map(Record1::value1);
+            } catch (Exception e) {
+                logger.error("Error connecting to the metadata database", e);
+                return;
+            }
+        } else {
+            packageVersionIds = LongStream.rangeClosed(0L, 1000000000L).boxed().collect(Collectors.toList());
+        }
         RocksDao rocksDb;
         try {
-            metadataDb = PostgresConnector.getDSLContext(metadataDbUrl, metadataDbUser, true);
             rocksDb = RocksDBConnector.createReadOnlyRocksDBAccessObject(graphDbPath);
         } catch (Exception e) {
-            logger.error("Error connecting to the databases", e);
+            logger.error("Error connecting to the graph database", e);
             return;
         }
         logger.info("Connected to both databases");
-        var packageVersionIds = metadataDb.select(PackageVersions.PACKAGE_VERSIONS.ID).from(PackageVersions.PACKAGE_VERSIONS).fetch().map(Record1::value1);
         logger.info("Retrieved package versions' IDs ({} in total)", packageVersionIds.size());
         var successfulDirectedGraph = 0;
         var successfulGraphMetadata = 0;
