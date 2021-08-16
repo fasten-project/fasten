@@ -77,7 +77,7 @@ public class GraphDBChecker implements Runnable {
                 return;
             }
         } else {
-            packageVersionIds = LongStream.rangeClosed(0L, 100000000L).boxed().collect(Collectors.toList());
+            packageVersionIds = LongStream.rangeClosed(0L, 10000000L).boxed().collect(Collectors.toList());
         }
         RocksDao rocksDb;
         try {
@@ -104,7 +104,12 @@ public class GraphDBChecker implements Runnable {
             } catch (RocksDBException ignored) {}
         }
         logger.info("Finished");
-        logger.info("Graph database contains {} out of {} directed graphs", successfulDirectedGraph, packageVersionIds.size());
-        logger.info("Graph database contains {} out of {} graph metadata objects", successfulGraphMetadata, packageVersionIds.size());
+        if (!noDb) {
+            logger.info("Graph database contains {} out of {} directed graphs", successfulDirectedGraph, packageVersionIds.size());
+            logger.info("Graph database contains {} out of {} graph metadata objects", successfulGraphMetadata, packageVersionIds.size());
+        } else {
+            logger.info("Graph database contains {} directed graphs", successfulDirectedGraph);
+            logger.info("Graph database contains {} graph metadata objects", successfulGraphMetadata);
+        }
     }
 }
