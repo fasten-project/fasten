@@ -77,7 +77,7 @@ public class GraphDBChecker implements Runnable {
                 return;
             }
         } else {
-            packageVersionIds = LongStream.rangeClosed(0L, 1000000000L).boxed().collect(Collectors.toList());
+            packageVersionIds = LongStream.rangeClosed(0L, 100000000L).boxed().collect(Collectors.toList());
         }
         RocksDao rocksDb;
         try {
