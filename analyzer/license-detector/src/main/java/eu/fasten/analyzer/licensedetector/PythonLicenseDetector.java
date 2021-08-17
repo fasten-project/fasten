@@ -25,7 +25,7 @@ public class PythonLicenseDetector extends AbstractLicenseDetector {
 		
 		Set<DetectedLicense> outbound = detectOutboundLicenses(repoPath, LICENSE_FILES, files);
 
-		// TDOO: check if is necessary for Python projects
+		// TODO: check if is necessary for Python projects
 		if ((outbound == null || outbound.isEmpty()) && StringUtils.isNotBlank(repoUrl)) {
 			outbound = detectOutboundLicensesFromGitHub(repoUrl);
 		}

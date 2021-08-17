@@ -25,7 +25,7 @@ public class CLicenseDetector extends AbstractLicenseDetector {
 		
 		Set<DetectedLicense> outbound = detectOutboundLicenses(repoPath, LICENSE_FILES, files);
 
-		// TDOO: check if is necessary for C projects
+		// TODO: check if is necessary for C projects
 		if ((outbound == null || outbound.isEmpty()) && StringUtils.isNotBlank(repoUrl)) {
 			outbound = detectOutboundLicensesFromGitHub(repoUrl);
 		}
