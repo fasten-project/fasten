@@ -1,8 +1,11 @@
 package eu.fasten.analyzer.licensedetector;
 
 import com.google.common.collect.Sets;
-import eu.fasten.core.data.metadatadb.license.DetectedLicense;
-import eu.fasten.core.data.metadatadb.license.DetectedLicenseSource;
+
+import eu.fasten.analyzer.licensedetector.LicenseDetectorPlugin.LicenseDetector.RepoCoords;
+import eu.fasten.analyzer.licensedetector.license.DetectedLicense;
+import eu.fasten.analyzer.licensedetector.license.DetectedLicenseSource;
+
 import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -22,13 +25,16 @@ import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-public class LicenseDetectorTest {
+public class JavaLicenseDetectorTest {
 
-    private LicenseDetectorPlugin.LicenseDetector licenseDetector;
+    private LicenseDetectorPlugin.LicenseDetector licenseDetectorPlugin;
+    private JavaMavenLicenseDetector licenseDetector;
+    
 
     @BeforeEach
     public void setup() {
-        licenseDetector = new LicenseDetectorPlugin.LicenseDetector();
+        licenseDetectorPlugin = new LicenseDetectorPlugin.LicenseDetector();
+        licenseDetector = new JavaMavenLicenseDetector();
     }
 
     @Test
@@ -60,9 +66,10 @@ public class LicenseDetectorTest {
             assertFalse(recordContent.isEmpty(), "Test record shouldn't be empty."); // shouldn't be empty
 
             // Extracting repository path
+            RepoCoords coords =  licenseDetectorPlugin.extractRepoCoords(LanguageType.JAVA);
             assertEquals(
                     expectedExtractedRepoPath,
-                    licenseDetector.extractRepoPath(recordContent),
+                    coords.path,
                     "Extracted repository path did not match test record content."
             );
         });
@@ -79,11 +86,11 @@ public class LicenseDetectorTest {
         repoPaths.forEach(repoPath -> {
 
             // Retrieving test Maven repo absolute path
-            String repoAbsolutePath = new File(Objects.requireNonNull(LicenseDetectorTest.class.getClassLoader()
+            String repoAbsolutePath = new File(Objects.requireNonNull(JavaLicenseDetectorTest.class.getClassLoader()
                     .getResource(repoPath)).getFile()).getAbsolutePath();
             assertNotNull(repoAbsolutePath, "Test Maven repo's absolute path shouldn't be empty.");
 
-            File repoPomFile = new File(Objects.requireNonNull(LicenseDetectorTest.class.getClassLoader()
+            File repoPomFile = new File(Objects.requireNonNull(JavaLicenseDetectorTest.class.getClassLoader()
                     .getResource(repoPath + "/pom.xml")).getFile());
             assertFalse(repoPomFile.isDirectory(), "Test Maven repo pom.xml file shouldn't be a directory.");
 
@@ -151,7 +158,7 @@ public class LicenseDetectorTest {
         inputToExpected.forEach((relativeRepoPath, expectedDetectedLicenses) -> {
 
             // Retrieving the test Maven repo pom file
-            File pomFile = new File(Objects.requireNonNull(LicenseDetectorTest.class.getClassLoader()
+            File pomFile = new File(Objects.requireNonNull(JavaLicenseDetectorTest.class.getClassLoader()
                     .getResource(relativeRepoPath + "/pom.xml")).getFile());
             assertFalse(pomFile.isDirectory(), "Test Maven repo pom.xml file shouldn't be a directory.");
 
@@ -179,7 +186,7 @@ public class LicenseDetectorTest {
         inputToExpected.forEach((relativeScanResultPath, expectedNumberScannedFiles) -> {
 
             // Retrieving scan result file absolute path
-            String absoluteScanResultPath = new File(Objects.requireNonNull(LicenseDetectorTest.class.getClassLoader()
+            String absoluteScanResultPath = new File(Objects.requireNonNull(JavaLicenseDetectorTest.class.getClassLoader()
                     .getResource(relativeScanResultPath)).getFile()).getAbsolutePath();
             assertNotNull(absoluteScanResultPath, "Test scan result file absolute path shouldn't be empty.");
 
@@ -187,7 +194,7 @@ public class LicenseDetectorTest {
             try {
 
                 // Parsing the scan result
-                JSONArray fileLicenses = licenseDetector.parseScanResult(absoluteScanResultPath);
+                JSONArray fileLicenses = licenseDetector.detectFileLicenses(absoluteScanResultPath);
 
                 // All test cases contain results with at least one file
                 assertNotNull(fileLicenses, "Test case should contain at least one scanned file.");
@@ -195,8 +202,6 @@ public class LicenseDetectorTest {
                 // Checking whether the number of scanned files is correct or not
                 assertEquals(expectedNumberScannedFiles, fileLicenses.length(),
                         "Number of scanned files does not match with the expect value.");
-            } catch (IOException e) {
-                fail("Couldn't read the test scan result file: " + e.getMessage(), e.getCause());
             } catch (JSONException e) {
                 fail("Coudln't retieve the root element of the test scan result file: " + e.getMessage(), e.getCause());
             }
@@ -217,11 +222,11 @@ public class LicenseDetectorTest {
                 .put("outbound", expectedOutboundLicenses).put("files", files).toString();
 
         // Pre-fill license detector with the licenses declared above
-        licenseDetector.detectedLicenses.setOutbound(Sets.newHashSet(outboundLicense));
-        licenseDetector.detectedLicenses.addFiles(files);
+        licenseDetectorPlugin.detectedLicenses.setOutbound(Sets.newHashSet(outboundLicense));
+        licenseDetectorPlugin.detectedLicenses.addFiles(files);
 
         // Producing the output JSON
-        Optional<String> result = licenseDetector.produce();
+        Optional<String> result = licenseDetectorPlugin.produce();
 
         // Must generate a result
         assertTrue(result.isPresent(), "Plugin should have generated a JSON result, but it's empty.");
@@ -257,7 +262,7 @@ public class LicenseDetectorTest {
                         "The outbound license retrieved from GitHub is not equal to the expected one.");
             } catch (IllegalArgumentException | IOException e) { // not a valid GitHub repo URL
                 fail("Invalid GitHub URL: " + e.getMessage(), e.getCause());
-            } catch (@SuppressWarnings({"TryWithIdenticalCatches", "RedundantSuppression"}) RuntimeException e) {
+            } catch (RuntimeException e) {
                 fail("Could not contact GitHub API: " + e.getMessage(), e.getCause());
             }
         });

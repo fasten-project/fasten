@@ -6,6 +6,7 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 
+import org.apache.commons.lang3.StringUtils;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -15,6 +16,7 @@ import org.slf4j.LoggerFactory;
 public class Scancode {
 
     private final static Logger logger = LoggerFactory.getLogger(Scancode.class.getName());
+    private static final String SCANCODE_CMD = StringUtils.firstNonBlank(System.getenv("SCANCODE_CMD"), "scancode");
 
     /**
      * Scans a repository looking for license text in files with scancode.
@@ -34,7 +36,7 @@ public class Scancode {
         List<String> cmd = Arrays.asList(
                 "/bin/bash",
                 "-c",
-                "scancode " +
+                SCANCODE_CMD + " " +
                 // Scan for licenses
                 "--license " +
                 // Report full, absolute paths

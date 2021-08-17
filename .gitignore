@@ -39,6 +39,7 @@ buildNumber.properties
 .project
 .settings
 .checkstyle
+.factorypath
 
 ### Vim ###
 # Swap

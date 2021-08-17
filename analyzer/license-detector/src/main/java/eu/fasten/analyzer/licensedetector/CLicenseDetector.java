@@ -13,7 +13,6 @@ import eu.fasten.analyzer.licensedetector.license.DetectedLicenses;
 
 public class CLicenseDetector extends AbstractLicenseDetector {
 
-	// TODO: verify the list
 	private static final List<String> LICENSE_FILES = Arrays.asList("LICENSE", "LICENSE.md", "LICENSE.txt", "Readme.md",
 			"Readme.txt");
 	

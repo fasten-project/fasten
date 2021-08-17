@@ -41,7 +41,7 @@ public abstract class AbstractLicenseDetector implements ILicenseDetector {
 			JSONArray files = Scancode.parseScanResult(resultPath);
 			return files;
 		} catch (IOException | InterruptedException | RuntimeException e) {
-			e.printStackTrace();
+			logger.error("Error executing Scancode", e);
 			throw new LicenseDetectorException(e);
 		}
 	}
