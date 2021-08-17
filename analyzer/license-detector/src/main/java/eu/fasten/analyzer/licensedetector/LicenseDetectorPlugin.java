@@ -54,6 +54,7 @@ public class LicenseDetectorPlugin extends Plugin {
         	this.pythonRepoPathKey = defaultEnv("PYTHON_REPO_PATH_KEY", "fasten.PyCG.out/payload/sourcePath");
         	this.pythonRepoUrlKey = defaultEnv("PYTHON_REPO_URL_KEY", "fasten.PyCG.out/payload/repoUrl");
         	this.cRepoPathKey = defaultEnv("C_REPO_PATH_KEY", "fasten.cscout.out/payload/sourcePath");
+        	this.cRepoUrlKey = defaultEnv("C_REPO_URL_KEY", "fasten.cscout.out/payload/repoUrl");
         	this.pathReplace = StringUtils.removeEnd(defaultEnv("FASTEN_MNT_REPLACE", ""), "/");
 		}
         
