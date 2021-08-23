@@ -262,8 +262,8 @@ public class FastenServer implements Runnable {
                                 e.getKey(), p.getClass().getSimpleName());
                         return getDSLContext(e.getValue());
                     } catch (SQLException ex) {
-                        logger.error("Couldn't set {} DB connection for plug-in {}\n{}",
-                                e.getKey(), p.getClass().getSimpleName(), ex.getStackTrace());
+                        logger.error("Couldn't set {} DB connection for plug-in {}\n {} \n{}",
+                                e.getKey(), p.getClass().getSimpleName(), ex.getMessage(), ex.getStackTrace());
                     }
                     return null;
                 })));
