@@ -1297,7 +1297,7 @@ public class MetadataDao {
                 .select(PackageVersions.PACKAGE_VERSIONS.ID)
                 .from(PackageVersions.PACKAGE_VERSIONS)
                 .where(PackageVersions.PACKAGE_VERSIONS.ID.in(packageVersionIDs))
-                .and("package_versions.metadata::jsonb->'vulnerabilities' is not null")
+                .and("metadata::json->'vulnerabilities' IS NOT NULL")
                 .fetch();
         return new HashSet<>(result.map(Record1::value1));
     }
