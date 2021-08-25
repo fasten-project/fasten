@@ -1748,15 +1748,26 @@ public class MetadataDao {
     }
 
     public Map<String, Long> insertNamespaces(Collection<String> namespaces) {
-        var insert = context.insertInto(ModuleNames.MODULE_NAMES, ModuleNames.MODULE_NAMES.NAME);
+        var select = context.selectFrom(ModuleNames.MODULE_NAMES).where("false");
         for (var namespace : namespaces) {
+            select = select.or(ModuleNames.MODULE_NAMES.NAME.eq(namespace));
+        }
+        var map = new HashMap<String, Long>(namespaces.size());
+        select.fetch().forEach(r -> map.put(r.getName(), r.getId()));
+        var namespacesToInsert = new HashSet<String>();
+        namespaces.forEach(n -> {
+            if (!map.containsKey(n)) {
+                namespacesToInsert.add(n);
+            }
+        });
+        var insert = context.insertInto(ModuleNames.MODULE_NAMES, ModuleNames.MODULE_NAMES.NAME);
+        for (var namespace : namespacesToInsert) {
             insert = insert.values(namespace);
         }
         var result = insert.onConflictOnConstraint(Keys.UNIQUE_MODULE_NAMES).doUpdate()
                 .set(ModuleNames.MODULE_NAMES.NAME, ModuleNames.MODULE_NAMES.as("excluded").NAME)
                 .returning(ModuleNames.MODULE_NAMES.ID, ModuleNames.MODULE_NAMES.NAME)
                 .fetch();
-        var map = new HashMap<String, Long>(result.size());
         result.forEach(r -> map.put(r.getName(), r.getId()));
         return map;
     }
