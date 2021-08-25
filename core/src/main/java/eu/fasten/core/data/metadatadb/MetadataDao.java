@@ -1300,9 +1300,9 @@ public class MetadataDao {
                 .and("package_versions.metadata::jsonb->'vulnerabilities' is not null")
                 .fetch();
 
-        logger.debug("Total rows: " + result.size());
-        logger.debug("Input: " + packageVersionIDs.toString());
-        logger.debug("Output: " + result.toString());
+        logger.info("Total rows: " + result.size());
+        logger.info("Input: " + packageVersionIDs.toString());
+        logger.info("Output: " + result.toString());
         return new HashSet<>(result.map(Record1::value1));
     }
 
