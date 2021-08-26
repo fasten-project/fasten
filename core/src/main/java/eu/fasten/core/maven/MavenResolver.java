@@ -119,7 +119,11 @@ public class MavenResolver implements Runnable {
         request.setOutputHandler(output);
         request.setBatchMode(true);
         var invoker = new DefaultInvoker();
-        return (invoker.execute(request));
+        var mavenHome = System.getenv("M2_HOME");
+        if (mavenHome != null) {
+            invoker.setMavenHome(new File(mavenHome));
+        }
+        return invoker.execute(request);
     }
 
     private Set<Revision> parseMavenDependencyList(File outputFile) throws IOException {
