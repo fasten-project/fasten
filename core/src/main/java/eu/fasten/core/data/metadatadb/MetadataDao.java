@@ -913,9 +913,10 @@ public class MetadataDao {
         Packages p = Packages.PACKAGES;
         PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
         Modules m = Modules.MODULES;
+        ModuleNames mn = ModuleNames.MODULE_NAMES;
 
         // Select clause
-        SelectField<?>[] selectClause = m.fields();
+        SelectField<?>[] selectClause = new SelectField[] {m.ID, m.PACKAGE_VERSION_ID, mn.NAME, m.ACCESS, m.FINAL, m.SUPER_CLASSES, m.SUPER_INTERFACES, m.ANNOTATIONS, m.ANNOTATIONS};
 
         // Where clause
         Condition whereClause = packageVersionWhereClause(packageName, packageVersion);
@@ -926,6 +927,7 @@ public class MetadataDao {
                 .from(p)
                 .innerJoin(pv).on(p.ID.eq(pv.PACKAGE_ID))
                 .innerJoin(m).on(pv.ID.eq(m.PACKAGE_VERSION_ID))
+                .innerJoin(mn).on(mn.ID.eq(m.MODULE_NAME_ID))
                 .where(whereClause)
                 .offset(offset)
                 .limit(limit)
@@ -934,6 +936,14 @@ public class MetadataDao {
         // Returning the result
         logger.debug("Total rows: " + queryResult.size());
         return queryResult.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
+    }
+
+    public String getModuleName(long moduleNameId) {
+        var result = context.select(ModuleNames.MODULE_NAMES.NAME).from(ModuleNames.MODULE_NAMES).where(ModuleNames.MODULE_NAMES.ID.eq(moduleNameId)).fetchOne();
+        if (result == null) {
+            return null;
+        }
+        return result.value1();
     }
 
     public String getModuleMetadata(String packageName,
