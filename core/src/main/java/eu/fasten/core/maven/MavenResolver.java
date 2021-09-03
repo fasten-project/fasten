@@ -120,9 +120,13 @@ public class MavenResolver implements Runnable {
         request.setBatchMode(true);
         var invoker = new DefaultInvoker();
         var mavenHome = System.getenv("M2_HOME");
-        if (mavenHome != null) {
-            invoker.setMavenHome(new File(mavenHome));
+        if (mavenHome == null) {
+            logger.info("Missing $M2_HOME in system environment for Maven application directory. " +
+                        "Setting default directory...");
+            mavenHome = "/usr/share/maven";
         }
+        logger.info("Maven application directory for invoker was set to: " + mavenHome);
+        invoker.setMavenHome(new File(mavenHome));
         return invoker.execute(request);
     }
 
