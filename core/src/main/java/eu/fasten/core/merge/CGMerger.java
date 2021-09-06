@@ -184,6 +184,7 @@ public class CGMerger {
      */
     public CGMerger(final Set<Long> dependencySet,
                     final DSLContext dbContext, final RocksDao rocksDao) {
+        logger.info("Initialized with depSet: " + dependencySet.toString());
         this.dbContext = dbContext;
         this.rocksDao = rocksDao;
         this.dependencySet = dependencySet;
@@ -395,7 +396,9 @@ public class CGMerger {
                 }
             }
         } else {
+            logger.info("[mergeAllDeps] depSet: " + dependencySet.toString());
             for (final var dep : this.dependencySet) {
+                logger.info("[mergeAllDeps] current dep: " + dep.toString());
                 var merged = mergeWithCHA(dep);
                 if (merged != null) {
                     depGraphs.add(merged);
