@@ -358,7 +358,8 @@ public class CGMerger {
         if (graphArcs == null) {
             return null;
         }
-
+        logger.info("Merging graph with {} nodes and {} edges",
+            callGraphData.numNodes(), callGraphData.numArcs());
         final Set<LongLongPair> edges = ConcurrentHashMap.newKeySet();
         graphArcs.gid2NodeMetadata.long2ObjectEntrySet().parallelStream().forEach(entry -> {
             var sourceId = entry.getLongKey();

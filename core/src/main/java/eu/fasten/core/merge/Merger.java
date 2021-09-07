@@ -33,6 +33,7 @@ import java.sql.SQLException;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.jooq.DSLContext;
 import org.json.JSONObject;
 import org.json.JSONTokener;
@@ -117,10 +118,18 @@ public class Merger implements Runnable {
                         return;
                     }
 
-                    final var depSet = dependencies;
-                    depSet.add(artifact);
-                    var databaseMerger = new CGMerger(depSet, dbContext, rocksDao);
-                    var mergedDirectedGraph = databaseMerger.mergeWithCHA(artifact);
+                    final var depList = dependencies;
+                    depList.add(artifact);
+                    CGMerger databaseMerger;
+
+                    if (artifact.contains(":")) {
+                        databaseMerger = new CGMerger(depList, dbContext, rocksDao);
+                    }else {
+                        final var depSet =
+                            depList.stream().map(Long::valueOf).collect(Collectors.toSet());
+                        databaseMerger = new CGMerger(depSet, dbContext, rocksDao);
+                    }
+                    var mergedDirectedGraph = databaseMerger.mergeAllDeps();
                     logger.info("Resolved {} nodes, {} calls in {} seconds",
                             mergedDirectedGraph.numNodes(),
                             mergedDirectedGraph.numArcs(),
