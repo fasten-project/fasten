@@ -361,15 +361,20 @@ public class CGMerger {
         logger.info("Merging graph with {} nodes and {} edges",
             callGraphData.numNodes(), callGraphData.numArcs());
         final Set<LongLongPair> edges = ConcurrentHashMap.newKeySet();
+
         graphArcs.gid2NodeMetadata.long2ObjectEntrySet().parallelStream().forEach(entry -> {
             var sourceId = entry.getLongKey();
             var nodeMetadata = entry.getValue();
             for (var receiver : nodeMetadata.receiverRecords) {
                 var arc = new Arc(sourceId, receiver);
-                resolve(edges, arc, receiver.receiverSignature, callGraphData.isExternal(sourceId));
+                var signature = receiver.receiverSignature;
+                if (receiver.receiverSignature.startsWith("/")) {
+                    signature =
+                        CallGraphUtils.decode(StringUtils.substringAfter(FastenJavaURI.create(receiver.receiverSignature).decanonicalize().getEntity(), "."));
+                }
+                resolve(edges, arc, signature, callGraphData.isExternal(sourceId));
             }
         });
-
 
         for(LongLongPair edge: edges) {
             addEdge(result, edge.firstLong(), edge.secondLong());
@@ -391,6 +396,7 @@ public class CGMerger {
         List<DirectedGraph> depGraphs = new ArrayList<>();
         if (this.dbContext == null) {
             for (final var dep : this.ercgDependencySet) {
+                logger.info("[mergeAllDeps] current dep: " + dep.getRight().productVersion);
                 var merged = mergeWithCHA(dep.getKey(), getERCGArcs(dep.getRight()));
                 if (merged != null) {
                     depGraphs.add(merged);
@@ -432,6 +438,7 @@ public class CGMerger {
                 case VIRTUAL:
                 case INTERFACE:
                     var foundTarget = false;
+
                     for (final var target : typeDictionary.getOrDefault(receiverTypeUri,
                             emptyMap).getOrDefault(signature, emptyLongSet)) {
                         addCall(edges, arc.source, target, isCallback);
