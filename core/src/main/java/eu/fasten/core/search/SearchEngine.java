@@ -696,7 +696,6 @@ public class SearchEngine {
 
 		final String jdbcURI = jsapResult.getString("jdbcURI");
 		final String database = jsapResult.getString("database");
-		@SuppressWarnings("unused")
 		final String rocksDb = jsapResult.getString("rocksDb");
 		final String resolverGraph = jsapResult.getString("resolverGraph");
 
