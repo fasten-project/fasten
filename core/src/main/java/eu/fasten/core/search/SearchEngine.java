@@ -371,6 +371,7 @@ public class SearchEngine {
 		if (result == null) {
 			result = dm.mergeWithCHA(id);
 			if (result != null) {
+				LOGGER.info("Graph id: " + id + " stitched graph nodes: " + result.numNodes() + " stitched graph arcs: " + result.numArcs());
 				stitchedGraphCache.putAndMoveToFirst(id, result);
 				if (stitchedGraphCache.size() > STITCHED_MAX_SIZE) stitchedGraphCache.removeLast();
 			}
