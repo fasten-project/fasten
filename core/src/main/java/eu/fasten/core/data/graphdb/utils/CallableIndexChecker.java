@@ -18,6 +18,8 @@
 
 package eu.fasten.core.data.graphdb.utils;
 
+import eu.fasten.core.data.DirectedGraph;
+import eu.fasten.core.data.graphdb.GraphMetadata;
 import eu.fasten.core.data.graphdb.RocksDao;
 import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
 import eu.fasten.core.dbconnectors.PostgresConnector;
@@ -25,15 +27,15 @@ import eu.fasten.core.dbconnectors.RocksDBConnector;
 import eu.fasten.core.merge.CallGraphUtils;
 import it.unimi.dsi.fastutil.longs.LongLongPair;
 import java.io.IOException;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.LongStream;
 import org.jooq.DSLContext;
 import org.jooq.Record1;
 import org.rocksdb.RocksDBException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
-import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.LongStream;
 
 @CommandLine.Command(name = "CallableIndexChecker")
 public class CallableIndexChecker implements Runnable {
@@ -72,7 +74,9 @@ public class CallableIndexChecker implements Runnable {
     @CommandLine.Option(names = {"-o", "--outputPath"},
         paramLabel = "OUTPUT",
         description = "The path to the directory to write the ")
-    String outDir;
+    String outputPath;
+    private int successfulDirectedGraph;
+    private int successfulGraphMetadata;
 
     public static void main(String[] args) {
         final int exitCode = new CommandLine(new CallableIndexChecker()).execute(args);
@@ -81,40 +85,16 @@ public class CallableIndexChecker implements Runnable {
 
     @Override
     public void run() {
-        if (artifactId != null & outDir != null) {
-            writeArtifact(artifactId, outDir);
+        RocksDao rocksDb = connectToReadOnlyRocksDB();
+
+        if (artifactId != null & outputPath != null) {
+            extractMetaDataForArtifact(rocksDb);
         } else {
             List<Long> packageVersionIds = getInterestingPackageIds();
-            RocksDao rocksDb = connectToReadOnlyRocksDB();
             logger.info("Retrieved package versions' IDs ({} in total)", packageVersionIds.size());
 
-            var successfulDirectedGraph = 0;
-            var successfulGraphMetadata = 0;
-
             for (var packageVersionId : packageVersionIds) {
-                try {
-                    logger.info("Retrieving data for package version ID {}", packageVersionId);
-
-                    var graph = rocksDb.getGraphData(packageVersionId);
-                    if (graph == null) {
-                        logger.info("Cannot find graph data for package ID {}",
-                            packageVersionId);
-                        continue;
-                    }
-                    successfulDirectedGraph++;
-
-                    var graphMetadata = rocksDb.getGraphMetadata(packageVersionId, graph);
-                    if (graphMetadata == null) {
-                        logger.info("Cannot find meta data for package version ID {}",
-                            packageVersionId);
-                        continue;
-                    }
-                    successfulGraphMetadata++;
-
-                } catch (RocksDBException ignored) {
-                    logger.error("Retrieving data for package version ID " + packageVersionId,
-                        ignored);
-                }
+                processPackageVersionId(rocksDb, packageVersionId);
             }
 
             logger.info("Finished");
@@ -128,6 +108,32 @@ public class CallableIndexChecker implements Runnable {
                 logger.info("Graph database contains {} graph metadata objects",
                     successfulGraphMetadata);
             }
+        }
+    }
+
+    private void processPackageVersionId(RocksDao rocksDb, Long packageVersionId) {
+        try {
+            logger.info("Retrieving data for package version ID {}", packageVersionId);
+
+            var graph = rocksDb.getGraphData(packageVersionId);
+            if (graph == null) {
+                logger.info("Cannot find graph data for package ID {}",
+                    packageVersionId);
+                return;
+            }
+            successfulDirectedGraph++;
+
+            var graphMetadata = rocksDb.getGraphMetadata(packageVersionId, graph);
+            if (graphMetadata == null) {
+                logger.info("Cannot find meta data for package version ID {}",
+                    packageVersionId);
+                return;
+            }
+            successfulGraphMetadata++;
+
+        } catch (RocksDBException ignored) {
+            logger.error("Retrieving data for package version ID " + packageVersionId,
+                ignored);
         }
     }
 
@@ -158,45 +164,63 @@ public class CallableIndexChecker implements Runnable {
         }
     }
 
-    private void writeArtifact(String artifactId, String outDir) {
-        RocksDao rocksDb = connectToReadOnlyRocksDB();
+    private void extractMetaDataForArtifact(RocksDao rocksDb) {
         try {
-            logger.info("Retrieving data for package version ID {}", artifactId);
+            logger.info("Extracting data for package version ID {}", artifactId);
             long packageVersionId = Long.parseLong(artifactId);
+
             var graph = rocksDb.getGraphData(packageVersionId);
-            if (graph != null) {
-                String delim = "";
-                StringBuilder strGraph = new StringBuilder();
-                for (LongLongPair longLongPair : graph.edgeSet()) {
-                    strGraph.append(delim);
-                    delim = ",";
-                    strGraph.append(longLongPair);
-                }
-                CallGraphUtils.writeToFile(outDir + "/" + artifactId + ".directedGraph.txt",
-                    strGraph.toString(), "");
-                var graphMetadata = rocksDb.getGraphMetadata(packageVersionId, graph);
-                delim = "";
-                StringBuilder strMetadata = new StringBuilder();
-                if (graphMetadata != null) {
-                    for (final var entry :
-                        graphMetadata.gid2NodeMetadata.long2ObjectEntrySet()) {
-                        strMetadata.append(delim);
-                        delim = ",";
-                        strMetadata.append(entry.getLongKey()).append("->")
-                            .append(entry.getValue().signature).append(",")
-                            .append(entry.getValue().type).append(",")
-                            .append(entry.getValue().receiverRecords).append("\n");
-                    }
-                    CallGraphUtils.writeToFile(outDir + "/" + artifactId + ".graphMetadata.txt",
-                        strMetadata.toString(), "");
-                } else {
-                    logger.info("No metadata for the artifact {}", artifactId);
-                }
-            } else {
-                logger.info("No graph for this artifact {}", artifactId);
+            if (graph == null) {
+                logger.info("Cannot find graph data for package ID {}", packageVersionId);
+                return;
             }
+            final String edgesStr = convertEdgesToString(graph);
+            final var pathEdges = outputPath + "/" + artifactId + ".directedGraph.txt";
+            CallGraphUtils.writeToFile(pathEdges, edgesStr);
+
+            var graphMetadata = rocksDb.getGraphMetadata(packageVersionId, graph);
+            if (graphMetadata == null) {
+                logger.info("No metadata for the artifact {}", artifactId);
+                return;
+            }
+            final String metaDataStr = extractMetaDataForArtifact(graphMetadata);
+            final var path = outputPath + "/" + artifactId + ".graphMetadata" +
+                ".txt";
+            CallGraphUtils.writeToFile(path, metaDataStr);
+
         } catch (RocksDBException | IOException ignored) {
+            logger.error("??", ignored);
         }
+    }
+
+    private String extractMetaDataForArtifact(GraphMetadata graphMetadata) {
+        String delim = "";
+        StringBuilder strMetadata = new StringBuilder();
+        for (final var key :
+            graphMetadata.gid2NodeMetadata.keySet()) {
+            strMetadata.append(delim);
+            delim = ",\n\n";
+
+            final var value = graphMetadata.gid2NodeMetadata.get(key.longValue());
+            strMetadata.append(key).append(" -> ")
+                .append(value.signature).append(",\n\t")
+                .append(value.type).append(",\n\t")
+                .append(value.receiverRecords);
+        }
+        strMetadata.append("\n");
+        return strMetadata.toString();
+    }
+
+    private String convertEdgesToString(DirectedGraph graph) {
+        String delim = "";
+        StringBuilder strGraph = new StringBuilder();
+        for (LongLongPair longLongPair : graph.edgeSet()) {
+            strGraph.append(delim);
+            delim = ",\n";
+            strGraph.append(longLongPair);
+        }
+        strGraph.append("\n");
+        return strGraph.toString();
     }
 
     private RocksDao connectToReadOnlyRocksDB() {
