@@ -1423,7 +1423,8 @@ public class MetadataDao {
     public Long getPackageVersionID(String packageName, String version) {
         var record = context
                 .select(PackageVersions.PACKAGE_VERSIONS.ID)
-                .from(PackageVersions.PACKAGE_VERSIONS)
+                .from(PackageVersions.PACKAGE_VERSIONS).join(Packages.PACKAGES)
+                .on(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.eq(Packages.PACKAGES.ID))
                 .where(packageVersionWhereClause(packageName, version))
                 .limit(1)
                 .fetchOne();
