@@ -24,6 +24,7 @@ import eu.fasten.core.data.utils.DirectedGraphSerializer;
 import eu.fasten.core.dbconnectors.PostgresConnector;
 import eu.fasten.core.dbconnectors.RocksDBConnector;
 import eu.fasten.core.merge.CallGraphUtils;
+import it.unimi.dsi.fastutil.longs.LongLongPair;
 import java.io.IOException;
 import org.jooq.Record1;
 import org.rocksdb.RocksDBException;
@@ -151,12 +152,27 @@ public class GraphDBChecker implements Runnable {
             long packageVersionId = Long.parseLong(artifactId);
             var graph = rocksDb.getGraphData(packageVersionId);
             if (graph != null) {
+                String delim = "";
+                StringBuilder strGraph = new StringBuilder();
+                for (LongLongPair longLongPair : graph.edgeSet()) {
+                    strGraph.append(delim);
+                    delim = ",";
+                    strGraph.append(longLongPair);
+                }
                 CallGraphUtils.writeToFile(outDir+"/"+ artifactId+".directedGraph.txt",
-                    graph.toString(), "");
+                    strGraph.toString(), "");
                 var graphMetadata = rocksDb.getGraphMetadata(packageVersionId, graph);
+                delim = "";
+                StringBuilder strMetadata = new StringBuilder();
                 if (graphMetadata != null) {
+                    for (final var entry :
+                    graphMetadata.gid2NodeMetadata.long2ObjectEntrySet()) {
+                    strMetadata.append(delim);
+                    delim = ",";
+                    strMetadata.append(entry.getLongKey()).append("->").append(entry.getValue().signature).append(",").append(entry.getValue().type).append(",").append(entry.getValue().receiverRecords);
+                    }
                     CallGraphUtils.writeToFile(outDir+"/"+ artifactId+".graphMetadata.txt",
-                        graphMetadata.toString(), "");
+                        strMetadata.toString(), "");
                 }else {
                     logger.info("No metadata for the artifact {}", artifactId);
                 }
