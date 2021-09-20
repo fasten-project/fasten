@@ -151,11 +151,11 @@ public class GraphDBChecker implements Runnable {
             long packageVersionId = Long.parseLong(artifactId);
             var graph = rocksDb.getGraphData(packageVersionId);
             if (graph != null) {
-                CallGraphUtils.writeToFile(outDir+"+/"+ artifactId+".directedGraph.txt",
+                CallGraphUtils.writeToFile(outDir+"/"+ artifactId+".directedGraph.txt",
                     graph.toString(), "");
                 var graphMetadata = rocksDb.getGraphMetadata(packageVersionId, graph);
                 if (graphMetadata != null) {
-                    CallGraphUtils.writeToFile(outDir+"+/"+ artifactId+".graphMetadata.txt",
+                    CallGraphUtils.writeToFile(outDir+"/"+ artifactId+".graphMetadata.txt",
                         graphMetadata.toString(), "");
                 }else {
                     logger.info("No metadata for the artifact {}", artifactId);
