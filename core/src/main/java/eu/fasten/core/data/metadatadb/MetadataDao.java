@@ -1228,6 +1228,9 @@ public class MetadataDao {
         Modules m = Modules.MODULES;
         Callables c = Callables.CALLABLES;
 
+        logger.info("Package Name: " + packageName);
+        logger.info("Package Version: " + version);
+
         // Building and executing the query
         var result = context
                 .select(c.ID)

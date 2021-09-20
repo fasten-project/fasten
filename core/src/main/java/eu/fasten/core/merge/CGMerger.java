@@ -402,7 +402,6 @@ public class CGMerger {
             }
         } else {
             for (final var dep : this.dependencySet) {
-                logger.info("[mergeAllDeps] current dep: " + dep.toString());
                 var merged = mergeWithCHA(dep);
                 if (merged != null) {
                     depGraphs.add(merged);
