@@ -20,12 +20,12 @@ package eu.fasten.core.data.graphdb.utils;
 
 import eu.fasten.core.data.graphdb.RocksDao;
 import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
-import eu.fasten.core.data.utils.DirectedGraphSerializer;
 import eu.fasten.core.dbconnectors.PostgresConnector;
 import eu.fasten.core.dbconnectors.RocksDBConnector;
 import eu.fasten.core.merge.CallGraphUtils;
 import it.unimi.dsi.fastutil.longs.LongLongPair;
 import java.io.IOException;
+import org.jooq.DSLContext;
 import org.jooq.Record1;
 import org.rocksdb.RocksDBException;
 import org.slf4j.Logger;
@@ -35,33 +35,33 @@ import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
 
-@CommandLine.Command(name = "GraphDBChecker")
-public class GraphDBChecker implements Runnable {
+@CommandLine.Command(name = "CallableIndexChecker")
+public class CallableIndexChecker implements Runnable {
 
-    private static final Logger logger = LoggerFactory.getLogger(GraphDBChecker.class);
+    private static final Logger logger = LoggerFactory.getLogger(CallableIndexChecker.class);
 
     @CommandLine.Option(names = {"-p", "--graph-db-path"},
-            paramLabel = "GRAPHDB_PATH",
-            required = true,
-            description = "Path to the graph database")
+        paramLabel = "GRAPHDB_PATH",
+        required = true,
+        description = "Path to the graph database")
     String graphDbPath;
 
     @CommandLine.Option(names = {"-d", "--database"},
-            paramLabel = "DB_URL",
-            description = "Database URL for connection",
-            defaultValue = "jdbc:postgresql:fasten_java")
+        paramLabel = "DB_URL",
+        description = "Database URL for connection",
+        defaultValue = "jdbc:postgresql:fasten_java")
     String metadataDbUrl;
 
     @CommandLine.Option(names = {"-n", "--no-db"},
-            paramLabel = "BOOL",
-            description = "Flag for not using database",
-            defaultValue = "false")
-    Boolean noDb;
+        paramLabel = "BOOL",
+        description = "Flag for not using database",
+        defaultValue = "false")
+    Boolean isNotUsingDb;
 
     @CommandLine.Option(names = {"-u", "--user"},
-            paramLabel = "DB_USER",
-            description = "Database user name",
-            defaultValue = "fastenro")
+        paramLabel = "DB_USER",
+        description = "Database user name",
+        defaultValue = "fastenro")
     String metadataDbUser;
 
     @CommandLine.Option(names = {"-a", "--artifactId"},
@@ -75,57 +75,50 @@ public class GraphDBChecker implements Runnable {
     String outDir;
 
     public static void main(String[] args) {
-        final int exitCode = new CommandLine(new GraphDBChecker()).execute(args);
+        final int exitCode = new CommandLine(new CallableIndexChecker()).execute(args);
         System.exit(exitCode);
     }
 
     @Override
     public void run() {
         if (artifactId != null & outDir != null) {
-            writeArtifact(graphDbPath, artifactId, outDir);
+            writeArtifact(artifactId, outDir);
         } else {
-            List<Long> packageVersionIds;
-            if (!noDb) {
-                try {
-                    var metadataDb =
-                        PostgresConnector.getDSLContext(metadataDbUrl, metadataDbUser, true);
-                    packageVersionIds = metadataDb.select(PackageVersions.PACKAGE_VERSIONS.ID)
-                        .from(PackageVersions.PACKAGE_VERSIONS).fetch().map(Record1::value1);
-                } catch (Exception e) {
-                    logger.error("Error connecting to the metadata database", e);
-                    return;
-                }
-            } else {
-                packageVersionIds =
-                    LongStream.rangeClosed(0L, 10000000L).boxed().collect(Collectors.toList());
-            }
-            RocksDao rocksDb;
-            try {
-                rocksDb = RocksDBConnector.createReadOnlyRocksDBAccessObject(graphDbPath);
-            } catch (Exception e) {
-                logger.error("Error connecting to the graph database", e);
-                return;
-            }
-            logger.info("Connected to both databases");
+            List<Long> packageVersionIds = getInterestingPackageIds();
+            RocksDao rocksDb = connectToReadOnlyRocksDB();
             logger.info("Retrieved package versions' IDs ({} in total)", packageVersionIds.size());
+
             var successfulDirectedGraph = 0;
             var successfulGraphMetadata = 0;
+
             for (var packageVersionId : packageVersionIds) {
                 try {
                     logger.info("Retrieving data for package version ID {}", packageVersionId);
+
                     var graph = rocksDb.getGraphData(packageVersionId);
-                    if (graph != null) {
-                        successfulDirectedGraph++;
-                        var graphMetadata = rocksDb.getGraphMetadata(packageVersionId, graph);
-                        if (graphMetadata != null) {
-                            successfulGraphMetadata++;
-                        }
+                    if (graph == null) {
+                        logger.info("Cannot find graph data for package ID {}",
+                            packageVersionId);
+                        continue;
                     }
+                    successfulDirectedGraph++;
+
+                    var graphMetadata = rocksDb.getGraphMetadata(packageVersionId, graph);
+                    if (graphMetadata == null) {
+                        logger.info("Cannot find meta data for package version ID {}",
+                            packageVersionId);
+                        continue;
+                    }
+                    successfulGraphMetadata++;
+
                 } catch (RocksDBException ignored) {
+                    logger.error("Retrieving data for package version ID " + packageVersionId,
+                        ignored);
                 }
             }
+
             logger.info("Finished");
-            if (!noDb) {
+            if (!isNotUsingDb) {
                 logger.info("Graph database contains {} out of {} directed graphs",
                     successfulDirectedGraph, packageVersionIds.size());
                 logger.info("Graph database contains {} out of {} graph metadata objects",
@@ -138,15 +131,35 @@ public class GraphDBChecker implements Runnable {
         }
     }
 
-    private void writeArtifact(String graphDbPath, String artifactId, String outDir) {
-        RocksDao rocksDb;
-        try {
-            rocksDb = RocksDBConnector.createReadOnlyRocksDBAccessObject(graphDbPath);
-        } catch (Exception e) {
-            logger.error("Error connecting to the graph database", e);
-            return;
+    private List<Long> getInterestingPackageIds() {
+        List<Long> packageVersionIds;
+        if (isNotUsingDb) {
+            packageVersionIds = generateNPackageIds(10000000L);
+        } else {
+            var metadataDb = connectToPostgres();
+            packageVersionIds = metadataDb
+                .select(PackageVersions.PACKAGE_VERSIONS.ID)
+                .from(PackageVersions.PACKAGE_VERSIONS)
+                .fetch()
+                .map(Record1::value1);
         }
-        logger.info("Connected to database");
+        return packageVersionIds;
+    }
+
+    private List<Long> generateNPackageIds(long endInclusive) {
+        return LongStream.rangeClosed(0L, endInclusive).boxed().collect(Collectors.toList());
+    }
+
+    private DSLContext connectToPostgres() {
+        try {
+            return PostgresConnector.getDSLContext(metadataDbUrl, metadataDbUser, true);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    private void writeArtifact(String artifactId, String outDir) {
+        RocksDao rocksDb = connectToReadOnlyRocksDB();
         try {
             logger.info("Retrieving data for package version ID {}", artifactId);
             long packageVersionId = Long.parseLong(artifactId);
@@ -159,27 +172,38 @@ public class GraphDBChecker implements Runnable {
                     delim = ",";
                     strGraph.append(longLongPair);
                 }
-                CallGraphUtils.writeToFile(outDir+"/"+ artifactId+".directedGraph.txt",
+                CallGraphUtils.writeToFile(outDir + "/" + artifactId + ".directedGraph.txt",
                     strGraph.toString(), "");
                 var graphMetadata = rocksDb.getGraphMetadata(packageVersionId, graph);
                 delim = "";
                 StringBuilder strMetadata = new StringBuilder();
                 if (graphMetadata != null) {
                     for (final var entry :
-                    graphMetadata.gid2NodeMetadata.long2ObjectEntrySet()) {
-                    strMetadata.append(delim);
-                    delim = ",";
-                    strMetadata.append(entry.getLongKey()).append("->").append(entry.getValue().signature).append(",").append(entry.getValue().type).append(",").append(entry.getValue().receiverRecords);
+                        graphMetadata.gid2NodeMetadata.long2ObjectEntrySet()) {
+                        strMetadata.append(delim);
+                        delim = ",";
+                        strMetadata.append(entry.getLongKey()).append("->")
+                            .append(entry.getValue().signature).append(",")
+                            .append(entry.getValue().type).append(",")
+                            .append(entry.getValue().receiverRecords).append("\n");
                     }
-                    CallGraphUtils.writeToFile(outDir+"/"+ artifactId+".graphMetadata.txt",
+                    CallGraphUtils.writeToFile(outDir + "/" + artifactId + ".graphMetadata.txt",
                         strMetadata.toString(), "");
-                }else {
+                } else {
                     logger.info("No metadata for the artifact {}", artifactId);
                 }
-            }else {
+            } else {
                 logger.info("No graph for this artifact {}", artifactId);
             }
         } catch (RocksDBException | IOException ignored) {
+        }
+    }
+
+    private RocksDao connectToReadOnlyRocksDB() {
+        try {
+            return RocksDBConnector.createReadOnlyRocksDBAccessObject(this.graphDbPath);
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 }
