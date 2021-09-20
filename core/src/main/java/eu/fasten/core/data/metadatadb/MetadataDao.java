@@ -1239,7 +1239,7 @@ public class MetadataDao {
                 .and(Callables.CALLABLES.IS_INTERNAL_CALL.eq(true))
                 .fetch();
 
-        logger.debug("Total rows: " + result.size());
+        logger.info("Total rows: " + result.size());
         return result.map(Record1::value1);
     }
 
