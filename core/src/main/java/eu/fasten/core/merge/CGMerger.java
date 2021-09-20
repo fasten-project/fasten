@@ -184,7 +184,6 @@ public class CGMerger {
      */
     public CGMerger(final Set<Long> dependencySet,
                     final DSLContext dbContext, final RocksDao rocksDao) {
-        logger.info("Initialized with depSet: " + dependencySet.toString());
         this.dbContext = dbContext;
         this.rocksDao = rocksDao;
         this.dependencySet = dependencySet;
@@ -396,14 +395,12 @@ public class CGMerger {
         List<DirectedGraph> depGraphs = new ArrayList<>();
         if (this.dbContext == null) {
             for (final var dep : this.ercgDependencySet) {
-                logger.info("[mergeAllDeps] current dep: " + dep.getRight().productVersion);
                 var merged = mergeWithCHA(dep.getKey(), getERCGArcs(dep.getRight()));
                 if (merged != null) {
                     depGraphs.add(merged);
                 }
             }
         } else {
-            logger.info("[mergeAllDeps] depSet: " + dependencySet.toString());
             for (final var dep : this.dependencySet) {
                 logger.info("[mergeAllDeps] current dep: " + dep.toString());
                 var merged = mergeWithCHA(dep);
