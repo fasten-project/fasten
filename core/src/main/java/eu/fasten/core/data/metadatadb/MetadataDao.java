@@ -1236,7 +1236,7 @@ public class MetadataDao {
                 .innerJoin(m).on(pv.ID.eq(m.PACKAGE_VERSION_ID))
                 .innerJoin(c).on(m.ID.eq(c.MODULE_ID))
                 .where(packageVersionWhereClause(packageName, version))
-                .and(Callables.CALLABLES.IS_INTERNAL_CALL.eq(true))
+                .and(c.IS_INTERNAL_CALL.eq(true))
                 .fetch();
         return result.map(Record1::value1);
     }
