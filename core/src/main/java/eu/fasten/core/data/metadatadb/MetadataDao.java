@@ -1228,6 +1228,9 @@ public class MetadataDao {
         Modules m = Modules.MODULES;
         Callables c = Callables.CALLABLES;
 
+        logger.info("Package Name: " + packageName);
+        logger.info("Package Version: " + version);
+
         // Building and executing the query
         var result = context
                 .select(c.ID)
@@ -1236,8 +1239,10 @@ public class MetadataDao {
                 .innerJoin(m).on(pv.ID.eq(m.PACKAGE_VERSION_ID))
                 .innerJoin(c).on(m.ID.eq(c.MODULE_ID))
                 .where(packageVersionWhereClause(packageName, version))
-                .and(c.IS_INTERNAL_CALL.eq(true))
+                .and(Callables.CALLABLES.IS_INTERNAL_CALL.eq(true))
                 .fetch();
+
+        logger.info("Total rows: " + result.size());
         return result.map(Record1::value1);
     }
 
