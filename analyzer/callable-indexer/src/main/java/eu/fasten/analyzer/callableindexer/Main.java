@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.graphplugin;
+package eu.fasten.analyzer.callableindexer;
 
 import eu.fasten.core.data.graphdb.RocksDao;
 import java.io.FileNotFoundException;
@@ -50,7 +50,7 @@ public class Main implements Runnable {
 
     @Override
     public void run() {
-        var graphPlugin = new GraphDatabasePlugin.GraphDBExtension();
+        var graphPlugin = new CallableIndexer.GraphDBExtension();
         try {
             graphPlugin.setRocksDao(new RocksDao(dir, false));
         } catch (RocksDBException e) {

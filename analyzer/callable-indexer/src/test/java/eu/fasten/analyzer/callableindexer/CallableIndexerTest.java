@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.graphplugin;
+package eu.fasten.analyzer.callableindexer;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -30,13 +30,13 @@ import org.mockito.Mockito;
 import org.rocksdb.RocksDBException;
 import static org.junit.jupiter.api.Assertions.*;
 
-public class GraphDatabasePluginTest {
+public class CallableIndexerTest {
 
-    private GraphDatabasePlugin.GraphDBExtension graphDBExtension;
+    private CallableIndexer.GraphDBExtension graphDBExtension;
 
     @BeforeEach
     public void setUp() {
-        graphDBExtension = new GraphDatabasePlugin.GraphDBExtension();
+        graphDBExtension = new CallableIndexer.GraphDBExtension();
         graphDBExtension.setTopic("fasten.MetadataDBExtension.out");
     }
 

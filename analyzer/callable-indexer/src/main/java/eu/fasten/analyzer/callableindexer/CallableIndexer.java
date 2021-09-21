@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.graphplugin;
+package eu.fasten.analyzer.callableindexer;
 
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.graphdb.ExtendedGidGraph;
@@ -27,7 +27,6 @@ import eu.fasten.core.plugins.KafkaPlugin;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
-import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Collections;
@@ -39,13 +38,12 @@ import org.json.JSONTokener;
 import org.pf4j.Extension;
 import org.pf4j.Plugin;
 import org.pf4j.PluginWrapper;
-import org.rocksdb.RocksDBException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class GraphDatabasePlugin extends Plugin {
+public class CallableIndexer extends Plugin {
 
-    public GraphDatabasePlugin(PluginWrapper wrapper) {
+    public CallableIndexer(PluginWrapper wrapper) {
         super(wrapper);
     }
 

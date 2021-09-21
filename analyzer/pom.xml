@@ -33,7 +33,7 @@
     <modules>
         <module>javacg-opal</module>
         <module>metadata-plugin</module>
-        <module>graph-plugin</module>
+        <module>callable-indexer</module>
         <module>pom-analyzer</module>
         <module>repo-cloner-plugin</module>
         <module>quality-analyzer</module>
