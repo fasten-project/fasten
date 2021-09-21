@@ -22,7 +22,7 @@ import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.graphdb.ExtendedGidGraph;
 import eu.fasten.core.data.graphdb.GidGraph;
 import eu.fasten.core.data.graphdb.RocksDao;
-import eu.fasten.core.plugins.GraphDBConnector;
+import eu.fasten.core.plugins.CallableIndexConnector;
 import eu.fasten.core.plugins.KafkaPlugin;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -48,16 +48,16 @@ public class CallableIndexer extends Plugin {
     }
 
     @Extension
-    public static class GraphDBExtension implements KafkaPlugin, GraphDBConnector {
+    public static class CallableIndexExtension implements KafkaPlugin, CallableIndexConnector {
 
         private String consumerTopic = "fasten.MetadataDBExtension.out";
         private Exception pluginError = null;
-        private final Logger logger = LoggerFactory.getLogger(GraphDBExtension.class.getName());
+        private final Logger logger = LoggerFactory.getLogger(CallableIndexExtension.class.getName());
         private static RocksDao rocksDao;
         private String outputPath;
 
         public void setRocksDao(RocksDao rocksDao) {
-            GraphDBExtension.rocksDao = rocksDao;
+            CallableIndexExtension.rocksDao = rocksDao;
         }
 
         @Override

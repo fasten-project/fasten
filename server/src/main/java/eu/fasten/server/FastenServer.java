@@ -32,7 +32,6 @@ import java.sql.SQLException;
 import java.util.AbstractMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.ObjectUtils;
@@ -189,7 +188,7 @@ public class FastenServer implements Runnable {
         var fastenPlugins = jarPluginManager.getExtensions(FastenPlugin.class);
         var dbPlugins = jarPluginManager.getExtensions(DBConnector.class);
         var kafkaPlugins = jarPluginManager.getExtensions(KafkaPlugin.class);
-        var graphDbPlugins = jarPluginManager.getExtensions(GraphDBConnector.class);
+        var graphDbPlugins = jarPluginManager.getExtensions(CallableIndexConnector.class);
         var dataWriterPlugins = jarPluginManager.getExtensions(DataWriter.class);
         var graphResolverUserPlugins = jarPluginManager.getExtensions(DependencyGraphUser.class);
         var graphDbReaderPlugins = jarPluginManager.getExtensions(GraphDBReader.class);
@@ -312,7 +311,7 @@ public class FastenServer implements Runnable {
      *
      * @param graphDbPlugins list of Graph DB plugins
      */
-    private void makeGraphDBConnection(List<GraphDBConnector> graphDbPlugins) {
+    private void makeGraphDBConnection(List<CallableIndexConnector> graphDbPlugins) {
         graphDbPlugins.forEach((p) -> {
             if (ObjectUtils.allNotNull(graphDbDir)) {
                 try {

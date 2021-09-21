@@ -23,7 +23,7 @@ import eu.fasten.core.data.graphdb.RocksDao;
 /**
  * A plug-in that needs to access graph database (RocksDB)
  */
-public interface GraphDBConnector extends FastenPlugin {
+public interface CallableIndexConnector extends FastenPlugin {
 
     /**
      * Sets RocksDB connection.

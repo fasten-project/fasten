@@ -50,7 +50,7 @@ public class Main implements Runnable {
 
     @Override
     public void run() {
-        var graphPlugin = new CallableIndexer.GraphDBExtension();
+        var graphPlugin = new CallableIndexer.CallableIndexExtension();
         try {
             graphPlugin.setRocksDao(new RocksDao(dir, false));
         } catch (RocksDBException e) {

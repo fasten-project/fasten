@@ -32,12 +32,12 @@ import static org.junit.jupiter.api.Assertions.*;
 
 public class CallableIndexerTest {
 
-    private CallableIndexer.GraphDBExtension graphDBExtension;
+    private CallableIndexer.CallableIndexExtension callableIndexExtension;
 
     @BeforeEach
     public void setUp() {
-        graphDBExtension = new CallableIndexer.GraphDBExtension();
-        graphDBExtension.setTopic("fasten.MetadataDBExtension.out");
+        callableIndexExtension = new CallableIndexer.CallableIndexExtension();
+        callableIndexExtension.setTopic("fasten.MetadataDBExtension.out");
     }
 
     @Test
@@ -52,8 +52,8 @@ public class CallableIndexerTest {
                 "\"edges\": [[1, 2], [2, 3]]" +
                 "}}");
         var graph = GidGraph.getGraph(json.getJSONObject("payload"));
-        graphDBExtension.setRocksDao(rocksDao);
-        graphDBExtension.consume(json.toString());
+        callableIndexExtension.setRocksDao(rocksDao);
+        callableIndexExtension.consume(json.toString());
         Mockito.verify(rocksDao).saveToRocksDb(graph);
     }
 
@@ -67,36 +67,36 @@ public class CallableIndexerTest {
                 "\"numInternalNodes\": 2," +
                 "\"edges\": [[0, 1], [1, 2]]" +
                 "}}";
-        graphDBExtension.consume(json);
-        assertNull(graphDBExtension.getPluginError());
+        callableIndexExtension.consume(json);
+        assertNull(callableIndexExtension.getPluginError());
     }
 
     @Test
     public void consumeJsonErrorTest() {
-        graphDBExtension.consume("{\"payload\":{\"foo\":\"bar\"}}");
-        assertNotNull(graphDBExtension.getPluginError());
+        callableIndexExtension.consume("{\"payload\":{\"foo\":\"bar\"}}");
+        assertNotNull(callableIndexExtension.getPluginError());
     }
 
     @Test
     public void consumerTopicsTest() {
         var topics = Optional.of(Collections.singletonList("fasten.MetadataDBExtension.out"));
-        assertEquals(topics, graphDBExtension.consumeTopic());
+        assertEquals(topics, callableIndexExtension.consumeTopic());
     }
 
     @Test
     public void consumerTopicChangeTest() {
         var topics1 = Optional.of(Collections.singletonList("fasten.MetadataDBExtension.out"));
-        assertEquals(topics1, graphDBExtension.consumeTopic());
+        assertEquals(topics1, callableIndexExtension.consumeTopic());
         var differentTopic = "DifferentKafkaTopic";
         var topics2 = Optional.of(Collections.singletonList(differentTopic));
-        graphDBExtension.setTopic(differentTopic);
-        assertEquals(topics2, graphDBExtension.consumeTopic());
+        callableIndexExtension.setTopic(differentTopic);
+        assertEquals(topics2, callableIndexExtension.consumeTopic());
     }
 
     @Test
     public void nameTest() {
         var name = "Graph plugin";
-        assertEquals(name, graphDBExtension.name());
+        assertEquals(name, callableIndexExtension.name());
     }
 
     @Test
@@ -104,6 +104,6 @@ public class CallableIndexerTest {
         var description = "Graph plugin. "
                 + "Consumes list of edges (pair of global IDs produced by PostgreSQL from Kafka"
                 + " topic and populates graph database (RocksDB) with consumed data";
-        assertEquals(description, graphDBExtension.description());
+        assertEquals(description, callableIndexExtension.description());
     }
 }
