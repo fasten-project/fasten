@@ -12,11 +12,11 @@
     </parent>
 
     <groupId>eu.fasten.analyzer</groupId>
-    <artifactId>graph-plugin</artifactId>
+    <artifactId>callable-indexer</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <packaging>jar</packaging>
 
-    <name>graph-plugin</name>
+    <name>callable-indexer</name>
 
     <dependencies>
         <dependency>
@@ -67,9 +67,9 @@
                                         <X-Compile-Source-JDK>11</X-Compile-Source-JDK>
                                         <X-Compile-Target-JDK>11</X-Compile-Target-JDK>
                                         <Plugin-Class>eu.fasten.analyzer.callableindexer.CallableIndexer</Plugin-Class>
-                                        <Plugin-Id>graph-plugin</Plugin-Id>
+                                        <Plugin-Id>callable-indexer</Plugin-Id>
                                         <Plugin-Version>0.0.1</Plugin-Version>
-                                        <Plugin-Description>Graph Plugin</Plugin-Description>
+                                        <Plugin-Description>Callable Indexer</Plugin-Description>
                                         <Plugin-License>Apache License 2.0</Plugin-License>
                                     </manifestEntries>
                                 </transformer>
@@ -91,7 +91,7 @@
                                 <exclude>META-INF/*.DSA</exclude>
                                 <exclude>META-INF/*.RSA</exclude>
                                 <exclude>eu/fasten/core/plugins/*</exclude>
-                                <exclude>eu/fasten/core/data/graphdb/*</exclude>
+                                <exclude>eu/fasten/core/data/callaleindex/*</exclude>
                             </excludes>
                         </filter>
                     </filters>

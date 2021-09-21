@@ -18,7 +18,7 @@
 
 package eu.fasten.analyzer.callableindexer;
 
-import eu.fasten.core.data.graphdb.RocksDao;
+import eu.fasten.core.data.callableindex.RocksDao;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import org.json.JSONObject;

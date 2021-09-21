@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package eu.fasten.core.data.graphdb;
+package eu.fasten.core.data.callableindex;
 
 import eu.fasten.core.data.metadatadb.codegen.tables.records.CallSitesRecord;
 import org.json.JSONException;

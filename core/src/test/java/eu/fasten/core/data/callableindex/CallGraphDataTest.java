@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package eu.fasten.core.data.graphdb;
+package eu.fasten.core.data.callableindex;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;

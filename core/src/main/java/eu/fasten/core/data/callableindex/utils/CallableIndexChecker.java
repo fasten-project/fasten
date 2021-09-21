@@ -16,11 +16,11 @@
  * limitations under the License.
  */
 
-package eu.fasten.core.data.graphdb.utils;
+package eu.fasten.core.data.callableindex.utils;
 
 import eu.fasten.core.data.DirectedGraph;
-import eu.fasten.core.data.graphdb.GraphMetadata;
-import eu.fasten.core.data.graphdb.RocksDao;
+import eu.fasten.core.data.callableindex.GraphMetadata;
+import eu.fasten.core.data.callableindex.RocksDao;
 import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
 import eu.fasten.core.dbconnectors.PostgresConnector;
 import eu.fasten.core.dbconnectors.RocksDBConnector;

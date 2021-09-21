@@ -1,4 +1,4 @@
-package eu.fasten.core.data.graphdb;
+package eu.fasten.core.data.callableindex;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;

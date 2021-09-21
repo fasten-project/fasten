@@ -1,4 +1,4 @@
-package eu.fasten.core.data.graphdb;
+package eu.fasten.core.data.callableindex;
 
 import java.util.Arrays;
 import java.util.Properties;

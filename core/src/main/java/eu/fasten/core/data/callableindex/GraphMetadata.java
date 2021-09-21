@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package eu.fasten.core.data.graphdb;
+package eu.fasten.core.data.callableindex;
 
 import java.util.List;
 import it.unimi.dsi.fastutil.HashCommon;

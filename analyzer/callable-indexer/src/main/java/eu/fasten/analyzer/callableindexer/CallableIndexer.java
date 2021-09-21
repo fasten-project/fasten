@@ -19,9 +19,9 @@
 package eu.fasten.analyzer.callableindexer;
 
 import eu.fasten.core.data.Constants;
-import eu.fasten.core.data.graphdb.ExtendedGidGraph;
-import eu.fasten.core.data.graphdb.GidGraph;
-import eu.fasten.core.data.graphdb.RocksDao;
+import eu.fasten.core.data.callableindex.ExtendedGidGraph;
+import eu.fasten.core.data.callableindex.GidGraph;
+import eu.fasten.core.data.callableindex.RocksDao;
 import eu.fasten.core.plugins.CallableIndexConnector;
 import eu.fasten.core.plugins.KafkaPlugin;
 import java.io.File;

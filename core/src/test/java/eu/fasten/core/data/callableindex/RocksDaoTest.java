@@ -16,10 +16,10 @@
  * limitations under the License.
  */
 
-package eu.fasten.core.data.graphdb;
+package eu.fasten.core.data.callableindex;
 
-import static eu.fasten.core.data.graphdb.GraphMetadata.ReceiverRecord.CallType.DYNAMIC;
-import static eu.fasten.core.data.graphdb.GraphMetadata.ReceiverRecord.CallType.STATIC;
+import static eu.fasten.core.data.callableindex.GraphMetadata.ReceiverRecord.CallType.DYNAMIC;
+import static eu.fasten.core.data.callableindex.GraphMetadata.ReceiverRecord.CallType.STATIC;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
@@ -36,7 +36,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.rocksdb.RocksDBException;
 
-import eu.fasten.core.data.graphdb.GraphMetadata.ReceiverRecord;
+import eu.fasten.core.data.callableindex.GraphMetadata.ReceiverRecord;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.longs.LongList;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;

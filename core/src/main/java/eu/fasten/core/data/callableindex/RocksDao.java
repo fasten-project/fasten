@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package eu.fasten.core.data.graphdb;
+package eu.fasten.core.data.callableindex;
 
 import static eu.fasten.core.utils.VariableLengthByteCoder.readLong;
 import static eu.fasten.core.utils.VariableLengthByteCoder.readString;
@@ -56,9 +56,9 @@ import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.DirectedGraph;
 import eu.fasten.core.data.FastenJavaURI;
 import eu.fasten.core.data.GOV3LongFunction;
-import eu.fasten.core.data.graphdb.GraphMetadata.NodeMetadata;
-import eu.fasten.core.data.graphdb.GraphMetadata.ReceiverRecord;
-import eu.fasten.core.data.graphdb.GraphMetadata.ReceiverRecord.CallType;
+import eu.fasten.core.data.callableindex.GraphMetadata.NodeMetadata;
+import eu.fasten.core.data.callableindex.GraphMetadata.ReceiverRecord;
+import eu.fasten.core.data.callableindex.GraphMetadata.ReceiverRecord.CallType;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.CallSitesRecord;
 import eu.fasten.core.index.BVGraphSerializer;
 import eu.fasten.core.index.LayeredLabelPropagation;

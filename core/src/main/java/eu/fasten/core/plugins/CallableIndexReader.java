@@ -18,7 +18,7 @@
 
 package eu.fasten.core.plugins;
 
-import eu.fasten.core.data.graphdb.RocksDao;
+import eu.fasten.core.data.callableindex.RocksDao;
 
 /**
  * A plug-in that needs to access graph database (RocksDB) in a read-only mode
