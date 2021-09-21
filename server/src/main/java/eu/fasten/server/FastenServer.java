@@ -191,7 +191,7 @@ public class FastenServer implements Runnable {
         var graphDbPlugins = jarPluginManager.getExtensions(CallableIndexConnector.class);
         var dataWriterPlugins = jarPluginManager.getExtensions(DataWriter.class);
         var graphResolverUserPlugins = jarPluginManager.getExtensions(DependencyGraphUser.class);
-        var graphDbReaderPlugins = jarPluginManager.getExtensions(GraphDBReader.class);
+        var graphDbReaderPlugins = jarPluginManager.getExtensions(CallableIndexReader.class);
 
         logger.info("Plugin init done: {} KafkaPlugins, {} DB plug-ins, {} GraphDB plug-ins:"
                         + " {} total plugins",
@@ -334,7 +334,7 @@ public class FastenServer implements Runnable {
      *
      * @param graphDbPlugins list of Graph DB plugins
      */
-    private void makeReadOnlyGraphDBConnection(List<GraphDBReader> graphDbPlugins) {
+    private void makeReadOnlyGraphDBConnection(List<CallableIndexReader> graphDbPlugins) {
         graphDbPlugins.forEach((p) -> {
             if (ObjectUtils.allNotNull(graphDbDir)) {
                 try {

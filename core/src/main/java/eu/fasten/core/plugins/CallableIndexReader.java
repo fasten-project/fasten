@@ -23,7 +23,7 @@ import eu.fasten.core.data.graphdb.RocksDao;
 /**
  * A plug-in that needs to access graph database (RocksDB) in a read-only mode
  */
-public interface GraphDBReader extends FastenPlugin {
+public interface CallableIndexReader extends FastenPlugin {
 
     /**
      * Sets read-only RocksDB connection.
