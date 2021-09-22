@@ -1321,15 +1321,20 @@ public class MetadataDao {
     }
 
     public Map<Long, JSONObject> findVulnerableCallables(Set<Long> vulnerablePackageVersions, Set<Long> callableIDs) {
+
+        PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
+        Modules m = Modules.MODULES;
+        Callables c = Callables.CALLABLES;
+
         var result = context
-                .select(Callables.CALLABLES.ID, Callables.CALLABLES.METADATA)
-                .from(Callables.CALLABLES)
-                .join(Modules.MODULES)
-                .on(Callables.CALLABLES.MODULE_ID.eq(Modules.MODULES.ID))
-                .join(PackageVersions.PACKAGE_VERSIONS)
-                .on(Modules.MODULES.PACKAGE_VERSION_ID.eq(PackageVersions.PACKAGE_VERSIONS.ID))
-                .where(PackageVersions.PACKAGE_VERSIONS.ID.in(vulnerablePackageVersions))
-                .and(Callables.CALLABLES.ID.in(callableIDs))
+                .select(c.ID, c.METADATA)
+                .from(c)
+                .join(m)
+                .on(c.MODULE_ID.eq(m.ID))
+                .join(pv)
+                .on(m.PACKAGE_VERSION_ID.eq(pv.ID))
+                .where(pv.ID.in(vulnerablePackageVersions))
+                .and(c.ID.in(callableIDs))
                 .and("callables.metadata::jsonb->'vulnerabilities' is not null")
                 .fetch();
         var map = new HashMap<Long, JSONObject>(result.size());
