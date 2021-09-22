@@ -1221,6 +1221,30 @@ public class MetadataDao {
         return queryResult.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
     }
 
+    public Long getPackageVersionCallable(Long packageVersionId) {
+        // Tables
+        Packages p = Packages.PACKAGES;
+        PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
+        Modules m = Modules.MODULES;
+        Callables c = Callables.CALLABLES;
+
+        var result = context
+                .select(c.ID)
+                .from(p)
+                .innerJoin(pv).on(p.ID.eq(pv.PACKAGE_ID))
+                .innerJoin(m).on(pv.ID.eq(m.PACKAGE_VERSION_ID))
+                .innerJoin(c).on(m.ID.eq(c.MODULE_ID))
+                .where(pv.ID.eq(packageVersionId))
+                .and(c.IS_INTERNAL_CALL.eq(true))
+                .limit(1)
+                .fetchOne();
+
+        if (result == null) {
+            return null;
+        }
+        return result.value1();
+    }
+
     public List<Long> getPackageInternalCallableIDs(String packageName, String version) {
         if (!assertPackageExistence(packageName, version)) {
             throw new PackageVersionNotFoundException(packageName + Constants.mvnCoordinateSeparator + version);
