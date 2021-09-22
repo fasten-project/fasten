@@ -1222,8 +1222,6 @@ public class MetadataDao {
     }
 
     public List<Long> getPackageInternalCallableIDs(String packageName, String version) {
-        logger.info("Package Name: " + packageName);
-        logger.info("Package Version: " + version);
         if (!assertPackageExistence(packageName, version)) {
             throw new PackageVersionNotFoundException(packageName + Constants.mvnCoordinateSeparator + version);
         }
@@ -1247,7 +1245,7 @@ public class MetadataDao {
                 .and(c.IS_INTERNAL_CALL.eq(true))
                 .fetch();
 
-        logger.info("Total rows: " + result.size());
+        logger.debug("Total rows: " + result.size());
         return result.map(Record1::value1);
     }
 
