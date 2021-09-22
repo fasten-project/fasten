@@ -1242,8 +1242,9 @@ public class MetadataDao {
                 .innerJoin(pv).on(p.ID.eq(pv.PACKAGE_ID))
                 .innerJoin(m).on(pv.ID.eq(m.PACKAGE_VERSION_ID))
                 .innerJoin(c).on(m.ID.eq(c.MODULE_ID))
-                .where(packageVersionWhereClause(packageName, version))
-//                .and(Callables.CALLABLES.IS_INTERNAL_CALL.eq(true))
+                .where(p.PACKAGE_NAME.eq(packageName))
+                .and(pv.VERSION.eq(version))
+                .and(c.IS_INTERNAL_CALL.eq(true))
                 .fetch();
 
         logger.info("Total rows: " + result.size());
