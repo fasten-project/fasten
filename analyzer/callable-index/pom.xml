@@ -12,11 +12,11 @@
     </parent>
 
     <groupId>eu.fasten.analyzer</groupId>
-    <artifactId>callable-indexer</artifactId>
+    <artifactId>callable-index</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <packaging>jar</packaging>
 
-    <name>callable-indexer</name>
+    <name>callable-index</name>
 
     <dependencies>
         <dependency>
@@ -63,13 +63,13 @@
                             <transformers>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                                     <manifestEntries>
-                                        <Main-Class>eu.fasten.analyzer.callableindexer.Main</Main-Class>
+                                        <Main-Class>eu.fasten.analyzer.callableindex.Main</Main-Class>
                                         <X-Compile-Source-JDK>11</X-Compile-Source-JDK>
                                         <X-Compile-Target-JDK>11</X-Compile-Target-JDK>
-                                        <Plugin-Class>eu.fasten.analyzer.callableindexer.CallableIndexer</Plugin-Class>
-                                        <Plugin-Id>callable-indexer</Plugin-Id>
+                                        <Plugin-Class>eu.fasten.analyzer.callableindex.CallableIndexServerPlugin</Plugin-Class>
+                                        <Plugin-Id>callable-index</Plugin-Id>
                                         <Plugin-Version>0.0.1</Plugin-Version>
-                                        <Plugin-Description>Callable Indexer</Plugin-Description>
+                                        <Plugin-Description>Callable Index</Plugin-Description>
                                         <Plugin-License>Apache License 2.0</Plugin-License>
                                     </manifestEntries>
                                 </transformer>
@@ -91,7 +91,7 @@
                                 <exclude>META-INF/*.DSA</exclude>
                                 <exclude>META-INF/*.RSA</exclude>
                                 <exclude>eu/fasten/core/plugins/*</exclude>
-                                <exclude>eu/fasten/core/data/callaleindex/*</exclude>
+                                <exclude>eu/fasten/core/data/callableindex/*</exclude>
                                 <exclude>eu/fasten/core/data/*</exclude>
                             </excludes>
                         </filter>

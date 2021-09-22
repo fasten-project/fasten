@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.callableindexer;
+package eu.fasten.analyzer.callableindex;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -30,14 +30,14 @@ import org.mockito.Mockito;
 import org.rocksdb.RocksDBException;
 import static org.junit.jupiter.api.Assertions.*;
 
-public class CallableIndexerTest {
+public class CallableIndexServerPluginTest {
 
-    private CallableIndexer.CallableIndexExtension callableIndexExtension;
+    private CallableIndexServerPlugin.CallableIndexFastenPlugin callableIndexFastenPlugin;
 
     @BeforeEach
     public void setUp() {
-        callableIndexExtension = new CallableIndexer.CallableIndexExtension();
-        callableIndexExtension.setTopic("fasten.MetadataDBExtension.out");
+        callableIndexFastenPlugin = new CallableIndexServerPlugin.CallableIndexFastenPlugin();
+        callableIndexFastenPlugin.setTopic("fasten.MetadataDBExtension.out");
     }
 
     @Test
@@ -52,8 +52,8 @@ public class CallableIndexerTest {
                 "\"edges\": [[1, 2], [2, 3]]" +
                 "}}");
         var graph = GidGraph.getGraph(json.getJSONObject("payload"));
-        callableIndexExtension.setRocksDao(rocksDao);
-        callableIndexExtension.consume(json.toString());
+        callableIndexFastenPlugin.setRocksDao(rocksDao);
+        callableIndexFastenPlugin.consume(json.toString());
         Mockito.verify(rocksDao).saveToRocksDb(graph);
     }
 
@@ -67,43 +67,43 @@ public class CallableIndexerTest {
                 "\"numInternalNodes\": 2," +
                 "\"edges\": [[0, 1], [1, 2]]" +
                 "}}";
-        callableIndexExtension.consume(json);
-        assertNull(callableIndexExtension.getPluginError());
+        callableIndexFastenPlugin.consume(json);
+        assertNull(callableIndexFastenPlugin.getPluginError());
     }
 
     @Test
     public void consumeJsonErrorTest() {
-        callableIndexExtension.consume("{\"payload\":{\"foo\":\"bar\"}}");
-        assertNotNull(callableIndexExtension.getPluginError());
+        callableIndexFastenPlugin.consume("{\"payload\":{\"foo\":\"bar\"}}");
+        assertNotNull(callableIndexFastenPlugin.getPluginError());
     }
 
     @Test
     public void consumerTopicsTest() {
         var topics = Optional.of(Collections.singletonList("fasten.MetadataDBExtension.out"));
-        assertEquals(topics, callableIndexExtension.consumeTopic());
+        assertEquals(topics, callableIndexFastenPlugin.consumeTopic());
     }
 
     @Test
     public void consumerTopicChangeTest() {
         var topics1 = Optional.of(Collections.singletonList("fasten.MetadataDBExtension.out"));
-        assertEquals(topics1, callableIndexExtension.consumeTopic());
+        assertEquals(topics1, callableIndexFastenPlugin.consumeTopic());
         var differentTopic = "DifferentKafkaTopic";
         var topics2 = Optional.of(Collections.singletonList(differentTopic));
-        callableIndexExtension.setTopic(differentTopic);
-        assertEquals(topics2, callableIndexExtension.consumeTopic());
+        callableIndexFastenPlugin.setTopic(differentTopic);
+        assertEquals(topics2, callableIndexFastenPlugin.consumeTopic());
     }
 
     @Test
     public void nameTest() {
         var name = "Graph plugin";
-        assertEquals(name, callableIndexExtension.name());
+        assertEquals(name, callableIndexFastenPlugin.name());
     }
 
     @Test
     public void descriptionTest() {
-        var description = "Graph plugin. "
-                + "Consumes list of edges (pair of global IDs produced by PostgreSQL from Kafka"
-                + " topic and populates graph database (RocksDB) with consumed data";
-        assertEquals(description, callableIndexExtension.description());
+        var description = "Callable index plugin. "
+            + "Consumes list of edges (pair of global IDs produced by PostgreSQL from Kafka"
+            + " topic and populates graph database (RocksDB) with consumed data";
+        assertEquals(description, callableIndexFastenPlugin.description());
     }
 }

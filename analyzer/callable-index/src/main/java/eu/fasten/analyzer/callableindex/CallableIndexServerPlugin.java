@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.callableindexer;
+package eu.fasten.analyzer.callableindex;
 
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.callableindex.ExtendedGidGraph;
@@ -41,23 +41,23 @@ import org.pf4j.PluginWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class CallableIndexer extends Plugin {
+public class CallableIndexServerPlugin extends Plugin {
 
-    public CallableIndexer(PluginWrapper wrapper) {
+    public CallableIndexServerPlugin(PluginWrapper wrapper) {
         super(wrapper);
     }
 
     @Extension
-    public static class CallableIndexExtension implements KafkaPlugin, CallableIndexConnector {
+    public static class CallableIndexFastenPlugin implements KafkaPlugin, CallableIndexConnector {
 
         private String consumerTopic = "fasten.MetadataDBExtension.out";
         private Exception pluginError = null;
-        private final Logger logger = LoggerFactory.getLogger(CallableIndexExtension.class.getName());
+        private final Logger logger = LoggerFactory.getLogger(CallableIndexFastenPlugin.class.getName());
         private static RocksDao rocksDao;
         private String outputPath;
 
         public void setRocksDao(RocksDao rocksDao) {
-            CallableIndexExtension.rocksDao = rocksDao;
+            CallableIndexFastenPlugin.rocksDao = rocksDao;
         }
 
         @Override
@@ -163,7 +163,7 @@ public class CallableIndexer extends Plugin {
 
         @Override
         public String description() {
-            return "Graph plugin. "
+            return "Callable index plugin. "
                     + "Consumes list of edges (pair of global IDs produced by PostgreSQL from Kafka"
                     + " topic and populates graph database (RocksDB) with consumed data";
         }
