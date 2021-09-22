@@ -1222,14 +1222,18 @@ public class MetadataDao {
     }
 
     public List<Long> getPackageInternalCallableIDs(String packageName, String version) {
+        logger.info("Package Name: " + packageName);
+        logger.info("Package Version: " + version);
+        if (!assertPackageExistence(packageName, version)) {
+            throw new PackageVersionNotFoundException(packageName + Constants.mvnCoordinateSeparator + version);
+        }
+
         // Tables
         Packages p = Packages.PACKAGES;
         PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
         Modules m = Modules.MODULES;
         Callables c = Callables.CALLABLES;
 
-        logger.info("Package Name: " + packageName);
-        logger.info("Package Version: " + version);
 
         // Building and executing the query
         var result = context
@@ -1239,7 +1243,7 @@ public class MetadataDao {
                 .innerJoin(m).on(pv.ID.eq(m.PACKAGE_VERSION_ID))
                 .innerJoin(c).on(m.ID.eq(c.MODULE_ID))
                 .where(packageVersionWhereClause(packageName, version))
-                .and(Callables.CALLABLES.IS_INTERNAL_CALL.eq(true))
+//                .and(Callables.CALLABLES.IS_INTERNAL_CALL.eq(true))
                 .fetch();
 
         logger.info("Total rows: " + result.size());
