@@ -50,7 +50,8 @@ public class CallableIndexServerPlugin extends Plugin {
     @Extension
     public static class CallableIndexFastenPlugin implements KafkaPlugin, CallableIndexConnector {
 
-        private String consumerTopic = "fasten.MetadataDBExtension.out";
+        private String consumerTopic = "fasten.MetadataDBJavaExtension.out";
+        private String prioTopic = "fasten.MetadataDBJavaExtension.priority.out";
         private Exception pluginError = null;
         private final Logger logger = LoggerFactory.getLogger(CallableIndexFastenPlugin.class.getName());
         private static RocksDao rocksDao;
@@ -62,7 +63,7 @@ public class CallableIndexServerPlugin extends Plugin {
 
         @Override
         public Optional<List<String>> consumeTopic() {
-            return Optional.of(Collections.singletonList(consumerTopic));
+            return Optional.of(List.of(prioTopic, consumerTopic));
         }
 
         @Override
