@@ -172,7 +172,7 @@ public class CGMerger {
                 .forEach((k, v) -> this.universalChildren.put(k, new ArrayList<>(v)));
         this.universalParents = new HashMap<>(universalCHA.getLeft().size());
         universalCHA.getLeft().forEach((k, v) -> this.universalParents.put(k, new ArrayList<>(v)));
-        this.typeDictionary = createTypeDictionary(this.dependencySet, dbContext, rocksDao);
+        this.typeDictionary = createTypeDictionary(this.dependencySet, rocksDao);
     }
 
     /**
@@ -193,7 +193,7 @@ public class CGMerger {
                 .forEach((k, v) -> this.universalChildren.put(k, new ArrayList<>(v)));
         this.universalParents = new HashMap<>(universalCHA.getLeft().size());
         universalCHA.getLeft().forEach((k, v) -> this.universalParents.put(k, new ArrayList<>(v)));
-        this.typeDictionary = createTypeDictionary(dependencySet, dbContext, rocksDao);
+        this.typeDictionary = createTypeDictionary(dependencySet, rocksDao);
     }
 
     public DirectedGraph mergeWithCHA(final long id) {
@@ -493,32 +493,41 @@ public class CGMerger {
      * Create a mapping from types and method signatures to callable IDs.
      *
      * @param dependenciesIds IDs of dependencies
-     * @param dbContext       DSL context
      * @param rocksDao        rocks DAO
      * @return a type dictionary
      */
     private Map<String, Map<String, LongSet>> createTypeDictionary(
-            final Set<Long> dependenciesIds, final DSLContext dbContext, final RocksDao rocksDao) {
+            final Set<Long> dependenciesIds, final RocksDao rocksDao) {
         final long startTime = System.currentTimeMillis();
         var result = new HashMap<String, Map<String, LongSet>>();
 
-        var callables = getCallables(dependenciesIds, rocksDao);
+        for (Long dependencyId : dependenciesIds) {
+            DirectedGraph cg = null;
+            try {
+                cg = rocksDao.getGraphData(dependencyId);
+            } catch (RocksDBException e) {
+                e.printStackTrace();
+            }
+            if (cg == null) {
+                continue;
+            }
+            final var metadata = getArcs(dependencyId, cg, rocksDao);
+            if (metadata == null) {
+                continue;
+            }
 
-        dbContext.select(Callables.CALLABLES.FASTEN_URI, Callables.CALLABLES.ID)
-                .from(Callables.CALLABLES)
-                .where(Callables.CALLABLES.ID.in(callables))
-                .fetch()
-                .forEach(callable -> {
-                    var node = new Node(FastenJavaURI.create(callable.value1()).decanonicalize());
-                    result.putIfAbsent(node.typeUri, new HashMap<>());
-                    var type = result.get(node.typeUri);
-                    var newestSet = new LongOpenHashSet();
-                    newestSet.add(callable.value2().longValue());
-                    type.merge(node.signature, newestSet, (old, newest) -> {
-                        old.addAll(newest);
-                        return old;
-                    });
-                });
+            final var nodesData = metadata.gid2NodeMetadata;
+            for (Long nodeId : nodesData.keySet()) {
+                final var nodeData = nodesData.get(nodeId.longValue());
+                final var typeUri = nodeData.type;
+                var signaturesMap = result.getOrDefault(typeUri, new HashMap<>());
+                final var signature = nodeData.signature;
+                var signatureIds = signaturesMap.getOrDefault(signature, new LongOpenHashSet());
+                signatureIds.add(nodeId.longValue());
+                signaturesMap.put(signature, signatureIds);
+                result.put(typeUri, signaturesMap);
+            }
+        }
 
         logger.info("Created the type dictionary with {} types in {} seconds", result.size(),
                 new DecimalFormat("#0.000")
