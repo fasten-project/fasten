@@ -44,7 +44,9 @@ import org.json.JSONObject;
 import org.json.JSONTokener;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.mockito.InjectMocks;
 import org.mockito.Mockito;
+import org.mockito.Spy;
 import org.rocksdb.RocksDBException;
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -134,6 +136,18 @@ public class CGMergerTest {
                 new GraphMetadata.ReceiverRecord(14, GraphMetadata.ReceiverRecord.CallType.STATIC, "staticMethod()/java.lang/IntegerType", List.of("/test.group/Foo")),
                 new GraphMetadata.ReceiverRecord(15, GraphMetadata.ReceiverRecord.CallType.SPECIAL, "<init>(/java.lang/IntegerType)/java.lang/VoidType", List.of("/test.group/Foo"))
         )));
+        gid2nodeMap.put(BAZ_INIT, new GraphMetadata.NodeMetadata("/test.group/Baz",
+            "<init>(/java.lang/IntegerType,/java.lang/IntegerType,/java.lang/IntegerType)/java.lang/VoidType", List.of()));
+        gid2nodeMap.put(BAR_SUPER_METHOD, new GraphMetadata.NodeMetadata("/test.group/Bar",
+            "superMethod()/java.lang/VoidType", List.of()));
+        gid2nodeMap.put(BAR_INIT, new GraphMetadata.NodeMetadata("/test.group/Bar",
+            "<init>(/java.lang/IntegerType,/java.lang/IntegerType)/java.lang/VoidType", List.of()));
+        gid2nodeMap.put(FOO_STATIC_METHOD, new GraphMetadata.NodeMetadata("/test.group/Foo",
+            "staticMethod()/java.lang/IntegerType", List.of()));
+        gid2nodeMap.put(FOO_INIT, new GraphMetadata.NodeMetadata("/test.group/Foo",
+            "<init>(/java.lang/IntegerType)/java.lang/VoidType", List.of()));
+
+        //TODO add all methods to graphmetadata
         graphMetadata = new GraphMetadata(gid2nodeMap);
 
         var file = new File(Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
@@ -157,11 +171,14 @@ public class CGMergerTest {
         var rocksDao = Mockito.mock(RocksDao.class);
         Mockito.when(rocksDao.getGraphData(42)).thenReturn(directedGraph);
         Mockito.when(rocksDao.getGraphMetadata(42, directedGraph)).thenReturn(graphMetadata);
+        var pckgs = List.of("group1:art1:ver1", "group2:art2:ver2");
+        var id = new HashSet<>(Collections.singletonList(42l));
+        var mergerMock = Mockito.mock(CGMerger.class);
+        Mockito.when(mergerMock.getDependenciesIds(pckgs, context)).thenReturn(id);
 
-        merger = new CGMerger(List.of("group1:art1:ver1", "group2:art2:ver2"),
-                context, rocksDao);
+        merger = new CGMerger(id, context, rocksDao);
 
-        var mergedGraph = merger.mergeWithCHA(42);
+        var mergedGraph = merger.mergeWithCHA(42l);
 
         assertNotNull(mergedGraph);
 
