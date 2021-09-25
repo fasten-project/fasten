@@ -891,8 +891,8 @@ public class CGMerger {
      * @param dbContext DSL context
      * @return set of IDs of dependencies
      */
-    private Set<Long> getDependenciesIds(final List<String> dependencySet,
-                                         final DSLContext dbContext) {
+    Set<Long> getDependenciesIds(final List<String> dependencySet,
+                                 final DSLContext dbContext) {
         var coordinates = new HashSet<>(dependencySet);
 
         Condition depCondition = null;
