@@ -20,6 +20,7 @@ package eu.fasten.analyzer.callableindex;
 
 import java.io.IOException;
 import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 import eu.fasten.core.data.callableindex.RocksDao;
 import eu.fasten.core.data.callableindex.GidGraph;
@@ -79,18 +80,18 @@ public class CallableIndexServerPluginTest {
 
     @Test
     public void consumerTopicsTest() {
-        var topics = Optional.of(Collections.singletonList("fasten.MetadataDBExtension.out"));
+        var topics = Optional.of(List.of("fasten.MetadataDBJavaExtension.priority.out","fasten" +
+            ".MetadataDBExtension.out"));
         assertEquals(topics, callableIndexFastenPlugin.consumeTopic());
     }
 
     @Test
     public void consumerTopicChangeTest() {
-        var topics1 = Optional.of(Collections.singletonList("fasten.MetadataDBExtension.out"));
+        var topics1 = Optional.of(List.of("fasten.MetadataDBJavaExtension.priority.out","fasten.MetadataDBExtension.out"));
         assertEquals(topics1, callableIndexFastenPlugin.consumeTopic());
         var differentTopic = "DifferentKafkaTopic";
-        var topics2 = Optional.of(Collections.singletonList(differentTopic));
         callableIndexFastenPlugin.setTopic(differentTopic);
-        assertEquals(topics2, callableIndexFastenPlugin.consumeTopic());
+        assertEquals(differentTopic, callableIndexFastenPlugin.consumeTopic().get().get(1));
     }
 
     @Test
