@@ -110,31 +110,38 @@ public class TauStats {
 
 			final var dm = new CGMerger(LongOpenHashSet.toSet(dependencySet.stream().mapToLong(x -> x.id)), context, tauStats.rocksDao);
 			final var stitchedGraph = dm.mergeWithCHA(gid);
-			
-			Long2DoubleFunction globalRank = Centralities.pageRankParallel(stitchedGraph, gid);			
+
+			Long2DoubleFunction globalRank = Centralities.pageRankParallel(stitchedGraph, 0.85);
 			
 			System.out.println(gid + "\t" + name);
+			long nodesInDeps = 0;
 			
 			for(Revision r: dependencySet) {
 				var dep = tauStats.rocksDao.getGraphData(r.id);
 				if (dep == null) continue;
 				int n = dep.numNodes();
-				Long2DoubleFunction localRank = Centralities.pageRankParallel(dep, gid);
+				nodesInDeps += n;
+				Long2DoubleFunction localRank = Centralities.pageRankParallel(dep, 0.85);
 				final long[] node2Gid = dep.nodes().toLongArray();
 				final Long2IntOpenHashMap gid2Node = new Long2IntOpenHashMap();
 				for(int i = 0; i < node2Gid.length; i++) gid2Node.put(node2Gid[i], i);
 				
 				double[] v = new double[n], w = new double[n];
+				long found = 0;
 				for(long x : dep.nodes()) {
 					v[gid2Node.get(x)] = localRank.get(x);
-					w[gid2Node.get(x)] = globalRank.get(x);
+					if (stitchedGraph.containsVertex(x)) {
+						w[gid2Node.get(x)] = globalRank.get(x);
+						found++;
+					}
 				}
-				
+
 				double t = WeightedTau.HYPERBOLIC.compute(v, w);
-				System.out.println("\t" + r.id + ":" + t);
+				System.out.println("\t" + r.id + ":" + t + " \t" + found);
 			}
 	
+			LOGGER.info("Nodes in deps: " + nodesInDeps);
+			LOGGER.info("Nodes in stitched graph: " + stitchedGraph.numNodes());
 		}
 	}
-
 }
