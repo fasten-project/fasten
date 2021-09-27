@@ -97,24 +97,6 @@ public class GraphDepStats {
 		new CachingPredicateFactory(context);
 	}
 
-
-	public long[] from(final long rev) throws RocksDBException {
-		final var graph = rocksDao.getGraphData(rev);
-		if (graph == null) throw new NoSuchElementException("Revision associated with callable missing from the graph database");
-		
-		final Record2<String, String> record = context.select(Packages.PACKAGES.PACKAGE_NAME, PackageVersions.PACKAGE_VERSIONS.VERSION).from(PackageVersions.PACKAGE_VERSIONS).join(Packages.PACKAGES).on(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.eq(Packages.PACKAGES.ID)).where(PackageVersions.PACKAGE_VERSIONS.ID.eq(Long.valueOf(rev))).fetchOne();
-		final String[] a = record.component1().split(":");
-		final String groupId = a[0];
-		final String artifactId = a[1];
-		final String version = record.component2();
-		final Set<Revision> dependencySet = resolver.resolveDependencies(groupId, artifactId, version, -1, context, true);
-
-		long c = 0;
-		for(Revision r: dependencySet) if (rocksDao.getGraphData(r.id) != null) c++;
-	
-		return new long[] { c, dependencySet.size() };
-	}
-
 	public static void main(final String args[]) throws Exception {
 		final SimpleJSAP jsap = new SimpleJSAP(GraphDepStats.class.getName(), "Creates an instance of SearchEngine and answers queries from the command line (rlwrap recommended).", new Parameter[] {
 				new UnflaggedOption("jdbcURI", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.REQUIRED, JSAP.NOT_GREEDY, "The JDBC URI."),
@@ -138,8 +120,24 @@ public class GraphDepStats {
 		iterator.seekToFirst();
 		for(iterator.seekToFirst(); iterator.isValid(); iterator.next()) {
 			long gid = Longs.fromByteArray(iterator.key());
-			long[] from = graphDepStats.from(gid);
-			System.out.println(gid + "\t" + from[0] + "\t" + from[1] + "\t" + 100. * from[0] / from[1]);
+			final var graph = graphDepStats.rocksDao.getGraphData(gid);
+			if (graph == null) continue;
+
+			final Record2<String, String> record = context.select(Packages.PACKAGES.PACKAGE_NAME, PackageVersions.PACKAGE_VERSIONS.VERSION).from(PackageVersions.PACKAGE_VERSIONS).join(Packages.PACKAGES).on(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.eq(Packages.PACKAGES.ID)).where(PackageVersions.PACKAGE_VERSIONS.ID.eq(Long.valueOf(gid))).fetchOne();
+			final String[] a = record.component1().split(":");
+			final String groupId = a[0];
+			final String artifactId = a[1];
+			final String version = record.component2();
+			final Set<Revision> dependencySet = graphDepStats.resolver.resolveDependencies(groupId, artifactId, version, -1, context, true);
+			final String name = groupId + ":" + artifactId + "$" + version;
+			LOGGER.info("Analyzing graph " + name  + " with id " + gid);
+
+
+			long c = 0;
+			for(Revision r: dependencySet) if (graphDepStats.rocksDao.getGraphData(r.id) != null) c++;
+	
+			if (c != 0 && dependencySet.size() != 0) System.out.println(gid + "\t" + name + "\t" + c + "\t" + dependencySet.size() + "\t" + 100. * c / dependencySet.size());
+			LOGGER.info("Deps: " + dependencySet.size() + " known: " + c + " (" + 100. * c / dependencySet.size() + "%)");
 		}
 	}
 
