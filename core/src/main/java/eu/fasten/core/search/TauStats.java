@@ -18,33 +18,38 @@
 
 package eu.fasten.core.search;
 
+import java.util.Scanner;
 import java.util.Set;
 
 import org.jooq.DSLContext;
 import org.jooq.Record2;
 import org.rocksdb.RocksDB;
-import org.rocksdb.RocksIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.primitives.Longs;
 import com.martiansoftware.jsap.JSAP;
 import com.martiansoftware.jsap.JSAPResult;
 import com.martiansoftware.jsap.Parameter;
 import com.martiansoftware.jsap.SimpleJSAP;
 import com.martiansoftware.jsap.UnflaggedOption;
 
+import eu.fasten.core.data.Centralities;
 import eu.fasten.core.data.graphdb.RocksDao;
 import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
 import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
 import eu.fasten.core.dbconnectors.PostgresConnector;
 import eu.fasten.core.maven.GraphMavenResolver;
 import eu.fasten.core.maven.data.Revision;
+import eu.fasten.core.merge.CGMerger;
 import eu.fasten.core.search.predicate.CachingPredicateFactory;
+import it.unimi.dsi.fastutil.longs.Long2DoubleFunction;
+import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.lang.ObjectParser;
+import it.unimi.dsi.law.stat.WeightedTau;
 
-public class GraphDepStats {
-	private static final Logger LOGGER = LoggerFactory.getLogger(GraphDepStats.class);
+public class TauStats {
+	private static final Logger LOGGER = LoggerFactory.getLogger(TauStats.class);
 
 	/** The handle to the Postgres metadata database. */
 	private final DSLContext context;
@@ -55,11 +60,11 @@ public class GraphDepStats {
 	/** The scorer that will be used to rank results. */
 	private final Scorer scorer;
 
-	public GraphDepStats(final String jdbcURI, final String database, final String rocksDb, final String resolverGraph, final String scorer) throws Exception {
+	public TauStats(final String jdbcURI, final String database, final String rocksDb, final String resolverGraph, final String scorer) throws Exception {
 		this(PostgresConnector.getDSLContext(jdbcURI, database, false), new RocksDao(rocksDb, true), resolverGraph, scorer == null ? TrivialScorer.getInstance() : ObjectParser.fromSpec(scorer, Scorer.class));
 	}
 
-	public GraphDepStats(final DSLContext context, final RocksDao rocksDao, final String resolverGraph, final Scorer scorer) throws Exception {
+	public TauStats(final DSLContext context, final RocksDao rocksDao, final String resolverGraph, final Scorer scorer) throws Exception {
 		this.context = context;
 		this.rocksDao = rocksDao;
 		this.scorer = scorer == null ? TrivialScorer.getInstance() : scorer;
@@ -70,7 +75,7 @@ public class GraphDepStats {
 	}
 
 	public static void main(final String args[]) throws Exception {
-		final SimpleJSAP jsap = new SimpleJSAP(GraphDepStats.class.getName(), "Creates an instance of SearchEngine and answers queries from the command line (rlwrap recommended).", new Parameter[] {
+		final SimpleJSAP jsap = new SimpleJSAP(TauStats.class.getName(), "Creates an instance of SearchEngine and answers queries from the command line (rlwrap recommended).", new Parameter[] {
 				new UnflaggedOption("jdbcURI", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.REQUIRED, JSAP.NOT_GREEDY, "The JDBC URI."),
 				new UnflaggedOption("database", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, JSAP.NOT_GREEDY, "The database name."),
 				new UnflaggedOption("rocksDb", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, JSAP.NOT_GREEDY, "The path to the RocksDB database of revision call graphs."),
@@ -84,32 +89,51 @@ public class GraphDepStats {
 		final String rocksDb = jsapResult.getString("rocksDb");
 		final String resolverGraph = jsapResult.getString("resolverGraph");
 
-		final GraphDepStats graphDepStats = new GraphDepStats(jdbcURI, database, rocksDb, resolverGraph, null);
-		final DSLContext context = graphDepStats.context;
+		final TauStats tauStats = new TauStats(jdbcURI, database, rocksDb, resolverGraph, null);
+		final DSLContext context = tauStats.context;
 
-		RocksDB graphDb = RocksDB.openReadOnly(rocksDb);
-		RocksIterator iterator = graphDb.newIterator();
-		iterator.seekToFirst();
-		for(iterator.seekToFirst(); iterator.isValid(); iterator.next()) {
-			long gid = Longs.fromByteArray(iterator.key());
-			final var graph = graphDepStats.rocksDao.getGraphData(gid);
+		@SuppressWarnings("resource")
+		Scanner scanner = new Scanner(System.in);
+		while(scanner.hasNextLong()) {
+			long gid = scanner.nextLong();
+			final var graph = tauStats.rocksDao.getGraphData(gid);
 			if (graph == null) continue;
-
+		
 			final Record2<String, String> record = context.select(Packages.PACKAGES.PACKAGE_NAME, PackageVersions.PACKAGE_VERSIONS.VERSION).from(PackageVersions.PACKAGE_VERSIONS).join(Packages.PACKAGES).on(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.eq(Packages.PACKAGES.ID)).where(PackageVersions.PACKAGE_VERSIONS.ID.eq(Long.valueOf(gid))).fetchOne();
 			final String[] a = record.component1().split(":");
 			final String groupId = a[0];
 			final String artifactId = a[1];
 			final String version = record.component2();
-			final Set<Revision> dependencySet = graphDepStats.resolver.resolveDependencies(groupId, artifactId, version, -1, context, true);
+			final Set<Revision> dependencySet = tauStats.resolver.resolveDependencies(groupId, artifactId, version, -1, context, true);
 			final String name = groupId + ":" + artifactId + "$" + version;
 			LOGGER.info("Analyzing graph " + name  + " with id " + gid);
 
-
-			long c = 0;
-			for(Revision r: dependencySet) if (graphDepStats.rocksDao.getGraphData(r.id) != null) c++;
+			final var dm = new CGMerger(LongOpenHashSet.toSet(dependencySet.stream().mapToLong(x -> x.id)), context, tauStats.rocksDao);
+			final var stitchedGraph = dm.mergeWithCHA(gid);
+			
+			Long2DoubleFunction globalRank = Centralities.pageRankParallel(stitchedGraph, gid);			
+			
+			System.out.println(gid + "\t" + name);
+			
+			for(Revision r: dependencySet) {
+				var dep = tauStats.rocksDao.getGraphData(r.id);
+				if (dep == null) continue;
+				int n = dep.numNodes();
+				Long2DoubleFunction localRank = Centralities.pageRankParallel(dep, gid);
+				final long[] node2Gid = dep.nodes().toLongArray();
+				final Long2IntOpenHashMap gid2Node = new Long2IntOpenHashMap();
+				for(int i = 0; i < node2Gid.length; i++) gid2Node.put(node2Gid[i], i);
+				
+				double[] v = new double[n], w = new double[n];
+				for(long x : dep.nodes()) {
+					v[gid2Node.get(x)] = localRank.get(x);
+					w[gid2Node.get(x)] = globalRank.get(x);
+				}
+				
+				double t = WeightedTau.HYPERBOLIC.compute(v, w);
+				System.out.println("\t" + r.id + ":" + t);
+			}
 	
-			if (c != 0 && dependencySet.size() != 0) System.out.println(gid + "\t" + name + "\t" + c + "\t" + dependencySet.size() + "\t" + 100. * c / dependencySet.size());
-			LOGGER.info("Deps: " + dependencySet.size() + " known: " + c + " (" + 100. * c / dependencySet.size() + "%)");
 		}
 	}
 
