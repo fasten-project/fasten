@@ -106,7 +106,7 @@ public class TauStats {
 			var deps = LongOpenHashSet.toSet(dependencySet.stream().mapToLong(x -> x.id));
 			deps.add(gid);
 			final var dm = new CGMerger(deps, context, tauStats.rocksDao);
-			final var stitchedGraph = dm.mergeAllDeps();
+			final var stitchedGraph = ArrayImmutableDirectedGraph.copyOf(dm.mergeAllDeps());
 
 			Long2DoubleFunction globalRank = Centralities.pageRankParallel(stitchedGraph, 0.85);
 			
@@ -115,7 +115,7 @@ public class TauStats {
 			
 			for(Revision r: dependencySet) {
 				LOGGER.info("Comparing with graph " + r.id);
-				var dep = tauStats.rocksDao.getGraphData(r.id);
+				var dep = ArrayImmutableDirectedGraph.copyOf(tauStats.rocksDao.getGraphData(r.id));
 				if (dep == null) continue;
 				int n = dep.numNodes();
 				nodesInDeps += n;
