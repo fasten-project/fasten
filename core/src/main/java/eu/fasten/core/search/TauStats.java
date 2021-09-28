@@ -32,6 +32,7 @@ import com.martiansoftware.jsap.Parameter;
 import com.martiansoftware.jsap.SimpleJSAP;
 import com.martiansoftware.jsap.UnflaggedOption;
 
+import eu.fasten.core.data.ArrayImmutableDirectedGraph;
 import eu.fasten.core.data.Centralities;
 import eu.fasten.core.data.callableindex.RocksDao;
 import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
@@ -106,7 +107,7 @@ public class TauStats {
 			var deps = LongOpenHashSet.toSet(dependencySet.stream().mapToLong(x -> x.id));
 			deps.add(gid);
 			final var dm = new CGMerger(deps, context, tauStats.rocksDao);
-			final var stitchedGraph = ArrayImmutableDirectedGraph.copyOf(dm.mergeAllDeps());
+			final var stitchedGraph = ArrayImmutableDirectedGraph.copyOf(dm.mergeAllDeps(), false);
 
 			Long2DoubleFunction globalRank = Centralities.pageRankParallel(stitchedGraph, 0.85);
 			
@@ -115,7 +116,7 @@ public class TauStats {
 			
 			for(Revision r: dependencySet) {
 				LOGGER.info("Comparing with graph " + r.id);
-				var dep = ArrayImmutableDirectedGraph.copyOf(tauStats.rocksDao.getGraphData(r.id));
+				var dep = ArrayImmutableDirectedGraph.copyOf(tauStats.rocksDao.getGraphData(r.id), false);
 				if (dep == null) continue;
 				int n = dep.numNodes();
 				nodesInDeps += n;
