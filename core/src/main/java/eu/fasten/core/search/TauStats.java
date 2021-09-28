@@ -108,8 +108,10 @@ public class TauStats {
 			final String name = groupId + ":" + artifactId + "$" + version;
 			LOGGER.info("Analyzing graph " + name  + " with id " + gid);
 
-			final var dm = new CGMerger(LongOpenHashSet.toSet(dependencySet.stream().mapToLong(x -> x.id)), context, tauStats.rocksDao);
-			final var stitchedGraph = dm.mergeWithCHA(gid);
+			var deps = LongOpenHashSet.toSet(dependencySet.stream().mapToLong(x -> x.id));
+			deps.add(gid);
+			final var dm = new CGMerger(deps, context, tauStats.rocksDao);
+			final var stitchedGraph = dm.mergeAllDeps();
 
 			Long2DoubleFunction globalRank = Centralities.pageRankParallel(stitchedGraph, 0.85);
 			
