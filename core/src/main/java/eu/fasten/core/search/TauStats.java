@@ -119,6 +119,7 @@ public class TauStats {
 			long nodesInDeps = 0;
 			
 			for(Revision r: dependencySet) {
+				LOGGER.info("Comparing with graph " + r.id);
 				var dep = tauStats.rocksDao.getGraphData(r.id);
 				if (dep == null) continue;
 				int n = dep.numNodes();

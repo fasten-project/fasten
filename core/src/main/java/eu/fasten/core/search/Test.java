@@ -18,7 +18,14 @@
 
 package eu.fasten.core.search;
 
+import java.util.Scanner;
+import java.util.Set;
+
 import org.jooq.DSLContext;
+import org.jooq.Record2;
+import org.rocksdb.RocksDB;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.martiansoftware.jsap.JSAP;
 import com.martiansoftware.jsap.JSAPResult;
@@ -26,50 +33,71 @@ import com.martiansoftware.jsap.Parameter;
 import com.martiansoftware.jsap.SimpleJSAP;
 import com.martiansoftware.jsap.UnflaggedOption;
 
+import eu.fasten.core.data.Centralities;
 import eu.fasten.core.data.graphdb.RocksDao;
+import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
+import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
+import eu.fasten.core.dbconnectors.PostgresConnector;
+import eu.fasten.core.maven.GraphMavenResolver;
+import eu.fasten.core.maven.data.Revision;
+import eu.fasten.core.merge.CGMerger;
+import eu.fasten.core.search.predicate.CachingPredicateFactory;
+import it.unimi.dsi.fastutil.longs.Long2DoubleFunction;
+import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
+import it.unimi.dsi.lang.ObjectParser;
+import it.unimi.dsi.law.stat.WeightedTau;
 
 public class Test {
+	private static final Logger LOGGER = LoggerFactory.getLogger(Test.class);
 
+	/** The handle to the Postgres metadata database. */
+	private final DSLContext context;
 	/** The handle to the RocksDB DAO. */
 	private final RocksDao rocksDao;
+	/** The resolver. */
+	private final GraphMavenResolver resolver;
+	/** The scorer that will be used to rank results. */
+	private final Scorer scorer;
 
-	public Test(final String rocksDb) throws Exception {
-		this(new RocksDao(rocksDb, true));
+	public Test(final String jdbcURI, final String database, final String rocksDb, final String resolverGraph, final String scorer) throws Exception {
+		this(PostgresConnector.getDSLContext(jdbcURI, database, false), new RocksDao(rocksDb, true), resolverGraph, scorer == null ? TrivialScorer.getInstance() : ObjectParser.fromSpec(scorer, Scorer.class));
 	}
 
-	/**
-	 * Creates a new search engine using a given {@link DSLContext} and {@link RocksDao}.
-	 *
-	 * @param context the DSL context.
-	 * @param rocksDao the RocksDB DAO.
-	 * @param resolverGraph the path to a serialized resolver graph (will be created if it does not
-	 *            exist).
-	 * @param scorer a scorer that will be used to sort results; if {@code null}, a
-	 *            {@link TrivialScorer} will be used instead.
-	 */
-
-	public Test(final RocksDao rocksDao) throws Exception {
+	public Test(final DSLContext context, final RocksDao rocksDao, final String resolverGraph, final Scorer scorer) throws Exception {
+		this.context = context;
 		this.rocksDao = rocksDao;
+		this.scorer = scorer == null ? TrivialScorer.getInstance() : scorer;
+		resolver = new GraphMavenResolver();
+		resolver.buildDependencyGraph(context, resolverGraph);
+		resolver.setIgnoreMissing(true);
+		new CachingPredicateFactory(context);
 	}
 
-	@SuppressWarnings("boxing")
 	public static void main(final String args[]) throws Exception {
 		final SimpleJSAP jsap = new SimpleJSAP(Test.class.getName(), "Creates an instance of SearchEngine and answers queries from the command line (rlwrap recommended).", new Parameter[] {
-				new UnflaggedOption("rocksDb", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, JSAP.NOT_GREEDY, "The path to the RocksDB database of revision call graphs.") });
+				new UnflaggedOption("jdbcURI", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.REQUIRED, JSAP.NOT_GREEDY, "The JDBC URI."),
+				new UnflaggedOption("database", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, JSAP.NOT_GREEDY, "The database name."),
+				new UnflaggedOption("rocksDb", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, JSAP.NOT_GREEDY, "The path to the RocksDB database of revision call graphs."),
+				new UnflaggedOption("resolverGraph", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, JSAP.NOT_GREEDY, "The path to a resolver graph (will be created if it does not exist)."), });
 
 		final JSAPResult jsapResult = jsap.parse(args);
 		if (jsap.messagePrinted()) System.exit(1);
 
-		final String rocksDb = jsapResult.getString("rocksDB");
+		final String jdbcURI = jsapResult.getString("jdbcURI");
+		final String database = jsapResult.getString("database");
+		final String rocksDb = jsapResult.getString("rocksDb");
+		final String resolverGraph = jsapResult.getString("resolverGraph");
 
-		/* WARNING
-		 *
-		 * As of JDK 11.0.10, replacing the constant string below with the parameter "rocksDb" causes
-		 * a JVM crash.
-		 */
+		final Test Test = new Test(jdbcURI, database, rocksDb, resolverGraph, null);
 
-		final Test searchEngine = new Test(rocksDb);
+		var dep = Test.rocksDao.getGraphData(323267);
+		int n = dep.numNodes();
+		for(long x: dep.nodes()) {
+			for(long s: dep.successors(x));
+			for(long s: dep.predecessors(x));
+		}
 
+		Long2DoubleFunction localRank = Centralities.pageRankParallel(dep, 0.85);
 	}
-
 }
