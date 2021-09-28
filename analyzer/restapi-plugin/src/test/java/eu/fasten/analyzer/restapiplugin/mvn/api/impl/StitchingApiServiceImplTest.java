@@ -19,22 +19,14 @@
 package eu.fasten.analyzer.restapiplugin.mvn.api.impl;
 
 import eu.fasten.analyzer.restapiplugin.mvn.KnowledgeBaseConnector;
-import eu.fasten.core.data.ArrayImmutableDirectedGraph;
-import eu.fasten.core.data.graphdb.RocksDao;
 import eu.fasten.core.data.metadatadb.MetadataDao;
-import eu.fasten.core.maven.GraphMavenResolver;
-import eu.fasten.core.maven.data.Revision;
-import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenHashSet;
 import org.jooq.DSLContext;
-import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
-import org.rocksdb.RocksDBException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import java.sql.Timestamp;
 import java.util.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
