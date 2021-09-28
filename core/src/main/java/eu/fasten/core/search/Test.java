@@ -18,12 +18,7 @@
 
 package eu.fasten.core.search;
 
-import java.util.Scanner;
-import java.util.Set;
-
 import org.jooq.DSLContext;
-import org.jooq.Record2;
-import org.rocksdb.RocksDB;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,20 +29,12 @@ import com.martiansoftware.jsap.SimpleJSAP;
 import com.martiansoftware.jsap.UnflaggedOption;
 
 import eu.fasten.core.data.Centralities;
-import eu.fasten.core.data.graphdb.RocksDao;
-import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
-import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
+import eu.fasten.core.data.callableindex.RocksDao;
 import eu.fasten.core.dbconnectors.PostgresConnector;
 import eu.fasten.core.maven.GraphMavenResolver;
-import eu.fasten.core.maven.data.Revision;
-import eu.fasten.core.merge.CGMerger;
 import eu.fasten.core.search.predicate.CachingPredicateFactory;
 import it.unimi.dsi.fastutil.longs.Long2DoubleFunction;
-import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
-import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.lang.ObjectParser;
-import it.unimi.dsi.law.stat.WeightedTau;
-import eu.fasten.core.data.callableindex.RocksDao;
 
 public class Test {
 	private static final Logger LOGGER = LoggerFactory.getLogger(Test.class);

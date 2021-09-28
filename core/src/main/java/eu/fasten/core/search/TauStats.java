@@ -23,7 +23,6 @@ import java.util.Set;
 
 import org.jooq.DSLContext;
 import org.jooq.Record2;
-import org.rocksdb.RocksDB;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,7 +33,7 @@ import com.martiansoftware.jsap.SimpleJSAP;
 import com.martiansoftware.jsap.UnflaggedOption;
 
 import eu.fasten.core.data.Centralities;
-import eu.fasten.core.data.graphdb.RocksDao;
+import eu.fasten.core.data.callableindex.RocksDao;
 import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
 import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
 import eu.fasten.core.dbconnectors.PostgresConnector;
@@ -45,7 +44,6 @@ import eu.fasten.core.search.predicate.CachingPredicateFactory;
 import it.unimi.dsi.fastutil.longs.Long2DoubleFunction;
 import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
-import it.unimi.dsi.lang.ObjectParser;
 import it.unimi.dsi.law.stat.WeightedTau;
 
 public class TauStats {
@@ -57,17 +55,14 @@ public class TauStats {
 	private final RocksDao rocksDao;
 	/** The resolver. */
 	private final GraphMavenResolver resolver;
-	/** The scorer that will be used to rank results. */
-	private final Scorer scorer;
-
-	public TauStats(final String jdbcURI, final String database, final String rocksDb, final String resolverGraph, final String scorer) throws Exception {
-		this(PostgresConnector.getDSLContext(jdbcURI, database, false), new RocksDao(rocksDb, true), resolverGraph, scorer == null ? TrivialScorer.getInstance() : ObjectParser.fromSpec(scorer, Scorer.class));
+	
+	public TauStats(final String jdbcURI, final String database, final String rocksDb, final String resolverGraph) throws Exception {
+		this(PostgresConnector.getDSLContext(jdbcURI, database, false), new RocksDao(rocksDb, true), resolverGraph);
 	}
 
-	public TauStats(final DSLContext context, final RocksDao rocksDao, final String resolverGraph, final Scorer scorer) throws Exception {
+	public TauStats(final DSLContext context, final RocksDao rocksDao, final String resolverGraph) throws Exception {
 		this.context = context;
 		this.rocksDao = rocksDao;
-		this.scorer = scorer == null ? TrivialScorer.getInstance() : scorer;
 		resolver = new GraphMavenResolver();
 		resolver.buildDependencyGraph(context, resolverGraph);
 		resolver.setIgnoreMissing(true);
@@ -89,7 +84,7 @@ public class TauStats {
 		final String rocksDb = jsapResult.getString("rocksDb");
 		final String resolverGraph = jsapResult.getString("resolverGraph");
 
-		final TauStats tauStats = new TauStats(jdbcURI, database, rocksDb, resolverGraph, null);
+		final TauStats tauStats = new TauStats(jdbcURI, database, rocksDb, resolverGraph);
 		final DSLContext context = tauStats.context;
 
 		@SuppressWarnings("resource")
