@@ -47,6 +47,7 @@ import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.lang.ObjectParser;
 import it.unimi.dsi.law.stat.WeightedTau;
+import eu.fasten.core.data.callableindex.RocksDao;
 
 public class Test {
 	private static final Logger LOGGER = LoggerFactory.getLogger(Test.class);

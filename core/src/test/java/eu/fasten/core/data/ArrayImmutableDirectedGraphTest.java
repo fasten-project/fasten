@@ -22,8 +22,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import org.graalvm.compiler.replacements.arraycopy.CheckcastArrayCopyCallNode;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+import org.postgresql.copy.CopyManager;
 
 import it.unimi.dsi.fastutil.longs.LongIterator;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
@@ -90,6 +92,10 @@ public class ArrayImmutableDirectedGraphTest {
         assertFalse(graph.isInternal(56));
         assertFalse(graph.isInternal(78));
 
+        ArrayImmutableDirectedGraph copy = ArrayImmutableDirectedGraph.copyOf(graph, false);
+        assertEquals(graph.nodes(), copy.nodes());
+        for(long x: graph) assertEquals(new LongOpenHashSet(graph.successors(x)), new LongOpenHashSet(copy.successors(x)));
+        for(long x: graph) assertEquals(new LongOpenHashSet(graph.predecessors(x)), new LongOpenHashSet(copy.predecessors(x)));
     }
 
 	@Test

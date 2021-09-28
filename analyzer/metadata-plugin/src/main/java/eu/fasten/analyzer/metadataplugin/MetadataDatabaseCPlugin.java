@@ -24,7 +24,7 @@ import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.ExtendedRevisionCCallGraph;
 import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import eu.fasten.core.data.Graph;
-import eu.fasten.core.data.graphdb.GidGraph;
+import eu.fasten.core.data.callableindex.GidGraph;
 import eu.fasten.core.data.metadatadb.MetadataDao;
 import eu.fasten.core.data.metadatadb.codegen.enums.Access;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.CallSitesRecord;
