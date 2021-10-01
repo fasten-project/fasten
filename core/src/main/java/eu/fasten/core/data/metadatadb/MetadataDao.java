@@ -913,9 +913,10 @@ public class MetadataDao {
         Packages p = Packages.PACKAGES;
         PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
         Modules m = Modules.MODULES;
+        ModuleNames mn = ModuleNames.MODULE_NAMES;
 
         // Select clause
-        SelectField<?>[] selectClause = m.fields();
+        SelectField<?>[] selectClause = new SelectField[] {m.ID, m.PACKAGE_VERSION_ID, mn.NAME, m.ACCESS, m.FINAL, m.SUPER_CLASSES, m.SUPER_INTERFACES, m.ANNOTATIONS, m.ANNOTATIONS};
 
         // Where clause
         Condition whereClause = packageVersionWhereClause(packageName, packageVersion);
@@ -926,6 +927,7 @@ public class MetadataDao {
                 .from(p)
                 .innerJoin(pv).on(p.ID.eq(pv.PACKAGE_ID))
                 .innerJoin(m).on(pv.ID.eq(m.PACKAGE_VERSION_ID))
+                .innerJoin(mn).on(mn.ID.eq(m.MODULE_NAME_ID))
                 .where(whereClause)
                 .offset(offset)
                 .limit(limit)
@@ -934,6 +936,14 @@ public class MetadataDao {
         // Returning the result
         logger.debug("Total rows: " + queryResult.size());
         return queryResult.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
+    }
+
+    public String getModuleName(long moduleNameId) {
+        var result = context.select(ModuleNames.MODULE_NAMES.NAME).from(ModuleNames.MODULE_NAMES).where(ModuleNames.MODULE_NAMES.ID.eq(moduleNameId)).fetchOne();
+        if (result == null) {
+            return null;
+        }
+        return result.value1();
     }
 
     public String getModuleMetadata(String packageName,
@@ -1211,12 +1221,41 @@ public class MetadataDao {
         return queryResult.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
     }
 
-    public List<Long> getPackageInternalCallableIDs(String packageName, String version) {
+    public Long getPackageVersionCallable(Long packageVersionId) {
         // Tables
         Packages p = Packages.PACKAGES;
         PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
         Modules m = Modules.MODULES;
         Callables c = Callables.CALLABLES;
+
+        var result = context
+                .select(c.ID)
+                .from(p)
+                .innerJoin(pv).on(p.ID.eq(pv.PACKAGE_ID))
+                .innerJoin(m).on(pv.ID.eq(m.PACKAGE_VERSION_ID))
+                .innerJoin(c).on(m.ID.eq(c.MODULE_ID))
+                .where(pv.ID.eq(packageVersionId))
+                .and(c.IS_INTERNAL_CALL.eq(true))
+                .limit(1)
+                .fetchOne();
+
+        if (result == null) {
+            return null;
+        }
+        return result.value1();
+    }
+
+    public List<Long> getPackageInternalCallableIDs(String packageName, String version) {
+        if (!assertPackageExistence(packageName, version)) {
+            throw new PackageVersionNotFoundException(packageName + Constants.mvnCoordinateSeparator + version);
+        }
+
+        // Tables
+        Packages p = Packages.PACKAGES;
+        PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
+        Modules m = Modules.MODULES;
+        Callables c = Callables.CALLABLES;
+
 
         // Building and executing the query
         var result = context
@@ -1225,9 +1264,12 @@ public class MetadataDao {
                 .innerJoin(pv).on(p.ID.eq(pv.PACKAGE_ID))
                 .innerJoin(m).on(pv.ID.eq(m.PACKAGE_VERSION_ID))
                 .innerJoin(c).on(m.ID.eq(c.MODULE_ID))
-                .where(packageVersionWhereClause(packageName, version))
-                .and(Callables.CALLABLES.IS_INTERNAL_CALL.eq(true))
+                .where(p.PACKAGE_NAME.eq(packageName))
+                .and(pv.VERSION.eq(version))
+                .and(c.IS_INTERNAL_CALL.eq(true))
                 .fetch();
+
+        logger.debug("Total rows: " + result.size());
         return result.map(Record1::value1);
     }
 
@@ -1303,15 +1345,20 @@ public class MetadataDao {
     }
 
     public Map<Long, JSONObject> findVulnerableCallables(Set<Long> vulnerablePackageVersions, Set<Long> callableIDs) {
+
+        PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
+        Modules m = Modules.MODULES;
+        Callables c = Callables.CALLABLES;
+
         var result = context
-                .select(Callables.CALLABLES.ID, Callables.CALLABLES.METADATA)
-                .from(Callables.CALLABLES)
-                .join(Modules.MODULES)
-                .on(Callables.CALLABLES.MODULE_ID.eq(Modules.MODULES.ID))
-                .join(PackageVersions.PACKAGE_VERSIONS)
-                .on(Modules.MODULES.PACKAGE_VERSION_ID.eq(PackageVersions.PACKAGE_VERSIONS.ID))
-                .where(PackageVersions.PACKAGE_VERSIONS.ID.in(vulnerablePackageVersions))
-                .and(Callables.CALLABLES.ID.in(callableIDs))
+                .select(c.ID, c.METADATA)
+                .from(c)
+                .join(m)
+                .on(c.MODULE_ID.eq(m.ID))
+                .join(pv)
+                .on(m.PACKAGE_VERSION_ID.eq(pv.ID))
+                .where(pv.ID.in(vulnerablePackageVersions))
+                .and(c.ID.in(callableIDs))
                 .and("callables.metadata::jsonb->'vulnerabilities' is not null")
                 .fetch();
         var map = new HashMap<Long, JSONObject>(result.size());
@@ -1408,7 +1455,8 @@ public class MetadataDao {
     public Long getPackageVersionID(String packageName, String version) {
         var record = context
                 .select(PackageVersions.PACKAGE_VERSIONS.ID)
-                .from(PackageVersions.PACKAGE_VERSIONS)
+                .from(PackageVersions.PACKAGE_VERSIONS).join(Packages.PACKAGES)
+                .on(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.eq(Packages.PACKAGES.ID))
                 .where(packageVersionWhereClause(packageName, version))
                 .limit(1)
                 .fetchOne();
@@ -1748,15 +1796,26 @@ public class MetadataDao {
     }
 
     public Map<String, Long> insertNamespaces(Collection<String> namespaces) {
-        var insert = context.insertInto(ModuleNames.MODULE_NAMES, ModuleNames.MODULE_NAMES.NAME);
+        var select = context.selectFrom(ModuleNames.MODULE_NAMES).where("false");
         for (var namespace : namespaces) {
+            select = select.or(ModuleNames.MODULE_NAMES.NAME.eq(namespace));
+        }
+        var map = new HashMap<String, Long>(namespaces.size());
+        select.fetch().forEach(r -> map.put(r.getName(), r.getId()));
+        var namespacesToInsert = new HashSet<String>();
+        namespaces.forEach(n -> {
+            if (!map.containsKey(n)) {
+                namespacesToInsert.add(n);
+            }
+        });
+        var insert = context.insertInto(ModuleNames.MODULE_NAMES, ModuleNames.MODULE_NAMES.NAME);
+        for (var namespace : namespacesToInsert) {
             insert = insert.values(namespace);
         }
         var result = insert.onConflictOnConstraint(Keys.UNIQUE_MODULE_NAMES).doUpdate()
                 .set(ModuleNames.MODULE_NAMES.NAME, ModuleNames.MODULE_NAMES.as("excluded").NAME)
                 .returning(ModuleNames.MODULE_NAMES.ID, ModuleNames.MODULE_NAMES.NAME)
                 .fetch();
-        var map = new HashMap<String, Long>(result.size());
         result.forEach(r -> map.put(r.getName(), r.getId()));
         return map;
     }

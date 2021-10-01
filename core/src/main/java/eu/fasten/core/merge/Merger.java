@@ -19,11 +19,10 @@
 package eu.fasten.core.merge;
 
 import ch.qos.logback.classic.Level;
-import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
 import eu.fasten.core.data.JSONUtils;
 import eu.fasten.core.data.JavaScope;
-import eu.fasten.core.data.graphdb.RocksDao;
+import eu.fasten.core.data.callableindex.RocksDao;
 import eu.fasten.core.dbconnectors.PostgresConnector;
 import eu.fasten.core.dbconnectors.RocksDBConnector;
 import java.io.FileNotFoundException;
@@ -33,6 +32,7 @@ import java.sql.SQLException;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 import org.jooq.DSLContext;
 import org.json.JSONObject;
 import org.json.JSONTokener;
@@ -117,10 +117,18 @@ public class Merger implements Runnable {
                         return;
                     }
 
-                    final var depSet = dependencies;
-                    depSet.add(artifact);
-                    var databaseMerger = new CGMerger(depSet, dbContext, rocksDao);
-                    var mergedDirectedGraph = databaseMerger.mergeWithCHA(artifact);
+                    final var depList = dependencies;
+                    depList.add(artifact);
+                    CGMerger databaseMerger;
+
+                    if (artifact.contains(":")) {
+                        databaseMerger = new CGMerger(depList, dbContext, rocksDao);
+                    }else {
+                        final var depSet =
+                            depList.stream().map(Long::valueOf).collect(Collectors.toSet());
+                        databaseMerger = new CGMerger(depSet, dbContext, rocksDao);
+                    }
+                    var mergedDirectedGraph = databaseMerger.mergeAllDeps();
                     logger.info("Resolved {} nodes, {} calls in {} seconds",
                             mergedDirectedGraph.numNodes(),
                             mergedDirectedGraph.numArcs(),

@@ -83,7 +83,7 @@ public class ResolutionApiServiceImpl implements ResolutionApiService {
                     artifactId, version, timestamp, KnowledgeBaseConnector.dbContext, transitive);
         } else {
             var mavenResolver = new MavenResolver();
-            depSet = mavenResolver.resolveFullDependencySetOnline(groupId, artifactId, version, timestamp, KnowledgeBaseConnector.dbContext);
+            depSet = mavenResolver.resolveDependencies(groupId + ":" + artifactId + ":" + version);
         }
         var jsonArray = new JSONArray();
         depSet.stream().map(Revision::toJSON).peek(json -> {
@@ -201,8 +201,12 @@ public class ResolutionApiServiceImpl implements ResolutionApiService {
             return new ResponseEntity<>(jsonObject.toString(), HttpStatus.OK);
         } catch (IOException e) {
             logger.error("Vulnerability Cache File Not Found for " + package_name + Constants.mvnCoordinateSeparator + version, e);
-            // TODO: enforce processor to create one for this artifact?
-            return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
+            try {
+                LazyIngestionProvider.ingestArtifactIfNecessary(package_name, version, null, (long) -1);
+                return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
+            } catch (IllegalArgumentException ill) {
+                return new ResponseEntity<>(ill.getMessage(), HttpStatus.BAD_REQUEST);
+            }
         } catch (JSONException e) {
             logger.error("Couldn't parse JSON from Vulnerability Cache File", e);
             return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);

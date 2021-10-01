@@ -39,7 +39,7 @@ public class MavenResolverTest {
     public void resolveFullDependencySetOnlineTest() {
         try {
             var expected = Set.of(new Revision("org.hamcrest", "hamcrest-core", "1.3", new Timestamp(-1)));
-            var actual = mavenResolver.resolveFullDependencySetOnline("junit", "junit", "4.12");
+            var actual = mavenResolver.resolveDependencies("junit:junit:4.12");
             assertEquals(expected, actual);
         } catch (RuntimeException e) {
             Assume.assumeNoException("Online Resolver failed. Maybe Maven Central is down!", e);

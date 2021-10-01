@@ -33,7 +33,7 @@
     <modules>
         <module>javacg-opal</module>
         <module>metadata-plugin</module>
-        <module>graph-plugin</module>
+        <module>callable-index</module>
         <module>pom-analyzer</module>
         <module>repo-cloner-plugin</module>
         <module>quality-analyzer</module>
@@ -41,6 +41,7 @@
         <module>vulnerability-consumer</module>
         <module>repo-analyzer</module>
         <module>vulnerability-cache-invalidation-plugin</module>
+        <module>parallel-vulnerability-cache-invalidation-plugin</module>
         <module>vulnerability-cache-processor-plugin</module>
     </modules>
 

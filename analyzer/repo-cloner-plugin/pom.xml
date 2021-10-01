@@ -22,7 +22,7 @@
         <repository>
             <id>tmatesoft-repo</id>
             <name>TmateSoft Repository (for hg4j)</name>
-            <url>https://maven.tmatesoft.com/content/repositories/releases/</url>
+            <url>https://maven.tmatesoft.com/repository/releases/</url>
         </repository>
     </repositories>
 

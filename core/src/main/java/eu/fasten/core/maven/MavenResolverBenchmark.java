@@ -76,7 +76,7 @@ public class MavenResolverBenchmark implements Runnable {
         logger.info("Starting benchmark - " + new Date());
         var mavenResolver = new MavenResolver();
         var graphResolver = new GraphMavenResolver();
-        graphResolver.scopes = Arrays.asList(Dependency.SCOPES);
+        GraphMavenResolver.scopes = Arrays.asList(Dependency.SCOPES);
         try {
             graphResolver.buildDependencyGraph(dbContext, graphPath);
         } catch (Exception e) {
@@ -100,7 +100,7 @@ public class MavenResolverBenchmark implements Runnable {
                 dbDependencySet = graphResolver.resolveDependencies(groupId, artifactId, version, -1, dbContext, true);
                 dbResolutionSuccess++;
                 onlineCount++;
-                var onlineDependencySet = mavenResolver.resolveFullDependencySetOnline(artifactId, groupId, version);
+                var onlineDependencySet = mavenResolver.resolveDependencies(artifactId + ":" + groupId + ":" + version);
                 onlineResolutionSuccess++;
                 var setSize = Math.max(dbDependencySet.size(), onlineDependencySet.size());
                 var intersection = new HashSet<>(dbDependencySet);

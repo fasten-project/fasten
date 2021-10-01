@@ -55,8 +55,8 @@ import eu.fasten.core.data.MergedDirectedGraph;
 import eu.fasten.core.data.FastenJavaURI;
 import eu.fasten.core.data.FastenURI;
 import eu.fasten.core.data.JavaScope;
-import eu.fasten.core.data.graphdb.GraphMetadata;
-import eu.fasten.core.data.graphdb.RocksDao;
+import eu.fasten.core.data.callableindex.GraphMetadata;
+import eu.fasten.core.data.callableindex.RocksDao;
 import eu.fasten.core.data.metadatadb.codegen.tables.Callables;
 import eu.fasten.core.data.metadatadb.codegen.tables.ModuleNames;
 import eu.fasten.core.data.metadatadb.codegen.tables.Modules;
@@ -340,34 +340,40 @@ public class CGMerger {
     /**
      * Merges a call graph with its dependencies using CHA algorithm.
      *
-     * @param callGraphData DirectedGraph of the dependency to stitch
-     * @param graphArcs     GraphMetadata of the dependency to stitch
+     * @param callGraph DirectedGraph of the dependency to stitch
+     * @param metadata     GraphMetadata of the dependency to stitch
      * @return merged call graph
      */
-    public DirectedGraph mergeWithCHA(final DirectedGraph callGraphData, final GraphMetadata graphArcs) {
+    public DirectedGraph mergeWithCHA(final DirectedGraph callGraph, final GraphMetadata metadata) {
         final long totalTime = System.currentTimeMillis();
 
-        if (callGraphData == null) {
+        if (callGraph == null) {
             logger.error("Empty call graph data");
             return null;
         }
 
         var result = new MergedDirectedGraph();
 
-        if (graphArcs == null) {
+        if (metadata == null) {
             return null;
         }
-
+        logger.info("Merging graph with {} nodes and {} edges",
+            callGraph.numNodes(), callGraph.numArcs());
         final Set<LongLongPair> edges = ConcurrentHashMap.newKeySet();
-        graphArcs.gid2NodeMetadata.long2ObjectEntrySet().parallelStream().forEach(entry -> {
+
+        metadata.gid2NodeMetadata.long2ObjectEntrySet().parallelStream().forEach(entry -> {
             var sourceId = entry.getLongKey();
             var nodeMetadata = entry.getValue();
             for (var receiver : nodeMetadata.receiverRecords) {
                 var arc = new Arc(sourceId, receiver);
-                resolve(edges, arc, receiver.receiverSignature, callGraphData.isExternal(sourceId));
+                var signature = receiver.receiverSignature;
+                if (receiver.receiverSignature.startsWith("/")) {
+                    signature =
+                        CallGraphUtils.decode(StringUtils.substringAfter(FastenJavaURI.create(receiver.receiverSignature).decanonicalize().getEntity(), "."));
+                }
+                resolve(edges, arc, signature, callGraph.isExternal(sourceId));
             }
         });
-
 
         for(LongLongPair edge: edges) {
             addEdge(result, edge.firstLong(), edge.secondLong());
@@ -428,6 +434,7 @@ public class CGMerger {
                 case VIRTUAL:
                 case INTERFACE:
                     var foundTarget = false;
+
                     for (final var target : typeDictionary.getOrDefault(receiverTypeUri,
                             emptyMap).getOrDefault(signature, emptyLongSet)) {
                         addCall(edges, arc.source, target, isCallback);

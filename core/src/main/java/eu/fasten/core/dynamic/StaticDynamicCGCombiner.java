@@ -20,16 +20,14 @@ package eu.fasten.core.dynamic;
 
 import eu.fasten.core.data.DirectedGraph;
 import eu.fasten.core.dynamic.data.DynamicJavaCG;
-import eu.fasten.core.dynamic.data.HybridDirectedGraph;
+import eu.fasten.core.data.HybridDirectedGraph;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongLongPair;
-import it.unimi.dsi.fastutil.objects.Object2BooleanOpenHashMap;
-import it.unimi.dsi.fastutil.objects.Object2LongOpenHashMap;
-import it.unimi.dsi.fastutil.objects.ObjectObjectImmutablePair;
-import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
+import it.unimi.dsi.fastutil.objects.*;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicLong;
 
 public class StaticDynamicCGCombiner {
 
@@ -64,35 +62,40 @@ public class StaticDynamicCGCombiner {
                 this.dynamicCgUriMap.get(call.firstLong()),
                 this.dynamicCgUriMap.get(call.secondLong())
         )));
-        var allUriCalls = new ObjectOpenHashSet<ObjectObjectImmutablePair<String, String>>(this.staticCalls.size() + this.dynamicCalls.size());
-        allUriCalls.addAll(staticUriCalls);
-        allUriCalls.addAll(dynamicUriCalls);
-        var allUrisMap = new Long2ObjectOpenHashMap<String>(this.staticCgUriMap.size() + this.dynamicCgUriMap.size());
-        var c = 0L;
-        for (var call : allUriCalls) {
-            var source = call.left();
-            var target = call.right();
-            if (!allUrisMap.containsValue(source)) {
-                allUrisMap.put(c++, source);
-            }
-            if (!allUrisMap.containsValue(target)) {
-                allUrisMap.put(c++, target);
-            }
-        }
+        var allUriCalls = new ObjectOpenHashSet<>(staticUriCalls);
+        dynamicUriCalls.stream()
+                .filter(call -> this.staticCgUriMap.containsValue(call.left()) && this.staticCgUriMap.containsValue(call.right()))
+                .forEach(allUriCalls::add);
+        var allUris = new ObjectOpenHashSet<String>(allUriCalls.size());
+        allUriCalls.forEach(call -> {
+            allUris.add(call.left());
+            allUris.add(call.right());
+        });
+        var inverseUrisMap = new Object2LongOpenHashMap<String>(allUris.size());
+        AtomicLong c = new AtomicLong(0L);
+        allUris.forEach(uri -> inverseUrisMap.put(uri, c.getAndIncrement()));
+        var allUrisMap = new Long2ObjectOpenHashMap<String>(inverseUrisMap.size());
+        inverseUrisMap.forEach((k, v) -> allUrisMap.put(v.longValue(), k));
         this.allUrisMap = allUrisMap;
-        var inverseUrisMap = new Object2LongOpenHashMap<String>(allUrisMap.size());
-        allUrisMap.forEach((k, v) -> inverseUrisMap.put(v, k.longValue()));
         var allCalls = new ObjectOpenHashSet<LongLongPair>(allUriCalls.size());
-        var isStaticCallMap = new Object2BooleanOpenHashMap<LongLongPair>(allUriCalls.size());
+        var callOriginMap = new Object2ObjectOpenHashMap<LongLongPair, HybridDirectedGraph.CallOrigin>(allUriCalls.size());
         allUriCalls.forEach(call -> {
             var callIds = LongLongPair.of(
                     inverseUrisMap.getLong(call.left()),
                     inverseUrisMap.getLong(call.right())
             );
-            isStaticCallMap.put(callIds, staticUriCalls.contains(call));
             allCalls.add(callIds);
+            var isStatic = staticUriCalls.contains(call);
+            var isDynamic = dynamicUriCalls.contains(call);
+            if (isStatic && isDynamic) {
+                callOriginMap.put(callIds, HybridDirectedGraph.CallOrigin.staticAndDynamicCgs);
+            } else if (isStatic) {
+                callOriginMap.put(callIds, HybridDirectedGraph.CallOrigin.staticCg);
+            } else if (isDynamic) {
+                callOriginMap.put(callIds, HybridDirectedGraph.CallOrigin.dynamicCg);
+            }
         });
-        var graph = new HybridDirectedGraph(isStaticCallMap);
+        var graph = new HybridDirectedGraph(callOriginMap);
         allUrisMap.keySet().forEach(graph::addVertex);
         allCalls.forEach(call -> graph.addEdge(call.firstLong(), call.secondLong()));
         return graph;

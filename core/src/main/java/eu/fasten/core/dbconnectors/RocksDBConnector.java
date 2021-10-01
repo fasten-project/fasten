@@ -18,7 +18,7 @@
 
 package eu.fasten.core.dbconnectors;
 
-import eu.fasten.core.data.graphdb.RocksDao;
+import eu.fasten.core.data.callableindex.RocksDao;
 import org.rocksdb.RocksDBException;
 
 public class RocksDBConnector {

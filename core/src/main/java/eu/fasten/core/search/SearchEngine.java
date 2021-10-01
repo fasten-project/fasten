@@ -46,7 +46,7 @@ import com.martiansoftware.jsap.UnflaggedOption;
 import eu.fasten.core.data.DirectedGraph;
 import eu.fasten.core.data.FastenJavaURI;
 import eu.fasten.core.data.FastenURI;
-import eu.fasten.core.data.graphdb.RocksDao;
+import eu.fasten.core.data.callableindex.RocksDao;
 import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
 import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
 import eu.fasten.core.dbconnectors.PostgresConnector;
@@ -209,7 +209,7 @@ public class SearchEngine {
 		this.rocksDao = rocksDao;
 		this.scorer = scorer == null ? TrivialScorer.getInstance() : scorer;
 		resolver = new GraphMavenResolver();
-		resolver.buildDependencyGraph(null, resolverGraph);
+		resolver.buildDependencyGraph(context, resolverGraph);
 		resolver.setIgnoreMissing(true);
 		this.predicateFactory = new CachingPredicateFactory(context);
 	}
@@ -371,6 +371,7 @@ public class SearchEngine {
 		if (result == null) {
 			result = dm.mergeWithCHA(id);
 			if (result != null) {
+				LOGGER.info("Graph id: " + id + " stitched graph nodes: " + result.numNodes() + " stitched graph arcs: " + result.numArcs());
 				stitchedGraphCache.putAndMoveToFirst(id, result);
 				if (stitchedGraphCache.size() > STITCHED_MAX_SIZE) stitchedGraphCache.removeLast();
 			}
@@ -696,25 +697,9 @@ public class SearchEngine {
 
 		final String jdbcURI = jsapResult.getString("jdbcURI");
 		final String database = jsapResult.getString("database");
-		@SuppressWarnings("unused")
-		final String rocksDb = jsapResult.getString("rocksDB");
+		final String rocksDb = jsapResult.getString("rocksDb");
 		final String resolverGraph = jsapResult.getString("resolverGraph");
 
-		/* WARNING
-		 *
-		 * As of JDK 11.0.10, replacing the constant string below with the parameter "rocksDb" causes
-		 * a JVM crash with the following stack trace:
-		 *
-		 * V  [libjvm.so+0x5ad861]  AccessInternal::PostRuntimeDispatch<G1BarrierSet::AccessBarrier<1097844ul, G1BarrierSet>, (AccessInternal::BarrierType)2, 1097844ul>::oop_access_barrier(void*)+0x1
-		 * C  [librocksdbjni5446245757426305293.so+0x22aefc]  rocksdb_open_helper(JNIEnv_*, long, _jstring*, _jobjectArray*, _jlongArray*, std::function<rocksdb::Status (rocksdb::DBOptions const&, std::string const&, std::vector<rocksdb::ColumnFamilyDescriptor, std::allocator<rocksdb::ColumnFamilyDescriptor> > const&, std::vector<rocksdb::ColumnFamilyHandle*, std::allocator<rocksdb::ColumnFamilyHandle*> >*, rocksdb::DB**)>)+0x3c
-		 * C  [librocksdbjni5446245757426305293.so+0x22b371]  Java_org_rocksdb_RocksDB_openROnly__JLjava_lang_String_2_3_3B_3JZ+0x41
-		 * j  org.rocksdb.RocksDB.openROnly(JLjava/lang/String;[[B[JZ)[J+0
-		 *
-		 * The most likely explanation is some kind of aggressive early collection of the variable rocksDb by the G1
-		 * collector which clashes with RocksDB's JNI usage of the variable.
-		 */
-
-		//final SearchEngine searchEngine = new SearchEngine(jdbcURI, database, "/mnt/fasten/graphdb.old", resolverGraph, null);
 		final SearchEngine searchEngine = new SearchEngine(jdbcURI, database, rocksDb, resolverGraph, null);
 		if (new java.util.Random().nextLong() == 0) System.out.println(rocksDb);
 		final DSLContext context = searchEngine.context;

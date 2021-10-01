@@ -1,9 +1,27 @@
+/*
+ * Licensed to the Apache Software Foundation (ASF) under one
+ * or more contributor license agreements.  See the NOTICE file
+ * distributed with this work for additional information
+ * regarding copyright ownership.  The ASF licenses this file
+ * to you under the Apache License, Version 2.0 (the
+ * "License"); you may not use this file except in compliance
+ * with the License.  You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package eu.fasten.core.dynamic;
 
 import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
+import eu.fasten.core.data.utils.HybridDirectedGraphSerializer;
 import eu.fasten.core.dynamic.data.DynamicJavaCG;
 import eu.fasten.core.merge.CGMerger;
-import org.json.JSONArray;
 import org.json.JSONObject;
 import org.json.JSONTokener;
 import org.slf4j.Logger;
@@ -24,11 +42,13 @@ public class CGCombinerRunner implements Runnable {
 
     @CommandLine.Option(names = {"-df", "--dynamic-cg-file"},
             paramLabel = "JSON_FILE",
+            required = true,
             description = "Path to JSON file which dynamic CG")
     String dynamicCgPath;
 
     @CommandLine.Option(names = {"-sf", "--static-cg-files"},
             paramLabel = "JSON_FILE1,JSON_FILE2,...",
+            required = true,
             description = "List of paths to static ERCG JSON files of the dependency set",
             split = ",")
     List<String> staticCgsPaths;
@@ -45,18 +65,6 @@ public class CGCombinerRunner implements Runnable {
 
     @Override
     public void run() {
-        if (this.dynamicCgPath == null) {
-            logger.error("Dynamic CG path is not set");
-            return;
-        }
-        if (this.staticCgsPaths == null || this.staticCgsPaths.isEmpty()) {
-            logger.error("Static CGs paths are not set");
-            return;
-        }
-        if (this.outputPath == null) {
-            logger.error("Output path is not set");
-            return;
-        }
         logger.info("Reading dynamic CG");
         DynamicJavaCG dynamicCg;
         try {
@@ -85,27 +93,19 @@ public class CGCombinerRunner implements Runnable {
         var combinedCg = combiner.combineCGs();
         var uriMap = combiner.getAllUrisMap();
 
-        logger.info("Writing combined CG to JSON file");
-        var json = new JSONObject();
-        var methods = new JSONObject(combinedCg.numNodes());
-        for (var node : combinedCg.nodes()) {
-            methods.put(String.valueOf(node), uriMap.get(node.longValue()));
-        }
-        json.put("methods", methods);
-        var edges = new JSONArray();
-        for (var edge : combinedCg.edgeSet()) {
-            var jsonEdge = new JSONObject();
-            jsonEdge.put("call", List.of(edge.firstLong(), edge.secondLong()));
-            jsonEdge.put("isStatic", combinedCg.isStaticCall(edge));
-            edges.put(jsonEdge);
-        }
-        json.put("calls", edges);
-        try {
-            Files.writeString(Path.of(outputPath), json.toString());
-        } catch (IOException e) {
-            logger.error("Error writing combined CG to {}", outputPath, e);
-            return;
-        }
+        logger.info("Serializing combined CG into JSON format");
+        var serializer = new HybridDirectedGraphSerializer();
+        var result = serializer.graphToJson(combinedCg, uriMap);
         logger.info("Done");
+        if (outputPath != null) {
+            try {
+                Files.writeString(Path.of(outputPath), result);
+                logger.info("Wrote the combined CG to {}", outputPath);
+            } catch (IOException e) {
+                logger.error("Error writing combined CG to {}", outputPath, e);
+            }
+        } else {
+            System.out.println(result);
+        }
     }
 }
