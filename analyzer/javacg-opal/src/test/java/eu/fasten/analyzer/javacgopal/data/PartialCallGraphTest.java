@@ -18,6 +18,7 @@
 
 package eu.fasten.analyzer.javacgopal.data;
 
+import static eu.fasten.core.utils.TestUtils.getTestResource;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -67,10 +68,9 @@ class PartialCallGraphTest {
 
     @BeforeAll
     static void setUp() throws OPALException {
-        singleCallCG = new PartialCallGraph(new CallGraphConstructor(
-                new File(Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
-                        .getResource("SingleSourceToTarget.class")).getFile()), "", "CHA"),
-            true);
+        singleCallCG = new PartialCallGraph(
+                new CallGraphConstructor(getTestResource("SingleSourceToTarget.class"),
+                        "", "CHA"), true);
     }
 
     @Test
