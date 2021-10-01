@@ -23,6 +23,8 @@ import org.apache.commons.lang.StringUtils;
 import org.junit.jupiter.api.Test;
 import java.io.File;
 import java.util.Objects;
+
+import static eu.fasten.core.utils.TestUtils.getTestResource;
 import static org.junit.jupiter.api.Assertions.*;
 
 class CallGraphConstructorTest {
@@ -84,9 +86,7 @@ class CallGraphConstructorTest {
 
     @Test
     void constructRTA() throws OPALException {
-        var file = new File(Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
-                .getResource("SingleSourceToTarget.class"))
-                .getFile());
+        var file = getTestResource("SingleSourceToTarget.class");
 
         var cg = new CallGraphConstructor(file, "", "RTA");
 
@@ -97,9 +97,7 @@ class CallGraphConstructorTest {
 
     @Test
     void constructCHA() throws OPALException {
-        var file = new File(Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
-                .getResource("SingleSourceToTarget.class"))
-                .getFile());
+        var file = getTestResource("SingleSourceToTarget.class");
 
         var cg = new CallGraphConstructor(file, "", "CHA");
 
@@ -110,9 +108,7 @@ class CallGraphConstructorTest {
 
     @Test
     void constructAllocationSiteBasedPointsTo() throws OPALException {
-        var file = new File(Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
-                .getResource("SingleSourceToTarget.class"))
-                .getFile());
+        var file = getTestResource("SingleSourceToTarget.class");
 
         var cg = new CallGraphConstructor(file, "", "AllocationSiteBasedPointsTo");
 
@@ -123,9 +119,7 @@ class CallGraphConstructorTest {
 
     @Test
     void constructTypeBasedPointsTo() throws OPALException {
-        var file = new File(Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
-                .getResource("SingleSourceToTarget.class"))
-                .getFile());
+        var file = getTestResource("SingleSourceToTarget.class");
 
         var cg = new CallGraphConstructor(file, "", "TypeBasedPointsTo");
 
