@@ -26,6 +26,8 @@ import java.util.Set;
 import org.dom4j.DocumentException;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+
+import static eu.fasten.core.utils.TestUtils.getTestResource;
 import static org.junit.jupiter.api.Assertions.*;
 
 class AntRepoAnalyzerTest {
@@ -35,8 +37,7 @@ class AntRepoAnalyzerTest {
 
     @BeforeAll
     static void setUp() {
-        root = new File(Objects.requireNonNull(AntRepoAnalyzerTest.class.getClassLoader()
-                .getResource("simpleAntRepo")).getFile()).getAbsolutePath();
+        root = getTestResource("simpleAntRepo").getAbsolutePath();
         var repoAnalyzerFactory = new RepoAnalyzerFactory();
         analyzer = repoAnalyzerFactory.getAnalyzer(root);
     }

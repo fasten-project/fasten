@@ -21,8 +21,10 @@ package eu.fasten.analyzer.repoclonerplugin;
 import eu.fasten.analyzer.repoclonerplugin.utils.GitCloner;
 import eu.fasten.analyzer.repoclonerplugin.utils.HgCloner;
 import eu.fasten.analyzer.repoclonerplugin.utils.SvnCloner;
+import eu.fasten.core.data.JSONUtils;
 import org.apache.commons.io.FileUtils;
 import org.eclipse.jgit.api.errors.GitAPIException;
+import org.jooq.JSON;
 import org.json.JSONObject;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -53,11 +55,6 @@ public class RepoClonerPluginTest {
         repoCloner.setTopic("fasten.POMAnalyzer.out");
     }
 
-    @AfterEach
-    public void teardown() throws IOException {
-        FileUtils.deleteDirectory(Path.of(baseDir).toFile());
-    }
-
     @Test
     public void consumeTest() {
         var json = new JSONObject("{\n" +
@@ -73,11 +70,12 @@ public class RepoClonerPluginTest {
                 "}");
         repoCloner.consume(json.toString());
         var repoPath = Paths.get(baseDir, "f", "fasten-project", "fasten").toAbsolutePath().toString();
+
         var expected = new JSONObject("{\n" +
                 "\t\"artifactId\": \"fasten\",\n" +
                 "\t\"groupId\": \"fasten-project\",\n" +
                 "\t\"version\": \"1\",\n" +
-                "\t\"repoPath\": \"" + repoPath + "\",\n" +
+                "\t\"repoPath\": " + JSONObject.quote(repoPath) + ",\n" +
                 "\t\"commitTag\": \"123\",\n" +
                 "\t\"sourcesUrl\": \"someURL\",\n" +
                 "\t\"repoUrl\": \"https://github.com/fasten-project/fasten.git\",\n" +
