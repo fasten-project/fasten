@@ -13,6 +13,18 @@
 </p>
 <br/>
 
+# Part of the pipeline antecedent to this plugin
+
+```
++------------+             +-----------+                +------------------+   +----------------+   +--------------+
+|POM analyzer+------------>|Repo cloner+--------------->|Flink's JobManager+-->|License detector+-->|License feeder|
++-----------++             +-----------+                +------------------+   +----------------+   +--------------+
+            |                                            ^
+            |    +----+   +--------------------------+   |
+            +--->|OPAL+-->|Metadata DB extension Java+---+
+                 +----+   +--------------------------+
+```
+
 <!-- TODO Provide description -->
 
 <!-- TODO Shall we provide an example that can be manually triggered?
