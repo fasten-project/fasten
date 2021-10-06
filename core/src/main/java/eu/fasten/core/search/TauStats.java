@@ -43,6 +43,7 @@ import eu.fasten.core.maven.GraphMavenResolver;
 import eu.fasten.core.maven.data.Revision;
 import eu.fasten.core.merge.CGMerger;
 import eu.fasten.core.search.predicate.CachingPredicateFactory;
+import it.unimi.dsi.fastutil.doubles.DoubleArrayList;
 import it.unimi.dsi.fastutil.longs.Long2DoubleFunction;
 import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
@@ -128,31 +129,28 @@ public class TauStats {
 				nodesInDeps += n;
 				Long2DoubleFunction localRank = Centralities.pageRankParallel(dep, 0.85);
 				Long2DoubleFunction localRankT = Centralities.pageRankParallel(dep.transpose(), 0.85);
-				final long[] node2Gid = dep.nodes().toLongArray();
-				final Long2IntOpenHashMap gid2Node = new Long2IntOpenHashMap();
-				for(int i = 0; i < node2Gid.length; i++) gid2Node.put(node2Gid[i], i);
 				
-				double[] v = new double[n], w = new double[n], vt = new double[n], wt = new double[n];
-				long found = 0;
+				DoubleArrayList vl = new DoubleArrayList(), wl = new DoubleArrayList(), vtl =  new DoubleArrayList(), wtl =  new DoubleArrayList();
+
 				for(long x : dep.nodes()) {
-					v[gid2Node.get(x)] = localRank.get(x);
-					vt[gid2Node.get(x)] = localRankT.get(x);
 					if (stitchedGraph.containsVertex(x)) {
-						w[gid2Node.get(x)] = globalRank.get(x);
-						wt[gid2Node.get(x)] = globalRankT.get(x);
-						found++;
+						vl.add(localRank.get(x));
+						vtl.add(localRankT.get(x));
+						wl.add(globalRank.get(x));
+						wtl.add(globalRankT.get(x));
 					}
 				}
 
+				double[] v = vl.toDoubleArray(), w = wl.toDoubleArray(), vt = vtl.toDoubleArray(), wt = wtl.toDoubleArray(); 
 				double t;
 				t = weighted ? WeightedTau.HYPERBOLIC.compute(v, w) : KendallTau.INSTANCE.compute(v, w);
-				System.out.print("\t++ " + r.id + ":" + t + " \t" + found);
+				System.out.print("\t++ " + r.id + ":" + t + " \t" + vl.size());
 				t = weighted ? WeightedTau.HYPERBOLIC.compute(v, wt) : KendallTau.INSTANCE.compute(v, wt);
-				System.out.print("\t+- " + r.id + ":" + t + " \t" + found);
+				System.out.print("\t+- " + r.id + ":" + t + " \t" + vl.size());
 				t = weighted ? WeightedTau.HYPERBOLIC.compute(vt, wt) : KendallTau.INSTANCE.compute(vt, wt);
-				System.out.print("\t-- " + r.id + ":" + t + " \t" + found);
+				System.out.print("\t-- " + r.id + ":" + t + " \t" + vl.size());
 				t = weighted ? WeightedTau.HYPERBOLIC.compute(vt, w) : KendallTau.INSTANCE.compute(vt, w);
-				System.out.println("\t-+ " + r.id + ":" + t + " \t" + found);
+				System.out.println("\t-+ " + r.id + ":" + t + " \t" + vl.size());
 			}
 	
 			LOGGER.info("Nodes in deps: " + nodesInDeps);
