@@ -46,6 +46,7 @@ import eu.fasten.core.search.predicate.CachingPredicateFactory;
 import it.unimi.dsi.fastutil.doubles.DoubleArrayList;
 import it.unimi.dsi.fastutil.longs.Long2DoubleFunction;
 import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
+import it.unimi.dsi.fastutil.longs.LongLinkedOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.law.stat.WeightedTau;
 import it.unimi.dsi.law.stat.KendallTau;
@@ -109,8 +110,8 @@ public class TauStats {
 			final String name = groupId + ":" + artifactId + "$" + version;
 			LOGGER.info("Analyzing graph " + name  + " with id " + gid);
 
-			var deps = LongOpenHashSet.toSet(dependencySet.stream().mapToLong(x -> x.id));
-			deps.add(gid);
+			var deps = LongLinkedOpenHashSet.toSet(dependencySet.stream().mapToLong(x -> x.id));
+			deps.addAndMoveToFirst(gid);
 			final var dm = new CGMerger(deps, context, tauStats.rocksDao);
 			final var stitchedGraph = ArrayImmutableDirectedGraph.copyOf(dm.mergeAllDeps(), false);
 
@@ -118,42 +119,42 @@ public class TauStats {
 			Long2DoubleFunction globalRankT = Centralities.pageRankParallel(stitchedGraph.transpose(), 0.85);
 			
 			System.out.println(gid + "\t" + name);
-			long nodesInDeps = 0;
 			
-			for(Revision r: dependencySet) {
-				LOGGER.info("Comparing with graph " + r.id);
-				var depTemp = tauStats.rocksDao.getGraphData(r.id);
+			for(long r: deps) {
+				LOGGER.info("Comparing with graph " + r);
+				var depTemp = tauStats.rocksDao.getGraphData(r);
 				if (depTemp == null) continue;
 				var dep = ArrayImmutableDirectedGraph.copyOf(depTemp, false);
-				int n = dep.numNodes();
-				nodesInDeps += n;
 				Long2DoubleFunction localRank = Centralities.pageRankParallel(dep, 0.85);
 				Long2DoubleFunction localRankT = Centralities.pageRankParallel(dep.transpose(), 0.85);
 				
-				DoubleArrayList vl = new DoubleArrayList(), wl = new DoubleArrayList(), vtl =  new DoubleArrayList(), wtl =  new DoubleArrayList();
+				DoubleArrayList localForward = new DoubleArrayList(), localBackward = new DoubleArrayList(), globalForward =  new DoubleArrayList(), globalBackward =  new DoubleArrayList();
 
 				for(long x : dep.nodes()) {
 					if (stitchedGraph.containsVertex(x)) {
-						vl.add(localRank.get(x));
-						vtl.add(localRankT.get(x));
-						wl.add(globalRank.get(x));
-						wtl.add(globalRankT.get(x));
+//						vl.add(localRank.get(x));
+//						vtl.add(localRankT.get(x));
+//						wl.add(globalRank.get(x));
+//						wtl.add(globalRankT.get(x));
+						localForward.add(dep.outdegree(x));
+						globalForward.add(stitchedGraph.outdegree(x));
+						localBackward.add(dep.indegree(x));
+						globalBackward.add(stitchedGraph.indegree(x));
 					}
 				}
 
-				double[] v = vl.toDoubleArray(), w = wl.toDoubleArray(), vt = vtl.toDoubleArray(), wt = wtl.toDoubleArray(); 
+				double[] lf = localForward.toDoubleArray(), lb = localBackward.toDoubleArray(), gf = globalForward.toDoubleArray(), gb = globalBackward.toDoubleArray(); 
 				double t;
-				t = weighted ? WeightedTau.HYPERBOLIC.compute(v, w) : KendallTau.INSTANCE.compute(v, w);
-				System.out.print("\t++ " + r.id + ":" + t + " \t" + vl.size());
-				t = weighted ? WeightedTau.HYPERBOLIC.compute(v, wt) : KendallTau.INSTANCE.compute(v, wt);
-				System.out.print("\t+- " + r.id + ":" + t + " \t" + vl.size());
-				t = weighted ? WeightedTau.HYPERBOLIC.compute(vt, wt) : KendallTau.INSTANCE.compute(vt, wt);
-				System.out.print("\t-- " + r.id + ":" + t + " \t" + vl.size());
-				t = weighted ? WeightedTau.HYPERBOLIC.compute(vt, w) : KendallTau.INSTANCE.compute(vt, w);
-				System.out.println("\t-+ " + r.id + ":" + t + " \t" + vl.size());
+				t = weighted ? WeightedTau.HYPERBOLIC.compute(lf, gf) : KendallTau.INSTANCE.compute(lf, gf);
+				System.out.print("\t++ " + r + ":" + t + " \t" + localForward.size());
+				t = weighted ? WeightedTau.HYPERBOLIC.compute(lf, gb) : KendallTau.INSTANCE.compute(lf, gb);
+				System.out.print("\t+- " + r + ":" + t + " \t" + localForward.size());
+				t = weighted ? WeightedTau.HYPERBOLIC.compute(lb, gb) : KendallTau.INSTANCE.compute(lb, gb);
+				System.out.print("\t-- " + r + ":" + t + " \t" + localForward.size());
+				t = weighted ? WeightedTau.HYPERBOLIC.compute(lb, gf) : KendallTau.INSTANCE.compute(lb, gf);
+				System.out.println("\t-+ " + r + ":" + t + " \t" + localForward.size());
 			}
 	
-			LOGGER.info("Nodes in deps: " + nodesInDeps);
 			LOGGER.info("Nodes in stitched graph: " + stitchedGraph.numNodes());
 		}
 	}
