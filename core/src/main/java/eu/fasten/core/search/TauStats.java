@@ -76,7 +76,7 @@ public class TauStats {
 	}
 
 	public enum Centrality {
-		DEGREE, PAGERANK
+		DEGREE, PAGERANK, HARMONIC
 	}
 
 	public static void main(final String args[]) throws Exception {
@@ -128,6 +128,11 @@ public class TauStats {
 			case PAGERANK:
 				globalRankForward = Centralities.pageRankParallel(stitchedGraph.transpose(), 0.85);
 				globalRankBackward = Centralities.pageRankParallel(stitchedGraph, 0.85);
+				break;
+			case HARMONIC:
+				globalRankForward = Centralities.harmonicExact(stitchedGraph.transpose());
+				globalRankBackward = Centralities.harmonicExact(stitchedGraph);
+				break;
 			}
 			
 			System.out.println(gid + "\t" + name);
@@ -144,6 +149,11 @@ public class TauStats {
 				case PAGERANK:
 					localRankForward = Centralities.pageRankParallel(dep.transpose(), 0.85);
 					localRankBackward = Centralities.pageRankParallel(dep, 0.85);
+					break;
+				case HARMONIC:
+					localRankForward = Centralities.harmonicExact(dep.transpose());
+					localRankBackward = Centralities.harmonicExact(dep);
+					break;
 				}
 				
 				DoubleArrayList localForward = new DoubleArrayList(), localBackward = new DoubleArrayList(), globalForward =  new DoubleArrayList(), globalBackward =  new DoubleArrayList();
@@ -152,6 +162,7 @@ public class TauStats {
 					if (stitchedGraph.containsVertex(x)) {
 						switch(centrality) {
 						case PAGERANK:
+						case HARMONIC:
 							localForward.add(localRankForward.get(x));
 							globalForward.add(globalRankForward.get(x));
 							localBackward.add(localRankBackward.get(x));
