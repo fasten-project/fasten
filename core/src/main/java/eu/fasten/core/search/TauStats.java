@@ -48,6 +48,7 @@ import it.unimi.dsi.fastutil.longs.Long2DoubleFunction;
 import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongLinkedOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
+import it.unimi.dsi.lang.EnumStringParser;
 import it.unimi.dsi.law.stat.WeightedTau;
 import it.unimi.dsi.law.stat.KendallTau;
 
@@ -74,9 +75,14 @@ public class TauStats {
 		new CachingPredicateFactory(context);
 	}
 
+	private enum Centrality {
+		DEGREE, PAGERANK
+	}
+
 	public static void main(final String args[]) throws Exception {
 		final SimpleJSAP jsap = new SimpleJSAP(TauStats.class.getName(), "Creates an instance of SearchEngine and answers queries from the command line (rlwrap recommended).", new Parameter[] {
 				new Switch("weighted", 'w', "weighted", "Use the hyperbolic weighted tau."),
+				new UnflaggedOption("centrality", EnumStringParser.getParser(Centrality.class, true), JSAP.NO_DEFAULT, JSAP.REQUIRED, JSAP.NOT_GREEDY, "The centrality (one of " + java.util.Arrays.toString(Centrality.values()) + ")."),
 				new UnflaggedOption("jdbcURI", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.REQUIRED, JSAP.NOT_GREEDY, "The JDBC URI."),
 				new UnflaggedOption("database", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, JSAP.NOT_GREEDY, "The database name."),
 				new UnflaggedOption("rocksDb", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, JSAP.NOT_GREEDY, "The path to the RocksDB database of revision call graphs."),
@@ -86,6 +92,7 @@ public class TauStats {
 		if (jsap.messagePrinted()) System.exit(1);
 
 		final boolean weighted = jsapResult.getBoolean("weighted");
+		final Centrality centrality = (Centrality)jsapResult.getObject("centrality");
 		final String jdbcURI = jsapResult.getString("jdbcURI");
 		final String database = jsapResult.getString("database");
 		final String rocksDb = jsapResult.getString("rocksDb");
@@ -146,12 +153,16 @@ public class TauStats {
 				double[] lf = localForward.toDoubleArray(), lb = localBackward.toDoubleArray(), gf = globalForward.toDoubleArray(), gb = globalBackward.toDoubleArray(); 
 				double t;
 				t = weighted ? WeightedTau.HYPERBOLIC.compute(lf, gf) : KendallTau.INSTANCE.compute(lf, gf);
+				if (Double.isNaN(t)) t = 0;
 				System.out.print("\t++ " + r + ":" + t + " \t" + localForward.size());
 				t = weighted ? WeightedTau.HYPERBOLIC.compute(lf, gb) : KendallTau.INSTANCE.compute(lf, gb);
+				if (Double.isNaN(t)) t = 0;
 				System.out.print("\t+- " + r + ":" + t + " \t" + localForward.size());
 				t = weighted ? WeightedTau.HYPERBOLIC.compute(lb, gb) : KendallTau.INSTANCE.compute(lb, gb);
+				if (Double.isNaN(t)) t = 0;
 				System.out.print("\t-- " + r + ":" + t + " \t" + localForward.size());
 				t = weighted ? WeightedTau.HYPERBOLIC.compute(lb, gf) : KendallTau.INSTANCE.compute(lb, gf);
+				if (Double.isNaN(t)) t = 0;
 				System.out.println("\t-+ " + r + ":" + t + " \t" + localForward.size());
 			}
 	
