@@ -75,7 +75,7 @@ public class TauStats {
 		new CachingPredicateFactory(context);
 	}
 
-	private enum Centrality {
+	public enum Centrality {
 		DEGREE, PAGERANK
 	}
 
@@ -122,8 +122,13 @@ public class TauStats {
 			final var dm = new CGMerger(deps, context, tauStats.rocksDao);
 			final var stitchedGraph = ArrayImmutableDirectedGraph.copyOf(dm.mergeAllDeps(), false);
 
-			Long2DoubleFunction globalRank = Centralities.pageRankParallel(stitchedGraph, 0.85);
-			Long2DoubleFunction globalRankT = Centralities.pageRankParallel(stitchedGraph.transpose(), 0.85);
+			Long2DoubleFunction globalRankForward = null;
+			Long2DoubleFunction globalRankBackward = null;
+			switch(centrality) {
+			case PAGERANK:
+				globalRankForward = Centralities.pageRankParallel(stitchedGraph.transpose(), 0.85);
+				globalRankBackward = Centralities.pageRankParallel(stitchedGraph, 0.85);
+			}
 			
 			System.out.println(gid + "\t" + name);
 			
@@ -132,41 +137,55 @@ public class TauStats {
 				var depTemp = tauStats.rocksDao.getGraphData(r);
 				if (depTemp == null) continue;
 				var dep = ArrayImmutableDirectedGraph.copyOf(depTemp, false);
-				Long2DoubleFunction localRank = Centralities.pageRankParallel(dep, 0.85);
-				Long2DoubleFunction localRankT = Centralities.pageRankParallel(dep.transpose(), 0.85);
+				Long2DoubleFunction localRankBackward = null;
+				Long2DoubleFunction localRankForward = null;
+
+				switch(centrality) {
+				case PAGERANK:
+					localRankForward = Centralities.pageRankParallel(dep.transpose(), 0.85);
+					localRankBackward = Centralities.pageRankParallel(dep, 0.85);
+				}
 				
 				DoubleArrayList localForward = new DoubleArrayList(), localBackward = new DoubleArrayList(), globalForward =  new DoubleArrayList(), globalBackward =  new DoubleArrayList();
 
 				for(long x : dep.nodes()) {
 					if (stitchedGraph.containsVertex(x)) {
-//						vl.add(localRank.get(x));
-//						vtl.add(localRankT.get(x));
-//						wl.add(globalRank.get(x));
-//						wtl.add(globalRankT.get(x));
-						localForward.add(dep.outdegree(x));
-						globalForward.add(stitchedGraph.outdegree(x));
-						localBackward.add(dep.indegree(x));
-						globalBackward.add(stitchedGraph.indegree(x));
+						switch(centrality) {
+						case PAGERANK:
+							localForward.add(localRankForward.get(x));
+							globalForward.add(globalRankForward.get(x));
+							localBackward.add(localRankBackward.get(x));
+							globalBackward.add(globalRankBackward.get(x));
+							break;
+						case DEGREE:
+							localForward.add(dep.outdegree(x));
+							globalForward.add(stitchedGraph.outdegree(x));
+							localBackward.add(dep.indegree(x));
+							globalBackward.add(stitchedGraph.indegree(x));
+							break;
+						}
 					}
 				}
 
 				double[] lf = localForward.toDoubleArray(), lb = localBackward.toDoubleArray(), gf = globalForward.toDoubleArray(), gb = globalBackward.toDoubleArray(); 
 				double t;
+
 				t = weighted ? WeightedTau.HYPERBOLIC.compute(lf, gf) : KendallTau.INSTANCE.compute(lf, gf);
 				if (Double.isNaN(t)) t = 0;
 				System.out.print("\t++ " + r + ":" + t + " \t" + localForward.size());
+
 				t = weighted ? WeightedTau.HYPERBOLIC.compute(lf, gb) : KendallTau.INSTANCE.compute(lf, gb);
 				if (Double.isNaN(t)) t = 0;
 				System.out.print("\t+- " + r + ":" + t + " \t" + localForward.size());
+
 				t = weighted ? WeightedTau.HYPERBOLIC.compute(lb, gb) : KendallTau.INSTANCE.compute(lb, gb);
 				if (Double.isNaN(t)) t = 0;
 				System.out.print("\t-- " + r + ":" + t + " \t" + localForward.size());
+
 				t = weighted ? WeightedTau.HYPERBOLIC.compute(lb, gf) : KendallTau.INSTANCE.compute(lb, gf);
 				if (Double.isNaN(t)) t = 0;
 				System.out.println("\t-+ " + r + ":" + t + " \t" + localForward.size());
 			}
-	
-			LOGGER.info("Nodes in stitched graph: " + stitchedGraph.numNodes());
 		}
 	}
 }
