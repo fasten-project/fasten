@@ -30,6 +30,7 @@ import com.martiansoftware.jsap.JSAP;
 import com.martiansoftware.jsap.JSAPResult;
 import com.martiansoftware.jsap.Parameter;
 import com.martiansoftware.jsap.SimpleJSAP;
+import com.martiansoftware.jsap.Switch;
 import com.martiansoftware.jsap.UnflaggedOption;
 
 import eu.fasten.core.data.ArrayImmutableDirectedGraph;
@@ -46,6 +47,7 @@ import it.unimi.dsi.fastutil.longs.Long2DoubleFunction;
 import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.law.stat.WeightedTau;
+import it.unimi.dsi.law.stat.KendallTau;
 
 public class TauStats {
 	private static final Logger LOGGER = LoggerFactory.getLogger(TauStats.class);
@@ -72,6 +74,7 @@ public class TauStats {
 
 	public static void main(final String args[]) throws Exception {
 		final SimpleJSAP jsap = new SimpleJSAP(TauStats.class.getName(), "Creates an instance of SearchEngine and answers queries from the command line (rlwrap recommended).", new Parameter[] {
+				new Switch("weighted", 'w', "weighted", "Use the hyperbolic weighted tau."),
 				new UnflaggedOption("jdbcURI", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.REQUIRED, JSAP.NOT_GREEDY, "The JDBC URI."),
 				new UnflaggedOption("database", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, JSAP.NOT_GREEDY, "The database name."),
 				new UnflaggedOption("rocksDb", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, JSAP.NOT_GREEDY, "The path to the RocksDB database of revision call graphs."),
@@ -80,6 +83,7 @@ public class TauStats {
 		final JSAPResult jsapResult = jsap.parse(args);
 		if (jsap.messagePrinted()) System.exit(1);
 
+		final boolean weighted = jsapResult.getBoolean("weighted");
 		final String jdbcURI = jsapResult.getString("jdbcURI");
 		final String database = jsapResult.getString("database");
 		final String rocksDb = jsapResult.getString("rocksDb");
@@ -110,33 +114,45 @@ public class TauStats {
 			final var stitchedGraph = ArrayImmutableDirectedGraph.copyOf(dm.mergeAllDeps(), false);
 
 			Long2DoubleFunction globalRank = Centralities.pageRankParallel(stitchedGraph, 0.85);
+			Long2DoubleFunction globalRankT = Centralities.pageRankParallel(stitchedGraph.transpose(), 0.85);
 			
 			System.out.println(gid + "\t" + name);
 			long nodesInDeps = 0;
 			
 			for(Revision r: dependencySet) {
 				LOGGER.info("Comparing with graph " + r.id);
-				var dep = ArrayImmutableDirectedGraph.copyOf(tauStats.rocksDao.getGraphData(r.id), false);
-				if (dep == null) continue;
+				var depTemp = tauStats.rocksDao.getGraphData(r.id);
+				if (depTemp == null) continue;
+				var dep = ArrayImmutableDirectedGraph.copyOf(depTemp, false);
 				int n = dep.numNodes();
 				nodesInDeps += n;
 				Long2DoubleFunction localRank = Centralities.pageRankParallel(dep, 0.85);
+				Long2DoubleFunction localRankT = Centralities.pageRankParallel(dep.transpose(), 0.85);
 				final long[] node2Gid = dep.nodes().toLongArray();
 				final Long2IntOpenHashMap gid2Node = new Long2IntOpenHashMap();
 				for(int i = 0; i < node2Gid.length; i++) gid2Node.put(node2Gid[i], i);
 				
-				double[] v = new double[n], w = new double[n];
+				double[] v = new double[n], w = new double[n], vt = new double[n], wt = new double[n];
 				long found = 0;
 				for(long x : dep.nodes()) {
 					v[gid2Node.get(x)] = localRank.get(x);
+					vt[gid2Node.get(x)] = localRankT.get(x);
 					if (stitchedGraph.containsVertex(x)) {
 						w[gid2Node.get(x)] = globalRank.get(x);
+						wt[gid2Node.get(x)] = globalRankT.get(x);
 						found++;
 					}
 				}
 
-				double t = WeightedTau.HYPERBOLIC.compute(v, w);
-				System.out.println("\t" + r.id + ":" + t + " \t" + found);
+				double t;
+				t = weighted ? WeightedTau.HYPERBOLIC.compute(v, w) : KendallTau.INSTANCE.compute(v, w);
+				System.out.print("\t++ " + r.id + ":" + t + " \t" + found);
+				t = weighted ? WeightedTau.HYPERBOLIC.compute(v, wt) : KendallTau.INSTANCE.compute(v, wt);
+				System.out.print("\t+- " + r.id + ":" + t + " \t" + found);
+				t = weighted ? WeightedTau.HYPERBOLIC.compute(vt, wt) : KendallTau.INSTANCE.compute(vt, wt);
+				System.out.print("\t-- " + r.id + ":" + t + " \t" + found);
+				t = weighted ? WeightedTau.HYPERBOLIC.compute(vt, w) : KendallTau.INSTANCE.compute(vt, w);
+				System.out.println("\t-+ " + r.id + ":" + t + " \t" + found);
 			}
 	
 			LOGGER.info("Nodes in deps: " + nodesInDeps);
