@@ -196,6 +196,14 @@ public class TauStats {
 				t = weighted ? WeightedTau.HYPERBOLIC.compute(lb, gf) : KendallTau.INSTANCE.compute(lb, gf);
 				if (Double.isNaN(t)) t = 0;
 				System.out.println("\t-+ " + r + ":" + t + " \t" + localForward.size());
+
+				t = weighted ? WeightedTau.HYPERBOLIC.compute(lb, lf) : KendallTau.INSTANCE.compute(lb, lf);
+				if (Double.isNaN(t)) t = 0;
+				System.out.print("\tl+- " + r + ":" + t + " \t" + localForward.size());
+
+				t = weighted ? WeightedTau.HYPERBOLIC.compute(gb, gf) : KendallTau.INSTANCE.compute(gb, gf);
+				if (Double.isNaN(t)) t = 0;
+				System.out.println("\tg+- " + r + ":" + t + " \t" + localForward.size());
 			}
 		}
 	}
