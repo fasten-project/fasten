@@ -25,7 +25,9 @@ import eu.fasten.core.data.DirectedGraph;
 import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
 import eu.fasten.core.data.FastenJavaURI;
 import eu.fasten.core.data.FastenURI;
+import eu.fasten.core.data.JavaNode;
 import eu.fasten.core.data.JavaScope;
+import eu.fasten.core.data.JavaType;
 import eu.fasten.core.data.MergedDirectedGraph;
 import eu.fasten.core.data.callableindex.GraphMetadata;
 import eu.fasten.core.data.callableindex.RocksDao;
@@ -81,6 +83,7 @@ public class CGMerger {
     private List<Pair<DirectedGraph, ExtendedRevisionJavaCallGraph>> ercgDependencySet;
     private BiMap<Long, String> allUris;
 
+    private Map<String, Map<String, String>> externalUris = new HashMap<>();
 
     public BiMap<Long, String> getAllUris() {
         return this.allUris;
@@ -147,6 +150,14 @@ public class CGMerger {
             }
         }
 
+        // Index external URIs
+        for (Map.Entry<String, JavaType> entry : ercg.getClassHierarchy().get(JavaScope.externalTypes).entrySet()) {
+            Map<String, String> typeMap = this.externalUris.computeIfAbsent(entry.getKey(), k -> new HashMap<>());
+            for (JavaNode node : entry.getValue().getMethods().values()) {
+                typeMap.put(node.getSignature(), node.getUri().toString());
+            }
+        }
+
         return result;
     }
 
@@ -194,6 +205,10 @@ public class CGMerger {
     }
 
     public DirectedGraph mergeWithCHA(final long id) {
+        return mergeWithCHA(id, false);
+    }
+
+    public DirectedGraph mergeWithCHA(final long id, boolean withExternals) {
         final var callGraphData = fetchCallGraphData(id, rocksDao);
         GraphMetadata graphArcs = null;
         try {
@@ -201,7 +216,7 @@ public class CGMerger {
         } catch (RocksDBException e) {
             logger.error("Could not retrieve arcs (graph metadata) from graph database:", e);
         }
-        return mergeWithCHA(callGraphData, graphArcs);
+        return mergeWithCHA(callGraphData, graphArcs, withExternals);
     }
 
     public DirectedGraph mergeWithCHA(final String artifact) {
@@ -347,6 +362,18 @@ public class CGMerger {
      * @return merged call graph
      */
     public DirectedGraph mergeWithCHA(final DirectedGraph callGraph, final GraphMetadata metadata) {
+        return mergeWithCHA(callGraph, metadata, false);
+    }
+
+    /**
+     * Merges a call graph with its dependencies using CHA algorithm.
+     *
+     * @param callGraph DirectedGraph of the dependency to stitch
+     * @param metadata     GraphMetadata of the dependency to stitch
+     * @param withExternals true if calls to unresolved callables should be kept
+     * @return merged call graph
+     */
+    public DirectedGraph mergeWithCHA(final DirectedGraph callGraph, final GraphMetadata metadata, boolean withExternals) {
         final long totalTime = System.currentTimeMillis();
 
         if (callGraph == null) {
@@ -373,7 +400,10 @@ public class CGMerger {
                     signature =
                         CallGraphUtils.decode(StringUtils.substringAfter(FastenJavaURI.create(receiver.receiverSignature).decanonicalize().getEntity(), "."));
                 }
-                resolve(edges, arc, signature, callGraph.isExternal(sourceId));
+                if (!resolve(edges, arc, signature, callGraph.isExternal(sourceId)) && withExternals) {
+                    // The target could not be resolved, store it as external node
+                    addExternal(result, edges, arc);
+                }
             }
         });
 
@@ -389,22 +419,60 @@ public class CGMerger {
     }
 
     /**
+     * Add a non resolved edge to the {@link DirectedGraph}.
+     */
+    private synchronized void addExternal(final MergedDirectedGraph result, final Set<LongLongPair> edges, Arc arc) {
+        for (String type : arc.target.receiverTypes) {
+            // Find external node URI
+            Map<String, String> typeMap = this.externalUris.get(type);
+            if (typeMap != null) {
+                String nodeURI = typeMap.get(arc.target.receiverSignature);
+
+                if (nodeURI != null) {
+                    // Find external node id
+                    Long target = this.allUris.inverse().get(nodeURI);
+                    if (target == null) {
+                        // Allocate a global id to the external node
+                        target = this.allUris.keySet().stream().max(Long::compareTo).orElse(0L) + 1;
+
+                        // Add the external node to the graph if not already there
+                        this.allUris.put(target, nodeURI);
+                        result.addExternalNode(target);
+                    }
+
+                    edges.add(LongLongPair.of(arc.source, target));
+                }
+            }
+        }
+    }
+
+    /**
      * Create fully merged for the entire dependency set.
      *
      * @return merged call graph
      */
     public DirectedGraph mergeAllDeps() {
+        return mergeAllDeps(false);
+    }
+
+    /**
+     * Create fully merged for the entire dependency set.
+     *
+     * @param withExternals true if calls to unresolved callables should be kept
+     * @return merged call graph
+     */
+    public DirectedGraph mergeAllDeps(boolean withExternals) {
         List<DirectedGraph> depGraphs = new ArrayList<>();
         if (this.dbContext == null) {
             for (final var dep : this.ercgDependencySet) {
-                var merged = mergeWithCHA(dep.getKey(), getERCGArcs(dep.getRight()));
+                var merged = mergeWithCHA(dep.getKey(), getERCGArcs(dep.getRight()), withExternals);
                 if (merged != null) {
                     depGraphs.add(merged);
                 }
             }
         } else {
             for (final var dep : this.dependencySet) {
-                var merged = mergeWithCHA(dep);
+                var merged = mergeWithCHA(dep, withExternals);
                 if (merged != null) {
                     depGraphs.add(merged);
                 }
@@ -419,7 +487,7 @@ public class CGMerger {
      * @param signature     signature of the target
      * @param isCallback    true, if a given arc is a callback
      */
-    private void resolve(final Set<LongLongPair> edges,
+    private boolean resolve(final Set<LongLongPair> edges,
                          final Arc arc,
                          final String signature,
                          final boolean isCallback) {
@@ -430,7 +498,9 @@ public class CGMerger {
 	Map<String, Map<String, LongSet>> typeDictionary = this.typeDictionary;
 	Map<String, List<String>> universalParents = this.universalParents;
 	Map<String, List<String>> universalChildren = this.universalChildren;
-	
+
+    boolean resolved = false;
+
         for (String receiverTypeUri : arc.target.receiverTypes) {
 	    switch (arc.target.callType) {
                 case VIRTUAL:
@@ -440,6 +510,7 @@ public class CGMerger {
                     for (final var target : typeDictionary.getOrDefault(receiverTypeUri,
                             emptyMap).getOrDefault(signature, emptyLongSet)) {
                         addCall(edges, arc.source, target, isCallback);
+                        resolved = true;
                         foundTarget = true;
                     }
                     if (!foundTarget) {
@@ -450,6 +521,7 @@ public class CGMerger {
                                         emptyMap)
                                         .getOrDefault(signature, emptyLongSet)) {
                                     addCall(edges, arc.source, target, isCallback);
+                                    resolved = true;
                                     foundTarget = true;
                                     break;
                                 }
@@ -467,6 +539,7 @@ public class CGMerger {
                                             .getOrDefault(signature, emptyLongSet)) {
                                         addCall(edges, arc.source, target,
                                                 isCallback);
+                                        resolved = true;
                                     }
                                 }
                             }
@@ -480,10 +553,13 @@ public class CGMerger {
                     for (final var target : typeDictionary.getOrDefault(receiverTypeUri,
                             emptyMap).getOrDefault(signature, emptyLongSet)) {
                         addCall(edges, arc.source, target, isCallback);
+                        resolved = true;
                     }
                     break;
             }
         }
+
+        return resolved;
     }
 
     private ArrayList<String> getReceiver(final HashMap<String, Object> callSite) {
@@ -555,7 +631,6 @@ public class CGMerger {
         }
         return cg;
     }
-
 
     /**
      * Create a universal CHA for all dependencies including the artifact to resolve.
@@ -761,7 +836,9 @@ public class CGMerger {
         for (DirectedGraph depGraph : depGraphs) {
             numNode += depGraph.numNodes();
             for (LongLongPair longLongPair : depGraph.edgeSet()) {
-                addEdge(result, longLongPair.firstLong(), longLongPair.secondLong());
+                addNode(result, longLongPair.firstLong(), depGraph.isExternal(longLongPair.firstLong()));
+                addNode(result, longLongPair.secondLong(), depGraph.isExternal(longLongPair.secondLong()));
+                result.addEdge(longLongPair.firstLong(), longLongPair.secondLong());
             }
         }
         logger.info("Number of Augmented nodes: {}", numNode);
@@ -769,6 +846,15 @@ public class CGMerger {
         return result;
     }
 
+    private void addNode(MergedDirectedGraph result, long node, boolean external)
+    {
+        if (external) {
+            result.addExternalNode(node);
+        } else {
+            result.addInternalNode(node);
+        }
+    }
+    
     /**
      * Clone internal calls and internal arcs to the merged call graph.
      *
