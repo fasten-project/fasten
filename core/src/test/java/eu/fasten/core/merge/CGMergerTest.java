@@ -30,6 +30,8 @@ import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongLongImmutablePair;
 import it.unimi.dsi.fastutil.longs.LongLongPair;
+import it.unimi.dsi.fastutil.longs.LongSet;
+
 import org.apache.commons.lang3.tuple.Pair;
 import org.jooq.DSLContext;
 import org.jooq.Record2;
@@ -328,6 +330,32 @@ public class CGMergerTest {
 
         assertEquals(Set.of(LongLongPair.of(source, target1), LongLongPair.of(source,
                 target2)), convertToImmutablePairs(cg.edgeSet()));
+    }
+
+    @Test
+    public void mergeAllDepsWithExternalsTest() {
+        merger = new CGMerger(Arrays.asList(imported, importer));
+
+        final var cg = merger.mergeAllDeps(true);
+        final var uris = merger.getAllUris();
+        assertEquals(4, cg.edgeSet().size());
+        assertEquals(5, uris.size());
+        final var internal0 = uris.inverse().get("fasten://mvn!Imported$1/merge.simpleImport/Imported" +
+            ".%3Cinit%3E()%2Fjava.lang%2FVoidType");
+        final var internal1 = uris.inverse().get("fasten://mvn!Imported$1/merge" +
+            ".simpleImport/Imported.targetMethod()%2Fjava.lang%2FVoidType");
+        final var internal2 = uris.inverse().get("fasten://mvn!Importer$0/merge" +
+            ".simpleImport/Importer.%3Cinit%3E()%2Fjava.lang%2FVoidType");
+        final var internal3 = uris.inverse().get("fasten://mvn!Importer$0/merge" +
+            ".simpleImport/Importer.sourceMethod()%2Fjava.lang%2FVoidType");
+        final var external = uris.inverse().get("/java.lang/Object.%3Cinit%3E()VoidType");
+
+        assertEquals(LongSet.of(external), cg.externalNodes());
+
+        assertEquals(
+            Set.of(LongLongPair.of(internal0, external), LongLongPair.of(internal3, internal0),
+                LongLongPair.of(internal2, external), LongLongPair.of(internal3, internal1)),
+            convertToImmutablePairs(cg.edgeSet()));
     }
 
     private Set<LongLongImmutablePair> convertToImmutablePairs(Set<LongLongPair> edgeSet) {
