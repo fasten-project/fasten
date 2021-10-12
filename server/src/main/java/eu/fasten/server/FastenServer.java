@@ -181,6 +181,7 @@ public class FastenServer implements Runnable {
         var graphResolverUserPlugins = pluginManager.getExtensions(DependencyGraphUser.class);
         var graphDbReaderPlugins = pluginManager.getExtensions(CallableIndexReader.class);
 
+
         printPluginStatistics(fastenPlugins, dbPlugins, kafkaPlugins, graphDbPlugins);
 
         registerDBConnections(dbPlugins);
