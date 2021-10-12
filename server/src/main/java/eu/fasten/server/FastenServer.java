@@ -176,10 +176,10 @@ public class FastenServer implements Runnable {
         var fastenPlugins = pluginManager.getExtensions(FastenPlugin.class);
         var dbPlugins = pluginManager.getExtensions(DBConnector.class);
         var kafkaPlugins = pluginManager.getExtensions(KafkaPlugin.class);
-        var graphDbPlugins = pluginManager.getExtensions(GraphDBConnector.class);
+        var graphDbPlugins = pluginManager.getExtensions(CallableIndexConnector.class);
         var dataWriterPlugins = pluginManager.getExtensions(DataWriter.class);
         var graphResolverUserPlugins = pluginManager.getExtensions(DependencyGraphUser.class);
-        var graphDbReaderPlugins = pluginManager.getExtensions(GraphDBReader.class);
+        var graphDbReaderPlugins = pluginManager.getExtensions(CallableIndexReader.class);
 
         printPluginStatistics(fastenPlugins, dbPlugins, kafkaPlugins, graphDbPlugins);
 
@@ -196,7 +196,7 @@ public class FastenServer implements Runnable {
 
     private void printPluginStatistics(List<FastenPlugin> fastenPlugins,
                                        List<DBConnector> dbPlugins, List<KafkaPlugin> kafkaPlugins,
-                                       List<GraphDBConnector> graphDbPlugins) {
+                                       List<CallableIndexConnector> graphDbPlugins) {
         logger.info("Plugin init done: {} KafkaPlugins, {} DB plug-ins, {} GraphDB plug-ins:"
                 + " {} total plugins",
             kafkaPlugins.size(), dbPlugins.size(), graphDbPlugins.size(), fastenPlugins.size());
@@ -328,7 +328,7 @@ public class FastenServer implements Runnable {
      *
      * @param graphDbPlugins list of Graph DB plugins
      */
-    private void makeGraphDBConnection(List<GraphDBConnector> graphDbPlugins) {
+    private void makeGraphDBConnection(List<CallableIndexConnector> graphDbPlugins) {
         graphDbPlugins.forEach((p) -> {
             if (ObjectUtils.allNotNull(graphDbDir)) {
                 try {
@@ -351,7 +351,7 @@ public class FastenServer implements Runnable {
      *
      * @param graphDbPlugins list of Graph DB plugins
      */
-    private void makeReadOnlyGraphDBConnection(List<GraphDBReader> graphDbPlugins) {
+    private void makeReadOnlyGraphDBConnection(List<CallableIndexReader> graphDbPlugins) {
         graphDbPlugins.forEach((p) -> {
             if (ObjectUtils.allNotNull(graphDbDir)) {
                 try {

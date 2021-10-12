@@ -26,7 +26,7 @@ import com.martiansoftware.jsap.Parameter;
 import com.martiansoftware.jsap.SimpleJSAP;
 import com.martiansoftware.jsap.UnflaggedOption;
 
-import eu.fasten.core.data.graphdb.RocksDao;
+import eu.fasten.core.data.callableindex.RocksDao;
 
 public class Test {
 

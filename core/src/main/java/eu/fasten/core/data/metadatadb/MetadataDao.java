@@ -1245,7 +1245,7 @@ public class MetadataDao {
         return result.value1();
     }
 
-    public List<Long> getPackageInternalCallableIDs(String packageName, String version) {
+    public List<Long> getPackageInternalCallableIDs(String packageName, String version, Set<Long> callableIDs) {
         if (!assertPackageExistence(packageName, version)) {
             throw new PackageVersionNotFoundException(packageName + Constants.mvnCoordinateSeparator + version);
         }
@@ -1266,6 +1266,7 @@ public class MetadataDao {
                 .innerJoin(c).on(m.ID.eq(c.MODULE_ID))
                 .where(p.PACKAGE_NAME.eq(packageName))
                 .and(pv.VERSION.eq(version))
+                .and(c.ID.in(callableIDs))
                 .and(c.IS_INTERNAL_CALL.eq(true))
                 .fetch();
 
