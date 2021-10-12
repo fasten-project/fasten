@@ -27,6 +27,8 @@ import org.skyscreamer.jsonassert.JSONCompareMode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static eu.fasten.core.utils.TestUtils.getTestResource;
+
 class JSONUtilsTest {
     private static final Logger logger = LoggerFactory.getLogger(JSONUtilsTest.class);
 
@@ -57,8 +59,7 @@ class JSONUtilsTest {
         merger.mergeWithCHA(artifact);
 
         coords =
-            readDataCSV(new File(Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
-            .getResource("121Coordinates.csv")).getFile()));
+            readDataCSV(Objects.requireNonNull(getTestResource("121Coordinates.csv")));
     }
 
     @Test

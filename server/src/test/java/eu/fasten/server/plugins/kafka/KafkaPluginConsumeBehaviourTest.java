@@ -108,17 +108,41 @@ public class KafkaPluginConsumeBehaviourTest {
         verify(dummyPlugin).consume("{key: 'Im a record!'}");
     }
 
-    //From: https://stackoverflow.com/questions/19600527/java-program-setting-an-environment-variable
     public static void setEnv(String key, String value) {
+        var map = new HashMap<String, String>();
+        map.put(key, value);
         try {
-            Map<String, String> env = System.getenv();
-            Class<?> cl = env.getClass();
-            Field field = cl.getDeclaredField("m");
-            field.setAccessible(true);
-            Map<String, String> writableEnv = (Map<String, String>) field.get(env);
-            writableEnv.put(key, value);
+            setEnvMap(map);
         } catch (Exception e) {
-            throw new IllegalStateException("Failed to set environment variable", e);
+            e.printStackTrace();
+        }
+    }
+
+    // https://stackoverflow.com/questions/318239/how-do-i-set-environment-variables-from-java
+    private static void setEnvMap(Map<String, String> newenv) throws Exception {
+        try {
+            Class<?> processEnvironmentClass = Class.forName("java.lang.ProcessEnvironment");
+            Field theEnvironmentField = processEnvironmentClass.getDeclaredField("theEnvironment");
+            theEnvironmentField.setAccessible(true);
+            Map<String, String> env = (Map<String, String>) theEnvironmentField.get(null);
+            env.putAll(newenv);
+            Field theCaseInsensitiveEnvironmentField = processEnvironmentClass.getDeclaredField("theCaseInsensitiveEnvironment");
+            theCaseInsensitiveEnvironmentField.setAccessible(true);
+            Map<String, String> cienv = (Map<String, String>)     theCaseInsensitiveEnvironmentField.get(null);
+            cienv.putAll(newenv);
+        } catch (NoSuchFieldException e) {
+            Class[] classes = Collections.class.getDeclaredClasses();
+            Map<String, String> env = System.getenv();
+            for(Class cl : classes) {
+                if("java.util.Collections$UnmodifiableMap".equals(cl.getName())) {
+                    Field field = cl.getDeclaredField("m");
+                    field.setAccessible(true);
+                    Object obj = field.get(env);
+                    Map<String, String> map = (Map<String, String>) obj;
+                    map.clear();
+                    map.putAll(newenv);
+                }
+            }
         }
     }
 

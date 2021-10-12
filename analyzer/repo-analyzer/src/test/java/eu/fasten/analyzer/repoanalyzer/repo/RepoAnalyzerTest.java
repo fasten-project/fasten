@@ -24,14 +24,15 @@ import java.nio.file.Path;
 import java.util.Objects;
 import org.dom4j.DocumentException;
 import org.junit.jupiter.api.Test;
+
+import static eu.fasten.core.utils.TestUtils.getTestResource;
 import static org.junit.jupiter.api.Assertions.*;
 
 class RepoAnalyzerTest {
 
     @Test
     void wringRepoType() {
-        var root = new File(Objects.requireNonNull(RepoAnalyzerTest.class.getClassLoader()
-                .getResource("emptyRepo")).getFile()).getAbsolutePath();
+        var root = getTestResource("emptyRepo").getAbsolutePath();
         assertThrows(UnsupportedOperationException.class, () -> {
             var repoAnalyzerFactory = new RepoAnalyzerFactory();
             repoAnalyzerFactory.getAnalyzer(root);
@@ -40,8 +41,7 @@ class RepoAnalyzerTest {
 
     @Test
     void analyze() throws IOException, DocumentException, InterruptedException {
-        var root = new File(Objects.requireNonNull(RepoAnalyzerTest.class.getClassLoader()
-                .getResource("completeMavenProject")).getFile()).getAbsolutePath();
+        var root = getTestResource("completeMavenProject").getAbsolutePath();
         var repoAnalyzerFactory = new RepoAnalyzerFactory();
         var analyzer = repoAnalyzerFactory.getAnalyzer(root);
         var result = analyzer.analyze();

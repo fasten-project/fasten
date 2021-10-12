@@ -146,6 +146,13 @@ public class ArrayImmutableDirectedGraph implements DirectedGraph, Serializable 
 		}
 	}
 
+	public static ArrayImmutableDirectedGraph copyOf(final DirectedGraph graph, final boolean sorted) {
+		Builder builder = new Builder();
+		graph.forEach(x -> { if (graph.isInternal(x)) builder.addInternalNode(x); else builder.addExternalNode(x); });
+		graph.forEach(x -> graph.successors(x).forEach(y -> builder.addArc(x, y)));
+		return builder.build(sorted);
+	}
+	
 	// Constructor needed for kryo serialization
 	protected ArrayImmutableDirectedGraph() {
 		GID2Offset = null;

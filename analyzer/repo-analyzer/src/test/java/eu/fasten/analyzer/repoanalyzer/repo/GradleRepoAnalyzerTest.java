@@ -26,6 +26,8 @@ import java.util.Set;
 import org.dom4j.DocumentException;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+
+import static eu.fasten.core.utils.TestUtils.getTestResource;
 import static org.junit.jupiter.api.Assertions.*;
 
 class GradleRepoAnalyzerTest {
@@ -35,8 +37,7 @@ class GradleRepoAnalyzerTest {
 
     @BeforeAll
     static void setUp() {
-        root = new File(Objects.requireNonNull(GradleRepoAnalyzerTest.class.getClassLoader()
-                .getResource("simpleGradleRepo")).getFile()).getAbsolutePath();
+        root = getTestResource("simpleGradleRepo").getAbsolutePath();
         var repoAnalyzerFactory = new RepoAnalyzerFactory();
         analyzer = repoAnalyzerFactory.getAnalyzer(root);
     }
@@ -65,8 +66,7 @@ class GradleRepoAnalyzerTest {
 
     @Test
     void gradleKotlin() {
-        root = new File(Objects.requireNonNull(GradleRepoAnalyzerTest.class.getClassLoader()
-                .getResource("simpleGradleKotlinRepo")).getFile()).getAbsolutePath();
+        root = getTestResource("simpleGradleKotlinRepo").getAbsolutePath();
         var repoAnalyzerFactory = new RepoAnalyzerFactory();
         analyzer = repoAnalyzerFactory.getAnalyzer(root);
     }

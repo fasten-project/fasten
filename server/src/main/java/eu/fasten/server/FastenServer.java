@@ -32,7 +32,10 @@ import java.sql.SQLException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+<<<<<<< HEAD
 import java.util.function.Supplier;
+=======
+>>>>>>> develop
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.ObjectUtils;
@@ -328,7 +331,7 @@ public class FastenServer implements Runnable {
      *
      * @param graphDbPlugins list of Graph DB plugins
      */
-    private void makeGraphDBConnection(List<GraphDBConnector> graphDbPlugins) {
+    private void makeGraphDBConnection(List<CallableIndexConnector> graphDbPlugins) {
         graphDbPlugins.forEach((p) -> {
             if (ObjectUtils.allNotNull(graphDbDir)) {
                 try {
@@ -351,7 +354,7 @@ public class FastenServer implements Runnable {
      *
      * @param graphDbPlugins list of Graph DB plugins
      */
-    private void makeReadOnlyGraphDBConnection(List<GraphDBReader> graphDbPlugins) {
+    private void makeReadOnlyGraphDBConnection(List<CallableIndexReader> graphDbPlugins) {
         graphDbPlugins.forEach((p) -> {
             if (ObjectUtils.allNotNull(graphDbDir)) {
                 try {
