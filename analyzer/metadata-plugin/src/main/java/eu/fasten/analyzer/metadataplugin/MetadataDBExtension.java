@@ -62,7 +62,8 @@ import java.util.Optional;
 
 public class MetadataDBExtension implements KafkaPlugin, DBConnector {
 
-    protected String consumerTopic = "fasten.OPAL.out";
+    protected List<String> consumeTopics = new LinkedList<>(Collections.singletonList("fasten.OPAL.out"));
+    //protected String consumerTopic = "fasten.OPAL.out";
     private static DSLContext dslContext;
     protected boolean processedRecord = false;
     protected Exception pluginError = null;
@@ -83,12 +84,12 @@ public class MetadataDBExtension implements KafkaPlugin, DBConnector {
 
     @Override
     public Optional<List<String>> consumeTopic() {
-        return Optional.of(Collections.singletonList(consumerTopic));
+        return Optional.of(consumeTopics);
     }
 
     @Override
-    public void setTopic(String topicName) {
-        this.consumerTopic = topicName;
+    public void setTopics(List<String> consumeTopics) {
+        this.consumeTopics = consumeTopics;
     }
 
     @Override

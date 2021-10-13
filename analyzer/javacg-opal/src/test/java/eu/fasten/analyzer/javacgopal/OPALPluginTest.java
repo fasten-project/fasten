@@ -30,6 +30,10 @@ import org.json.JSONObject;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+
 class OPALPluginTest {
 
     private OPALPlugin.OPAL plugin;
@@ -47,10 +51,10 @@ class OPALPluginTest {
 
     @Test
     public void testSetTopic() {
-        String topicName = "fasten.mvn.pkg";
-        plugin.setTopic(topicName);
+        List<String> consumeTopics = Collections.singletonList("fasten.mvn.pkg");
+        plugin.setTopics(consumeTopics);
         assertTrue(plugin.consumeTopic().isPresent());
-        assertEquals(topicName, plugin.consumeTopic().get().get(0));
+        assertEquals(Optional.of(consumeTopics), plugin.consumeTopic());
     }
 
     @Test
