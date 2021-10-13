@@ -159,6 +159,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
             logger.error("Error occurred while processing call graphs", e);
         } finally {
             connNorm.close();
+            connPrio.close();
             logger.info("Plugin {} stopped", plugin.name());
         }
     }
@@ -182,11 +183,15 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
      */
     public void handleConsuming() {
         boolean hasPrio = false;
+
         if (!prioTopics.isEmpty()) {
             ConsumerRecords<String, String> prioRecords = connPrio.poll(Duration.ofSeconds(1));
-            for (var r: prioRecords) {
+            for (var r : prioRecords) {
+                logger.info("Read priority message offset " + r.offset() + " from partition " + r.partition() + ".");
                 processRecord(r, System.currentTimeMillis() / 1000L, true);
                 hasPrio = true;
+                logger.info("Successfully processed priority message offset " + r.offset() + " from partition " + r.partition() + ".");
+                // TODO: Keep a list of processed priority messages like normal ones
             }
             doCommitSync(true);
         }
@@ -200,9 +205,9 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
 
             // Although we loop through all records, by default we only poll 1 record.
             for (var r : records) {
-                logger.info("Read message offset " + r.offset() + " from partition " + r.partition() + ".");
+                logger.info("Read normal message offset " + r.offset() + " from partition " + r.partition() + ".");
                 processRecord(r, consumeTimestamp, false);
-                logger.info("Successfully processed message offset " + r.offset() + " from partition " + r.partition() + ".");
+                logger.info("Successfully processed normal message offset " + r.offset() + " from partition " + r.partition() + ".");
 
                 messagesProcessed.add(new ImmutablePair<>(r.offset(), r.partition()));
             }
