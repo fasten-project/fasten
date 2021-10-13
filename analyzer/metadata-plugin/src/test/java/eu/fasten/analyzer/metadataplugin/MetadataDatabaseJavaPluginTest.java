@@ -41,7 +41,7 @@ public class MetadataDatabaseJavaPluginTest {
     public void setUp() {
         var dslContext = Mockito.mock(DSLContext.class);
         metadataDBExtension = new MetadataDatabaseJavaPlugin.MetadataDBJavaExtension();
-        metadataDBExtension.setTopic("fasten.OPAL.out");
+        metadataDBExtension.setTopics(Collections.singletonList("fasten.OPAL.out"));
         metadataDBExtension.setDBConnection(new HashMap<>(Map.of(Constants.mvnForge, dslContext)));
     }
 
@@ -160,10 +160,9 @@ public class MetadataDatabaseJavaPluginTest {
     public void consumerTopicChangeTest() {
         var topics1 = Optional.of(Collections.singletonList("fasten.OPAL.out"));
         assertEquals(topics1, metadataDBExtension.consumeTopic());
-        var differentTopic = "DifferentKafkaTopic";
-        var topics2 = Optional.of(Collections.singletonList(differentTopic));
-        metadataDBExtension.setTopic(differentTopic);
-        assertEquals(topics2, metadataDBExtension.consumeTopic());
+        var differentTopic = Collections.singletonList("DifferentKafkaTopic");
+        metadataDBExtension.setTopics(differentTopic);
+        assertEquals(Optional.of(differentTopic), metadataDBExtension.consumeTopic());
     }
 
     @Test

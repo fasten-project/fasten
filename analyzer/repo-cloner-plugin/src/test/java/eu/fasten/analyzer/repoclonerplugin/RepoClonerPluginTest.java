@@ -21,12 +21,9 @@ package eu.fasten.analyzer.repoclonerplugin;
 import eu.fasten.analyzer.repoclonerplugin.utils.GitCloner;
 import eu.fasten.analyzer.repoclonerplugin.utils.HgCloner;
 import eu.fasten.analyzer.repoclonerplugin.utils.SvnCloner;
-import eu.fasten.core.data.JSONUtils;
-import org.apache.commons.io.FileUtils;
+import org.checkerframework.checker.nullness.Opt;
 import org.eclipse.jgit.api.errors.GitAPIException;
-import org.jooq.JSON;
 import org.json.JSONObject;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -36,7 +33,6 @@ import org.tmatesoft.svn.core.SVNException;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.Optional;
@@ -52,7 +48,7 @@ public class RepoClonerPluginTest {
         repoCloner = new RepoClonerPlugin.RepoCloner();
         baseDir = Files.createTempDirectory("").toString();
         repoCloner.setBaseDir(baseDir);
-        repoCloner.setTopic("fasten.POMAnalyzer.out");
+        repoCloner.setTopics(Collections.singletonList("fasten.POMAnalyzer.out"));
     }
 
     @Test
@@ -156,10 +152,9 @@ public class RepoClonerPluginTest {
     public void consumerTopicChangeTest() {
         var topics1 = Optional.of(Collections.singletonList("fasten.POMAnalyzer.out"));
         assertEquals(topics1, repoCloner.consumeTopic());
-        var differentTopic = "DifferentKafkaTopic";
-        var topics2 = Optional.of(Collections.singletonList(differentTopic));
-        repoCloner.setTopic(differentTopic);
-        assertEquals(topics2, repoCloner.consumeTopic());
+        var differentTopic = Collections.singletonList("DifferentKafkaTopic");
+        repoCloner.setTopics(differentTopic);
+        assertEquals(Optional.of(differentTopic), repoCloner.consumeTopic());
     }
 
     @Test

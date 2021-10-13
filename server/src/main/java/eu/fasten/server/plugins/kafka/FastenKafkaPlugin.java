@@ -37,7 +37,6 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.lang3.tuple.Pair;
 import org.apache.kafka.clients.consumer.CommitFailedException;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -57,9 +56,13 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
     private final KafkaPlugin plugin;
 
     private final AtomicBoolean closed = new AtomicBoolean(false);
-    private KafkaConsumer<String, String> connection;
+    private KafkaConsumer<String, String> connNorm;
+    private KafkaConsumer<String, String> connPrio;
 
     private KafkaProducer<String, String> producer;
+
+    private List<String> normTopics;
+    private List<String> prioTopics;
     private final String outputTopic;
 
     private final int skipOffsets;
@@ -90,7 +93,8 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
         this.plugin = plugin;
 
         if (enableKafka) {
-            this.connection = new KafkaConsumer<>(consumerProperties);
+            this.connNorm = new KafkaConsumer<>(consumerProperties);
+            this.connPrio = new KafkaConsumer<>(consumerProperties);
             this.producer = new KafkaProducer<>(producerProperties);
         }
 
@@ -134,7 +138,10 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
     public void run() {
         try {
             if (plugin.consumeTopic().isPresent()) {
-                connection.subscribe(plugin.consumeTopic().get());
+                normTopics = plugin.consumeTopic().get().stream().filter(s -> !s.contains("priority")).collect(Collectors.toList());
+                prioTopics = plugin.consumeTopic().get().stream().filter(s -> s.contains("priority")).collect(Collectors.toList());
+                connNorm.subscribe(normTopics);
+                if (!prioTopics.isEmpty()) {connPrio.subscribe(prioTopics);}
             }
             if (this.skipOffsets == 1) {
                 skipPartitionOffsets();
@@ -144,14 +151,14 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
                 if (plugin.consumeTopic().isPresent()) {
                     handleConsuming();
                 } else {
-                    doCommitSync();
-                    handleProducing(null, System.currentTimeMillis() / 1000L);
+                    doCommitSync(false);
+                    handleProducing(null, System.currentTimeMillis() / 1000L, false);
                 }
             }
         } catch (Exception e) {
             logger.error("Error occurred while processing call graphs", e);
         } finally {
-            connection.close();
+            connNorm.close();
             logger.info("Plugin {} stopped", plugin.name());
         }
     }
@@ -174,39 +181,50 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
      * Consumes a message from a Kafka topics and passes it to a plugin.
      */
     public void handleConsuming() {
-        ConsumerRecords<String, String> records = connection.poll(Duration.ofSeconds(1));
-        Long consumeTimestamp = System.currentTimeMillis() / 1000L;
-
-        // Keep a list of all records and offsets we processed (by default this is only 1).
-        ArrayList<ImmutablePair<Long, Integer>> messagesProcessed = new ArrayList<ImmutablePair<Long, Integer>>();
-
-        // Although we loop through all records, by default we only poll 1 record.
-        for (var r : records) {
-            logger.info("Read message offset " + r.offset() + " from partition " + r.partition() + ".");
-            processRecord(r, consumeTimestamp);
-            logger.info("Successfully processed message offset " + r.offset() + " from partition " + r.partition() + ".");
-
-            messagesProcessed.add(new ImmutablePair<>(r.offset(), r.partition()));
+        boolean hasPrio = false;
+        if (!prioTopics.isEmpty()) {
+            ConsumerRecords<String, String> prioRecords = connPrio.poll(Duration.ofSeconds(1));
+            for (var r: prioRecords) {
+                processRecord(r, System.currentTimeMillis() / 1000L, true);
+                hasPrio = true;
+            }
+            doCommitSync(true);
         }
 
-        // Commit only after _all_ records are processed.
-        // For most plugins, this loop will only process 1 record (since max.poll.records is 1).
-        doCommitSync();
+        if (!hasPrio) {
+            ConsumerRecords<String, String> records = connNorm.poll(Duration.ofSeconds(1));
+            Long consumeTimestamp = System.currentTimeMillis() / 1000L;
 
-        // More logging.
-        String allOffsets = messagesProcessed.stream().map((x) -> x.left).map(Object::toString)
-                .collect(Collectors.joining(", "));
-        String allPartitions = messagesProcessed.stream().map((x) -> x.right).map(Object::toString)
-                .collect(Collectors.joining(", "));
+            // Keep a list of all records and offsets we processed (by default this is only 1).
+            ArrayList<ImmutablePair<Long, Integer>> messagesProcessed = new ArrayList<ImmutablePair<Long, Integer>>();
 
-        if (!records.isEmpty()) {
-            logger.info("Committed offsets [" + allOffsets + "] of partitions [" + allPartitions + "].");
-        }
+            // Although we loop through all records, by default we only poll 1 record.
+            for (var r : records) {
+                logger.info("Read message offset " + r.offset() + " from partition " + r.partition() + ".");
+                processRecord(r, consumeTimestamp, false);
+                logger.info("Successfully processed message offset " + r.offset() + " from partition " + r.partition() + ".");
 
+                messagesProcessed.add(new ImmutablePair<>(r.offset(), r.partition()));
+            }
 
-        // If local storage is enabled, clear the correct partitions after offsets are committed.
-        if (localStorage != null) {
-            localStorage.clear(messagesProcessed.stream().map((x) -> x.right).collect(Collectors.toList()));
+            // Commit only after _all_ records are processed.
+            // For most plugins, this loop will only process 1 record (since max.poll.records is 1).
+            doCommitSync(false);
+
+            // More logging.
+            String allOffsets = messagesProcessed.stream().map((x) -> x.left).map(Object::toString)
+                    .collect(Collectors.joining(", "));
+            String allPartitions = messagesProcessed.stream().map((x) -> x.right).map(Object::toString)
+                    .collect(Collectors.joining(", "));
+
+            if (!records.isEmpty()) {
+                logger.info("Committed offsets [" + allOffsets + "] of partitions [" + allPartitions + "].");
+            }
+
+            // If local storage is enabled, clear the correct partitions after offsets are committed.
+            if (localStorage != null) {
+                localStorage.clear(messagesProcessed.stream().map((x) -> x.right).collect(Collectors.toList()));
+            }
         }
     }
 
@@ -228,7 +246,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
      * <p>
      * This strategy provides at-least-once semantics.
      */
-    public void processRecord(ConsumerRecord<String, String> record, Long consumeTimestamp) {
+    public void processRecord(ConsumerRecord<String, String> record, Long consumeTimestamp, boolean priority) {
         if (localStorage != null) { // If local storage is enabled.
             if (localStorage.exists(record.value(), record.partition())) { // This plugin already consumed this record before, we will not process it now.
                 logger.info("Already processed record with hash: " + localStorage.getSHA1(record.value()) + ", skipping it now.");
@@ -258,7 +276,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
         }
 
         // We always produce, it does not matter if local storage is enabled or not.
-        handleProducing(record.value(), consumeTimestamp);
+        handleProducing(record.value(), consumeTimestamp, priority);
     }
 
     /**
@@ -266,7 +284,16 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
      *
      * @param input input message [can be null]
      */
-    public void handleProducing(String input, long consumeTimestamp) {
+    public void handleProducing(String input, long consumeTimestamp, boolean priority) {
+        String outputTopicName;
+        String errorTopicName;
+        if (priority) {
+            outputTopicName = String.format("fasten.%s.priority.out", outputTopic);
+            errorTopicName = String.format("fasten.%s.priority.err", outputTopic);
+        } else {
+            outputTopicName = String.format("fasten.%s.out", outputTopic);
+            errorTopicName = String.format("fasten.%s.err", outputTopic);
+        }
         try {
             if (plugin.getPluginError() != null) {
                 throw plugin.getPluginError();
@@ -278,13 +305,11 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
                 payload = writeToFile(payload);
             }
 
-            emitMessage(this.producer, String.format("fasten.%s.out",
-                    outputTopic),
+            emitMessage(this.producer, outputTopicName,
                     getStdOutMsg(input, payload, consumeTimestamp));
 
         } catch (Exception e) {
-            emitMessage(this.producer, String.format("fasten.%s.err",
-                    outputTopic),
+            emitMessage(this.producer, errorTopicName,
                     getStdErrMsg(input, e, consumeTimestamp));
         }
     }
@@ -399,13 +424,17 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
      * This is a synchronous commits and will block until either the commit succeeds
      * or an unrecoverable error is encountered.
      */
-    private void doCommitSync() {
+    private void doCommitSync(boolean priority) {
         try {
-            connection.commitSync();
+            if (priority) {
+                connPrio.commitSync();
+            } else {
+                connNorm.commitSync();
+            }
         } catch (WakeupException e) {
             // we're shutting down, but finish the commit first and then
             // rethrow the exception so that the main loop can exit
-            doCommitSync();
+            doCommitSync(priority);
             throw e;
         } catch (CommitFailedException e) {
             // the commit failed with an unrecoverable error. if there is any
@@ -432,22 +461,22 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
             return;
         }
         // Note that this assumes that the consumer is subscribed to one topic only
-        for (PartitionInfo p : this.connection.partitionsFor(topics.get(0))) {
+        for (PartitionInfo p : this.connNorm.partitionsFor(topics.get(0))) {
             topicPartitions.add(new TopicPartition(topics.get(0), p.partition()));
         }
 
-        ConsumerRecords<String, String> records = dummyPoll(this.connection);
+        ConsumerRecords<String, String> records = dummyPoll(this.connNorm);
 
         if (records.count() != 0) {
             for (TopicPartition tp : topicPartitions) {
                 logger.debug("Topic: {} | Current offset for partition {}: {}", topics.get(0),
-                        tp, this.connection.position(tp));
+                        tp, this.connNorm.position(tp));
 
-                this.connection.seek(tp, this.connection.position(tp) + 1);
+                this.connNorm.seek(tp, this.connNorm.position(tp) + 1);
 
                 logger.debug("Topic: {} | Offset for partition {} is set to {}",
                         topics.get(0),
-                        tp, this.connection.position(tp));
+                        tp, this.connNorm.position(tp));
             }
         }
     }

@@ -28,10 +28,8 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONTokener;
@@ -50,8 +48,10 @@ public class CallableIndexServerPlugin extends Plugin {
     @Extension
     public static class CallableIndexFastenPlugin implements KafkaPlugin, CallableIndexConnector {
 
-        private String consumerTopic = "fasten.MetadataDBJavaExtension.out";
-        private String prioTopic = "fasten.MetadataDBJavaExtension.priority.out";
+        private List<String> consumeTopics = new LinkedList<>(List.of("fasten.MetadataDBJavaExtension.priority.out",
+                "fasten.MetadataDBExtension.out"));
+        //private String consumerTopic = "fasten.MetadataDBJavaExtension.out";
+        //private String prioTopic = "fasten.MetadataDBJavaExtension.priority.out";
         private Exception pluginError = null;
         private final Logger logger = LoggerFactory.getLogger(CallableIndexFastenPlugin.class.getName());
         private static RocksDao rocksDao;
@@ -63,12 +63,12 @@ public class CallableIndexServerPlugin extends Plugin {
 
         @Override
         public Optional<List<String>> consumeTopic() {
-            return Optional.of(List.of(prioTopic, consumerTopic));
+            return Optional.of(consumeTopics);
         }
 
         @Override
-        public void setTopic(String topicName) {
-            this.consumerTopic = topicName;
+        public void setTopics(List<String> consumeTopics) {
+            this.consumeTopics = consumeTopics;
         }
 
         @Override

@@ -33,10 +33,8 @@ import org.json.JSONObject;
 import org.pf4j.Extension;
 import org.pf4j.Plugin;
 import org.pf4j.PluginWrapper;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
+
+import java.util.*;
 
 public class MetadataDatabasePythonPlugin extends Plugin {
     public MetadataDatabasePythonPlugin(PluginWrapper wrapper) {
@@ -46,6 +44,10 @@ public class MetadataDatabasePythonPlugin extends Plugin {
     @Extension
     public static class MetadataDBPythonExtension extends MetadataDBExtension {
         private static DSLContext dslContext;
+
+        public MetadataDBPythonExtension() {
+            super.consumeTopics = new LinkedList<>(Collections.singletonList("fasten.pypi.cg"));
+        }
 
         @Override
         public void setDBConnection(Map<String, DSLContext> dslContexts) {

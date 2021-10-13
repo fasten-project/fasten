@@ -29,6 +29,7 @@ import eu.fasten.server.plugins.kafka.FastenKafkaPlugin;
 import java.net.URI;
 import java.nio.file.Path;
 import java.sql.SQLException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -88,7 +89,7 @@ public class FastenServer implements Runnable {
     @Option(names = {"-kt", "--topic"},
         paramLabel = "topic",
         description = "Kay-value pairs of Plugin and topic to consume from. Example - "
-            + "OPAL=fasten.OPAL.out",
+            + "OPAL=fasten.OPAL.out, You can add multiple topics by using | to separate topic names.",
         split = ",")
     Map<String, String> pluginTopic;
 
@@ -240,7 +241,7 @@ public class FastenServer implements Runnable {
         if (pluginTopic != null) {
             kafkaPlugins.stream()
                 .filter(x -> pluginTopic.containsKey(x.getClass().getSimpleName()))
-                .forEach(x -> x.setTopic(pluginTopic.get(x.getClass().getSimpleName())));
+                .forEach(x -> x.setTopics(Arrays.asList(pluginTopic.get(x.getClass().getSimpleName()).split("|"))));
         }
 
         return kafkaPlugins.stream().filter(x -> plugins.contains(x.getClass().getSimpleName()))
