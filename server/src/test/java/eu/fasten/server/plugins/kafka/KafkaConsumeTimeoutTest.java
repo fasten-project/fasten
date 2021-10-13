@@ -106,7 +106,7 @@ public class KafkaConsumeTimeoutTest {
         }
 
         @Override
-        public void setTopic(String topicName) {
+        public void addTopic(String topicNames) {
 
         }
 

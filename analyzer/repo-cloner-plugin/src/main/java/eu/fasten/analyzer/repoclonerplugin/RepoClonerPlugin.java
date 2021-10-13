@@ -26,6 +26,7 @@ import eu.fasten.core.plugins.DataWriter;
 import eu.fasten.core.plugins.KafkaPlugin;
 import java.io.File;
 import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 import org.apache.commons.lang3.tuple.ImmutableTriple;
@@ -47,7 +48,8 @@ public class RepoClonerPlugin extends Plugin {
     @Extension
     public static class RepoCloner implements KafkaPlugin, DataWriter {
 
-        private String consumerTopic = "fasten.POMAnalyzer.out";
+        private List<String> consumeTopics = new LinkedList<>(Collections.singletonList("fasten.POMAnalyzer.out"));
+        //private String consumerTopic = "fasten.POMAnalyzer.out";
         private Exception pluginError = null;
         private final Logger logger = LoggerFactory.getLogger(RepoCloner.class.getName());
         private String repoPath = null;
@@ -70,12 +72,12 @@ public class RepoClonerPlugin extends Plugin {
 
         @Override
         public Optional<List<String>> consumeTopic() {
-            return Optional.of(Collections.singletonList(consumerTopic));
+            return Optional.of(consumeTopics);
         }
 
         @Override
-        public void setTopic(String topicName) {
-            this.consumerTopic = topicName;
+        public void setTopics(List<String> consumeTopics) {
+            this.consumeTopics = consumeTopics;
         }
 
         @Override

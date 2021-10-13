@@ -155,7 +155,7 @@ public class KafkaPluginConsumeBehaviourTest {
         }
 
         @Override
-        public void setTopic(String topicName) {
+        public void addTopic(String topicNames) {
         }
 
         @Override
