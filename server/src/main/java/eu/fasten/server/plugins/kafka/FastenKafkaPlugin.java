@@ -173,7 +173,6 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
         } finally {
             connNorm.close();
             connPrio.close();
-
             logger.info("Plugin {} stopped", plugin.name());
         }
     }
@@ -204,6 +203,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
                 logger.info("Read priority message offset " + r.offset() + " from partition " + r.partition() + ".");
                 processRecord(r, System.currentTimeMillis() / 1000L, KafkaRecordKind.PRIORITY);
                 hasConsumedPriorityRecord = true;
+
                 logger.info("Successfully processed priority message offset " + r.offset() + " from partition " + r.partition() + ".");
                 // TODO: Keep a list of processed priority messages like normal ones
             }
