@@ -27,9 +27,12 @@ public class KafkaPluginConsumeBehaviourTest {
     public void setupMocks(FastenKafkaPlugin kafkaPlugin) throws IllegalAccessException {
         // Hacky way to override consumer and producer with a mock.
         KafkaConsumer<String, String> mockConsumer = mock(KafkaConsumer.class);
-        FieldUtils.writeField(kafkaPlugin, "connection", mockConsumer, true);
+        FieldUtils.writeField(kafkaPlugin, "connNorm", mockConsumer, true);
+        FieldUtils.writeField(kafkaPlugin, "connPrio", mockConsumer, true);
         KafkaProducer<String, String> mockProducer = mock(KafkaProducer.class);
         FieldUtils.writeField(kafkaPlugin, "producer", mockProducer, true);
+        List<String> mockPrioTopics = mock(List.class);
+        FieldUtils.writeField(kafkaPlugin, "prioTopics", mockPrioTopics, true);
 
         // Another set of mocks.
         ConsumerRecords<String, String> records = mock(ConsumerRecords.class);
@@ -155,7 +158,8 @@ public class KafkaPluginConsumeBehaviourTest {
         }
 
         @Override
-        public void addTopic(String topicNames) {
+        public void setTopics(List<String> consumeTopics) {
+
         }
 
         @Override
