@@ -154,6 +154,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
 
                 prioTopics = plugin.consumeTopic().get().stream().filter(s -> s.contains("priority")).collect(Collectors.toList());
                 if (!prioTopics.isEmpty()) { connPrio.subscribe(prioTopics); }
+
             }
             if (this.skipOffsets == 1) {
                 skipPartitionOffsets();
@@ -172,6 +173,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
         } finally {
             connNorm.close();
             connPrio.close();
+
             logger.info("Plugin {} stopped", plugin.name());
         }
     }
@@ -221,6 +223,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
                 processRecord(r, consumeTimestamp, KafkaRecordKind.NORMAL);
                 logger.info("Successfully processed normal message offset " + r.offset() + " from partition " + r.partition() + ".");
 
+
                 messagesProcessed.add(new ImmutablePair<>(r.offset(), r.partition()));
             }
 
@@ -264,6 +267,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
      * This strategy provides at-least-once semantics.
      */
     public void processRecord(ConsumerRecord<String, String> record, Long consumeTimestamp, KafkaRecordKind kafkaRecordKind) {
+
         if (localStorage != null) { // If local storage is enabled.
             if (localStorage.exists(record.value(), record.partition())) { // This plugin already consumed this record before, we will not process it now.
                 logger.info("Already processed record with hash: " + localStorage.getSHA1(record.value()) + ", skipping it now.");
@@ -294,6 +298,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
 
         // We always produce, it does not matter if local storage is enabled or not.
         handleProducing(record.value(), consumeTimestamp, kafkaRecordKind);
+
     }
 
     /**
@@ -307,6 +312,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
             outputTopicName = String.format("fasten.%s.priority.out", outputTopic);
         } else {
             outputTopicName = String.format("fasten.%s.out", outputTopic);
+
         }
         try {
             if (plugin.getPluginError() != null) {

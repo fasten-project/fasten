@@ -20,6 +20,10 @@ package eu.fasten.analyzer.repoanalyzer;
 
 import eu.fasten.analyzer.repoanalyzer.repo.RepoAnalyzerFactory;
 import eu.fasten.core.plugins.KafkaPlugin;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Optional;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.pf4j.Extension;
@@ -28,10 +32,6 @@ import org.pf4j.PluginWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Optional;
 
 public class RepoAnalyzerPlugin extends Plugin {
 

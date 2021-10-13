@@ -24,6 +24,12 @@ import eu.fasten.core.data.callableindex.GidGraph;
 import eu.fasten.core.data.callableindex.RocksDao;
 import eu.fasten.core.plugins.CallableIndexConnector;
 import eu.fasten.core.plugins.KafkaPlugin;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.nio.file.Paths;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONTokener;
@@ -33,10 +39,6 @@ import org.pf4j.PluginWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;

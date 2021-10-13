@@ -25,6 +25,11 @@ import eu.fasten.core.maven.data.DependencyData;
 import eu.fasten.core.maven.utils.MavenUtilities;
 import eu.fasten.core.plugins.DBConnector;
 import eu.fasten.core.plugins.KafkaPlugin;
+
+import java.io.File;
+import java.sql.Timestamp;
+import java.util.*;
+
 import org.jooq.DSLContext;
 import org.jooq.exception.DataAccessException;
 import org.jooq.impl.DSL;
@@ -37,9 +42,6 @@ import org.pf4j.PluginWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.sql.Timestamp;
-import java.util.*;
 
 public class POMAnalyzerPlugin extends Plugin {
 
