@@ -34,6 +34,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.ObjectUtils;
@@ -241,7 +242,7 @@ public class FastenServer implements Runnable {
         if (pluginTopic != null) {
             kafkaPlugins.stream()
                 .filter(x -> pluginTopic.containsKey(x.getClass().getSimpleName()))
-                .forEach(x -> x.setTopics(Arrays.asList(pluginTopic.get(x.getClass().getSimpleName()).split("|"))));
+                .forEach(x -> x.setTopics(Arrays.asList(pluginTopic.get(x.getClass().getSimpleName()).split(Pattern.quote("|")))));
         }
 
         return kafkaPlugins.stream().filter(x -> plugins.contains(x.getClass().getSimpleName()))
