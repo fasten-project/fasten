@@ -6,6 +6,8 @@ import org.pf4j.PluginWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
 
@@ -18,15 +20,16 @@ public class DummyPlugin extends Plugin {
     public static class DummyPluginExtension implements KafkaPlugin {
 
         private final Logger logger = LoggerFactory.getLogger(DummyPlugin.class.getName());
+        private List<String> consumeTopics = new LinkedList<>(Collections.singletonList("dummytopic"));
 
         @Override
         public Optional<List<String>> consumeTopic() {
-            return Optional.empty();
+            return Optional.of(consumeTopics);
         }
 
         @Override
         public void setTopics(List<String> consumeTopics) {
-
+            this.consumeTopics = consumeTopics;
         }
 
         @Override
