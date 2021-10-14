@@ -143,10 +143,8 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
                 normTopics = plugin.consumeTopic().get().stream().filter(s -> !s.contains("priority")).collect(Collectors.toList());
                 connNorm.subscribe(normTopics);
 
-                if (!prioTopics.isEmpty()) {
-                    prioTopics = plugin.consumeTopic().get().stream().filter(s -> s.contains("priority")).collect(Collectors.toList());
-                    connPrio.subscribe(prioTopics);
-                }
+                prioTopics = plugin.consumeTopic().get().stream().filter(s -> s.contains("priority")).collect(Collectors.toList());
+                if (!prioTopics.isEmpty()) { connPrio.subscribe(prioTopics); }
             }
             if (this.skipOffsets == 1) {
                 skipPartitionOffsets();
