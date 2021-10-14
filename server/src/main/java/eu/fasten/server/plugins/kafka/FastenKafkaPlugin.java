@@ -35,12 +35,10 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
+import org.apache.commons.lang.SerializationUtils;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.kafka.clients.consumer.CommitFailedException;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.clients.consumer.ConsumerRecords;
-import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.clients.consumer.*;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.PartitionInfo;
@@ -94,7 +92,10 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
 
         if (enableKafka) {
             this.connNorm = new KafkaConsumer<>(consumerProperties);
-            this.connPrio = new KafkaConsumer<>(consumerProperties);
+            // For priority connection, the client should be different from the normal one
+            Properties consumerPrioProperties = (Properties) SerializationUtils.clone(consumerProperties);
+            consumerPrioProperties.setProperty(ConsumerConfig.CLIENT_ID_CONFIG, consumerPrioProperties.get(ConsumerConfig.CLIENT_ID_CONFIG) + "_priority");
+            this.connPrio = new KafkaConsumer<>(consumerPrioProperties);
             this.producer = new KafkaProducer<>(producerProperties);
         }
 
