@@ -6,8 +6,11 @@ import org.pf4j.PluginWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+<<<<<<< HEAD
 import java.util.Collections;
 import java.util.LinkedList;
+=======
+>>>>>>> 49511b08 (A dummy plug-in to test the FASTEN server w/ normal/prio messages)
 import java.util.List;
 import java.util.Optional;
 
