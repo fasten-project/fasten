@@ -72,6 +72,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
     private final boolean consumeTimeoutEnabled;
     private final long consumeTimeout;
     private final boolean exitOnTimeout;
+    private final Duration pollTimeout = Duration.ofMillis(250);
 
     // Local storage for duplicate processing.
     private final LocalStorage localStorage;
@@ -189,7 +190,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
         boolean hasPrio = false;
 
         if (!prioTopics.isEmpty()) {
-            ConsumerRecords<String, String> prioRecords = connPrio.poll(Duration.ofSeconds(1));
+            ConsumerRecords<String, String> prioRecords = connPrio.poll(this.pollTimeout);
             for (var r : prioRecords) {
                 logger.info("Read priority message offset " + r.offset() + " from partition " + r.partition() + ".");
                 processRecord(r, System.currentTimeMillis() / 1000L, true);
@@ -201,7 +202,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
         }
 
         if (!hasPrio) {
-            ConsumerRecords<String, String> records = connNorm.poll(Duration.ofSeconds(1));
+            ConsumerRecords<String, String> records = connNorm.poll(this.pollTimeout);
             Long consumeTimestamp = System.currentTimeMillis() / 1000L;
 
             // Keep a list of all records and offsets we processed (by default this is only 1).
