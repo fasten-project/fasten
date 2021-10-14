@@ -248,7 +248,6 @@ public class FastenServer implements Runnable {
             kafkaPlugins.stream()
                 .filter(x -> pluginTopic.containsKey(x.getClass().getSimpleName()))
                 .forEach(x -> x.setTopics(Arrays.asList(pluginTopic.get(x.getClass().getSimpleName()).split(Pattern.quote("|")))));
-
         }
 
         return kafkaPlugins.stream().filter(x -> plugins.contains(x.getClass().getSimpleName()))
