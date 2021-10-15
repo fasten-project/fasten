@@ -206,6 +206,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
         }
         
         if (!normTopics.isEmpty() && !hasConsumedPriorityRecord) {
+
             ConsumerRecords<String, String> records = connNorm.poll(this.pollTimeout);
             Long consumeTimestamp = System.currentTimeMillis() / 1000L;
 
