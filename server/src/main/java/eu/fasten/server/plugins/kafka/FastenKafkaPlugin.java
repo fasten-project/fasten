@@ -199,7 +199,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
             doCommitSync(true);
         }
 
-        if (!hasPrio) {
+        if (!normTopics.isEmpty() && !hasPrio) {
             ConsumerRecords<String, String> records = connNorm.poll(this.pollTimeout);
             Long consumeTimestamp = System.currentTimeMillis() / 1000L;
 
