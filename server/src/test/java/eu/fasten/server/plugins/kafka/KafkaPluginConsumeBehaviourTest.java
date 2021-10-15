@@ -44,8 +44,7 @@ public class KafkaPluginConsumeBehaviourTest {
         List<String> mockTopics = mock(List.class);
         FieldUtils.writeField(kafkaPlugin, "prioTopics", mockTopics, true);
         FieldUtils.writeField(kafkaPlugin, "normTopics", mockTopics, true);
-
-
+        
         // Another set of mocks.
         ConsumerRecords<String, String> records = mock(ConsumerRecords.class);
         ConsumerRecord<String, String> record = mock(ConsumerRecord.class);
