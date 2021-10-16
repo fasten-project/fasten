@@ -87,6 +87,7 @@ public class MergerEfficiencyTests {
     }
 
     @Test
+    @Disabled
     public void localMergerRepeatedEfficiencyTests() {
         ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
 
