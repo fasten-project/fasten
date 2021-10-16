@@ -45,6 +45,11 @@
             <email>ilyagrishkov@icloud.com</email>
             <organization>TU Delft</organization>
         </developer>
+        <developer>
+            <name>Magiel Bruntink</name>
+            <email>magiel.bruntink@gmail.com</email>
+            <organization>Software Improvement Group</organization>
+        </developer>
     </developers>
 
     <contributors>
