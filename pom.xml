@@ -86,6 +86,7 @@
         <module>core</module>
         <module>analyzer</module>
         <module>server</module>
+        <module>vulnerability-packages-listener</module>
     </modules>
 
     <dependencies>
