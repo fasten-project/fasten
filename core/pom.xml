@@ -266,11 +266,11 @@
 
     <build>
         <plugins>
-            <!-- jOOQ code generation plugin -->
-            <!--<plugin>
+<!--             jOOQ code generation plugin-->
+            <plugin>
                 <groupId>org.jooq</groupId>
                 <artifactId>jooq-codegen-maven</artifactId>
-                <version>3.13.6</version>
+                <version>3.14.4</version>
                 <executions>
                     <execution>
                         <goals>
@@ -308,7 +308,7 @@
                         </target>
                     </generator>
                 </configuration>
-            </plugin>-->
+            </plugin>
         </plugins>
     </build>
 
