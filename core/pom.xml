@@ -270,7 +270,7 @@
             <plugin>
                 <groupId>org.jooq</groupId>
                 <artifactId>jooq-codegen-maven</artifactId>
-                <version>3.14.4</version>
+                <version>3.14.8</version>
                 <executions>
                     <execution>
                         <goals>
