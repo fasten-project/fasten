@@ -9,6 +9,7 @@ import eu.fasten.core.data.metadatadb.codegen.tables.Files;
 import eu.fasten.core.data.metadatadb.codegen.tables.ModuleContents;
 import eu.fasten.core.data.metadatadb.codegen.tables.Modules;
 import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
+import eu.fasten.core.data.metadatadb.codegen.tables.VulnerabilitiesPurls;
 import eu.fasten.core.data.metadatadb.codegen.tables.VulnerabilitiesXCallables;
 import eu.fasten.core.data.metadatadb.codegen.tables.VulnerabilitiesXPackageVersions;
 
@@ -43,6 +44,11 @@ public class Indexes {
     public static final Index MODULE_CONTENTS_MODULE_ID = Internal.createIndex(DSL.name("module_contents_module_id"), ModuleContents.MODULE_CONTENTS, new OrderField[] { ModuleContents.MODULE_CONTENTS.MODULE_ID }, false);
     public static final Index MODULES_PACKAGE_VERSION_ID = Internal.createIndex(DSL.name("modules_package_version_id"), Modules.MODULES, new OrderField[] { Modules.MODULES.PACKAGE_VERSION_ID }, false);
     public static final Index PACKAGE_VERSIONS_PACKAGE_ID = Internal.createIndex(DSL.name("package_versions_package_id"), PackageVersions.PACKAGE_VERSIONS, new OrderField[] { PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID }, false);
+    public static final Index VULNERABILITIES_PURLS_MULTI = Internal.createIndex(DSL.name("vulnerabilities_purls_multi"), VulnerabilitiesPurls.VULNERABILITIES_PURLS, new OrderField[] { VulnerabilitiesPurls.VULNERABILITIES_PURLS.FORGE, VulnerabilitiesPurls.VULNERABILITIES_PURLS.PACKAGE_NAME, VulnerabilitiesPurls.VULNERABILITIES_PURLS.PACKAGE_VERSION }, false);
+    public static final Index VULNERABILITIES_PURLS_VULNERABILITY_ID = Internal.createIndex(DSL.name("vulnerabilities_purls_vulnerability_id"), VulnerabilitiesPurls.VULNERABILITIES_PURLS, new OrderField[] { VulnerabilitiesPurls.VULNERABILITIES_PURLS.VULNERABILITY_ID }, false);
     public static final Index VULNERABILITIES_X_CALLABLES_CALLABLE_ID = Internal.createIndex(DSL.name("vulnerabilities_x_callables_callable_id"), VulnerabilitiesXCallables.VULNERABILITIES_X_CALLABLES, new OrderField[] { VulnerabilitiesXCallables.VULNERABILITIES_X_CALLABLES.CALLABLE_ID }, false);
+    public static final Index VULNERABILITIES_X_CALLABLES_VULNERABILITY_ID = Internal.createIndex(DSL.name("vulnerabilities_x_callables_vulnerability_id"), VulnerabilitiesXCallables.VULNERABILITIES_X_CALLABLES, new OrderField[] { VulnerabilitiesXCallables.VULNERABILITIES_X_CALLABLES.VULNERABILITY_ID }, false);
     public static final Index VULNERABILITIES_X_PACKAGE_VERSIONS_PACKAGE_VERSION_ID = Internal.createIndex(DSL.name("vulnerabilities_x_package_versions_package_version_id"), VulnerabilitiesXPackageVersions.VULNERABILITIES_X_PACKAGE_VERSIONS, new OrderField[] { VulnerabilitiesXPackageVersions.VULNERABILITIES_X_PACKAGE_VERSIONS.PACKAGE_VERSION_ID }, false);
+    public static final Index VULNERABILITIES_X_PACKAGE_VERSIONS_VULNERABILITY_ID = Internal.createIndex(DSL.name("vulnerabilities_x_package_versions_vulnerability_id"), VulnerabilitiesXPackageVersions.VULNERABILITIES_X_PACKAGE_VERSIONS, new OrderField[] { VulnerabilitiesXPackageVersions.VULNERABILITIES_X_PACKAGE_VERSIONS.VULNERABILITY_ID }, false);
+    public static final Index VULNERABILITY_PURLS_PURL = Internal.createIndex(DSL.name("vulnerability_purls_purl"), VulnerabilitiesPurls.VULNERABILITIES_PURLS, new OrderField[] { VulnerabilitiesPurls.VULNERABILITIES_PURLS.PURL }, false);
 }

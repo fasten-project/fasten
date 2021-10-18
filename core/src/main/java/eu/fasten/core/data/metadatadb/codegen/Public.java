@@ -212,7 +212,8 @@ public class Public extends SchemaImpl {
             Sequences.MODULE_NAMES_ID_SEQ,
             Sequences.MODULES_ID_SEQ,
             Sequences.PACKAGE_VERSIONS_ID_SEQ,
-            Sequences.PACKAGES_ID_SEQ);
+            Sequences.PACKAGES_ID_SEQ,
+            Sequences.VULNERABILITIES_ID_SEQ);
     }
 
     @Override

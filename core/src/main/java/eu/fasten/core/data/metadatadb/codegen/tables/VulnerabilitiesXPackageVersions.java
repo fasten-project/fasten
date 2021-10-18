@@ -60,7 +60,7 @@ public class VulnerabilitiesXPackageVersions extends TableImpl<VulnerabilitiesXP
     /**
      * The column <code>public.vulnerabilities_x_package_versions.vulnerability_id</code>.
      */
-    public final TableField<VulnerabilitiesXPackageVersionsRecord, String> VULNERABILITY_ID = createField(DSL.name("vulnerability_id"), SQLDataType.CLOB.nullable(false), this, "");
+    public final TableField<VulnerabilitiesXPackageVersionsRecord, Long> VULNERABILITY_ID = createField(DSL.name("vulnerability_id"), SQLDataType.BIGINT.nullable(false), this, "");
 
     /**
      * The column <code>public.vulnerabilities_x_package_versions.package_version_id</code>.
@@ -107,7 +107,7 @@ public class VulnerabilitiesXPackageVersions extends TableImpl<VulnerabilitiesXP
 
     @Override
     public List<Index> getIndexes() {
-        return Arrays.<Index>asList(Indexes.VULNERABILITIES_X_PACKAGE_VERSIONS_PACKAGE_VERSION_ID);
+        return Arrays.<Index>asList(Indexes.VULNERABILITIES_X_PACKAGE_VERSIONS_PACKAGE_VERSION_ID, Indexes.VULNERABILITIES_X_PACKAGE_VERSIONS_VULNERABILITY_ID);
     }
 
     @Override
@@ -163,7 +163,7 @@ public class VulnerabilitiesXPackageVersions extends TableImpl<VulnerabilitiesXP
     // -------------------------------------------------------------------------
 
     @Override
-    public Row2<String, Long> fieldsRow() {
+    public Row2<Long, Long> fieldsRow() {
         return (Row2) super.fieldsRow();
     }
 }

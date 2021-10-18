@@ -4,6 +4,7 @@
 package eu.fasten.core.data.metadatadb.codegen.tables;
 
 
+import eu.fasten.core.data.metadatadb.codegen.Indexes;
 import eu.fasten.core.data.metadatadb.codegen.Keys;
 import eu.fasten.core.data.metadatadb.codegen.Public;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.VulnerabilitiesPurlsRecord;
@@ -15,9 +16,10 @@ import javax.annotation.processing.Generated;
 
 import org.jooq.Field;
 import org.jooq.ForeignKey;
+import org.jooq.Index;
 import org.jooq.Name;
 import org.jooq.Record;
-import org.jooq.Row4;
+import org.jooq.Row5;
 import org.jooq.Schema;
 import org.jooq.Table;
 import org.jooq.TableField;
@@ -58,22 +60,27 @@ public class VulnerabilitiesPurls extends TableImpl<VulnerabilitiesPurlsRecord> 
     /**
      * The column <code>public.vulnerabilities_purls.vulnerability_id</code>.
      */
-    public final TableField<VulnerabilitiesPurlsRecord, String> VULNERABILITY_ID = createField(DSL.name("vulnerability_id"), SQLDataType.CLOB.nullable(false), this, "");
+    public final TableField<VulnerabilitiesPurlsRecord, Long> VULNERABILITY_ID = createField(DSL.name("vulnerability_id"), SQLDataType.BIGINT.nullable(false), this, "");
+
+    /**
+     * The column <code>public.vulnerabilities_purls.purl</code>.
+     */
+    public final TableField<VulnerabilitiesPurlsRecord, String> PURL = createField(DSL.name("purl"), SQLDataType.CLOB.nullable(false), this, "");
 
     /**
      * The column <code>public.vulnerabilities_purls.forge</code>.
      */
-    public final TableField<VulnerabilitiesPurlsRecord, String> FORGE = createField(DSL.name("forge"), SQLDataType.CLOB, this, "");
+    public final TableField<VulnerabilitiesPurlsRecord, String> FORGE = createField(DSL.name("forge"), SQLDataType.CLOB.nullable(false), this, "");
 
     /**
      * The column <code>public.vulnerabilities_purls.package_name</code>.
      */
-    public final TableField<VulnerabilitiesPurlsRecord, String> PACKAGE_NAME = createField(DSL.name("package_name"), SQLDataType.CLOB, this, "");
+    public final TableField<VulnerabilitiesPurlsRecord, String> PACKAGE_NAME = createField(DSL.name("package_name"), SQLDataType.CLOB.nullable(false), this, "");
 
     /**
      * The column <code>public.vulnerabilities_purls.package_version</code>.
      */
-    public final TableField<VulnerabilitiesPurlsRecord, String> PACKAGE_VERSION = createField(DSL.name("package_version"), SQLDataType.CLOB, this, "");
+    public final TableField<VulnerabilitiesPurlsRecord, String> PACKAGE_VERSION = createField(DSL.name("package_version"), SQLDataType.CLOB.nullable(false), this, "");
 
     private VulnerabilitiesPurls(Name alias, Table<VulnerabilitiesPurlsRecord> aliased) {
         this(alias, aliased, null);
@@ -111,6 +118,11 @@ public class VulnerabilitiesPurls extends TableImpl<VulnerabilitiesPurlsRecord> 
     @Override
     public Schema getSchema() {
         return Public.PUBLIC;
+    }
+
+    @Override
+    public List<Index> getIndexes() {
+        return Arrays.<Index>asList(Indexes.VULNERABILITIES_PURLS_MULTI, Indexes.VULNERABILITIES_PURLS_VULNERABILITY_ID, Indexes.VULNERABILITY_PURLS_PURL);
     }
 
     @Override
@@ -154,11 +166,11 @@ public class VulnerabilitiesPurls extends TableImpl<VulnerabilitiesPurlsRecord> 
     }
 
     // -------------------------------------------------------------------------
-    // Row4 type methods
+    // Row5 type methods
     // -------------------------------------------------------------------------
 
     @Override
-    public Row4<String, String, String, String> fieldsRow() {
-        return (Row4) super.fieldsRow();
+    public Row5<Long, String, String, String, String> fieldsRow() {
+        return (Row5) super.fieldsRow();
     }
 }

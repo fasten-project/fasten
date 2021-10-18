@@ -91,6 +91,7 @@ public class Keys {
     public static final UniqueKey<PackagesRecord> PACKAGES_PKEY = Internal.createUniqueKey(Packages.PACKAGES, DSL.name("packages_pkey"), new TableField[] { Packages.PACKAGES.ID }, true);
     public static final UniqueKey<PackagesRecord> UNIQUE_PACKAGE_FORGE = Internal.createUniqueKey(Packages.PACKAGES, DSL.name("unique_package_forge"), new TableField[] { Packages.PACKAGES.PACKAGE_NAME, Packages.PACKAGES.FORGE }, true);
     public static final UniqueKey<VirtualImplementationsRecord> UNIQUE_VIRTUAL_IMPLEMENTATION = Internal.createUniqueKey(VirtualImplementations.VIRTUAL_IMPLEMENTATIONS, DSL.name("unique_virtual_implementation"), new TableField[] { VirtualImplementations.VIRTUAL_IMPLEMENTATIONS.VIRTUAL_PACKAGE_VERSION_ID, VirtualImplementations.VIRTUAL_IMPLEMENTATIONS.PACKAGE_VERSION_ID }, true);
+    public static final UniqueKey<VulnerabilitiesRecord> UNIQUE_VULNERABILITIES = Internal.createUniqueKey(Vulnerabilities.VULNERABILITIES, DSL.name("unique_vulnerabilities"), new TableField[] { Vulnerabilities.VULNERABILITIES.EXTERNAL_ID }, true);
     public static final UniqueKey<VulnerabilitiesRecord> VULNERABILITIES_PKEY = Internal.createUniqueKey(Vulnerabilities.VULNERABILITIES, DSL.name("vulnerabilities_pkey"), new TableField[] { Vulnerabilities.VULNERABILITIES.ID }, true);
 
     // -------------------------------------------------------------------------

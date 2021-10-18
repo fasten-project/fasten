@@ -60,7 +60,7 @@ public class VulnerabilitiesXCallables extends TableImpl<VulnerabilitiesXCallabl
     /**
      * The column <code>public.vulnerabilities_x_callables.vulnerability_id</code>.
      */
-    public final TableField<VulnerabilitiesXCallablesRecord, String> VULNERABILITY_ID = createField(DSL.name("vulnerability_id"), SQLDataType.CLOB.nullable(false), this, "");
+    public final TableField<VulnerabilitiesXCallablesRecord, Long> VULNERABILITY_ID = createField(DSL.name("vulnerability_id"), SQLDataType.BIGINT.nullable(false), this, "");
 
     /**
      * The column <code>public.vulnerabilities_x_callables.callable_id</code>.
@@ -107,7 +107,7 @@ public class VulnerabilitiesXCallables extends TableImpl<VulnerabilitiesXCallabl
 
     @Override
     public List<Index> getIndexes() {
-        return Arrays.<Index>asList(Indexes.VULNERABILITIES_X_CALLABLES_CALLABLE_ID);
+        return Arrays.<Index>asList(Indexes.VULNERABILITIES_X_CALLABLES_CALLABLE_ID, Indexes.VULNERABILITIES_X_CALLABLES_VULNERABILITY_ID);
     }
 
     @Override
@@ -163,7 +163,7 @@ public class VulnerabilitiesXCallables extends TableImpl<VulnerabilitiesXCallabl
     // -------------------------------------------------------------------------
 
     @Override
-    public Row2<String, Long> fieldsRow() {
+    public Row2<Long, Long> fieldsRow() {
         return (Row2) super.fieldsRow();
     }
 }

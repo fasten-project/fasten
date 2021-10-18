@@ -300,6 +300,7 @@
 <!--                        <database>-->
 <!--                            <name>org.jooq.meta.postgres.PostgresDatabase</name>-->
 <!--                            <includes>.*</includes>-->
+<!--                            <excludes>pg_stat_.*</excludes>-->
 <!--                            <inputSchema>public</inputSchema>-->
 <!--                        </database>-->
 <!--                        <target>-->

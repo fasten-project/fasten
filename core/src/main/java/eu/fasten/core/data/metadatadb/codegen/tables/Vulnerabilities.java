@@ -15,10 +15,11 @@ import javax.annotation.processing.Generated;
 
 import org.jooq.Field;
 import org.jooq.ForeignKey;
+import org.jooq.Identity;
 import org.jooq.JSONB;
 import org.jooq.Name;
 import org.jooq.Record;
-import org.jooq.Row2;
+import org.jooq.Row3;
 import org.jooq.Schema;
 import org.jooq.Table;
 import org.jooq.TableField;
@@ -60,12 +61,17 @@ public class Vulnerabilities extends TableImpl<VulnerabilitiesRecord> {
     /**
      * The column <code>public.vulnerabilities.id</code>.
      */
-    public final TableField<VulnerabilitiesRecord, String> ID = createField(DSL.name("id"), SQLDataType.CLOB.nullable(false), this, "");
+    public final TableField<VulnerabilitiesRecord, Long> ID = createField(DSL.name("id"), SQLDataType.BIGINT.nullable(false).identity(true), this, "");
+
+    /**
+     * The column <code>public.vulnerabilities.external_id</code>.
+     */
+    public final TableField<VulnerabilitiesRecord, String> EXTERNAL_ID = createField(DSL.name("external_id"), SQLDataType.CLOB.nullable(false), this, "");
 
     /**
      * The column <code>public.vulnerabilities.statement</code>.
      */
-    public final TableField<VulnerabilitiesRecord, JSONB> STATEMENT = createField(DSL.name("statement"), SQLDataType.JSONB, this, "");
+    public final TableField<VulnerabilitiesRecord, JSONB> STATEMENT = createField(DSL.name("statement"), SQLDataType.JSONB.nullable(false), this, "");
 
     private Vulnerabilities(Name alias, Table<VulnerabilitiesRecord> aliased) {
         this(alias, aliased, null);
@@ -106,13 +112,18 @@ public class Vulnerabilities extends TableImpl<VulnerabilitiesRecord> {
     }
 
     @Override
+    public Identity<VulnerabilitiesRecord, Long> getIdentity() {
+        return (Identity<VulnerabilitiesRecord, Long>) super.getIdentity();
+    }
+
+    @Override
     public UniqueKey<VulnerabilitiesRecord> getPrimaryKey() {
         return Keys.VULNERABILITIES_PKEY;
     }
 
     @Override
     public List<UniqueKey<VulnerabilitiesRecord>> getKeys() {
-        return Arrays.<UniqueKey<VulnerabilitiesRecord>>asList(Keys.VULNERABILITIES_PKEY);
+        return Arrays.<UniqueKey<VulnerabilitiesRecord>>asList(Keys.VULNERABILITIES_PKEY, Keys.UNIQUE_VULNERABILITIES);
     }
 
     @Override
@@ -142,11 +153,11 @@ public class Vulnerabilities extends TableImpl<VulnerabilitiesRecord> {
     }
 
     // -------------------------------------------------------------------------
-    // Row2 type methods
+    // Row3 type methods
     // -------------------------------------------------------------------------
 
     @Override
-    public Row2<String, JSONB> fieldsRow() {
-        return (Row2) super.fieldsRow();
+    public Row3<Long, String, JSONB> fieldsRow() {
+        return (Row3) super.fieldsRow();
     }
 }

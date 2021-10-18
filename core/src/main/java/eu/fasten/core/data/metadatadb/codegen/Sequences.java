@@ -68,4 +68,9 @@ public class Sequences {
      * The sequence <code>public.packages_id_seq</code>
      */
     public static final Sequence<Long> PACKAGES_ID_SEQ = Internal.createSequence("packages_id_seq", Public.PUBLIC, SQLDataType.BIGINT.nullable(false), null, null, null, null, false, null);
+
+    /**
+     * The sequence <code>public.vulnerabilities_id_seq</code>
+     */
+    public static final Sequence<Long> VULNERABILITIES_ID_SEQ = Internal.createSequence("vulnerabilities_id_seq", Public.PUBLIC, SQLDataType.BIGINT.nullable(false), null, null, null, null, false, null);
 }
