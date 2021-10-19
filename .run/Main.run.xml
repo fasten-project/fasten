@@ -1,5 +1,5 @@
 <component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="Main" type="Application" factoryName="Application" nameIsGenerated="true">
+  <configuration default="false" name="Vulnerability Statements Processor Main" type="Application" factoryName="Application">
     <envs>
       <env name="FASTEN_DBPASS" value="fasten1234" />
     </envs>
