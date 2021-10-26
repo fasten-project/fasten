@@ -50,7 +50,7 @@ public class Test {
     public static void main(String[] args) throws Exception {
         var dbContext = PostgresConnector.getDSLContext("jdbc:postgresql://localhost:5432/fasten_python", "fastenro", false);
         var graphResolver = new GraphPypiResolver();
-        graphResolver.buildDependencyGraph(dbContext, "hi"); 
+        graphResolver.buildDependencyGraph(dbContext, "pypigraph.bin"); 
         graphResolver.repl(dbContext);
     }
 }
