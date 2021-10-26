@@ -157,7 +157,6 @@ public class DependencyGraphBuilder {
                 System.currentTimeMillis() - startDepRet);
 
         var startIdx = System.currentTimeMillis();
-        // productRevisionMap για κάθε product λίστα με όλα τα revisions
         var productRevisionMap = dependencies.keySet().stream().collect(Collectors.toConcurrentMap(
                 Revision::product,
                 List::of,
@@ -171,16 +170,16 @@ public class DependencyGraphBuilder {
         logger.debug("Indexed {} products: {} ms", productRevisionMap.size(), System.currentTimeMillis() - startIdx);
 
         logger.info("Creating dependency graph");
-        // To dependency graph είναι μεταξύ των revisions. Συνδέονται μέσω dependency edges
+
         var dependencyGraph = new DefaultDirectedGraph<Revision, DependencyEdge>(DependencyEdge.class);
 
         logger.info("Adding dependency graph nodes");
-         // dependencies.keySet() είναι όλα τα package:versions (ή αλλιώς revisions)
+
         dependencies.keySet().forEach(dependencyGraph::addVertex);
 
         logger.info("Generating graph edges");
         var startGenEdgesTs = System.currentTimeMillis();
-        // dependencies.entrySet() επιστρέφει set με revision=[dependency_revision1...] ουσιαστικά επιστρέφει την dependencies variable
+
         var allEdges = dependencies.entrySet().parallelStream().map(e -> {
             var source = e.getKey();
             var edges = new ArrayList<DependencyEdge>();
