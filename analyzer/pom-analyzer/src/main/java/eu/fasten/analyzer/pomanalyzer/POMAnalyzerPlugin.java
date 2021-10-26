@@ -21,16 +21,10 @@ package eu.fasten.analyzer.pomanalyzer;
 import eu.fasten.analyzer.pomanalyzer.pom.DataExtractor;
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.metadatadb.MetadataDao;
-import eu.fasten.core.maven.utils.MavenUtilities;
 import eu.fasten.core.maven.data.DependencyData;
+import eu.fasten.core.maven.utils.MavenUtilities;
 import eu.fasten.core.plugins.DBConnector;
 import eu.fasten.core.plugins.KafkaPlugin;
-import java.io.File;
-import java.sql.Timestamp;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 import org.jooq.DSLContext;
 import org.jooq.exception.DataAccessException;
 import org.jooq.impl.DSL;
@@ -42,6 +36,13 @@ import org.pf4j.Plugin;
 import org.pf4j.PluginWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.File;
+import java.sql.Timestamp;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 public class POMAnalyzerPlugin extends Plugin {
 
@@ -284,7 +285,6 @@ public class POMAnalyzerPlugin extends Plugin {
             json.put("packagingType", packagingType);
             json.put("projectName", (projectName != null) ? projectName : "");
             json.put("parentCoordinate", (parentCoordinate != null) ? parentCoordinate : "");
-            json.put("dependencyData", dependencyData.toJSON());
             json.put("forge", Constants.mvnForge);
             json.put("artifactRepository", artifactRepository);
             return Optional.of(json.toString());
