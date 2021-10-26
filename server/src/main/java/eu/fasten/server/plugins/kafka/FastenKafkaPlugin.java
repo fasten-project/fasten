@@ -21,6 +21,20 @@ package eu.fasten.server.plugins.kafka;
 import com.google.common.base.Strings;
 import eu.fasten.core.plugins.KafkaPlugin;
 import eu.fasten.server.plugins.FastenServerPlugin;
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.kafka.clients.consumer.CommitFailedException;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.clients.consumer.ConsumerRecords;
+import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.PartitionInfo;
+import org.apache.kafka.common.TopicPartition;
+import org.apache.kafka.common.errors.WakeupException;
+import org.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -34,22 +48,6 @@ import java.util.Properties;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
-
-import org.apache.commons.lang.StringUtils;
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.lang3.tuple.Pair;
-import org.apache.kafka.clients.consumer.CommitFailedException;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.clients.consumer.ConsumerRecords;
-import org.apache.kafka.clients.consumer.KafkaConsumer;
-import org.apache.kafka.clients.producer.KafkaProducer;
-import org.apache.kafka.clients.producer.ProducerRecord;
-import org.apache.kafka.common.PartitionInfo;
-import org.apache.kafka.common.TopicPartition;
-import org.apache.kafka.common.errors.WakeupException;
-import org.json.JSONObject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class FastenKafkaPlugin implements FastenServerPlugin {
     private final Logger logger = LoggerFactory.getLogger(FastenKafkaPlugin.class.getName());
@@ -361,9 +359,23 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
             stdoutMsg.put("host", "unknown");
         }
         stdoutMsg.put("input", StringUtils.isNotEmpty(input) ? new JSONObject(input) : "");
-        stdoutMsg.put("payload", StringUtils.isNotEmpty(payload) ? new JSONObject(payload) : "");
+        stdoutMsg.put("payload", StringUtils.isNotEmpty(payload) ? trimOutMsg(new JSONObject(payload)) : "");
 
         return stdoutMsg.toString();
+    }
+
+    /**
+     * Trims the output of the plugins by removing specified key-values from JSON
+     *
+     * @param outputMsg output of the plugin in JSON
+     * @return JSONObject
+     */
+    private JSONObject trimOutMsg(JSONObject outputMsg) {
+        if (plugin.getClass().getSimpleName().equals("OPAL")) {
+            outputMsg.remove("cha");
+            outputMsg.remove("graph");
+        }
+        return outputMsg;
     }
 
     /**
