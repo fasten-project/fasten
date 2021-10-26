@@ -28,9 +28,9 @@ import java.time.format.DateTimeFormatter;
 import java.util.Objects;
 
 /**
- * An artifact released in Maven Central.
+ * An artifact released in Pypi.
  */
-public class Revision extends PypiProduct implements Serializable {
+public class Revision extends PyPiProduct implements Serializable {
 
     public DefaultArtifactVersion version;
     public Timestamp createdAt;
@@ -52,8 +52,8 @@ public class Revision extends PypiProduct implements Serializable {
         this.createdAt = createdAt;
     }
 
-    public PypiProduct product() {
-        return new PypiProduct(this.package_name);
+    public PyPiProduct product() {
+        return new PyPiProduct(this.package_name);
     }
 
     @Override
