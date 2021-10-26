@@ -194,9 +194,9 @@ public final class DependencyGraphUtilities {
                 graph.edgeSet().size(), tsEnd - tsStart);
 
         tsStart = System.currentTimeMillis();
-        logger.info("Serializing graph to {}", path);
-        DependencyGraphUtilities.serializeDependencyGraph(graph, path == null ? "pypigraph.bin" : path);
-        logger.info("Finished serializing graph ({} ms)", System.currentTimeMillis() - tsStart);
+        // logger.info("Serializing graph to {}", path);
+        // DependencyGraphUtilities.serializeDependencyGraph(graph, path == null ? "pypigraph.bin" : path);
+        // logger.info("Finished serializing graph ({} ms)", System.currentTimeMillis() - tsStart);
 
         return graph;
     }
