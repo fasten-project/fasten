@@ -74,7 +74,7 @@ public class DependencyGraphBuilder {
                 .on(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.eq(Packages.PACKAGES.ID))
                 .leftJoin(Dependencies.DEPENDENCIES)
                 .on(Dependencies.DEPENDENCIES.PACKAGE_VERSION_ID.eq(PackageVersions.PACKAGE_VERSIONS.ID))
-                .where(Packages.PACKAGES.FORGE.eq(Constants.mvnForge))
+                .where(Packages.PACKAGES.FORGE.eq(Constants.pypiForge))
                 .and(PackageVersions.PACKAGE_VERSIONS.CREATED_AT.isNotNull())
                 .fetch()
                 .parallelStream()
@@ -100,27 +100,6 @@ public class DependencyGraphBuilder {
                             return z;
                         }
                 ));
-    }
-
-
-    
-    public void ggetDependencyList(DSLContext dbContext) {
-        for (Record5 x : dbContext.select(PackageVersions.PACKAGE_VERSIONS.ID,
-                Packages.PACKAGES.PACKAGE_NAME,
-                PackageVersions.PACKAGE_VERSIONS.VERSION,
-                Dependencies.DEPENDENCIES.METADATA,
-                PackageVersions.PACKAGE_VERSIONS.CREATED_AT)
-                .from(Packages.PACKAGES)
-                .rightJoin(PackageVersions.PACKAGE_VERSIONS)
-                .on(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.eq(Packages.PACKAGES.ID))
-                .leftJoin(Dependencies.DEPENDENCIES)
-                .on(Dependencies.DEPENDENCIES.PACKAGE_VERSION_ID.eq(PackageVersions.PACKAGE_VERSIONS.ID))
-                .where(Packages.PACKAGES.FORGE.eq(Constants.pypiForge))
-                .and(PackageVersions.PACKAGE_VERSIONS.CREATED_AT.isNotNull())
-                .fetch()) {
-            System.out.println(x.component4());
-            break;
-                }
     }
 
     public List<Revision> findMatchingRevisions(List<Revision> revisions,
@@ -226,7 +205,7 @@ public class DependencyGraphBuilder {
         logger.debug("Added {} edges to the graph: {} ms", allEdges.size(),
                 System.currentTimeMillis() - startAddEdgesTs);
 
-        logger.info("Maven dependency graph generated: {} ms", System.currentTimeMillis() - startTs);
+        logger.info("PyPi dependency graph generated: {} ms", System.currentTimeMillis() - startTs);
         return dependencyGraph;
     }
 }

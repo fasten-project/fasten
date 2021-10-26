@@ -26,6 +26,7 @@ import eu.fasten.core.pypi.data.Dependency;
 import eu.fasten.core.pypi.data.Revision;
 import eu.fasten.core.pypi.data.DependencyEdge;
 import eu.fasten.core.pypi.utils.DependencyGraphUtilities;
+import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenHashSet;
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultDirectedGraph;
@@ -41,54 +42,31 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class Test {
 
-
-    // public static void main(String[] args) throws Exception {
-    //     var graphResolver = new GraphPypiResolver();
-    //     // export PGPASSWORD=fasten
-    //     //  mvn -T 1C  install -Dpypi.test.skip -DskipTests && java -cp docker/rest-api/restapi-plugin-0.1.0-SNAPSHOT-with-dependencies.jar eu.fasten.core.pypi.Test
-    //     var dbContext = PostgresConnector.getDSLContext("jdbc:postgresql://localhost:5432/fasten_python", "fastenro", false);
-    //     var serializedGraphPath = "../mvn_dep_graph";
-    //     graphResolver.buildDependencyGraph(dbContext, serializedGraphPath);    // dbContext is needed only if serializedGraphPath doesn't actually contain the proper serialized graph in order to build the graph from scratch
-    //     // graphResolver.repl(dbContext);
-    //     // "01.02.2021"
-    //     // System.out.println(graphResolver.getCreatedAt("io.nextflow", "nxf-commons", "0.29.1", dbContext));
-    //     // var dependentsSet = graphResolver.resolveDependents("io.nextflow", "nxf-commons", "0.29.1", -1, true);
-    //     // io.nextflow:nxf-commons:0.29.1
-    //     // System.out.println(dependentsSet);
-    // }
-
     public static void main(String[] args) throws Exception {
-        var builder = new DependencyGraphBuilder();
-        // var serializedGraphPath = "../mvn_dep_graph";
         var dbContext = PostgresConnector.getDSLContext("jdbc:postgresql://localhost:5432/fasten_python", "fastenro", false);
-        // graphResolver.buildDependencyGraph(dbContext, serializedGraphPath);
-        
-        // for Map<Revision, List<Dependency>> i in builder.getDependencyList(dbContext):
-        //     System.out.println(i);
-        //     break;
-        // System.out.println(graphResolver.dependencyGraph);
-        builder.ggetDependencyList(dbContext);
-        // var dependencies = builder.getDependencyList(dbContext);
-        // System.out.println(dependencies.get("org.eclipse.platform:org.eclipse.debug.examples.core:1.4.800"));
-
-        // var productRevisionMap = dependencies.keySet().stream().collect(Collectors.toConcurrentMap(
-        //     Revision::product,
-        //     List::of,
-        //     (x, y) -> {
-        //         var z = new ArrayList<Revision>();
-        //         z.addAll(x);
-        //         z.addAll(y);
-        //         return z;
-        //     })
-        // );
-        // System.out.println(dependencies.entrySet());
-
-
-        // System.out.println(productRevisionMap.get("org.wso2.carbon.identity.framework:org.wso2.carbon.user.mgt.ui.feature"));
+        var graphResolver = new GraphPypiResolver();
+        graphResolver.buildDependencyGraph(dbContext, "hi"); 
+        graphResolver.repl(dbContext);
     }
 }
 
+        // ObjectLinkedOpenHashSet<Revision> revisions = graphResolver.resolveDependents("sentinelhub", "3.0.0", graphResolver.getCreatedAt("sentinelhub","3.0.0", dbContext), true);
+        // for (var rev : revisions.stream().sorted(Comparator.comparing(Revision::toString)).
+        //         collect(Collectors.toList())) {
+        //     System.out.println(rev.toString());
+        // }
+        // System.err.println(revisions.size() + " revisions");
+
+//    id   | package_id | version | cg_generator | architecture |     created_at      | metadata 
+// --------+------------+---------+--------------+--------------+---------------------+----------
+//  587688 |     373611 | 0.1.4   | PyCG         |              | 2020-09-12 16:21:19 | {}
+//  507889 |     373611 | 0.1.5   | PyCG         |              | 2020-09-12 16:21:50 | {}
+//  578396 |     373611 | 0.1.6   | PyCG         |              | 2020-09-12 22:01:04 | {}
+//  373611 |     373611 | 0.1.8   | PyCG         |              | 2020-09-16 02:36:00 | {}
+
+// wexpect:4.0.1.dev3 ---> video-diet:0.1.8q
