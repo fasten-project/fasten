@@ -1,0 +1,20 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Vulnerability Statements Processor Main" type="Application" factoryName="Application">
+    <envs>
+      <env name="FASTEN_DBPASS" value="fasten1234" />
+    </envs>
+    <option name="INCLUDE_PROVIDED_SCOPE" value="true" />
+    <option name="MAIN_CLASS_NAME" value="eu.fasten.analyzer.vulnerabilitystatementsprocessor.Main" />
+    <module name="vulnerability-statements-processor" />
+    <option name="PROGRAM_PARAMETERS" value="-f analyzer/vulnerability-statements-processor/src/test/resources/CVE-2021-21409-array.json -d &quot;mvn=jdbc:postgresql://localhost/fasten_java,debian=jdbc:postgresql://localhost/fasten_c,PyPI=jdbc:postgresql://localhost/fasten_python&quot; -u fasten" />
+    <extension name="coverage">
+      <pattern>
+        <option name="PATTERN" value="eu.fasten.analyzer.vulnerabilitystatementsprocessor.*" />
+        <option name="ENABLED" value="true" />
+      </pattern>
+    </extension>
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>
