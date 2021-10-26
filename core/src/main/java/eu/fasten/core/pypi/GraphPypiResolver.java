@@ -139,8 +139,7 @@ public class GraphPypiResolver implements Runnable {
                 if (input.equals("quit") || input.equals("exit")) break;
 
                 var parts = input.split(":");
-                // TODO parts[1] exception
-                if (parts.length < 1 || parts[1] == null) {
+                if (parts.length < 2) {
                     System.out.println("Wrong input: " + input + ". Format is: package:version");
                     continue;
                 }
