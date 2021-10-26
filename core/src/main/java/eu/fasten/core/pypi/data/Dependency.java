@@ -29,9 +29,9 @@ import org.json.JSONObject;
 
 /**
  * A dependency declaration. Denotes a Revision's will to use the functionality of the
- * {@class PypiProduct} that matches the dependency's qualifiers.
+ * {@class PyPiProduct} that matches the dependency's qualifiers.
  */
-public class Dependency extends PypiProduct {
+public class Dependency extends PyPiProduct {
     public static final Dependency empty = new Dependency("", "");
 
     public final List<VersionConstraint> versionConstraints;
@@ -90,8 +90,8 @@ public class Dependency extends PypiProduct {
         this(package_name, version, new ArrayList<>(), "", false, "", "");
     }
 
-    public PypiProduct product() {
-        return new PypiProduct(package_name);
+    public PyPiProduct product() {
+        return new PyPiProduct(package_name);
     }
 
     /**

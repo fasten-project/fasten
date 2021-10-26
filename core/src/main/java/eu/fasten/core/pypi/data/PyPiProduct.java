@@ -26,19 +26,19 @@ import java.util.Objects;
 /**
  * A versionless Pypi Product
  */
-public class PypiProduct {
+public class PyPiProduct {
 
     public long id;
     public String package_name;
 
-    public PypiProduct(){}
+    public PyPiProduct(){}
 
-    public PypiProduct(final String package_name) {
+    public PyPiProduct(final String package_name) {
         this.id = 0;
         this.package_name = package_name;
     }
 
-    public PypiProduct(long id, String package_name) {
+    public PyPiProduct(long id, String package_name) {
         this.id = id;
         this.package_name = package_name;
     }
@@ -47,7 +47,7 @@ public class PypiProduct {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        PypiProduct that = (PypiProduct) o;
+        PyPiProduct that = (PyPiProduct) o;
         return package_name.equals(that.package_name);
     }
 
