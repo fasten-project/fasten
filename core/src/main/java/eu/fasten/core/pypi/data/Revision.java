@@ -28,7 +28,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Objects;
 
 /**
- * An artifact released in Pypi.
+ * An artifact released in PyPi.
  */
 public class Revision extends PyPiProduct implements Serializable {
 
