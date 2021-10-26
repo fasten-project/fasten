@@ -77,10 +77,10 @@ public class GraphPypiResolver implements Runnable {
     static {
         scopes.add("compile");
         scopes.add("provided");
-//        scopes.add("test");
+        scopes.add("test");
         scopes.add("runtime");
-//        scopes.add("system");
-//        scopes.add("import");
+        scopes.add("system");
+        scopes.add("import");
     }
 
     static List<String> types = new ArrayList<>();
