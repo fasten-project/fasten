@@ -17,33 +17,8 @@
  */
 
 package eu.fasten.core.pypi;
-import eu.fasten.core.data.Constants;
-import eu.fasten.core.data.metadatadb.codegen.tables.Dependencies;
-import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
-import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
-import eu.fasten.core.dbconnectors.PostgresConnector;
-import eu.fasten.core.pypi.data.Dependency;
-import eu.fasten.core.pypi.data.Revision;
-import eu.fasten.core.pypi.data.DependencyEdge;
-import eu.fasten.core.pypi.utils.DependencyGraphUtilities;
-import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenHashSet;
-import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
-import org.jgrapht.Graph;
-import org.jgrapht.graph.DefaultDirectedGraph;
-import org.jooq.DSLContext;
-import org.json.JSONObject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.util.AbstractMap;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.*;
-import java.util.stream.Collectors;
+import eu.fasten.core.dbconnectors.PostgresConnector;
 
 public class Test {
 
