@@ -54,19 +54,3 @@ public class Test {
         graphResolver.repl(dbContext);
     }
 }
-
-        // ObjectLinkedOpenHashSet<Revision> revisions = graphResolver.resolveDependents("sentinelhub", "3.0.0", graphResolver.getCreatedAt("sentinelhub","3.0.0", dbContext), true);
-        // for (var rev : revisions.stream().sorted(Comparator.comparing(Revision::toString)).
-        //         collect(Collectors.toList())) {
-        //     System.out.println(rev.toString());
-        // }
-        // System.err.println(revisions.size() + " revisions");
-
-//    id   | package_id | version | cg_generator | architecture |     created_at      | metadata 
-// --------+------------+---------+--------------+--------------+---------------------+----------
-//  587688 |     373611 | 0.1.4   | PyCG         |              | 2020-09-12 16:21:19 | {}
-//  507889 |     373611 | 0.1.5   | PyCG         |              | 2020-09-12 16:21:50 | {}
-//  578396 |     373611 | 0.1.6   | PyCG         |              | 2020-09-12 22:01:04 | {}
-//  373611 |     373611 | 0.1.8   | PyCG         |              | 2020-09-16 02:36:00 | {}
-
-// wexpect:4.0.1.dev3 ---> video-diet:0.1.8q
