@@ -18,9 +18,6 @@
 
 package eu.fasten.core.pypi.data;
 
-
-import eu.fasten.core.data.Constants;
-
 import java.util.Objects;
 
 /**

@@ -471,8 +471,7 @@ public class Dependency extends PyPiProduct {
 
         @Override
         public int hashCode() {
-            int result = package_name != null ? package_name.hashCode() : 0;
-            // result = 31 * result + (groupId != null ? groupId.hashCode() : 0);
+            int result = 31 * (package_name != null ? package_name.hashCode() : 0);
             return result;
         }
 
