@@ -28,6 +28,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
+
 @Service
 public class PackageApiServiceImpl implements PackageApiService {
 
@@ -60,7 +62,7 @@ public class PackageApiServiceImpl implements PackageApiService {
     @Override
     public ResponseEntity<String> getPackageVersion(String package_name,
                                                     String package_version, String artifactRepo,
-                                                    Long date) {
+                                                    Long date) throws IOException {
         String result = KnowledgeBaseConnector.kbDao.getPackageVersion(
                 package_name, package_version);
         if (result == null) {
@@ -97,7 +99,7 @@ public class PackageApiServiceImpl implements PackageApiService {
                                                       int offset,
                                                       int limit,
                                                       String artifactRepo,
-                                                      Long date) {
+                                                      Long date) throws IOException {
         String result;
         try {
             result = KnowledgeBaseConnector.kbDao.getPackageCallgraph(
@@ -121,7 +123,7 @@ public class PackageApiServiceImpl implements PackageApiService {
     }
 
     @Override
-    public ResponseEntity<String> getERCGLink(String packageName, String version, String artifactRepo, Long date) {
+    public ResponseEntity<String> getERCGLink(String packageName, String version, String artifactRepo, Long date) throws IOException {
         if (KnowledgeBaseConnector.kbDao.assertPackageExistence(packageName, version)) {
             var groupId = packageName.split(Constants.mvnCoordinateSeparator)[0];
             var artifactId = packageName.split(Constants.mvnCoordinateSeparator)[1];

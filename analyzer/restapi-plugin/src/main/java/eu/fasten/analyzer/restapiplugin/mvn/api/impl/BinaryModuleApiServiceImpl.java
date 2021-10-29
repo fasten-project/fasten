@@ -26,6 +26,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
+
 @Service
 public class BinaryModuleApiServiceImpl implements BinaryModuleApiService {
 
@@ -43,7 +45,7 @@ public class BinaryModuleApiServiceImpl implements BinaryModuleApiService {
         } catch (PackageVersionNotFoundException e) {
             try {
                 LazyIngestionProvider.ingestArtifactIfNecessary(package_name, package_version, artifactRepo, date);
-            } catch (IllegalArgumentException ex) {
+            } catch (IllegalArgumentException | IOException ex) {
                 return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST);
             }
             return new ResponseEntity<>("Package version not found, but should be processed soon. Try again later", HttpStatus.CREATED);
@@ -65,7 +67,7 @@ public class BinaryModuleApiServiceImpl implements BinaryModuleApiService {
         } catch (PackageVersionNotFoundException e) {
             try {
                 LazyIngestionProvider.ingestArtifactIfNecessary(package_name, package_version, artifactRepo, date);
-            } catch (IllegalArgumentException ex) {
+            } catch (IllegalArgumentException | IOException ex) {
                 return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST);
             }
             return new ResponseEntity<>("Package version not found, but should be processed soon. Try again later", HttpStatus.CREATED);
@@ -92,7 +94,7 @@ public class BinaryModuleApiServiceImpl implements BinaryModuleApiService {
         } catch (PackageVersionNotFoundException e) {
             try {
                 LazyIngestionProvider.ingestArtifactIfNecessary(package_name, package_version, artifactRepo, date);
-            } catch (IllegalArgumentException ex) {
+            } catch (IllegalArgumentException | IOException ex) {
                 return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST);
             }
             return new ResponseEntity<>("Package version not found, but should be processed soon. Try again later", HttpStatus.CREATED);

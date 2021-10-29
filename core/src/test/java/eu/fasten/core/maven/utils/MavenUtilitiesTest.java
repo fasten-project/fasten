@@ -19,7 +19,10 @@
 package eu.fasten.core.maven.utils;
 
 import org.junit.jupiter.api.Test;
+
+import java.io.IOException;
 import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -33,19 +36,19 @@ public class MavenUtilitiesTest {
     }
 
     @Test
-    public void downloadValidPomTest() {
+    public void downloadValidPomTest() throws IOException {
         var file = MavenUtilities.downloadPom("junit", "junit", "4.12");
         assertTrue(file.isPresent());
     }
 
     @Test
-    public void downloadInvalidPomTest() {
+    public void downloadInvalidPomTest() throws IOException {
         var file = MavenUtilities.downloadPom("fake", "fake", "4.12");
         assertTrue(file.isEmpty());
     }
 
     @Test
-    public void downloadPomWithInvalidRepoTest() {
+    public void downloadPomWithInvalidRepoTest() throws IOException {
         var file = MavenUtilities.downloadPom("junit", "junit", "4.12", List.of("https://google.com/"));
         assertTrue(file.isEmpty());
     }

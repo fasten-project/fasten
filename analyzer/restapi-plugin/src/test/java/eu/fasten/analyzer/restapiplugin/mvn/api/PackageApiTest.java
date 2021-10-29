@@ -18,13 +18,16 @@
 
 package eu.fasten.analyzer.restapiplugin.mvn.api;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import eu.fasten.analyzer.restapiplugin.mvn.RestApplication;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+
+import java.io.IOException;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class PackageApiTest {
 
@@ -69,7 +72,7 @@ class PackageApiTest {
     }
 
     @Test
-    void getPackageVersionTest() {
+    void getPackageVersionTest() throws IOException {
         var packageName = "pkg name";
         var version = "pkg version";
         var response = new ResponseEntity<>("package version", HttpStatus.OK);
@@ -91,7 +94,7 @@ class PackageApiTest {
     }
 
     @Test
-    void getPackageCallgraphTest() {
+    void getPackageCallgraphTest() throws IOException {
         var packageName = "pkg name";
         var version = "pkg version";
         var response = new ResponseEntity<>("package version callgraph", HttpStatus.OK);
@@ -112,7 +115,7 @@ class PackageApiTest {
     }
 
     @Test
-    void getERCGLinkTest() {
+    void getERCGLinkTest() throws IOException {
         var packageName = "pkg name";
         var version = "pkg version";
         var response = new ResponseEntity<>("link to ercg", HttpStatus.OK);

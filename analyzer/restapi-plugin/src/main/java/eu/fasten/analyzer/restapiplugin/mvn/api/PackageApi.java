@@ -21,11 +21,9 @@ package eu.fasten.analyzer.restapiplugin.mvn.api;
 import eu.fasten.analyzer.restapiplugin.mvn.RestApplication;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
+
+import java.io.IOException;
 
 @RestController
 @RequestMapping("/mvn/packages")
@@ -59,7 +57,7 @@ public class PackageApi {
     ResponseEntity<String> getPackageVersion(@PathVariable("pkg") String package_name,
                                              @PathVariable("pkg_ver") String package_version,
                                              @RequestParam(value = "artifactRepository", required = false) String artifactRepo,
-                                             @RequestParam(required = false) Long releaseDate) {
+                                             @RequestParam(required = false) Long releaseDate) throws IOException {
         return service.getPackageVersion(package_name, package_version, artifactRepo, releaseDate);
     }
 
@@ -75,7 +73,7 @@ public class PackageApi {
                                                @RequestParam(required = false, defaultValue = "0") int offset,
                                                @RequestParam(required = false, defaultValue = RestApplication.DEFAULT_PAGE_SIZE) int limit,
                                                @RequestParam(value = "artifactRepository", required = false) String artifactRepo,
-                                               @RequestParam(required = false) Long releaseDate) {
+                                               @RequestParam(required = false) Long releaseDate) throws IOException {
         return service.getPackageCallgraph(package_name, package_version, offset, limit, artifactRepo, releaseDate);
     }
 
@@ -90,7 +88,7 @@ public class PackageApi {
     ResponseEntity<String> getERCGLink(@PathVariable("pkg") String packageName,
                                        @PathVariable("pkg_ver") String version,
                                        @RequestParam(value = "artifactRepository", required = false) String artifactRepo,
-                                       @RequestParam(required = false) Long releaseDate) {
+                                       @RequestParam(required = false) Long releaseDate) throws IOException {
         return service.getERCGLink(packageName, version, artifactRepo, releaseDate);
     }
 }

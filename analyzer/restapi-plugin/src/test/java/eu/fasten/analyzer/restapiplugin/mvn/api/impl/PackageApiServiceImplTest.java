@@ -26,6 +26,9 @@ import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+
+import java.io.IOException;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 
@@ -81,7 +84,7 @@ public class PackageApiServiceImplTest {
     }
 
     @Test
-    void getPackageVersionTest() {
+    void getPackageVersionTest() throws IOException {
         var packageName = "group:artifact";
         var version = "version";
         var response = "package version";
@@ -123,7 +126,7 @@ public class PackageApiServiceImplTest {
     }
 
     @Test
-    void getPackageCallgraphTest() {
+    void getPackageCallgraphTest() throws IOException {
         var packageName = "group:artifact";
         var version = "version";
         var response = "package callgraph";
@@ -146,7 +149,7 @@ public class PackageApiServiceImplTest {
     }
 
     @Test
-    void getERCGLinkTest() {
+    void getERCGLinkTest() throws IOException {
         var packageName = "junit:junit";
         var version = "4.12";
         Mockito.when(kbDao.assertPackageExistence(packageName, version)).thenReturn(true);
