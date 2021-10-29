@@ -749,20 +749,28 @@ public class DataExtractor {
     }
 
     private Optional<String> downloadPom(String groupId, String artifactId, String version) throws IOException {
-        var pom = MavenUtilities.downloadPom(groupId, artifactId, version, this.mavenRepos).flatMap(DataExtractor::fileToString);
+        var pom = MavenUtilities.downloadPom(groupId, artifactId, version, this.mavenRepos);
 
         if (pom.isPresent()) {
             this.mavenCoordinate = groupId + Constants.mvnCoordinateSeparator + artifactId
                     + Constants.mvnCoordinateSeparator + version;
-            this.pomContents = pom.get();
-            return pom;
+            this.pomContents = pom.flatMap(DataExtractor::fileToString).get();
+            if (!pom.get().delete()) {
+                logger.warn("Could not delete the POM file " + pom.toString());
+            }
+            return Optional.of(this.pomContents);
         }
 
         return Optional.empty();
     }
 
     private Optional<String> downloadPom(String pomUrl) throws IOException {
-        return MavenUtilities.downloadPomFile(pomUrl).flatMap(DataExtractor::fileToString);
+        var pomFile = MavenUtilities.downloadPomFile(pomUrl);
+        var pomFileContent = pomFile.flatMap(DataExtractor::fileToString);
+        if (pomFile.isPresent() && !pomFile.get().delete()) {
+            logger.warn("Could not delete the POM file " + pomFile.toString());
+        }
+        return pomFileContent;
     }
 
     /**
