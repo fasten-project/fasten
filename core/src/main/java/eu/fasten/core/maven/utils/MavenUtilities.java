@@ -143,13 +143,14 @@ public class MavenUtilities {
     }
 
     public static String sendGetRequest(String url) throws IOException {
-        return MavenUtilities.downloadPomFile(url).flatMap(MavenUtilities::fileToString).orElse(null);
+        return MavenUtilities.downloadPomFile(url).flatMap(MavenUtilities::fileToString);
+
     }
 
     /**
      * Utility function that reads the contents of a file to a String.
      */
-    private static Optional<String> fileToString(final File f) {
+    private static Optional<String> fileToString(final File f) throws IOException {
         logger.trace("Loading file as string: " + f.toString());
         try {
             final var fr = new BufferedReader(new FileReader(f));
@@ -162,7 +163,7 @@ public class MavenUtilities {
             return Optional.of(result.toString());
         } catch (IOException e) {
             logger.error("Cannot read from file: " + f.toString(), e);
-            return Optional.empty();
+            throw e;
         }
     }
 
