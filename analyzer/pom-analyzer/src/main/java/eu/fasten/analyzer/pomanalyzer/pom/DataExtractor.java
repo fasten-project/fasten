@@ -18,32 +18,11 @@
 
 package eu.fasten.analyzer.pomanalyzer.pom;
 
-import eu.fasten.core.maven.utils.MavenUtilities;
+import eu.fasten.core.data.Constants;
 import eu.fasten.core.maven.data.Dependency;
 import eu.fasten.core.maven.data.DependencyData;
 import eu.fasten.core.maven.data.DependencyManagement;
-import java.io.BufferedReader;
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.io.IOException;
-import java.net.URI;
-import java.net.URL;
-import java.net.URLConnection;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Optional;
-import eu.fasten.core.data.Constants;
+import eu.fasten.core.maven.utils.MavenUtilities;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -53,6 +32,17 @@ import org.dom4j.Node;
 import org.dom4j.io.SAXReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.*;
+import java.net.URI;
+import java.net.URL;
+import java.net.URLConnection;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.*;
 
 public class DataExtractor {
 
@@ -73,7 +63,7 @@ public class DataExtractor {
      * @param pomUrl URL to download the POM file
      * @return Maven coordinate in the form of 'groupId:artifactId:version'
      */
-    public String getMavenCoordinate(String pomUrl) {
+    public String getMavenCoordinate(String pomUrl) throws IOException {
         StringBuilder coordinate = new StringBuilder();
         try {
             var pom = getPomRootElement(pomUrl);
@@ -181,7 +171,7 @@ public class DataExtractor {
      * @param version    version of the coordinate
      * @return Extracted packaging as String (default is "jar")
      */
-    public String extractPackagingType(String groupId, String artifactId, String version) {
+    public String extractPackagingType(String groupId, String artifactId, String version) throws IOException {
         String packaging = "jar";
         try {
             var pom = getPomRootElement(groupId, artifactId, version);
@@ -211,7 +201,7 @@ public class DataExtractor {
      * @param version    version of the coordinate
      * @return Extracted project name as String
      */
-    public String extractProjectName(String groupId, String artifactId, String version) {
+    public String extractProjectName(String groupId, String artifactId, String version) throws IOException {
         String name = null;
         try {
             var pom = getPomRootElement(groupId, artifactId, version);
@@ -241,7 +231,7 @@ public class DataExtractor {
      * @param version    version of the coordinate
      * @return Parent coordinate as String in the form of "groupId:artifactId:version"
      */
-    public String extractParentCoordinate(String groupId, String artifactId, String version) {
+    public String extractParentCoordinate(String groupId, String artifactId, String version) throws IOException {
         String parent = null;
         try {
             var pom = getPomRootElement(groupId, artifactId, version);
@@ -372,7 +362,7 @@ public class DataExtractor {
      * @param version    version of the coordinate
      * @return Extracted repository URL as String
      */
-    public String extractRepoUrl(String groupId, String artifactId, String version) {
+    public String extractRepoUrl(String groupId, String artifactId, String version) throws IOException {
         String repoUrl = null;
         try {
             var pom = getPomRootElement(groupId, artifactId, version);
@@ -401,7 +391,7 @@ public class DataExtractor {
     }
 
     private Element getPomRootElement(String groupId, String artifactId, String version)
-            throws FileNotFoundException, DocumentException {
+            throws IOException, DocumentException {
         var pomByteStream =
                 (groupId + Constants.mvnCoordinateSeparator + artifactId
                         + Constants.mvnCoordinateSeparator + version).equals(this.mavenCoordinate)
@@ -411,12 +401,12 @@ public class DataExtractor {
         return new SAXReader().read(pomByteStream).getRootElement();
     }
 
-    private Element getPomRootElement(String pomUrl) throws FileNotFoundException, DocumentException {
+    private Element getPomRootElement(String pomUrl) throws IOException, DocumentException {
         var pomByteStream = new ByteArrayInputStream(this.downloadPom(pomUrl).orElseThrow(FileNotFoundException::new).getBytes());
         return new SAXReader().read(pomByteStream).getRootElement();
     }
 
-    private void updateResolutionMetadata(String groupId, String artifactId, String version, Element pom) {
+    private void updateResolutionMetadata(String groupId, String artifactId, String version, Element pom) throws IOException {
         if (this.resolutionMetadata == null
                 || !this.resolutionMetadata.getLeft()
                 .equals(groupId + Constants.mvnCoordinateSeparator + artifactId
@@ -435,7 +425,7 @@ public class DataExtractor {
      * @param version    version of the coordinate
      * @return Extracted commit tag representing certain version in repository
      */
-    public String extractCommitTag(String groupId, String artifactId, String version) {
+    public String extractCommitTag(String groupId, String artifactId, String version) throws IOException {
         String commitTag = null;
         try {
             var pom = getPomRootElement(groupId, artifactId, version);
@@ -470,7 +460,7 @@ public class DataExtractor {
      * @param version    version of the coordinate
      * @return Extracted dependency information as DependencyData
      */
-    public DependencyData extractDependencyData(String groupId, String artifactId, String version) {
+    public DependencyData extractDependencyData(String groupId, String artifactId, String version) throws IOException {
         DependencyData dependencyData = new DependencyData(
                 new DependencyManagement(new ArrayList<>()), new ArrayList<>());
         try {
@@ -626,7 +616,7 @@ public class DataExtractor {
         return resolvedDependencies;
     }
 
-    private Pair<Map<String, String>, List<DependencyManagement>> extractDependencyResolutionMetadata(Node pomRoot) {
+    private Pair<Map<String, String>, List<DependencyManagement>> extractDependencyResolutionMetadata(Node pomRoot) throws IOException {
         Map<String, String> properties = new HashMap<>();
         var dependencyManagements = new ArrayList<DependencyManagement>();
         var profilesRoot = pomRoot.selectSingleNode("./*[local-name() ='profiles']");
@@ -758,7 +748,7 @@ public class DataExtractor {
         return dependencies;
     }
 
-    private Optional<String> downloadPom(String groupId, String artifactId, String version) {
+    private Optional<String> downloadPom(String groupId, String artifactId, String version) throws IOException {
         var pom = MavenUtilities.downloadPom(groupId, artifactId, version, this.mavenRepos).flatMap(DataExtractor::fileToString);
 
         if (pom.isPresent()) {
@@ -771,7 +761,7 @@ public class DataExtractor {
         return Optional.empty();
     }
 
-    private Optional<String> downloadPom(String pomUrl) {
+    private Optional<String> downloadPom(String pomUrl) throws IOException {
         return MavenUtilities.downloadPomFile(pomUrl).flatMap(DataExtractor::fileToString);
     }
 

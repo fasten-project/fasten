@@ -51,7 +51,7 @@ public class MavenUtilities {
      * @param version    version of the artifact to find its dependencies
      * @return an optional pom file instance
      */
-    public static Optional<File> downloadPom(String groupId, String artifactId, String version) {
+    public static Optional<File> downloadPom(String groupId, String artifactId, String version) throws IOException {
         List<String> mavenRepos = MavenUtilities.getRepos();
         return MavenUtilities.downloadPom(groupId, artifactId, version, mavenRepos);
     }
@@ -65,7 +65,7 @@ public class MavenUtilities {
      * @param mavenRepos the list of predefined maven repositories
      * @return an optional pom file instance
      */
-    public static Optional<File> downloadPom(String groupId, String artifactId, String version, List<String> mavenRepos) {
+    public static Optional<File> downloadPom(String groupId, String artifactId, String version, List<String> mavenRepos) throws IOException {
         for (var repo : mavenRepos) {
             var pomUrl = MavenUtilities.getPomUrl(groupId, artifactId, version, repo);
             Optional<File> pom;
@@ -81,7 +81,7 @@ public class MavenUtilities {
         return Optional.empty();
     }
 
-    public static Optional<File> downloadPomFile(String pomUrl) {
+    public static Optional<File> downloadPomFile(String pomUrl) throws IOException {
         Optional<File> pom;
         try {
             pom = httpGetToFile(pomUrl);
@@ -125,7 +125,7 @@ public class MavenUtilities {
      * @return a temporarily saved file.
      */
     private static Optional<File> httpGetToFile(String url)
-            throws FileNotFoundException, UnknownHostException, MalformedURLException {
+            throws IOException {
         logger.debug("HTTP GET: " + url);
         try {
             final var tempFile = Files.createTempFile("fasten", ".pom");
@@ -138,11 +138,11 @@ public class MavenUtilities {
             throw e;
         } catch (IOException e) {
             logger.error("Error getting file from URL: " + url, e);
-            return Optional.empty();
+            throw e;
         }
     }
 
-    public static String sendGetRequest(String url) {
+    public static String sendGetRequest(String url) throws IOException {
         return MavenUtilities.downloadPomFile(url).flatMap(MavenUtilities::fileToString).orElse(null);
     }
 
@@ -185,7 +185,7 @@ public class MavenUtilities {
         }
     }
 
-    public static boolean mavenArtifactExists(String groupId, String artifactId, String version, String artifactRepo) {
+    public static boolean mavenArtifactExists(String groupId, String artifactId, String version, String artifactRepo) throws IOException {
         if (artifactRepo == null || artifactRepo.isEmpty()) {
             artifactRepo = MAVEN_CENTRAL_REPO;
         }

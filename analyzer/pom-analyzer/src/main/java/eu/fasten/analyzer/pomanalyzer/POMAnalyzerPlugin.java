@@ -21,16 +21,10 @@ package eu.fasten.analyzer.pomanalyzer;
 import eu.fasten.analyzer.pomanalyzer.pom.DataExtractor;
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.metadatadb.MetadataDao;
-import eu.fasten.core.maven.utils.MavenUtilities;
 import eu.fasten.core.maven.data.DependencyData;
+import eu.fasten.core.maven.utils.MavenUtilities;
 import eu.fasten.core.plugins.DBConnector;
 import eu.fasten.core.plugins.KafkaPlugin;
-import java.io.File;
-import java.sql.Timestamp;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 import org.jooq.DSLContext;
 import org.jooq.exception.DataAccessException;
 import org.jooq.impl.DSL;
@@ -42,6 +36,14 @@ import org.pf4j.Plugin;
 import org.pf4j.PluginWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.File;
+import java.io.IOException;
+import java.sql.Timestamp;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 public class POMAnalyzerPlugin extends Plugin {
 
@@ -160,7 +162,7 @@ public class POMAnalyzerPlugin extends Plugin {
                 logger.info("Extracted project name from " + product);
                 parentCoordinate = dataExtractor.extractParentCoordinate(group, artifact, version);
                 logger.info("Extracted parent coordinate from " + product);
-            } catch (RuntimeException e) {
+            } catch (RuntimeException | IOException e) {
                 logger.error("Error extracting data for " + product, e);
                 this.pluginError = e;
                 MavenUtilities.getRepos().remove(artifactRepository);
