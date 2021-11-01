@@ -32,6 +32,7 @@ import java.util.*;
 import org.jooq.DSLContext;
 import org.jooq.exception.DataAccessException;
 import org.jooq.impl.DSL;
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.pf4j.Extension;
@@ -228,6 +229,9 @@ public class POMAnalyzerPlugin extends Plugin {
             packageVersionMetadata.put("dependencyManagement",
                     (dependencyData.dependencyManagement != null)
                             ? dependencyData.dependencyManagement.toJSON() : null);
+            packageVersionMetadata.put("dependencies",
+                    (dependencyData.dependencies != null)
+                            ? new JSONArray(dependencyData.dependencies) : null);
             packageVersionMetadata.put("commitTag", (commitTag != null) ? commitTag : "");
             packageVersionMetadata.put("sourcesUrl", (sourcesUrl != null) ? sourcesUrl : "");
             packageVersionMetadata.put("packagingType", (packagingType != null)
