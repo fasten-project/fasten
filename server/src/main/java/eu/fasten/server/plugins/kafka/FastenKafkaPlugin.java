@@ -64,7 +64,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
     private List<String> prioTopics;
     private final String outputTopic;
     private enum KafkaRecordKind {NORMAL, PRIORITY}
-
+    
     private final int skipOffsets;
 
     private final String writeDirectory;
@@ -198,7 +198,6 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
                 logger.info("Read priority message offset " + r.offset() + " from partition " + r.partition() + ".");
                 processRecord(r, System.currentTimeMillis() / 1000L, KafkaRecordKind.PRIORITY);
                 hasConsumedPriorityRecord = true;
-
                 logger.info("Successfully processed priority message offset " + r.offset() + " from partition " + r.partition() + ".");
                 // TODO: Keep a list of processed priority messages like normal ones
             }
@@ -263,7 +262,6 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
      * This strategy provides at-least-once semantics.
      */
     public void processRecord(ConsumerRecord<String, String> record, Long consumeTimestamp, KafkaRecordKind kafkaRecordKind) {
-
         if (localStorage != null) { // If local storage is enabled.
             if (localStorage.exists(record.value(), record.partition())) { // This plugin already consumed this record before, we will not process it now.
                 logger.info("Already processed record with hash: " + localStorage.getSHA1(record.value()) + ", skipping it now.");
@@ -294,7 +292,6 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
 
         // We always produce, it does not matter if local storage is enabled or not.
         handleProducing(record.value(), consumeTimestamp, kafkaRecordKind);
-
     }
 
     /**
