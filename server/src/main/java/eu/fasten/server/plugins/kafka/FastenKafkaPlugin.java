@@ -64,7 +64,6 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
     private List<String> prioTopics;
     private final String outputTopic;
     private enum KafkaRecordKind {NORMAL, PRIORITY}
-    
     private final int skipOffsets;
 
     private final String writeDirectory;
