@@ -55,16 +55,12 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
     private final AtomicBoolean closed = new AtomicBoolean(false);
     private KafkaConsumer<String, String> connNorm;
     private KafkaConsumer<String, String> connPrio;
-
     private KafkaProducer<String, String> producer;
 
     private List<String> normTopics;
     private List<String> prioTopics;
     private final String outputTopic;
-
     private enum KafkaRecordKind {NORMAL, PRIORITY}
-
-    ;
 
     private final int skipOffsets;
 
