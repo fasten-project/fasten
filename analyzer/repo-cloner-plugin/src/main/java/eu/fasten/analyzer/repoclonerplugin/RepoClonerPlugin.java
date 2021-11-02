@@ -24,11 +24,6 @@ import eu.fasten.analyzer.repoclonerplugin.utils.SvnCloner;
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.plugins.DataWriter;
 import eu.fasten.core.plugins.KafkaPlugin;
-import java.io.File;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Optional;
 import org.apache.commons.lang3.tuple.ImmutableTriple;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.commons.math3.util.Pair;
@@ -38,6 +33,12 @@ import org.pf4j.Plugin;
 import org.pf4j.PluginWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.File;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Optional;
 
 public class RepoClonerPlugin extends Plugin {
 
@@ -49,7 +50,6 @@ public class RepoClonerPlugin extends Plugin {
     public static class RepoCloner implements KafkaPlugin, DataWriter {
 
         private List<String> consumeTopics = new LinkedList<>(Collections.singletonList("fasten.POMAnalyzer.out"));
-        //private String consumerTopic = "fasten.POMAnalyzer.out";
         private Exception pluginError = null;
         private final Logger logger = LoggerFactory.getLogger(RepoCloner.class.getName());
         private String repoPath = null;

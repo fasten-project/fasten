@@ -18,12 +18,7 @@
 
 package eu.fasten.analyzer.metadataplugin;
 
-import eu.fasten.core.data.Constants;
-import eu.fasten.core.data.ExtendedRevisionCCallGraph;
-import eu.fasten.core.data.ExtendedRevisionCallGraph;
-import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
-import eu.fasten.core.data.ExtendedRevisionPythonCallGraph;
-import eu.fasten.core.data.Graph;
+import eu.fasten.core.data.*;
 import eu.fasten.core.data.callableindex.ExtendedGidGraph;
 import eu.fasten.core.data.callableindex.GidGraph;
 import eu.fasten.core.data.metadatadb.MetadataDao;
@@ -37,13 +32,6 @@ import eu.fasten.core.plugins.KafkaPlugin;
 import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.longs.LongLinkedOpenHashSet;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
-import java.nio.file.Paths;
-import java.sql.BatchUpdateException;
-import java.sql.Timestamp;
-import java.util.*;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.jooq.DSLContext;
@@ -54,16 +42,18 @@ import org.json.JSONObject;
 import org.json.JSONTokener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import java.nio.file.Paths;
+import java.sql.BatchUpdateException;
+import java.sql.Timestamp;
+import java.util.*;
 
 public class MetadataDBExtension implements KafkaPlugin, DBConnector {
 
     protected List<String> consumeTopics = new LinkedList<>(Collections.singletonList("fasten.OPAL.out"));
-    //protected String consumerTopic = "fasten.OPAL.out";
     private static DSLContext dslContext;
     protected boolean processedRecord = false;
     protected Exception pluginError = null;
