@@ -1748,6 +1748,35 @@ public class MetadataDao {
     }
 
     /**
+     * Get the vulnerability by externalId.
+     *
+     * @param externalId Source-specific external ID of vulnerability, i.e. CVE-2018-14041, or GHSA-2pwh-52h7-7j84
+     * @return The vulnerability information of given externalId, null if not find.
+     */
+    public String getVulnerability(String externalId) {
+        // Tables
+        Vulnerabilities v = Vulnerabilities.VULNERABILITIES;
+        // Select clause
+        SelectField<?>[] selectClause = new SelectField[]{v.ID, v.EXTERNAL_ID, v.STATEMENT};
+        // Queries
+        // SQL query
+        /*
+            SELECT v.ID, v.EXTERNAL_ID, v.STATEMENT
+            FROM vulnerabilities AS v
+            WHERE v.EXTERNAL_ID=<externalId>
+        */
+        Record queryResult = this.context
+                .select(selectClause)
+                .from(v)
+                .where(v.EXTERNAL_ID.eq(externalId))
+                .fetchOne();
+        if (queryResult == null) {
+            return null;
+        }
+        return queryResult.formatJSON(new JSONFormat().header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).format(true).quoteNested(false));
+    }
+
+    /**
      * Impact analysis: the user asks the KB to compute the impact of a semantic change to a function
      *
      * @param forge       Forge of the package
