@@ -67,7 +67,7 @@ public class MavenUtilities {
      */
     public static Optional<File> downloadPom(String groupId, String artifactId, String version, List<String> mavenRepos) throws IOException {
         for (var repo : mavenRepos) {
-            var pomUrl = MavenUtilities.getPomUrl(groupId, artifactId, version, repo);
+            var pomUrl = MavenUtilities.getPomUrl(groupId.trim(), artifactId.trim(), version.trim(), repo);
             Optional<File> pom;
             try {
                 pom = httpGetToFile(pomUrl);
