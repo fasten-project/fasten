@@ -297,13 +297,10 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
      */
     public void handleProducing(String input, long consumeTimestamp, KafkaRecordKind kafkaRecordKind) {
         String outputTopicName;
-        String errorTopicName;
         if (kafkaRecordKind == KafkaRecordKind.PRIORITY) {
             outputTopicName = String.format("fasten.%s.priority.out", outputTopic);
-            errorTopicName = String.format("fasten.%s.priority.err", outputTopic);
         } else {
             outputTopicName = String.format("fasten.%s.out", outputTopic);
-            errorTopicName = String.format("fasten.%s.err", outputTopic);
         }
         try {
             if (plugin.getPluginError() != null) {
@@ -320,7 +317,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
                     getStdOutMsg(input, payload, consumeTimestamp));
 
         } catch (Exception e) {
-            emitMessage(this.producer, errorTopicName,
+            emitMessage(this.producer, String.format("fasten.%s.err", outputTopic),
                     getStdErrMsg(input, e, consumeTimestamp));
         }
     }
