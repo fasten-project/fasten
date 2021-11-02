@@ -19,12 +19,19 @@
 package eu.fasten.server;
 
 import ch.qos.logback.classic.Level;
-import eu.fasten.core.plugins.*;
-import eu.fasten.server.connectors.KafkaConnector;
 import eu.fasten.core.dbconnectors.PostgresConnector;
 import eu.fasten.core.dbconnectors.RocksDBConnector;
+import eu.fasten.core.plugins.*;
+import eu.fasten.server.connectors.KafkaConnector;
 import eu.fasten.server.plugins.FastenServerPlugin;
 import eu.fasten.server.plugins.kafka.FastenKafkaPlugin;
+import org.apache.commons.lang3.ObjectUtils;
+import org.jooq.DSLContext;
+import org.pf4j.JarPluginManager;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import picocli.CommandLine;
+import picocli.CommandLine.Option;
 
 import java.net.URI;
 import java.nio.file.Path;
@@ -36,14 +43,6 @@ import java.util.Map;
 import java.util.function.Supplier;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
-
-import org.apache.commons.lang3.ObjectUtils;
-import org.jooq.DSLContext;
-import org.pf4j.JarPluginManager;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import picocli.CommandLine;
-import picocli.CommandLine.Option;
 
 
 @CommandLine.Command(name = "FastenServer", mixinStandardHelpOptions = true)
@@ -299,9 +298,9 @@ public class FastenServer implements Runnable {
     private void loadDependencyGraphResolvers(List<DependencyGraphUser> plugins) {
         plugins.forEach(p -> {
             if (dbUrls == null || depGraphPath == null) {
-                logger.error("Couldn't load dependency graph. Make sure that you have "
-                    + "provided a valid DB URL, username, password, "
-                    + "and a path to the serialized dependency graph.");
+                throw new RuntimeException("Couldn't load dependency graph. Make sure that you have "
+                        + "provided a valid DB URL, username, password, "
+                        + "and a path to the serialized dependency graph.");
             }
             DSLContext dbContext = getDSLContext(dbUrls.get("mvn"));
             p.loadGraphResolver(dbContext, depGraphPath);
