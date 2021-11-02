@@ -53,4 +53,9 @@ public class MavenUtilitiesTest {
         assertTrue(file.isEmpty());
     }
 
+    @Test
+    public void downloadPomWithSpaceInURL() throws IOException {
+        var file = MavenUtilities.downloadPom(" com.day.crx", "crx-journal-api ", " 1.4.2-load4");
+        assertTrue(file.isPresent());
+    }
 }
