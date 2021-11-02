@@ -21,6 +21,18 @@ package eu.fasten.server.plugins.kafka;
 import com.google.common.base.Strings;
 import eu.fasten.core.plugins.KafkaPlugin;
 import eu.fasten.server.plugins.FastenServerPlugin;
+import org.apache.commons.lang.SerializationUtils;
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.kafka.clients.consumer.*;
+import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.PartitionInfo;
+import org.apache.kafka.common.TopicPartition;
+import org.apache.kafka.common.errors.WakeupException;
+import org.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -34,19 +46,6 @@ import java.util.Properties;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
-
-import org.apache.commons.lang.SerializationUtils;
-import org.apache.commons.lang.StringUtils;
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.kafka.clients.consumer.*;
-import org.apache.kafka.clients.producer.KafkaProducer;
-import org.apache.kafka.clients.producer.ProducerRecord;
-import org.apache.kafka.common.PartitionInfo;
-import org.apache.kafka.common.TopicPartition;
-import org.apache.kafka.common.errors.WakeupException;
-import org.json.JSONObject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class FastenKafkaPlugin implements FastenServerPlugin {
     private final Logger logger = LoggerFactory.getLogger(FastenKafkaPlugin.class.getName());
@@ -62,6 +61,10 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
     private List<String> normTopics;
     private List<String> prioTopics;
     private final String outputTopic;
+
+    private enum KafkaRecordKind {NORMAL, PRIORITY}
+
+    ;
 
     private final int skipOffsets;
 
@@ -154,8 +157,8 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
                 if (plugin.consumeTopic().isPresent()) {
                     handleConsuming();
                 } else {
-                    doCommitSync(false);
-                    handleProducing(null, System.currentTimeMillis() / 1000L, false);
+                    doCommitSync(KafkaRecordKind.NORMAL);
+                    handleProducing(null, System.currentTimeMillis() / 1000L, KafkaRecordKind.NORMAL);
                 }
             }
         } catch (Exception e) {
@@ -185,21 +188,21 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
      * Consumes a message from a Kafka topics and passes it to a plugin.
      */
     public void handleConsuming() {
-        boolean hasPrio = false;
+        boolean hasConsumedPriorityRecord = false;
 
         if (!prioTopics.isEmpty()) {
             ConsumerRecords<String, String> prioRecords = connPrio.poll(this.pollTimeout);
             for (var r : prioRecords) {
                 logger.info("Read priority message offset " + r.offset() + " from partition " + r.partition() + ".");
-                processRecord(r, System.currentTimeMillis() / 1000L, true);
-                hasPrio = true;
+                processRecord(r, System.currentTimeMillis() / 1000L, KafkaRecordKind.PRIORITY);
+                hasConsumedPriorityRecord = true;
                 logger.info("Successfully processed priority message offset " + r.offset() + " from partition " + r.partition() + ".");
                 // TODO: Keep a list of processed priority messages like normal ones
             }
-            doCommitSync(true);
+            doCommitSync(KafkaRecordKind.PRIORITY);
         }
 
-        if (!normTopics.isEmpty() && !hasPrio) {
+        if (!normTopics.isEmpty() && !hasConsumedPriorityRecord) {
             ConsumerRecords<String, String> records = connNorm.poll(this.pollTimeout);
             Long consumeTimestamp = System.currentTimeMillis() / 1000L;
 
@@ -209,7 +212,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
             // Although we loop through all records, by default we only poll 1 record.
             for (var r : records) {
                 logger.info("Read normal message offset " + r.offset() + " from partition " + r.partition() + ".");
-                processRecord(r, consumeTimestamp, false);
+                processRecord(r, consumeTimestamp, KafkaRecordKind.NORMAL);
                 logger.info("Successfully processed normal message offset " + r.offset() + " from partition " + r.partition() + ".");
 
                 messagesProcessed.add(new ImmutablePair<>(r.offset(), r.partition()));
@@ -217,7 +220,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
 
             // Commit only after _all_ records are processed.
             // For most plugins, this loop will only process 1 record (since max.poll.records is 1).
-            doCommitSync(false);
+            doCommitSync(KafkaRecordKind.NORMAL);
 
             // More logging.
             String allOffsets = messagesProcessed.stream().map((x) -> x.left).map(Object::toString)
@@ -254,7 +257,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
      * <p>
      * This strategy provides at-least-once semantics.
      */
-    public void processRecord(ConsumerRecord<String, String> record, Long consumeTimestamp, boolean priority) {
+    public void processRecord(ConsumerRecord<String, String> record, Long consumeTimestamp, KafkaRecordKind kafkaRecordKind) {
         if (localStorage != null) { // If local storage is enabled.
             if (localStorage.exists(record.value(), record.partition())) { // This plugin already consumed this record before, we will not process it now.
                 logger.info("Already processed record with hash: " + localStorage.getSHA1(record.value()) + ", skipping it now.");
@@ -284,7 +287,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
         }
 
         // We always produce, it does not matter if local storage is enabled or not.
-        handleProducing(record.value(), consumeTimestamp, priority);
+        handleProducing(record.value(), consumeTimestamp, kafkaRecordKind);
     }
 
     /**
@@ -292,10 +295,10 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
      *
      * @param input input message [can be null]
      */
-    public void handleProducing(String input, long consumeTimestamp, boolean priority) {
+    public void handleProducing(String input, long consumeTimestamp, KafkaRecordKind kafkaRecordKind) {
         String outputTopicName;
         String errorTopicName;
-        if (priority) {
+        if (kafkaRecordKind == KafkaRecordKind.PRIORITY) {
             outputTopicName = String.format("fasten.%s.priority.out", outputTopic);
             errorTopicName = String.format("fasten.%s.priority.err", outputTopic);
         } else {
@@ -432,9 +435,9 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
      * This is a synchronous commits and will block until either the commit succeeds
      * or an unrecoverable error is encountered.
      */
-    private void doCommitSync(boolean priority) {
+    private void doCommitSync(KafkaRecordKind kafkaRecordKind) {
         try {
-            if (priority) {
+            if (kafkaRecordKind == KafkaRecordKind.PRIORITY) {
                 connPrio.commitSync();
             } else {
                 connNorm.commitSync();
@@ -442,7 +445,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
         } catch (WakeupException e) {
             // we're shutting down, but finish the commit first and then
             // rethrow the exception so that the main loop can exit
-            doCommitSync(priority);
+            doCommitSync(kafkaRecordKind);
             throw e;
         } catch (CommitFailedException e) {
             // the commit failed with an unrecoverable error. if there is any
