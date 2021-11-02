@@ -46,7 +46,6 @@ public class QualityAnalyzerPlugin extends Plugin {
 
         private final Logger logger = LoggerFactory.getLogger(QualityAnalyzer.class.getName());
         private List<String> consumeTopics = new LinkedList<>(Collections.singletonList("fasten.RapidPlugin.callable.out"));
-        //private String consumerTopic = "fasten.RapidPlugin.callable.out";
         private static MetadataUtils utils = null;
         private Exception pluginError = null;
 
