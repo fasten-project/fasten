@@ -305,7 +305,6 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
             outputTopicName = String.format("fasten.%s.priority.out", outputTopic);
         } else {
             outputTopicName = String.format("fasten.%s.out", outputTopic);
-
         }
         try {
             if (plugin.getPluginError() != null) {
