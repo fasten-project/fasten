@@ -30,7 +30,7 @@ import java.util.Objects;
 /**
  * An artifact released in PyPi.
  */
-public class Revision extends PyPiProduct implements Serializable {
+public class Revision extends Product implements Serializable {
 
     public DefaultArtifactVersion version;
     public Timestamp createdAt;
@@ -52,8 +52,8 @@ public class Revision extends PyPiProduct implements Serializable {
         this.createdAt = createdAt;
     }
 
-    public PyPiProduct product() {
-        return new PyPiProduct(this.packageName);
+    public Product product() {
+        return new Product(this.packageName);
     }
 
     @Override

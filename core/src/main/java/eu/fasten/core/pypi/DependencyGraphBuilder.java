@@ -49,19 +49,6 @@ import java.util.stream.Collectors;
 public class DependencyGraphBuilder {
 
     private static final Logger logger = LoggerFactory.getLogger(DependencyGraphBuilder.class);
-    private static int count = 0;
-    public static void main(String[] args) throws Exception {
-        var dbContext = PostgresConnector.getDSLContext("jdbc:postgresql://localhost:5432/fasten_python", "fastenro", true);
-
-        String path = "pypigraph";
-        if (args.length > 0 && args[0] != null) {
-            path = args[0];
-        }
-
-        if (DependencyGraphUtilities.loadDependencyGraph(path).isEmpty()) {
-            DependencyGraphUtilities.buildDependencyGraphFromScratch(dbContext, path);
-        }
-    }
 
     public Map<Revision, List<Dependency>> getDependencyList(DSLContext dbContext) {
         return dbContext.select(PackageVersions.PACKAGE_VERSIONS.ID,
