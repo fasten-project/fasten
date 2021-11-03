@@ -93,9 +93,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
         if (enableKafka) {
             this.connNorm = new KafkaConsumer<>(consumerProperties);
             // For priority connection, the client should be different from the normal one
-            Properties consumerPrioProperties = (Properties) SerializationUtils.clone(consumerProperties);
-            consumerPrioProperties.setProperty(ConsumerConfig.CLIENT_ID_CONFIG, consumerPrioProperties.get(ConsumerConfig.CLIENT_ID_CONFIG) + "_priority");
-            this.connPrio = new KafkaConsumer<>(consumerPrioProperties);
+            this.connPrio = new KafkaConsumer<>(cloneKafkaPropWithNewClientId(consumerProperties, "_priority"));
             this.producer = new KafkaProducer<>(producerProperties);
         }
 
@@ -127,6 +125,12 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
         this.consumeTimeout = consumeTimeout;
         this.exitOnTimeout = exitOnTimeout;
         logger.debug("Constructed a Kafka plugin for " + plugin.getClass().getCanonicalName());
+    }
+
+    private Properties cloneKafkaPropWithNewClientId(Properties consumerProperties, String suffix) {
+        Properties consumerPrioProperties = (Properties) SerializationUtils.clone(consumerProperties);
+        consumerPrioProperties.setProperty(ConsumerConfig.CLIENT_ID_CONFIG, consumerPrioProperties.get(ConsumerConfig.CLIENT_ID_CONFIG) + suffix);
+        return consumerPrioProperties;
     }
 
     public FastenKafkaPlugin(Properties consumerProperties, Properties producerProperties,
