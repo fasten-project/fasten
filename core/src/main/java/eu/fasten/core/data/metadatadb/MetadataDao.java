@@ -1777,6 +1777,75 @@ public class MetadataDao {
     }
 
     /**
+     * Get information of all vulnerabilities
+     *
+     * @param offset
+     * @param limit
+     * @return
+     */
+    public String getAllVulnerabilities(int offset, int limit) {
+        // Tables
+        Vulnerabilities v = Vulnerabilities.VULNERABILITIES;
+        var result = context
+                .select(v.fields())
+                .from(v)
+                .offset(offset)
+                .limit(limit)
+                .fetch();
+        return result.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
+    }
+
+    public String getPackageVersionVulnerabilities(String package_name, String package_version) {
+        // Tables
+        Vulnerabilities v = Vulnerabilities.VULNERABILITIES;
+        VulnerabilitiesXPackageVersions vp = VulnerabilitiesXPackageVersions.VULNERABILITIES_X_PACKAGE_VERSIONS;
+
+        var package_version_id = getPackageVersionID(package_name, package_version);
+        var result = context
+                .select(v.fields())
+                .from(v)
+                .innerJoin(vp)
+                .on(v.ID.eq(vp.VULNERABILITY_ID))
+                .where(vp.PACKAGE_VERSION_ID.eq(package_version_id))
+                .fetchOne();
+        return result.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
+    }
+
+    public String getPurls(String externalId, int offset, int limit) {
+        // Tables
+        Vulnerabilities v = Vulnerabilities.VULNERABILITIES;
+        VulnerabilitiesPurls vp = VulnerabilitiesPurls.VULNERABILITIES_PURLS;
+        var result = context
+                .select(vp.fields())
+                .from(vp)
+                .innerJoin(v)
+                .on(vp.VULNERABILITY_ID.eq(v.ID))
+                .where(v.EXTERNAL_ID.eq(externalId))
+                .offset(offset)
+                .limit(limit)
+                .fetch();
+        return result.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
+
+    }
+
+    public Map getVulnerableCallables(String externalId, int offset, int limit) {
+        // Tables
+        Vulnerabilities v = Vulnerabilities.VULNERABILITIES;
+        VulnerabilitiesXCallables vc = VulnerabilitiesXCallables.VULNERABILITIES_X_CALLABLES;
+        var result = context
+                .select(vc.CALLABLE_ID)
+                .from(vc)
+                .innerJoin(v)
+                .on(vc.VULNERABILITY_ID.eq(v.ID))
+                .where(v.EXTERNAL_ID.eq(externalId))
+                .offset(offset)
+                .limit(limit)
+                .fetch();
+        var gid = result.getValues(vc.CALLABLE_ID);
+        return getFullFastenUris(gid);
+    }
+
+    /**
      * Impact analysis: the user asks the KB to compute the impact of a semantic change to a function
      *
      * @param forge       Forge of the package
