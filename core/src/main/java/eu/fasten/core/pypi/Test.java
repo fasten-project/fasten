@@ -29,3 +29,5 @@ public class Test {
         graphResolver.repl(dbContext);
     }
 }
+
+//Loaded 555017 nodes and 8062681 edges

@@ -58,7 +58,7 @@ public class Dependency extends PyPiProduct {
      * Constructor for Dependency object.
      * (From https://pypi.apache.org/ref/3.6.3/pypi-model/pypi.html#class_dependency)
      *
-     * @param package_name
+     * @param packageName
      * @param versionConstraints List of version constraints of the dependency
      * @param exclusions         List of exclusions
      * @param scope              Scope of the dependency
@@ -66,11 +66,11 @@ public class Dependency extends PyPiProduct {
      * @param type               Type of the dependency
      * @param classifier         Classifier for dependency
      */
-    public Dependency(final String package_name,
+    public Dependency(final String packageName,
                       final List<VersionConstraint> versionConstraints,
                       final List<Exclusion> exclusions, final String scope, final boolean optional,
                       final String type, final String classifier) {
-        super(package_name);
+        super(packageName);
         this.versionConstraints = versionConstraints;
         this.exclusions = exclusions;
         this.scope = scope.toLowerCase();
@@ -79,19 +79,19 @@ public class Dependency extends PyPiProduct {
         this.classifier = classifier.toLowerCase();
     }
 
-    public Dependency(final String package_name, final String version,
+    public Dependency(final String packageName, final String version,
                       final List<Exclusion> exclusions, final String scope, final boolean optional,
                       final String type, final String classifier) {
-        this(package_name, VersionConstraint.resolveMultipleVersionConstraints(version),
+        this(packageName, VersionConstraint.resolveMultipleVersionConstraints(version),
                 exclusions, scope, optional, type, classifier);
     }
 
-    public Dependency(final String package_name, final String version) {
-        this(package_name, version, new ArrayList<>(), "", false, "", "");
+    public Dependency(final String packageName, final String version) {
+        this(packageName, version, new ArrayList<>(), "", false, "", "");
     }
 
     public PyPiProduct product() {
-        return new PyPiProduct(package_name);
+        return new PyPiProduct(packageName);
     }
 
     /**
@@ -114,7 +114,7 @@ public class Dependency extends PyPiProduct {
      */
     public JSONObject toJSON() {
         final var json = new JSONObject();
-        json.put("package_name", this.package_name);
+        json.put("packageName", this.packageName);
         final var constraintsJson = new JSONArray();
         for (var constraint : this.versionConstraints) {
             constraintsJson.put(constraint.toJSON());
@@ -134,7 +134,7 @@ public class Dependency extends PyPiProduct {
 
 
     public String getPackageName() {
-        return this.package_name;
+        return this.packageName;
     }
 
     public String getVersion() {
@@ -143,7 +143,7 @@ public class Dependency extends PyPiProduct {
 
     public String toCanonicalForm() {
         var builder = new StringBuilder();
-        builder.append(this.package_name);
+        builder.append(this.packageName);
         builder.append(Constants.mvnCoordinateSeparator);
         if (!this.type.isEmpty()) {
             builder.append(this.type);
@@ -158,14 +158,14 @@ public class Dependency extends PyPiProduct {
     }
 
     public String toMavenCoordinate() {
-        return this.package_name +
+        return this.packageName +
                 Constants.mvnCoordinateSeparator +
                 this.getVersion();
     }
 
     public String toFullCanonicalForm() {
         var builder = new StringBuilder();
-        builder.append(this.package_name);
+        builder.append(this.packageName);
         builder.append(Constants.mvnCoordinateSeparator);
         if (!this.type.isEmpty()) {
             builder.append(this.type);
@@ -199,7 +199,7 @@ public class Dependency extends PyPiProduct {
             return false;
         }
         Dependency that = (Dependency) o;
-        if (!package_name.equals(that.package_name)) {
+        if (!packageName.equals(that.packageName)) {
             return false;
         }
         return versionConstraints.equals(that.versionConstraints);
@@ -207,7 +207,7 @@ public class Dependency extends PyPiProduct {
 
     @Override
     public int hashCode() {
-        return Objects.hash(this.package_name, this.getVersion());
+        return Objects.hash(this.packageName, this.getVersion());
     }
 
     @Override
@@ -222,7 +222,7 @@ public class Dependency extends PyPiProduct {
      * @return Dependency object
      */
     public static Dependency fromJSON(JSONObject json) {
-        var package_name = json.getString("package");
+        var packageName = json.getString("package");
         var versionConstraints = new ArrayList<VersionConstraint>();
         if (json.has("versionConstraints")) {
             var constraintsJson = json.getJSONArray("versionConstraints");
@@ -241,7 +241,7 @@ public class Dependency extends PyPiProduct {
         var optional = json.optBoolean("optional", false);
         var type = json.optString("type");
         var classifier = json.optString("classifier");
-        return new Dependency(package_name, versionConstraints, exclusions, scope,
+        return new Dependency(packageName, versionConstraints, exclusions, scope,
                 optional, type, classifier);
     }
 
@@ -421,7 +421,7 @@ public class Dependency extends PyPiProduct {
 
     public static class Exclusion implements Serializable {
 
-        public String package_name;
+        public String packageName;
 
         public Exclusion() {}
 
@@ -429,10 +429,10 @@ public class Dependency extends PyPiProduct {
          * Constructor for Exclusion object.
          * Exclusion defines a dependency which must be excluded from transitive dependencies.
          *
-         * @param package_name    groupId of excluded Maven coordinate
+         * @param packageName    groupId of excluded Maven coordinate
          */
-        public Exclusion(final String package_name) {
-            this.package_name = package_name;
+        public Exclusion(final String packageName) {
+            this.packageName = packageName;
         }
 
         @Override
@@ -444,7 +444,7 @@ public class Dependency extends PyPiProduct {
                 return false;
             }
             Exclusion exclusion = (Exclusion) o;
-            return package_name.equals(exclusion.package_name);
+            return packageName.equals(exclusion.packageName);
         }
 
         /**
@@ -454,7 +454,7 @@ public class Dependency extends PyPiProduct {
          */
         public JSONObject toJSON() {
             final var json = new JSONObject();
-            json.put("package_name", this.package_name);
+            json.put("packageName", this.packageName);
             return json;
         }
 
@@ -465,13 +465,13 @@ public class Dependency extends PyPiProduct {
          * @return Exclusion object
          */
         public static Exclusion fromJSON(JSONObject json) {
-            var package_name = json.getString("package_name");
-            return new Exclusion(package_name);
+            var packageName = json.getString("packageName");
+            return new Exclusion(packageName);
         }
 
         @Override
         public int hashCode() {
-            int result = 31 * (package_name != null ? package_name.hashCode() : 0);
+            int result = 31 * (packageName != null ? packageName.hashCode() : 0);
             return result;
         }
 
