@@ -16,16 +16,16 @@
  * limitations under the License.
  */
 
-package eu.fasten.core.pypi.utils;
+package eu.fasten.core.dependents.utils;
 
 import com.esotericsoftware.kryo.Kryo;
 import com.esotericsoftware.kryo.Serializer;
 import com.esotericsoftware.kryo.io.Input;
 import com.esotericsoftware.kryo.io.Output;
-import eu.fasten.core.pypi.DependencyGraphBuilder;
-import eu.fasten.core.pypi.data.Dependency;
-import eu.fasten.core.pypi.data.DependencyEdge;
-import eu.fasten.core.pypi.data.Revision;
+import eu.fasten.core.dependents.DependencyGraphBuilder;
+import eu.fasten.core.dependents.data.Dependency;
+import eu.fasten.core.dependents.data.DependencyEdge;
+import eu.fasten.core.dependents.data.Revision;
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultDirectedGraph;
@@ -91,7 +91,7 @@ public final class DependencyGraphUtilities {
         kryo.register(Revision.class);
         kryo.register(DependencyEdge.class);
         kryo.register(Dependency.Exclusion.class);
-        kryo.register(Class.forName("eu.fasten.core.pypi.data.Dependency$Exclusion"));
+        kryo.register(Class.forName("eu.fasten.core.dependents.data.Dependency$Exclusion"));
         kryo.register(java.sql.Timestamp.class);
         kryo.register(java.util.ArrayList.class);
         kryo.register(Class.forName("java.util.Collections$UnmodifiableSet"));

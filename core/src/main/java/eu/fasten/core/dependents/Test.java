@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package eu.fasten.core.pypi;
+package eu.fasten.core.dependents;
 
 import eu.fasten.core.dbconnectors.PostgresConnector;
 
@@ -24,7 +24,7 @@ public class Test {
 
     public static void main(String[] args) throws Exception {
         var dbContext = PostgresConnector.getDSLContext("jdbc:postgresql://localhost:5432/fasten_python", "fastenro", false);
-        var graphResolver = new GraphPypiResolver();
+        var graphResolver = new GraphResolver();
         graphResolver.buildDependencyGraph(dbContext, "pypigraph.bin"); 
         graphResolver.repl(dbContext);
     }

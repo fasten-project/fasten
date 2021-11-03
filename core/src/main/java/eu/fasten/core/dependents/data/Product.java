@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package eu.fasten.core.pypi.data;
+package eu.fasten.core.dependents.data;
 
 import java.util.Objects;
 

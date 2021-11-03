@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package eu.fasten.core.pypi.data;
+package eu.fasten.core.dependents.data;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -29,7 +29,7 @@ import org.json.JSONObject;
 
 /**
  * A dependency declaration. Denotes a Revision's will to use the functionality of the
- * {@class PyPiProduct} that matches the dependency's qualifiers.
+ * {@class Product} that matches the dependency's qualifiers.
  */
 public class Dependency extends Product {
     public static final Dependency empty = new Dependency("", "");

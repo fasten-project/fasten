@@ -16,17 +16,17 @@
  * limitations under the License.
  */
 
-package eu.fasten.core.pypi;
+package eu.fasten.core.dependents;
 
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.metadatadb.codegen.tables.Dependencies;
 import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
 import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
 import eu.fasten.core.dbconnectors.PostgresConnector;
-import eu.fasten.core.pypi.data.Dependency;
-import eu.fasten.core.pypi.data.Revision;
-import eu.fasten.core.pypi.data.DependencyEdge;
-import eu.fasten.core.pypi.utils.DependencyGraphUtilities;
+import eu.fasten.core.dependents.data.Dependency;
+import eu.fasten.core.dependents.data.Revision;
+import eu.fasten.core.dependents.data.DependencyEdge;
+import eu.fasten.core.dependents.utils.DependencyGraphUtilities;
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultDirectedGraph;
@@ -191,7 +191,7 @@ public class DependencyGraphBuilder {
         logger.debug("Added {} edges to the graph: {} ms", allEdges.size(),
                 System.currentTimeMillis() - startAddEdgesTs);
 
-        logger.info("PyPi dependency graph generated: {} ms", System.currentTimeMillis() - startTs);
+        logger.info("Dependency graph generated: {} ms", System.currentTimeMillis() - startTs);
         return dependencyGraph;
     }
 }

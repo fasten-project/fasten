@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package eu.fasten.core.pypi.data;
+package eu.fasten.core.dependents.data;
 
 import eu.fasten.core.data.Constants;
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
@@ -27,9 +27,6 @@ import java.sql.Timestamp;
 import java.time.format.DateTimeFormatter;
 import java.util.Objects;
 
-/**
- * An artifact released in PyPi.
- */
 public class Revision extends Product implements Serializable {
 
     public DefaultArtifactVersion version;
