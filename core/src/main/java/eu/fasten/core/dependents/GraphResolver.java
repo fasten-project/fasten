@@ -16,16 +16,16 @@
  * limitations under the License.
  */
 
-package eu.fasten.core.pypi;
+package eu.fasten.core.dependents;
 
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
 import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
 import eu.fasten.core.dbconnectors.PostgresConnector;
-import eu.fasten.core.pypi.data.DependencyEdge;
-import eu.fasten.core.pypi.data.Product;
-import eu.fasten.core.pypi.data.Revision;
-import eu.fasten.core.pypi.utils.DependencyGraphUtilities;
+import eu.fasten.core.dependents.data.DependencyEdge;
+import eu.fasten.core.dependents.data.Product;
+import eu.fasten.core.dependents.data.Revision;
+import eu.fasten.core.dependents.utils.DependencyGraphUtilities;
 import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenHashSet;
 import org.apache.commons.lang3.tuple.ImmutableTriple;
 import org.apache.commons.lang3.tuple.Triple;
@@ -44,10 +44,10 @@ import java.sql.Timestamp;
 import java.util.*;
 import java.util.stream.Collectors;
 
-@CommandLine.Command(name = "GraphPypiResolver")
-public class GraphPypiResolver implements Runnable {
+@CommandLine.Command(name = "GraphResolver")
+public class GraphResolver implements Runnable {
 
-    private static final Logger logger = LoggerFactory.getLogger(GraphPypiResolver.class);
+    private static final Logger logger = LoggerFactory.getLogger(GraphResolver.class);
 
     @CommandLine.Option(names = {"-p", "--serializedPath"},
             paramLabel = "PATH",
@@ -72,7 +72,7 @@ public class GraphPypiResolver implements Runnable {
     static Graph<Revision, DependencyEdge> dependentGraph;
 
     public static void main(String[] args) {
-        final int exitCode = new CommandLine(new GraphPypiResolver()).execute(args);
+        final int exitCode = new CommandLine(new GraphResolver()).execute(args);
         System.exit(exitCode);
     }
 
