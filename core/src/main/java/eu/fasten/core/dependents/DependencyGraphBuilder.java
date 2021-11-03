@@ -61,7 +61,6 @@ public class DependencyGraphBuilder {
                 .on(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.eq(Packages.PACKAGES.ID))
                 .leftJoin(Dependencies.DEPENDENCIES)
                 .on(Dependencies.DEPENDENCIES.PACKAGE_VERSION_ID.eq(PackageVersions.PACKAGE_VERSIONS.ID))
-                .where(Packages.PACKAGES.FORGE.eq(Constants.pypiForge))
                 .and(PackageVersions.PACKAGE_VERSIONS.CREATED_AT.isNotNull())
                 .fetch()
                 .parallelStream()

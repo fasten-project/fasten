@@ -67,7 +67,6 @@ public class GraphResolver implements Runnable {
             defaultValue = "postgres")
     protected String dbUser;
 
-
     static Graph<Revision, DependencyEdge> dependencyGraph;
     static Graph<Revision, DependencyEdge> dependentGraph;
 
