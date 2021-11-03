@@ -37,23 +37,23 @@ public class Revision extends PyPiProduct implements Serializable {
 
     public Revision() {}
 
-    public Revision(final String package_name, final String version, final Timestamp createdAt) {
-        super(package_name);
+    public Revision(final String packageName, final String version, final Timestamp createdAt) {
+        super(packageName);
 
         this.version = new DefaultArtifactVersion(version);
         this.createdAt = createdAt;
     }
 
-    public Revision(final long id, final String package_name,
+    public Revision(final long id, final String packageName,
                     final String version, final Timestamp createdAt) {
-        super(id, package_name);
+        super(id, packageName);
 
         this.version = new DefaultArtifactVersion(version);
         this.createdAt = createdAt;
     }
 
     public PyPiProduct product() {
-        return new PyPiProduct(this.package_name);
+        return new PyPiProduct(this.packageName);
     }
 
     @Override
@@ -67,18 +67,18 @@ public class Revision extends PyPiProduct implements Serializable {
 
     @Override
     public int hashCode() {
-        return Objects.hash(this.package_name, version);
+        return Objects.hash(this.packageName, version);
     }
 
     @Override
     public String toString() {
-        return String.format("%s%s%s", package_name, Constants.mvnCoordinateSeparator, version);
+        return String.format("%s%s%s", packageName, Constants.mvnCoordinateSeparator, version);
     }
 
     public JSONObject toJSON() {
         var json = new JSONObject();
         json.put("id", id);
-        json.put("package", package_name);
+        json.put("package", packageName);
         json.put("version", version.toString());
         json.put("createdAt", createdAt.getTime());
         return json;

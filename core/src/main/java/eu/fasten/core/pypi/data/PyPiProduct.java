@@ -26,18 +26,18 @@ import java.util.Objects;
 public class PyPiProduct {
 
     public long id;
-    public String package_name;
+    public String packageName;
 
     public PyPiProduct(){}
 
-    public PyPiProduct(final String package_name) {
+    public PyPiProduct(final String packageName) {
         this.id = 0;
-        this.package_name = package_name;
+        this.packageName = packageName;
     }
 
-    public PyPiProduct(long id, String package_name) {
+    public PyPiProduct(long id, String packageName) {
         this.id = id;
-        this.package_name = package_name;
+        this.packageName = packageName;
     }
 
     @Override
@@ -45,16 +45,16 @@ public class PyPiProduct {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         PyPiProduct that = (PyPiProduct) o;
-        return package_name.equals(that.package_name);
+        return packageName.equals(that.packageName);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(id, package_name);
+        return Objects.hash(id, packageName);
     }
 
     @Override
     public String toString() {
-        return package_name;
+        return packageName;
     }
 }

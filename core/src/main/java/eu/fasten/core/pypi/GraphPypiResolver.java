@@ -51,7 +51,7 @@ public class GraphPypiResolver implements Runnable {
 
     @CommandLine.Option(names = {"-p", "--serializedPath"},
             paramLabel = "PATH",
-            description = "Path to load a serialized Pypi dependency graph from",
+            description = "Path to load a serialized dependency graph from",
             required = true)
     protected String serializedPath;
 
@@ -67,37 +67,9 @@ public class GraphPypiResolver implements Runnable {
             defaultValue = "postgres")
     protected String dbUser;
 
-    private boolean ignoreMissing = false;
 
     static Graph<Revision, DependencyEdge> dependencyGraph;
     static Graph<Revision, DependencyEdge> dependentGraph;
-
-    static List<String> scopes = new ArrayList<>();
-
-    static {
-        scopes.add("compile");
-        scopes.add("provided");
-        scopes.add("test");
-        scopes.add("runtime");
-        scopes.add("system");
-        scopes.add("import");
-    }
-
-    static List<String> types = new ArrayList<>();
-
-    static {
-        types.add("jar");
-        types.add("war");
-        types.add("xar");
-    }
-
-    public boolean getIgnoreMissing() {
-        return ignoreMissing;
-    }
-
-    public void setIgnoreMissing(boolean ignoreMissing) {
-        this.ignoreMissing = ignoreMissing;
-    }
 
     public static void main(String[] args) {
         final int exitCode = new CommandLine(new GraphPypiResolver()).execute(args);
@@ -169,9 +141,9 @@ public class GraphPypiResolver implements Runnable {
      * provided timestamp determines which nodes will be ignored when traversing dependent nodes. Effectively, the
      * returned dependent set only includes nodes that where released AFTER the provided timestamp.
      */
-    public ObjectLinkedOpenHashSet<Revision> resolveDependents(String package_name, String version, long timestamp,
+    public ObjectLinkedOpenHashSet<Revision> resolveDependents(String packageName, String version, long timestamp,
                                                                boolean transitive) {
-        return dependentBFS(package_name, version, timestamp, transitive);
+        return dependentBFS(packageName, version, timestamp, transitive);
     }
 
     /**
@@ -181,12 +153,12 @@ public class GraphPypiResolver implements Runnable {
      * @param timestamp  - The cut-off timestamp. The returned dependents have been released after the provided timestamp
      * @param transitive - Whether the BFS should recurse into the graph
      */
-    public ObjectLinkedOpenHashSet<Revision> dependentBFS(String package_name, String version, long timestamp,
+    public ObjectLinkedOpenHashSet<Revision> dependentBFS(String packageName, String version, long timestamp,
                                                           boolean transitive) {
-        var revision = new Revision(package_name, version, new Timestamp(timestamp));
+        var revision = new Revision(packageName, version, new Timestamp(timestamp));
 
         if (!dependentGraph.containsVertex(revision)) {
-            throw new RuntimeException("Revision " + package_name + " is not in the dependents graph. Probably it is missing in the database");
+            throw new RuntimeException("Revision " + packageName + " is not in the dependents graph. Probably it is missing in the database");
         }
 
         var workQueue = new ArrayDeque<>(filterDependentsByTimestamp(Graphs.successorListOf(dependentGraph, revision), timestamp));
@@ -202,15 +174,11 @@ public class GraphPypiResolver implements Runnable {
             if (rev != null) {
                 result.add(rev);
                 logger.debug("Successors for {}:{}: deps: {}, queue: {} items",
-                        rev.package_name, rev.version,
+                        rev.packageName, rev.version,
                         workQueue.size(), workQueue.size());
             }
             if (!dependentGraph.containsVertex(rev)) {
-                if (ignoreMissing) {
-                    continue;
-                } else {
-                    throw new RuntimeException("Revision " + rev + " is not in the dependents graph. Probably it is missing in the database");
-                }
+                throw new RuntimeException("Revision " + rev + " is not in the dependents graph. Probably it is missing in the database");
             }
             var dependents = filterDependentsByTimestamp(Graphs.successorListOf(dependentGraph, rev), timestamp);
             for (var dependent : dependents) {

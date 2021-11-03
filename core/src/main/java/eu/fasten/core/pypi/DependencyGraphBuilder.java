@@ -51,7 +51,7 @@ public class DependencyGraphBuilder {
     private static final Logger logger = LoggerFactory.getLogger(DependencyGraphBuilder.class);
     private static int count = 0;
     public static void main(String[] args) throws Exception {
-        var dbContext = PostgresConnector.getDSLContext("jdbc:postgresql://localhost:5432/fasten_java", "fastenro", true);
+        var dbContext = PostgresConnector.getDSLContext("jdbc:postgresql://localhost:5432/fasten_python", "fastenro", true);
 
         String path = "pypigraph";
         if (args.length > 0 && args[0] != null) {
