@@ -175,15 +175,6 @@ public class GraphPypiResolver implements Runnable {
     }
 
     /**
-     * Resolves the dependents of the provided {@link Revision}. The release timestamp of the provided revision is
-     * used to determine which nodes will be ignored when traversing dependent nodes. Effectively, the returned
-     * dependent set only includes nodes that where released AFTER the provided revision.
-     */
-    public ObjectLinkedOpenHashSet<Revision> resolveDependents(Revision r, boolean transitive) {
-        return dependentBFS(r.package_name, r.version.toString(), r.createdAt.getTime(), transitive);
-    }
-
-    /**
      * Performs a Breadth-First Search on the {@param dependentGraph} to determine the revisions that depend on
      * the revision indicated by the first 3 parameters, at the indicated {@param timestamp}.
      *
@@ -231,128 +222,10 @@ public class GraphPypiResolver implements Runnable {
         return result;
     }
 
-    public ObjectLinkedOpenHashSet<Revision> filterDependenciesByExclusions(Set<Revision> dependencies,
-                                                                            List<Pair<Revision, PyPiProduct>> exclusions,
-                                                                            Map<Revision, Revision> descendantsMap) {
-        var finalSet = new ObjectLinkedOpenHashSet<>(dependencies);
-        var dependenciesByProduct = dependencies.stream().collect(Collectors.groupingBy(Revision::product));
-        for (var excludeProduct : exclusions) {
-            if (!dependenciesByProduct.containsKey(excludeProduct.getSecond())) {
-                continue;
-            }
-            for (var dep : dependenciesByProduct.get(excludeProduct.getSecond())) {
-                if (dep.product().equals(excludeProduct.getSecond()) && isDescendantOf(dep, excludeProduct.getFirst(), descendantsMap)) {
-                    finalSet.remove(dep);
-                }
-            }
-        }
-        return finalSet;
-    }
-
-    public boolean isDescendantOf(Revision child, Revision parent, Map<Revision, Revision> descendants) {
-        var visited = new ObjectLinkedOpenHashSet<Revision>();
-        while (child != null && !Objects.equals(child, parent)) {
-            if (!visited.contains(child)) {
-                visited.add(child);
-                child = descendants.get(child);
-            } else {
-                break;
-            }
-        }
-        return Objects.equals(child, parent);
-    }
-
-    /**
-     * Given a set of n successors for a revision r which are different revisions of the same product, select the
-     * revisions that are closest to the release timestamp of r.
-     *
-     * @return A list of unique revisions per unique product in the input list.
-     */
-    protected List<Revision> filterDependenciesByTimestamp(List<Revision> successors, long timestamp) {
-        return successors.stream().
-                collect(Collectors.groupingBy(Revision::product)).
-                values().stream().
-                map(revisions -> {
-                    var latestTimestamp = -1L;
-
-                    Revision latest = null;
-                    for (var r : revisions) {
-                        if (r.createdAt.getTime() <= timestamp && r.createdAt.getTime() > latestTimestamp) {
-                            latestTimestamp = r.createdAt.getTime();
-                            latest = r;
-                        }
-                    }
-                    if (revisions.size() > 1)
-                        logger.debug("Ignored {} revisions for product {}, selected: {}, timestamp: {}",
-                                revisions.size() - 1, revisions.get(0).product(), latest, timestamp);
-                    return latest;
-                }).
-                filter(Objects::nonNull).
-                collect(Collectors.toList());
-    }
-
     protected List<Revision> filterDependentsByTimestamp(List<Revision> successors, long timestamp) {
         return successors.stream().
                 filter(revision -> revision.createdAt.getTime() >= timestamp).
                 collect(Collectors.toList());
-    }
-
-    protected ObjectLinkedOpenHashSet<DependencyEdge> filterOptionalSuccessors(ObjectLinkedOpenHashSet<DependencyEdge> outgoingEdges) {
-        var result = new ObjectLinkedOpenHashSet<DependencyEdge>();
-        outgoingEdges.stream()
-                .filter(edge -> !edge.optional)
-                .forEachOrdered(result::add);
-        return result;
-    }
-
-    protected ObjectLinkedOpenHashSet<DependencyEdge> filterSuccessorsByScope(ObjectLinkedOpenHashSet<DependencyEdge> outgoingEdges, List<String> allowedScopes) {
-        var result = new ObjectLinkedOpenHashSet<DependencyEdge>();
-        outgoingEdges.stream()
-                .filter(edge -> {
-                    var scope = edge.scope;
-                    if (scope == null || scope.isEmpty()) {
-                        scope = "compile";
-                    }
-                    return allowedScopes.contains(scope);
-                }).forEachOrdered(result::add);
-        return result;
-    }
-
-    protected ObjectLinkedOpenHashSet<DependencyEdge> filterSuccessorsByType(ObjectLinkedOpenHashSet<DependencyEdge> outgoingEdges, List<String> allowedTypes) {
-        var result = new ObjectLinkedOpenHashSet<DependencyEdge>();
-        outgoingEdges.stream()
-                .filter(edge -> {
-                    var type = edge.type;
-                    if (type == null || type.isEmpty()) {
-                        type = "jar";
-                    }
-                    return allowedTypes.contains(type);
-                }).forEachOrdered(result::add);
-        return result;
-    }
-
-    /**
-     * Resolve conflicts (duplicate products with different versions) by picking revisions that are closer to the root.
-     */
-    protected ObjectLinkedOpenHashSet<Revision> GraphPypiResolver(ObjectLinkedOpenHashSet<Pair<Revision, Integer>> depthRevisions) {
-        var result = new ObjectLinkedOpenHashSet<Revision>();
-        depthRevisions.stream().collect(Collectors.toMap(
-                x -> x.getFirst().product(),
-                y -> y,
-                (x, y) -> {
-                    if (x.getFirst().equals(y.getFirst())) return x;
-
-                    if (x.getSecond() < y.getSecond()) {
-                        logger.debug("Conflict resolution. Select: {}, distance: {}. Ignore: {}, distance: {}",
-                                x.getFirst(), x.getSecond(), y.getFirst(), y.getSecond());
-                        return x;
-                    } else {
-                        logger.debug("Conflict resolution. Select: {}, distance: {}. Ignore: {}, distance: {}",
-                                y.getFirst(), y.getSecond(), x.getFirst(), x.getSecond());
-                        return y;
-                    }
-                })).values().stream().map(Pair::getFirst).forEachOrdered(result::add);
-        return result;
     }
 
     public void buildDependencyGraph(DSLContext dbContext, String serializedGraphPath) throws Exception {
