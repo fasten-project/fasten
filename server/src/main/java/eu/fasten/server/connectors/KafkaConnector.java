@@ -18,6 +18,7 @@
 
 package eu.fasten.server.connectors;
 
+import org.apache.commons.lang.SerializationUtils;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
@@ -95,5 +96,11 @@ public class KafkaConnector {
         p.setProperty(ProducerConfig.MAX_REQUEST_SIZE_CONFIG,
                 "50000000"); //Set produce size to 50MB.
         return p;
+    }
+
+    public static Properties cloneKafkaConsumerPropWithNewClientId(Properties consumerProperties, String suffix) {
+        Properties consumerPrioProperties = (Properties) SerializationUtils.clone(consumerProperties);
+        consumerPrioProperties.setProperty(ConsumerConfig.CLIENT_ID_CONFIG, consumerPrioProperties.get(ConsumerConfig.CLIENT_ID_CONFIG) + suffix);
+        return consumerPrioProperties;
     }
 }
