@@ -31,7 +31,7 @@ import org.json.JSONObject;
  * A dependency declaration. Denotes a Revision's will to use the functionality of the
  * {@class PyPiProduct} that matches the dependency's qualifiers.
  */
-public class Dependency extends PyPiProduct {
+public class Dependency extends Product {
     public static final Dependency empty = new Dependency("", "");
 
     public final List<VersionConstraint> versionConstraints;
@@ -42,8 +42,8 @@ public class Dependency extends PyPiProduct {
     public final String classifier;
 
     /**
-     * Valid dependency scopes. Defined by pypi.
-     * Learn more: http://pypi.apache.org/pom.html
+     * Valid dependency scopes. Defined by maven.
+     * Learn more: http://maven.apache.org/pom.html
      */
     public static final String[] SCOPES = {
             "compile",
@@ -56,7 +56,7 @@ public class Dependency extends PyPiProduct {
 
     /**
      * Constructor for Dependency object.
-     * (From https://pypi.apache.org/ref/3.6.3/pypi-model/pypi.html#class_dependency)
+     * (From https://maven.apache.org/ref/3.6.3/maven-model/maven.html#class_dependency)
      *
      * @param packageName
      * @param versionConstraints List of version constraints of the dependency
@@ -90,8 +90,8 @@ public class Dependency extends PyPiProduct {
         this(packageName, version, new ArrayList<>(), "", false, "", "");
     }
 
-    public PyPiProduct product() {
-        return new PyPiProduct(packageName);
+    public Product product() {
+        return new Product(packageName);
     }
 
     /**
@@ -271,7 +271,7 @@ public class Dependency extends PyPiProduct {
 
         /**
          * Constructs a VersionConstraint object from specification.
-         * (From https://pypi.apache.org/pom.html#Dependency_Version_Requirement_Specification)
+         * (From https://maven.apache.org/pom.html#Dependency_Version_Requirement_Specification)
          *
          * @param spec String specification of version constraint
          */
@@ -386,7 +386,7 @@ public class Dependency extends PyPiProduct {
 
         /**
          * Creates full list of version constraints from specification.
-         * (From https://pypi.apache.org/pom.html#Dependency_Version_Requirement_Specification)
+         * (From https://maven.apache.org/pom.html#Dependency_Version_Requirement_Specification)
          *
          * @param spec String specification of version constraints
          * @return List of Version Constraints

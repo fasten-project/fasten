@@ -23,7 +23,7 @@ import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
 import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
 import eu.fasten.core.dbconnectors.PostgresConnector;
 import eu.fasten.core.pypi.data.DependencyEdge;
-import eu.fasten.core.pypi.data.PyPiProduct;
+import eu.fasten.core.pypi.data.Product;
 import eu.fasten.core.pypi.data.Revision;
 import eu.fasten.core.pypi.utils.DependencyGraphUtilities;
 import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenHashSet;

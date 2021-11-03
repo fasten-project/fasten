@@ -21,21 +21,21 @@ package eu.fasten.core.pypi.data;
 import java.util.Objects;
 
 /**
- * A versionless Pypi Product
+ * A versionless Product
  */
-public class PyPiProduct {
+public class Product {
 
     public long id;
     public String packageName;
 
-    public PyPiProduct(){}
+    public Product(){}
 
-    public PyPiProduct(final String packageName) {
+    public Product(final String packageName) {
         this.id = 0;
         this.packageName = packageName;
     }
 
-    public PyPiProduct(long id, String packageName) {
+    public Product(long id, String packageName) {
         this.id = id;
         this.packageName = packageName;
     }
@@ -44,7 +44,7 @@ public class PyPiProduct {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        PyPiProduct that = (PyPiProduct) o;
+        Product that = (Product) o;
         return packageName.equals(that.packageName);
     }
 
