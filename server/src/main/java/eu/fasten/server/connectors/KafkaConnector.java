@@ -18,16 +18,15 @@
 
 package eu.fasten.server.connectors;
 
-import java.util.List;
-import java.util.Properties;
-
-import eu.fasten.core.plugins.KafkaPlugin;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.List;
+import java.util.Properties;
 
 public class KafkaConnector {
 
