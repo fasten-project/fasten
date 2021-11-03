@@ -63,21 +63,8 @@ public final class DependencyGraphUtilities {
         return graph;
     }
 
-    public static Graph<Revision, DependencyEdge> cloneDependencyGraph(
-            Graph<Revision, DependencyEdge> dependencyGraph) {
-        var graph = new DefaultDirectedGraph<Revision, DependencyEdge>(DependencyEdge.class);
-        for (var node : dependencyGraph.vertexSet()) {
-            graph.addVertex(node);
-        }
-        for (var edge : dependencyGraph.edgeSet()) {
-            var source = dependencyGraph.getEdgeSource(edge);
-            var target = dependencyGraph.getEdgeTarget(edge);
-            graph.addEdge(source, target, edge);
-        }
-        return graph;
-    }
 
-    private static class DefaultArtifactVersionSerializer extends Serializer<DefaultArtifactVersion> {
+    private static class DefaultPackageVersionSerializer extends Serializer<DefaultArtifactVersion> {
 
         @Override
         public void write(Kryo kryo, Output output, DefaultArtifactVersion object) {
@@ -109,7 +96,7 @@ public final class DependencyGraphUtilities {
         kryo.register(java.util.ArrayList.class);
         kryo.register(Class.forName("java.util.Collections$UnmodifiableSet"));
         kryo.register(org.apache.maven.artifact.versioning.DefaultArtifactVersion.class,
-                new DefaultArtifactVersionSerializer());
+                new DefaultPackageVersionSerializer());
         kryo.register(org.apache.maven.artifact.versioning.ComparableVersion.class);
         kryo.register(Class.forName("org.apache.maven.artifact.versioning.ComparableVersion$ListItem"));
         kryo.register(Class.forName("org.apache.maven.artifact.versioning.ComparableVersion$IntItem"));
@@ -195,7 +182,7 @@ public final class DependencyGraphUtilities {
 
         tsStart = System.currentTimeMillis();
         logger.info("Serializing graph to {}", path);
-        DependencyGraphUtilities.serializeDependencyGraph(graph, path == null ? "pypigraph.bin" : path);
+        DependencyGraphUtilities.serializeDependencyGraph(graph, path == null ? "debiangraph.bin" : path);
         logger.info("Finished serializing graph ({} ms)", System.currentTimeMillis() - tsStart);
 
         return graph;
