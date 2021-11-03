@@ -298,7 +298,7 @@ public class FastenServer implements Runnable {
     private void loadDependencyGraphResolvers(List<DependencyGraphUser> plugins) {
         plugins.forEach(p -> {
             if (dbUrls == null || depGraphPath == null) {
-                throw new RuntimeException("Couldn't load dependency graph. Make sure that you have "
+                throw new IllegalArgumentException("Couldn't load dependency graph. Make sure that you have "
                         + "provided a valid DB URL, username, password, "
                         + "and a path to the serialized dependency graph.");
             }
