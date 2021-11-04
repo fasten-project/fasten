@@ -1807,7 +1807,7 @@ public class MetadataDao {
                 .innerJoin(vp)
                 .on(v.ID.eq(vp.VULNERABILITY_ID))
                 .where(vp.PACKAGE_VERSION_ID.eq(package_version_id))
-                .fetchOne();
+                .fetch();
         return result.formatJSON(new JSONFormat().format(format).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
     }
 
