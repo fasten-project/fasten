@@ -58,13 +58,15 @@ public class GraphResolver implements Runnable {
     @CommandLine.Option(names = {"-d", "--database"},
             paramLabel = "DB_URL",
             description = "Database URL for connection",
-            defaultValue = "jdbc:postgresql:postgres")
+            defaultValue = "jdbc:postgresql:postgres",
+            required = true)
     protected String dbUrl;
 
     @CommandLine.Option(names = {"-u", "--user"},
             paramLabel = "DB_USER",
             description = "Database user name",
-            defaultValue = "postgres")
+            defaultValue = "postgres",
+            required = true)
     protected String dbUser;
 
     static Graph<Revision, DependencyEdge> dependencyGraph;
@@ -77,17 +79,6 @@ public class GraphResolver implements Runnable {
 
     @Override
     public void run() {
-
-        try {
-            var optDependencyGraph = DependencyGraphUtilities.loadDependencyGraph(serializedPath);
-            if (optDependencyGraph.isPresent()) {
-                dependencyGraph = optDependencyGraph.get();
-                dependentGraph = DependencyGraphUtilities.invertDependencyGraph(dependencyGraph);
-            }
-        } catch (Exception e) {
-            logger.warn("Could not load serialized dependency graph from {}\n", serializedPath, e);
-        }
-
         DSLContext dbContext;
         try {
             dbContext = PostgresConnector.getDSLContext(dbUrl, dbUser, true);
@@ -95,12 +86,23 @@ public class GraphResolver implements Runnable {
             logger.error("Could not connect to the database", e);
             return;
         }
-
+        try {
+            var optDependencyGraph = DependencyGraphUtilities.loadDependencyGraph(serializedPath);
+            if (optDependencyGraph.isPresent()) {
+                dependencyGraph = optDependencyGraph.get();
+                dependentGraph = DependencyGraphUtilities.invertDependencyGraph(dependencyGraph);
+            } else {
+                dependencyGraph = DependencyGraphUtilities.buildDependencyGraphFromScratch(dbContext, serializedPath);
+                dependentGraph = DependencyGraphUtilities.invertDependencyGraph(dependencyGraph);
+            }
+        } catch (Exception e) {
+            logger.warn("Could not load serialized dependency graph from {}\n", serializedPath, e);
+        }
         repl(dbContext);
     }
 
     public void repl(DSLContext db) {
-        System.out.println("Query format: package:version");
+        System.out.println("Query format: [!]package:version  Note: Enter '!' for transitive dependents");
         try (var scanner = new Scanner(System.in)) {
             while (true) {
                 System.out.print("> ");
@@ -108,7 +110,11 @@ public class GraphResolver implements Runnable {
 
                 if (input.equals("")) continue;
                 if (input.equals("quit") || input.equals("exit")) break;
-
+                boolean transitive = false;
+                if (input.startsWith("!")) {
+                    transitive = true;
+                    input = input.substring(1);
+                }
                 var parts = input.split(":");
                 if (parts.length < 2) {
                     System.out.println("Wrong input: " + input + ". Format is: package:version");
@@ -118,7 +124,7 @@ public class GraphResolver implements Runnable {
                 ObjectLinkedOpenHashSet<Revision> revisions;
                 var startTS = System.currentTimeMillis();
                 try {
-                    revisions = resolveDependents(parts[0], parts[1], getCreatedAt(parts[0], parts[1], db), false);
+                    revisions = resolveDependents(parts[0], parts[1], getCreatedAt(parts[0], parts[1], db), transitive);
                 } catch (Exception e) {
                     System.err.println("Error retrieving revisions: " + e.getMessage());
                     e.printStackTrace(System.err);
