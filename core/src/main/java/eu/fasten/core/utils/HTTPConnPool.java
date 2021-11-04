@@ -1,5 +1,7 @@
 package eu.fasten.core.utils;
 
+import org.apache.http.HttpException;
+import org.apache.http.HttpStatus;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
@@ -20,10 +22,14 @@ public class HTTPConnPool {
         poolingConnManager.setDefaultMaxPerRoute(20);
     }
 
-    public InputStream sendHTTPRequest(String url) throws IOException {
+    public InputStream sendHTTPRequest(String url) throws IOException, HttpException {
 
         CloseableHttpClient client = HttpClients.custom().setConnectionManager(poolingConnManager).build();
-        return client.execute(new HttpGet(url)).getEntity().getContent();
+        var response = client.execute(new HttpGet(url));
+        if (response.getStatusLine().getStatusCode() == HttpStatus.SC_OK) {
+            return response.getEntity().getContent();
+        }
+        throw new HttpException("HTTP error: " + response.getStatusLine().getStatusCode());
     }
 
     public void cleanHTTPConnPool() {

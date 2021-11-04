@@ -21,6 +21,7 @@ package eu.fasten.core.maven.utils;
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.utils.HTTPConnPool;
 import org.apache.commons.io.FileUtils;
+import org.apache.http.HttpException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -82,7 +83,7 @@ public class MavenUtilities {
             Optional<File> pom;
             try {
                 pom = httpGetToFile(pomUrl);
-            } catch (FileNotFoundException | UnknownHostException | MalformedURLException e) {
+            } catch (FileNotFoundException | UnknownHostException | MalformedURLException | HttpException e) {
                 continue;
             }
             if (pom.isPresent()) {
@@ -96,7 +97,7 @@ public class MavenUtilities {
         Optional<File> pom;
         try {
             pom = httpGetToFile(pomUrl);
-        } catch (FileNotFoundException | UnknownHostException | MalformedURLException e) {
+        } catch (FileNotFoundException | UnknownHostException | MalformedURLException | HttpException e) {
             return Optional.empty();
         }
         return pom;
@@ -136,7 +137,7 @@ public class MavenUtilities {
      * @return a temporarily saved file.
      */
     private static Optional<File> httpGetToFile(String url)
-            throws IOException {
+            throws IOException, HttpException {
         logger.debug("HTTP GET: " + url);
         try {
             final var tempFile = Files.createTempFile("fasten", ".pom");
@@ -145,7 +146,7 @@ public class MavenUtilities {
             Files.copy(in, tempFile, StandardCopyOption.REPLACE_EXISTING);
             in.close();
             return Optional.of(new File(tempFile.toAbsolutePath().toString()));
-        } catch (FileNotFoundException | MalformedURLException | UnknownHostException e) {
+        } catch (FileNotFoundException | MalformedURLException | UnknownHostException | HttpException e) {
             logger.error("Could not find URL: {}", e.getMessage(), e);
             throw e;
         } catch (IOException e) {
@@ -204,7 +205,7 @@ public class MavenUtilities {
         var url = getPomUrl(groupId, artifactId, version, artifactRepo);
         try {
             return httpGetToFile(url).isPresent();
-        } catch (FileNotFoundException | UnknownHostException | MalformedURLException e) {
+        } catch (FileNotFoundException | UnknownHostException | MalformedURLException | HttpException e) {
             return false;
         }
     }
