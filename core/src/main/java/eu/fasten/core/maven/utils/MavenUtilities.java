@@ -19,17 +19,26 @@
 package eu.fasten.core.maven.utils;
 
 import eu.fasten.core.data.Constants;
+import eu.fasten.core.utils.HTTPConnPool;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.MalformedURLException;
-import java.net.URL;
 import java.net.UnknownHostException;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Optional;
 
 /**
  * The helper utility class for working with maven repositories and pom files.
@@ -42,6 +51,8 @@ public class MavenUtilities {
      * The default pom's repository url.
      */
     public static String MAVEN_CENTRAL_REPO = "https://repo.maven.apache.org/maven2/";
+
+    private static final HTTPConnPool httpConnPool = new HTTPConnPool();
 
     /**
      * Download pom file of the given coordinate.
@@ -129,7 +140,8 @@ public class MavenUtilities {
         logger.debug("HTTP GET: " + url);
         try {
             final var tempFile = Files.createTempFile("fasten", ".pom");
-            final InputStream in = new URL(url).openStream();
+            //final InputStream in = new URL(url).openStream();
+            final InputStream in = httpConnPool.sendHTTPRequest(url);
             Files.copy(in, tempFile, StandardCopyOption.REPLACE_EXISTING);
             in.close();
             return Optional.of(new File(tempFile.toAbsolutePath().toString()));
