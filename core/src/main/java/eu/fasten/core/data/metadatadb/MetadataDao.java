@@ -1795,7 +1795,7 @@ public class MetadataDao {
         return result.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
     }
 
-    public String getPackageVersionVulnerabilities(String package_name, String package_version) {
+    public String getPackageVersionVulnerabilities(String package_name, String package_version, boolean format) {
         // Tables
         Vulnerabilities v = Vulnerabilities.VULNERABILITIES;
         VulnerabilitiesXPackageVersions vp = VulnerabilitiesXPackageVersions.VULNERABILITIES_X_PACKAGE_VERSIONS;
@@ -1808,7 +1808,7 @@ public class MetadataDao {
                 .on(v.ID.eq(vp.VULNERABILITY_ID))
                 .where(vp.PACKAGE_VERSION_ID.eq(package_version_id))
                 .fetchOne();
-        return result.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
+        return result.formatJSON(new JSONFormat().format(format).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
     }
 
     public String getPurls(String externalId, int offset, int limit) {
