@@ -41,7 +41,7 @@ import java.util.Optional;
 import java.util.Set;
 
 /**
- * Utility functions to construct and (de-)serialize Maven dependency graphs
+ * Utility functions to construct and (de-)serialize dependency graphs
  */
 public final class DependencyGraphUtilities {
 
@@ -107,7 +107,7 @@ public final class DependencyGraphUtilities {
     }
 
     /**
-     * Serialize a Maven dependency graph to a file. Independently serializes nodes and edges.
+     * Serialize dependency graph to a file. Independently serializes nodes and edges.
      *
      * @throws Exception When the files that hold the serialized data cannot be created.
      */
@@ -125,7 +125,7 @@ public final class DependencyGraphUtilities {
     }
 
     /**
-     * Deserialize a Maven dependency graph from the indicated file.
+     * Deserialize dependency graph from the indicated file.
      *
      * @throws Exception When the files that hold the serialized graph cannot be opened.
      */
@@ -167,7 +167,7 @@ public final class DependencyGraphUtilities {
     }
 
     /**
-     * Builds a new Maven dependency graph by connecting to the database and then serializes it to the provided path.
+     * Builds a new dependency graph by connecting to the database and then serializes it to the provided path.
      *
      * @throws Exception When serialization fails.
      */
