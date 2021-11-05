@@ -127,7 +127,6 @@ public class GraphResolver implements Runnable {
                     revisions = resolveDependents(parts[0], parts[1], getCreatedAt(parts[0], parts[1], db), transitive);
                 } catch (Exception e) {
                     System.err.println("Error retrieving revisions: " + e.getMessage());
-                    e.printStackTrace(System.err);
                     continue;
                 }
 
