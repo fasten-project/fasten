@@ -143,12 +143,15 @@ public class MavenUtilities {
             final InputStream in = HTTPConnPool.sendHTTPRequest(url);
             Files.copy(in, tempFile, StandardCopyOption.REPLACE_EXISTING);
             in.close();
+            HTTPConnPool.cleanHTTPConnPool();
             return Optional.of(new File(tempFile.toAbsolutePath().toString()));
         } catch (FileNotFoundException | MalformedURLException | UnknownHostException | HttpException e) {
             logger.error("Could not find URL: {}", e.getMessage(), e);
+            HTTPConnPool.cleanHTTPConnPool();
             throw e;
         } catch (IOException e) {
             logger.error("Error getting file from URL: " + url, e);
+            HTTPConnPool.cleanHTTPConnPool();
             throw e;
         }
     }

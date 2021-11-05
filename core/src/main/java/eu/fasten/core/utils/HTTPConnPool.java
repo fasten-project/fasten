@@ -22,6 +22,7 @@ public class HTTPConnPool {
     private static final Logger logger = LoggerFactory.getLogger(HTTPConnPool.class.getName());
     private static final RequestConfig reqConfig = RequestConfig.custom().setConnectionRequestTimeout(60 * 1000).build();
     private static CloseableHttpClient client;
+    private static CloseableHttpResponse response;
 
     private HTTPConnPool() {
     }
@@ -36,15 +37,21 @@ public class HTTPConnPool {
             logger.info("Created a HTTP connection pool");
         }
 
-        CloseableHttpResponse response = client.execute(new HttpGet(url));
+        response = client.execute(new HttpGet(url));
         if (response.getStatusLine().getStatusCode() == HttpStatus.SC_OK) {
             return response.getEntity().getContent();
         }
         throw new HttpException("HTTP error: " + response.getStatusLine().getStatusCode());
     }
 
-    public void cleanHTTPConnPool() {
+    public static void cleanHTTPConnPool() {
         //poolingConnManager.close();
+        try {
+            response.close();
+        } catch (IOException e) {
+            logger.error("Couldn't close a HTTP response!");
+            e.printStackTrace();
+        }
     }
 
 }
