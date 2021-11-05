@@ -429,7 +429,7 @@ public class Dependency extends Product {
          * Constructor for Exclusion object.
          * Exclusion defines a dependency which must be excluded from transitive dependencies.
          *
-         * @param packageName    groupId of excluded Maven coordinate
+         * @param packageName    groupId of excluded coordinate
          */
         public Exclusion(final String packageName) {
             this.packageName = packageName;
