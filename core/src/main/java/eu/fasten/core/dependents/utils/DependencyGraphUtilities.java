@@ -182,7 +182,7 @@ public final class DependencyGraphUtilities {
 
         tsStart = System.currentTimeMillis();
         logger.info("Serializing graph to {}", path);
-        DependencyGraphUtilities.serializeDependencyGraph(graph, path == null ? "debiangraph.bin" : path);
+        DependencyGraphUtilities.serializeDependencyGraph(graph, path == null ? "graph.bin" : path);
         logger.info("Finished serializing graph ({} ms)", System.currentTimeMillis() - tsStart);
 
         return graph;

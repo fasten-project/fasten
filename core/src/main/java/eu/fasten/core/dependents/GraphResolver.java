@@ -177,14 +177,14 @@ public class GraphResolver implements Runnable {
             var rev = workQueue.poll();
             if (rev != null) {
                 result.add(rev);
-                logger.debug("Successors for {}:{}: deps: {}, queue: {} items",
-                        rev.packageName, rev.version,
-                        workQueue.size(), workQueue.size());
             }
             if (!dependentGraph.containsVertex(rev)) {
                 throw new RuntimeException("Revision " + rev + " is not in the dependents graph. Probably it is missing in the database");
             }
             var dependents = filterDependentsByTimestamp(Graphs.successorListOf(dependentGraph, rev), timestamp);
+            logger.debug("Successors for {}:{}: deps: {}, queue: {} items",
+                    rev.packageName, rev.version,
+                    dependents.size(), workQueue.size());
             for (var dependent : dependents) {
                 if (!result.contains(dependent)) {
                     workQueue.add(dependent);
