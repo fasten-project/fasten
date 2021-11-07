@@ -114,7 +114,7 @@ public class Dependency extends Product {
      */
     public JSONObject toJSON() {
         final var json = new JSONObject();
-        json.put("packageName", this.packageName);
+        json.put("package", this.packageName);
         final var constraintsJson = new JSONArray();
         for (var constraint : this.versionConstraints) {
             constraintsJson.put(constraint.toJSON());
