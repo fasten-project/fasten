@@ -20,7 +20,6 @@ package eu.fasten.server.plugins.kafka;
 
 import com.google.common.base.Strings;
 import eu.fasten.core.plugins.KafkaPlugin;
-import eu.fasten.server.connectors.KafkaConnector;
 import eu.fasten.server.plugins.FastenServerPlugin;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -102,6 +101,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
             this.connNorm = new KafkaConsumer<>(consumerNormProperties);
             // For the priority connection, the client name should be different from the normal one
             this.connPrio = new KafkaConsumer<>(consumerPrioProperties);
+            this.producer = new KafkaProducer<>(producerProperties);
         }
 
         this.skipOffsets = skipOffsets;
