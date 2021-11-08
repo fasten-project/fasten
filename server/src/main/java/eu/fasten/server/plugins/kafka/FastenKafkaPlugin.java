@@ -20,7 +20,6 @@ package eu.fasten.server.plugins.kafka;
 
 import com.google.common.base.Strings;
 import eu.fasten.core.plugins.KafkaPlugin;
-import eu.fasten.server.connectors.KafkaConnector;
 import eu.fasten.server.plugins.FastenServerPlugin;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -89,18 +88,20 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
     /**
      * Constructs a FastenKafkaConsumer.
      *
-     * @param consumerProperties properties of a consumer
-     * @param plugin             Kafka plugin
-     * @param skipOffsets        skip offset number
+     * @param consumerNormProperties properties of a consumer
+     * @param plugin                 Kafka plugin
+     * @param skipOffsets            skip offset number
      */
-    public FastenKafkaPlugin(boolean enableKafka, Properties consumerProperties, Properties producerProperties,
-                             KafkaPlugin plugin, int skipOffsets, String writeDirectory, String writeLink, String outputTopic, boolean consumeTimeoutEnabled, long consumeTimeout, boolean exitOnTimeout, boolean enableLocalStorage, String localStorageDir) {
+    public FastenKafkaPlugin(boolean enableKafka, Properties consumerNormProperties, Properties consumerPrioProperties,
+                             Properties producerProperties, KafkaPlugin plugin, int skipOffsets, String writeDirectory,
+                             String writeLink, String outputTopic, boolean consumeTimeoutEnabled, long consumeTimeout,
+                             boolean exitOnTimeout, boolean enableLocalStorage, String localStorageDir) {
         this.plugin = plugin;
 
         if (enableKafka) {
-            this.connNorm = new KafkaConsumer<>(consumerProperties);
-            // For priority connection, the client should be different from the normal one
-            this.connPrio = new KafkaConsumer<>(KafkaConnector.cloneKafkaConsumerPropWithNewClientId(consumerProperties, "_priority"));
+            this.connNorm = new KafkaConsumer<>(consumerNormProperties);
+            // For the priority connection, the client name should be different from the normal one
+            this.connPrio = new KafkaConsumer<>(consumerPrioProperties);
             this.producer = new KafkaProducer<>(producerProperties);
         }
 
@@ -134,9 +135,13 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
         logger.debug("Constructed a Kafka plugin for " + plugin.getClass().getCanonicalName());
     }
 
-    public FastenKafkaPlugin(Properties consumerProperties, Properties producerProperties,
-                             KafkaPlugin plugin, int skipOffsets, String writeDirectory, String writeLink, String outputTopic, boolean consumeTimeoutEnabled, long consumeTimeout, boolean exitOnTimeout, boolean enableLocalStorage, String localStorageDir) {
-        this(true, consumerProperties, producerProperties, plugin, skipOffsets, writeDirectory, writeLink, outputTopic, consumeTimeoutEnabled, consumeTimeout, exitOnTimeout, enableLocalStorage, localStorageDir);
+    public FastenKafkaPlugin(Properties consumerNormProperties, Properties consumerPrioProperties, Properties producerProperties,
+                             KafkaPlugin plugin, int skipOffsets, String writeDirectory, String writeLink, String outputTopic,
+                             boolean consumeTimeoutEnabled, long consumeTimeout, boolean exitOnTimeout,
+                             boolean enableLocalStorage, String localStorageDir) {
+        this(true, consumerNormProperties, consumerPrioProperties, producerProperties, plugin, skipOffsets,
+                writeDirectory, writeLink, outputTopic, consumeTimeoutEnabled, consumeTimeout, exitOnTimeout,
+                enableLocalStorage, localStorageDir);
     }
 
 
