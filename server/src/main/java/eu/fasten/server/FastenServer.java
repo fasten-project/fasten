@@ -252,28 +252,38 @@ public class FastenServer implements Runnable {
 
         return kafkaPlugins.stream().filter(x -> plugins.contains(x.getClass().getSimpleName()))
             .map(k -> {
-                var consumerProperties = KafkaConnector.kafkaConsumerProperties(
-                    kafkaServers,
-                    (consumerGroup.equals("undefined") ? k.getClass().getCanonicalName() :
-                        consumerGroup),
-                    // if consumergroup != undefined, set to canonical name. If we upgrade to picocli 2.4.6 we can use optionals.
-                    k.getSessionTimeout(),
-                    k.getMaxConsumeTimeout(),
-                    k.isStaticMembership());
+                var consumerNormProperties = KafkaConnector.kafkaConsumerProperties(
+                        kafkaServers,
+                        (consumerGroup.equals("undefined") ? k.getClass().getCanonicalName() :
+                                consumerGroup),
+                        // if consumergroup != undefined, set to canonical name. If we upgrade to picocli 2.4.6 we can use optionals.
+                        "",
+                        k.getSessionTimeout(),
+                        k.getMaxConsumeTimeout(),
+                        k.isStaticMembership());
+                var consumerPrioProperties = KafkaConnector.kafkaConsumerProperties(
+                        kafkaServers,
+                        (consumerGroup.equals("undefined") ? k.getClass().getCanonicalName() :
+                                consumerGroup),
+                        // if consumergroup != undefined, set to canonical name. If we upgrade to picocli 2.4.6 we can use optionals.
+                        "_priority",
+                        k.getSessionTimeout(),
+                        k.getMaxConsumeTimeout(),
+                        k.isStaticMembership());
                 var producerProperties = KafkaConnector.kafkaProducerProperties(
-                    kafkaServers,
-                    k.getClass().getCanonicalName());
+                        kafkaServers,
+                        k.getClass().getCanonicalName());
 
-                return new FastenKafkaPlugin(consumerProperties, producerProperties, k, skipOffsets,
-                    (outputDirs != null) ? outputDirs.get(k.getClass().getSimpleName()) : null,
-                    (outputLinks != null) ? outputLinks.get(k.getClass().getSimpleName()) : null,
-                    (outputTopic != null) ? outputTopic : k.getClass().getSimpleName(),
-                    (consumeTimeout != -1) ? true : false,
-                    consumeTimeout,
-                    consumeTimeoutExit,
-                    localStorage,
-                    (localStorageDir != null) ? localStorageDir :
-                        "/mnt/fasten/local_storage/" + k.getClass().getSimpleName());
+                return new FastenKafkaPlugin(consumerNormProperties, consumerPrioProperties, producerProperties, k, skipOffsets,
+                        (outputDirs != null) ? outputDirs.get(k.getClass().getSimpleName()) : null,
+                        (outputLinks != null) ? outputLinks.get(k.getClass().getSimpleName()) : null,
+                        (outputTopic != null) ? outputTopic : k.getClass().getSimpleName(),
+                        (consumeTimeout != -1) ? true : false,
+                        consumeTimeout,
+                        consumeTimeoutExit,
+                        localStorage,
+                        (localStorageDir != null) ? localStorageDir :
+                                "/mnt/fasten/local_storage/" + k.getClass().getSimpleName());
             }).collect(Collectors.toList());
     }
 

@@ -18,7 +18,6 @@
 
 package eu.fasten.server.connectors;
 
-import org.apache.commons.lang.SerializationUtils;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
@@ -36,21 +35,22 @@ public class KafkaConnector {
     /**
      * Returns Kafka properties.
      *
-     * @param serverAddresses broker address
-     * @param groupId         group id
-     * @param sessionTimeout a value for `session.timeout.ms`.
-     * @param maxPollInterval a value for `max.poll.interval.ms`.
+     * @param serverAddresses  broker address
+     * @param groupId          group id
+     * @param sessionTimeout   a value for `session.timeout.ms`.
+     * @param maxPollInterval  a value for `max.poll.interval.ms`.
      * @param staticMemberShip if static membership should be enabled.
      * @return Kafka Properties
      */
-    public static Properties kafkaConsumerProperties(List<String> serverAddresses, String groupId, long sessionTimeout, long maxPollInterval, boolean staticMemberShip) {
+    public static Properties kafkaConsumerProperties(List<String> serverAddresses, String groupId, String clientIdSuffix,
+                                                     long sessionTimeout, long maxPollInterval, boolean staticMemberShip) {
         String deserializer = StringDeserializer.class.getName();
         Properties properties = new Properties();
 
         properties.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG,
                 String.join(",", serverAddresses));
         properties.setProperty(ConsumerConfig.GROUP_ID_CONFIG, groupId);
-        properties.setProperty(ConsumerConfig.CLIENT_ID_CONFIG, groupId + "_client");
+        properties.setProperty(ConsumerConfig.CLIENT_ID_CONFIG, groupId + "_client" + clientIdSuffix);
         properties.setProperty(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, deserializer);
         properties.setProperty(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, deserializer);
         properties.setProperty(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
@@ -96,11 +96,5 @@ public class KafkaConnector {
         p.setProperty(ProducerConfig.MAX_REQUEST_SIZE_CONFIG,
                 "50000000"); //Set produce size to 50MB.
         return p;
-    }
-
-    public static Properties cloneKafkaConsumerPropWithNewClientId(Properties consumerProperties, String suffix) {
-        Properties consumerPrioProperties = (Properties) SerializationUtils.clone(consumerProperties);
-        consumerPrioProperties.setProperty(ConsumerConfig.CLIENT_ID_CONFIG, consumerPrioProperties.get(ConsumerConfig.CLIENT_ID_CONFIG) + suffix);
-        return consumerPrioProperties;
     }
 }
