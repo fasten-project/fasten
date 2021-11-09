@@ -18,6 +18,27 @@
 
 package eu.fasten.core.merge;
 
+import com.google.common.collect.BiMap;
+import com.google.common.collect.HashBiMap;
+import eu.fasten.core.data.Constants;
+import eu.fasten.core.data.DirectedGraph;
+import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
+import eu.fasten.core.data.FastenJavaURI;
+import eu.fasten.core.data.FastenURI;
+import eu.fasten.core.data.JavaScope;
+import eu.fasten.core.data.MergedDirectedGraph;
+import eu.fasten.core.data.callableindex.GraphMetadata;
+import eu.fasten.core.data.callableindex.RocksDao;
+import eu.fasten.core.data.metadatadb.codegen.tables.Callables;
+import eu.fasten.core.data.metadatadb.codegen.tables.ModuleNames;
+import eu.fasten.core.data.metadatadb.codegen.tables.Modules;
+import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
+import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
+import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.longs.LongLongPair;
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
+import it.unimi.dsi.fastutil.longs.LongSet;
+import it.unimi.dsi.fastutil.longs.LongSets;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -30,7 +51,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
-
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -44,29 +64,6 @@ import org.json.JSONObject;
 import org.rocksdb.RocksDBException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.google.common.collect.BiMap;
-import com.google.common.collect.HashBiMap;
-
-import eu.fasten.core.data.Constants;
-import eu.fasten.core.data.DirectedGraph;
-import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
-import eu.fasten.core.data.MergedDirectedGraph;
-import eu.fasten.core.data.FastenJavaURI;
-import eu.fasten.core.data.FastenURI;
-import eu.fasten.core.data.JavaScope;
-import eu.fasten.core.data.callableindex.GraphMetadata;
-import eu.fasten.core.data.callableindex.RocksDao;
-import eu.fasten.core.data.metadatadb.codegen.tables.Callables;
-import eu.fasten.core.data.metadatadb.codegen.tables.ModuleNames;
-import eu.fasten.core.data.metadatadb.codegen.tables.Modules;
-import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
-import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
-import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
-import it.unimi.dsi.fastutil.longs.LongLongPair;
-import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
-import it.unimi.dsi.fastutil.longs.LongSet;
-import it.unimi.dsi.fastutil.longs.LongSets;
 
 public class CGMerger {
 
@@ -198,7 +195,12 @@ public class CGMerger {
 
     public DirectedGraph mergeWithCHA(final long id) {
         final var callGraphData = fetchCallGraphData(id, rocksDao);
-        var graphArcs = getArcs(id, callGraphData, rocksDao);
+        GraphMetadata graphArcs = null;
+        try {
+            graphArcs = rocksDao.getGraphMetadata(id, callGraphData);
+        } catch (RocksDBException e) {
+            logger.error("Could not retrieve arcs (graph metadata) from graph database:", e);
+        }
         return mergeWithCHA(callGraphData, graphArcs);
     }
 
@@ -500,21 +502,31 @@ public class CGMerger {
             final Set<Long> dependenciesIds, final RocksDao rocksDao) {
         final long startTime = System.currentTimeMillis();
         var result = new HashMap<String, Map<String, LongSet>>();
-
+        int noCGCounter = 0, noMetadaCounter = 0;
         for (Long dependencyId : dependenciesIds) {
-            DirectedGraph cg = null;
+            DirectedGraph cg;
             try {
                 cg = rocksDao.getGraphData(dependencyId);
             } catch (RocksDBException e) {
-                e.printStackTrace();
+                throw new RuntimeException("An exception occurred retrieving CGs from rocks DB", e);
             }
             if (cg == null) {
+                noCGCounter++;
                 continue;
             }
-            final var metadata = getArcs(dependencyId, cg, rocksDao);
+            GraphMetadata metadata;
+            try {
+                metadata = rocksDao.getGraphMetadata(dependencyId, cg);
+            } catch (RocksDBException e) {
+                throw new RuntimeException("An exception occurred retrieving metadata from rocks " +
+                    "DB", e);
+            }
             if (metadata == null) {
+                noMetadaCounter++;
                 continue;
             }
+            logger.info("For {} dependencies failed to retrieve {} graph data and {} metadata " +
+                "from rocks db.", dependenciesIds.size(), noCGCounter, noMetadaCounter);
 
             final var nodesData = metadata.gid2NodeMetadata;
             for (Long nodeId : nodesData.keySet()) {
@@ -809,22 +821,6 @@ public class CGMerger {
             result.put(callable.value1(), new JSONObject(callable.value2().data()));
         }
         return result;
-    }
-
-    /**
-     * Retrieve external calls and constructor calls from a call graph.
-     *
-     * @param callGraphData call graph
-     * @return list of external and constructor calls
-     */
-    private GraphMetadata getArcs(final long index, final DirectedGraph callGraphData,
-                                  final RocksDao rocksDao) {
-        try {
-            return rocksDao.getGraphMetadata(index, callGraphData);
-        } catch (RocksDBException e) {
-            logger.error("Could not retrieve arcs (graph metadata) from graph database:", e);
-            return null;
-        }
     }
 
     /**
