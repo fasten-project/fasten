@@ -19,13 +19,11 @@
 package eu.fasten.core.maven.utils;
 
 import eu.fasten.core.data.Constants;
-import eu.fasten.core.utils.HTTPConnPool;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 
 import org.apache.commons.io.FileUtils;
-import org.apache.http.HttpException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -86,7 +84,7 @@ public class MavenUtilities {
             Optional<File> pom;
             try {
                 pom = httpGetToFile(pomUrl);
-            } catch (FileNotFoundException | UnknownHostException | MalformedURLException | HttpException e) {
+            } catch (FileNotFoundException | UnknownHostException | MalformedURLException e) {
                 continue;
             }
             if (pom.isPresent()) {
@@ -100,7 +98,7 @@ public class MavenUtilities {
         Optional<File> pom;
         try {
             pom = httpGetToFile(pomUrl);
-        } catch (FileNotFoundException | UnknownHostException | MalformedURLException | HttpException e) {
+        } catch (FileNotFoundException | UnknownHostException | MalformedURLException e) {
             return Optional.empty();
         }
         return pom;
@@ -140,7 +138,7 @@ public class MavenUtilities {
      * @return a temporarily saved file.
      */
     private static Optional<File> httpGetToFile(String url)
-            throws IOException, HttpException {
+            throws IOException {
         logger.debug("HTTP GET: " + url);
         try {
             final var tempFile = Files.createTempFile("fasten", ".pom");
@@ -221,7 +219,7 @@ public class MavenUtilities {
         var url = getPomUrl(groupId, artifactId, version, artifactRepo);
         try {
             return httpGetToFile(url).isPresent();
-        } catch (FileNotFoundException | UnknownHostException | MalformedURLException | HttpException e) {
+        } catch (FileNotFoundException | UnknownHostException | MalformedURLException e) {
             return false;
         }
     }
