@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class MavenUtilitiesTest {
@@ -42,15 +43,17 @@ public class MavenUtilitiesTest {
     }
 
     @Test
-    public void downloadInvalidPomTest() throws IOException {
-        var file = MavenUtilities.downloadPom("fake", "fake", "4.12");
-        assertTrue(file.isEmpty());
+    public void downloadInvalidPomTest() {
+        assertThrows(IOException.class, () -> {
+            MavenUtilities.downloadPom("fake", "fake", "4.12");
+        });
     }
 
     @Test
-    public void downloadPomWithInvalidRepoTest() throws IOException {
-        var file = MavenUtilities.downloadPom("junit", "junit", "4.12", List.of("https://google.com/"));
-        assertTrue(file.isEmpty());
+    public void downloadPomWithInvalidRepoTest() {
+        assertThrows(IOException.class, () -> {
+            MavenUtilities.downloadPom("junit", "junit", "4.12", List.of("https://google.com/"));
+        });
     }
 
     @Test
