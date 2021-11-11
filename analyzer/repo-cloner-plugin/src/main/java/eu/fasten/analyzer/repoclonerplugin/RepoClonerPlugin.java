@@ -41,7 +41,6 @@ import org.pf4j.PluginWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-
 public class RepoClonerPlugin extends Plugin {
 
     public RepoClonerPlugin(PluginWrapper wrapper) {

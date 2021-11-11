@@ -220,7 +220,6 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
                 processRecord(r, consumeTimestamp, KafkaRecordKind.NORMAL);
                 logger.info("Successfully processed normal message offset " + r.offset() + " from partition " + r.partition() + ".");
 
-
                 messagesProcessed.add(new ImmutablePair<>(r.offset(), r.partition()));
             }
 
