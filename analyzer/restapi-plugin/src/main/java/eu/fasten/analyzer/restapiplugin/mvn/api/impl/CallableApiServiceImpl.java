@@ -47,8 +47,10 @@ public class CallableApiServiceImpl implements CallableApiService {
         } catch (PackageVersionNotFoundException e) {
             try {
                 LazyIngestionProvider.ingestArtifactIfNecessary(package_name, package_version, artifactRepo, date);
-            } catch (IllegalArgumentException | IOException ex) {
+            } catch (IllegalArgumentException ex) {
                 return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST);
+            } catch (IOException ex) {
+                return new ResponseEntity<>(ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
             }
             return new ResponseEntity<>("Package version not found, but should be processed soon. Try again later", HttpStatus.CREATED);
         }

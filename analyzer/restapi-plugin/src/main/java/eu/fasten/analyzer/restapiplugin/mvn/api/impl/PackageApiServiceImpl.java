@@ -62,7 +62,7 @@ public class PackageApiServiceImpl implements PackageApiService {
     @Override
     public ResponseEntity<String> getPackageVersion(String package_name,
                                                     String package_version, String artifactRepo,
-                                                    Long date) throws IOException {
+                                                    Long date) {
         String result = KnowledgeBaseConnector.kbDao.getPackageVersion(
                 package_name, package_version);
         if (result == null) {
@@ -71,6 +71,8 @@ public class PackageApiServiceImpl implements PackageApiService {
                     LazyIngestionProvider.ingestArtifactIfNecessary(package_name, package_version, artifactRepo, date);
                 } catch (IllegalArgumentException ex) {
                     return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST);
+                } catch (IOException ex) {
+                    return new ResponseEntity<>("Couldn't ingest the artifact", HttpStatus.INTERNAL_SERVER_ERROR);
                 }
             } catch (IllegalArgumentException ex) {
                 return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST);

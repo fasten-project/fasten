@@ -71,8 +71,10 @@ public class ResolutionApiServiceImpl implements ResolutionApiService {
         if (!KnowledgeBaseConnector.kbDao.assertPackageExistence(package_name, version)) {
             try {
                 LazyIngestionProvider.ingestArtifactWithDependencies(package_name, version);
-            } catch (IllegalArgumentException | IOException e) {
+            } catch (IllegalArgumentException e) {
                 return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
+            } catch (IOException e) {
+                return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
             }
             return new ResponseEntity<>("Package version not found, but should be processed soon. Try again later", HttpStatus.CREATED);
         }
