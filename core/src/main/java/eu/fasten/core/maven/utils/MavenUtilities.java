@@ -20,6 +20,10 @@ package eu.fasten.core.maven.utils;
 
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.utils.HTTPConnPool;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
+
 import org.apache.commons.io.FileUtils;
 import org.apache.http.HttpException;
 import org.slf4j.Logger;
@@ -39,6 +43,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -139,20 +144,30 @@ public class MavenUtilities {
         logger.debug("HTTP GET: " + url);
         try {
             final var tempFile = Files.createTempFile("fasten", ".pom");
-            //final InputStream in = new URL(url).openStream();
-            final InputStream in = HTTPConnPool.sendHTTPRequest(url);
+            final Response response = getHttpResponse(url);
+            final InputStream in = Objects.requireNonNull(response.body()).byteStream();
             Files.copy(in, tempFile, StandardCopyOption.REPLACE_EXISTING);
             in.close();
-            HTTPConnPool.cleanHTTPConnPool();
+            Objects.requireNonNull(response.body()).close();
             return Optional.of(new File(tempFile.toAbsolutePath().toString()));
-        } catch (FileNotFoundException | MalformedURLException | UnknownHostException | HttpException e) {
+        } catch (FileNotFoundException | MalformedURLException | UnknownHostException e) {
             logger.error("Could not find URL: {}", e.getMessage(), e);
-            HTTPConnPool.cleanHTTPConnPool();
             throw e;
         } catch (IOException e) {
             logger.error("Error getting file from URL: " + url, e);
-            HTTPConnPool.cleanHTTPConnPool();
             throw e;
+        }
+    }
+
+    private static Response getHttpResponse(String url) throws IOException {
+        OkHttpClient client = new OkHttpClient();
+        Request request = new Request.Builder().url(url).addHeader("Connection", "close").build();
+        Response response = client.newCall(request).execute();
+        if (response.code() == 200) {
+            return response;
+        } else {
+            Objects.requireNonNull(response.body()).close();
+            throw new IOException();
         }
     }
 
