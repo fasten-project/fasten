@@ -84,7 +84,7 @@ public class PackageApiServiceImplTest {
     }
 
     @Test
-    void getPackageVersionTest() throws IOException {
+    void getPackageVersionTest() {
         var packageName = "group:artifact";
         var version = "version";
         var response = "package version";
@@ -95,7 +95,7 @@ public class PackageApiServiceImplTest {
 
         Mockito.when(kbDao.getPackageVersion(packageName, version)).thenReturn(null);
         result = service.getPackageVersion(packageName, version, null, null);
-        assertEquals(HttpStatus.BAD_REQUEST, result.getStatusCode());
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, result.getStatusCode());
 
         Mockito.verify(kbDao, Mockito.times(2)).getPackageVersion(packageName, version);
 
