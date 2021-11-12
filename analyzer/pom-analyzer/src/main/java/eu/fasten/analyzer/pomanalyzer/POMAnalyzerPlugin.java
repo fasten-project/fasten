@@ -168,8 +168,8 @@ public class POMAnalyzerPlugin extends Plugin {
                 // After downloading ~50-60K POMs, there will be a lot of CLOSE_WAIT connections,
                 // at some point the plug-in runs out of source ports to use. Therefore, we need to throw an exception and crash so that
                 // Kubernetes will restart the plug-in to kill CLOSE_WAIT connections.
-                if (e.getClass().getCanonicalName().equals(ConnectException.class.getCanonicalName())) {
-                    throw new RuntimeException ("Network exception due to many CLOSE_WAIT connections");
+                if (e instanceof ConnectException) {
+                    throw new RuntimeException("Network exception due to many CLOSE_WAIT connections");
                 }
                 this.pluginError = e;
                 MavenUtilities.getRepos().remove(artifactRepository);
