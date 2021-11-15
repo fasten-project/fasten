@@ -1,3 +1,7 @@
+### Analysis Artifacts ###
+
+/graph*.json
+
 ### Java ###
 
 # Compiled class file
