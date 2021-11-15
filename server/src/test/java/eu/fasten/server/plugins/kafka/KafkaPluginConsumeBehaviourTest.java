@@ -1,10 +1,6 @@
 package eu.fasten.server.plugins.kafka;
 
 import eu.fasten.core.plugins.KafkaPlugin;
-
-import java.lang.reflect.Field;
-import java.util.*;
-
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -13,7 +9,21 @@ import org.apache.kafka.clients.producer.KafkaProducer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.mockito.Mockito.*;
+import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Properties;
+
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class KafkaPluginConsumeBehaviourTest {
 
@@ -27,9 +37,13 @@ public class KafkaPluginConsumeBehaviourTest {
     public void setupMocks(FastenKafkaPlugin kafkaPlugin) throws IllegalAccessException {
         // Hacky way to override consumer and producer with a mock.
         KafkaConsumer<String, String> mockConsumer = mock(KafkaConsumer.class);
-        FieldUtils.writeField(kafkaPlugin, "connection", mockConsumer, true);
+        FieldUtils.writeField(kafkaPlugin, "connNorm", mockConsumer, true);
+        FieldUtils.writeField(kafkaPlugin, "connPrio", mockConsumer, true);
         KafkaProducer<String, String> mockProducer = mock(KafkaProducer.class);
         FieldUtils.writeField(kafkaPlugin, "producer", mockProducer, true);
+        List<String> mockTopics = mock(List.class);
+        FieldUtils.writeField(kafkaPlugin, "prioTopics", mockTopics, true);
+        FieldUtils.writeField(kafkaPlugin, "normTopics", mockTopics, true);
 
         // Another set of mocks.
         ConsumerRecords<String, String> records = mock(ConsumerRecords.class);
@@ -45,7 +59,7 @@ public class KafkaPluginConsumeBehaviourTest {
 
     @Test
     public void testNoLocalStorageNoTimeout() throws IllegalAccessException {
-        FastenKafkaPlugin kafkaPlugin = spy(new FastenKafkaPlugin(false, new Properties(), new Properties(), dummyPlugin, 0, null, null, "", false, 0, false, false, ""));
+        FastenKafkaPlugin kafkaPlugin = spy(new FastenKafkaPlugin(false, new Properties(), new Properties(), new Properties(), dummyPlugin, 0, null, null, "", false, 0, false, false, ""));
         setupMocks(kafkaPlugin);
 
         kafkaPlugin.handleConsuming();
@@ -55,7 +69,7 @@ public class KafkaPluginConsumeBehaviourTest {
 
     @Test
     public void testNoLocalStorageTimeout() throws IllegalAccessException {
-        FastenKafkaPlugin kafkaPlugin = spy(new FastenKafkaPlugin(false, new Properties(), new Properties(), dummyPlugin, 0, null, null, "", false, 0, false, false, ""));
+        FastenKafkaPlugin kafkaPlugin = spy(new FastenKafkaPlugin(false, new Properties(), new Properties(), new Properties(), dummyPlugin, 0, null, null, "", false, 0, false, false, ""));
         setupMocks(kafkaPlugin);
 
         kafkaPlugin.handleConsuming();
@@ -71,7 +85,7 @@ public class KafkaPluginConsumeBehaviourTest {
         localStorage.clear(List.of(1));
         localStorage.store("{key: 'Im a record!'}", 0);
 
-        FastenKafkaPlugin kafkaPlugin = spy(new FastenKafkaPlugin(false, new Properties(), new Properties(), dummyPlugin, 0, null, null, "", true, 5, false, true, "src/test/resources"));
+        FastenKafkaPlugin kafkaPlugin = spy(new FastenKafkaPlugin(false, new Properties(), new Properties(), new Properties(), dummyPlugin, 0, null, null, "", true, 5, false, true, "src/test/resources"));
         setupMocks(kafkaPlugin);
 
         kafkaPlugin.handleConsuming();
@@ -87,7 +101,7 @@ public class KafkaPluginConsumeBehaviourTest {
         LocalStorage localStorage = new LocalStorage("src/test/resources");
         localStorage.clear(List.of(0));
 
-        FastenKafkaPlugin kafkaPlugin = spy(new FastenKafkaPlugin(false, new Properties(), new Properties(), dummyPlugin, 0, null, null, "", false, 5, false, true, "src/test/resources"));
+        FastenKafkaPlugin kafkaPlugin = spy(new FastenKafkaPlugin(false, new Properties(), new Properties(), new Properties(), dummyPlugin, 0, null, null, "", false, 5, false, true, "src/test/resources"));
         setupMocks(kafkaPlugin);
 
         kafkaPlugin.handleConsuming();
@@ -101,7 +115,7 @@ public class KafkaPluginConsumeBehaviourTest {
         LocalStorage localStorage = new LocalStorage("src/test/resources");
         localStorage.clear(List.of(1));
 
-        FastenKafkaPlugin kafkaPlugin = spy(new FastenKafkaPlugin(false, new Properties(), new Properties(), dummyPlugin, 0, null, null, "", true, 5, false, true, "src/test/resources"));
+        FastenKafkaPlugin kafkaPlugin = spy(new FastenKafkaPlugin(false, new Properties(), new Properties(), new Properties(), dummyPlugin, 0, null, null, "", true, 5, false, true, "src/test/resources"));
         setupMocks(kafkaPlugin);
 
         kafkaPlugin.handleConsuming();
@@ -155,7 +169,8 @@ public class KafkaPluginConsumeBehaviourTest {
         }
 
         @Override
-        public void setTopic(String topicName) {
+        public void setTopics(List<String> consumeTopics) {
+
         }
 
         @Override

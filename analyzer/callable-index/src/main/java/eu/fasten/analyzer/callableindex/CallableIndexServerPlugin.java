@@ -24,14 +24,6 @@ import eu.fasten.core.data.callableindex.GidGraph;
 import eu.fasten.core.data.callableindex.RocksDao;
 import eu.fasten.core.plugins.CallableIndexConnector;
 import eu.fasten.core.plugins.KafkaPlugin;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.nio.file.Paths;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONTokener;
@@ -40,6 +32,15 @@ import org.pf4j.Plugin;
 import org.pf4j.PluginWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.nio.file.Paths;
+import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Optional;
 
 public class CallableIndexServerPlugin extends Plugin {
 
@@ -50,8 +51,8 @@ public class CallableIndexServerPlugin extends Plugin {
     @Extension
     public static class CallableIndexFastenPlugin implements KafkaPlugin, CallableIndexConnector {
 
-        private String consumerTopic = "fasten.MetadataDBJavaExtension.out";
-        private String prioTopic = "fasten.MetadataDBJavaExtension.priority.out";
+        private List<String> consumeTopics = new LinkedList<>(List.of("fasten.MetadataDBJavaExtension.priority.out",
+                "fasten.MetadataDBExtension.out"));
         private Exception pluginError = null;
         private final Logger logger = LoggerFactory.getLogger(CallableIndexFastenPlugin.class.getName());
         private static RocksDao rocksDao;
@@ -63,12 +64,12 @@ public class CallableIndexServerPlugin extends Plugin {
 
         @Override
         public Optional<List<String>> consumeTopic() {
-            return Optional.of(List.of(prioTopic, consumerTopic));
+            return Optional.of(consumeTopics);
         }
 
         @Override
-        public void setTopic(String topicName) {
-            this.consumerTopic = topicName;
+        public void setTopics(List<String> consumeTopics) {
+            this.consumeTopics = consumeTopics;
         }
 
         @Override

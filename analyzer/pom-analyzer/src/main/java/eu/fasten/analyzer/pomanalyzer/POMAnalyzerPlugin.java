@@ -21,16 +21,10 @@ package eu.fasten.analyzer.pomanalyzer;
 import eu.fasten.analyzer.pomanalyzer.pom.DataExtractor;
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.metadatadb.MetadataDao;
-import eu.fasten.core.maven.utils.MavenUtilities;
 import eu.fasten.core.maven.data.DependencyData;
+import eu.fasten.core.maven.utils.MavenUtilities;
 import eu.fasten.core.plugins.DBConnector;
 import eu.fasten.core.plugins.KafkaPlugin;
-import java.io.File;
-import java.sql.Timestamp;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 import org.jooq.DSLContext;
 import org.jooq.exception.DataAccessException;
 import org.jooq.impl.DSL;
@@ -43,6 +37,10 @@ import org.pf4j.PluginWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
+import java.sql.Timestamp;
+import java.util.*;
+
 public class POMAnalyzerPlugin extends Plugin {
 
     public POMAnalyzerPlugin(PluginWrapper wrapper) {
@@ -52,7 +50,7 @@ public class POMAnalyzerPlugin extends Plugin {
     @Extension
     public static class POMAnalyzer implements KafkaPlugin, DBConnector {
 
-        private String consumerTopic = "fasten.mvn.pkg";
+        private List<String> consumeTopics = new LinkedList<>(Collections.singletonList("fasten.mvn.pkg"));
         private final Logger logger = LoggerFactory.getLogger(POMAnalyzer.class.getName());
         private Exception pluginError = null;
         private static DSLContext dslContext;
@@ -73,12 +71,12 @@ public class POMAnalyzerPlugin extends Plugin {
 
         @Override
         public Optional<List<String>> consumeTopic() {
-            return Optional.of(Collections.singletonList(consumerTopic));
+            return Optional.of(consumeTopics);
         }
 
         @Override
-        public void setTopic(String topicName) {
-            this.consumerTopic = topicName;
+        public void setTopics(List<String> consumeTopics) {
+            this.consumeTopics = consumeTopics;
         }
 
         @Override

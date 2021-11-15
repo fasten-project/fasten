@@ -40,10 +40,8 @@ import org.json.JSONObject;
 import org.pf4j.Extension;
 import org.pf4j.Plugin;
 import org.pf4j.PluginWrapper;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
+
+import java.util.*;
 
 public class MetadataDatabaseCPlugin extends Plugin {
     public MetadataDatabaseCPlugin(PluginWrapper wrapper) {
@@ -52,6 +50,12 @@ public class MetadataDatabaseCPlugin extends Plugin {
 
     @Extension
     public static class MetadataDBCExtension extends MetadataDBExtension {
+
+
+        public MetadataDBCExtension() {
+            super.consumeTopics = new LinkedList<>(Collections.singletonList("fasten.debian.cg"));
+        }
+
         private static DSLContext dslContext;
 
         @Override
