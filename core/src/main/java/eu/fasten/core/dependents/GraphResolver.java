@@ -69,8 +69,8 @@ public class GraphResolver implements Runnable {
             required = true)
     protected String dbUser;
 
-    static Graph<Revision, DependencyEdge> dependencyGraph;
-    static Graph<Revision, DependencyEdge> dependentGraph;
+    private Graph<Revision, DependencyEdge> dependencyGraph;
+    private Graph<Revision, DependencyEdge> dependentGraph;
 
     public static void main(String[] args) {
         final int exitCode = new CommandLine(new GraphResolver()).execute(args);
@@ -89,11 +89,11 @@ public class GraphResolver implements Runnable {
         try {
             var optDependencyGraph = DependencyGraphUtilities.loadDependencyGraph(serializedPath);
             if (optDependencyGraph.isPresent()) {
-                dependencyGraph = optDependencyGraph.get();
-                dependentGraph = DependencyGraphUtilities.invertDependencyGraph(dependencyGraph);
+                this.dependencyGraph = optDependencyGraph.get();
+                this.dependentGraph = DependencyGraphUtilities.invertDependencyGraph(dependencyGraph);
             } else {
-                dependencyGraph = DependencyGraphUtilities.buildDependencyGraphFromScratch(dbContext, serializedPath);
-                dependentGraph = DependencyGraphUtilities.invertDependencyGraph(dependencyGraph);
+                this.dependencyGraph = DependencyGraphUtilities.buildDependencyGraphFromScratch(dbContext, serializedPath);
+                this.dependentGraph = DependencyGraphUtilities.invertDependencyGraph(dependencyGraph);
             }
         } catch (Exception e) {
             logger.warn("Could not load serialized dependency graph from {}\n", serializedPath, e);
@@ -161,11 +161,11 @@ public class GraphResolver implements Runnable {
                                                           boolean transitive) {
         var revision = new Revision(packageName, version, new Timestamp(timestamp));
 
-        if (!dependentGraph.containsVertex(revision)) {
+        if (!this.dependentGraph.containsVertex(revision)) {
             throw new RuntimeException("Revision " + packageName + " is not in the dependents graph. Probably it is missing in the database");
         }
 
-        var workQueue = new ArrayDeque<>(filterDependentsByTimestamp(Graphs.successorListOf(dependentGraph, revision), timestamp));
+        var workQueue = new ArrayDeque<>(filterDependentsByTimestamp(Graphs.successorListOf(this.dependentGraph, revision), timestamp));
 
         var result = new ObjectLinkedOpenHashSet<>(workQueue);
 
@@ -181,7 +181,7 @@ public class GraphResolver implements Runnable {
             if (!dependentGraph.containsVertex(rev)) {
                 throw new RuntimeException("Revision " + rev + " is not in the dependents graph. Probably it is missing in the database");
             }
-            var dependents = filterDependentsByTimestamp(Graphs.successorListOf(dependentGraph, rev), timestamp);
+            var dependents = filterDependentsByTimestamp(Graphs.successorListOf(this.dependentGraph, rev), timestamp);
             logger.debug("Successors for {}:{}: deps: {}, queue: {} items",
                     rev.packageName, rev.version,
                     dependents.size(), workQueue.size());
@@ -203,14 +203,14 @@ public class GraphResolver implements Runnable {
     public void buildDependencyGraph(DSLContext dbContext, String serializedGraphPath) throws Exception {
         var graphOpt = DependencyGraphUtilities.loadDependencyGraph(serializedGraphPath);
         if (graphOpt.isEmpty()) {
-            dependencyGraph = DependencyGraphUtilities.buildDependencyGraphFromScratch(dbContext, serializedGraphPath);
+            this.dependencyGraph = DependencyGraphUtilities.buildDependencyGraphFromScratch(dbContext, serializedGraphPath);
         } else {
-            dependencyGraph = graphOpt.get();
+            this.dependencyGraph = graphOpt.get();
         }
-        dependentGraph = DependencyGraphUtilities.invertDependencyGraph(dependencyGraph);
+        this.dependentGraph = DependencyGraphUtilities.invertDependencyGraph(dependencyGraph);
     }
     
-    private long getCreatedAt(String packageName, String version, DSLContext context) {
+    public long getCreatedAt(String packageName, String version, DSLContext context) {
         var result = context.select(PackageVersions.PACKAGE_VERSIONS.CREATED_AT)
                 .from(PackageVersions.PACKAGE_VERSIONS)
                 .join(Packages.PACKAGES)
