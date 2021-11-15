@@ -169,7 +169,7 @@ public class CGMerger {
                 .forEach((k, v) -> this.universalChildren.put(k, new ArrayList<>(v)));
         this.universalParents = new HashMap<>(universalCHA.getLeft().size());
         universalCHA.getLeft().forEach((k, v) -> this.universalParents.put(k, new ArrayList<>(v)));
-        this.typeDictionary = createTypeDictionary(this.dependencySet, rocksDao);
+        this.typeDictionary = createTypeDictionary();
     }
 
     /**
@@ -190,7 +190,7 @@ public class CGMerger {
                 .forEach((k, v) -> this.universalChildren.put(k, new ArrayList<>(v)));
         this.universalParents = new HashMap<>(universalCHA.getLeft().size());
         universalCHA.getLeft().forEach((k, v) -> this.universalParents.put(k, new ArrayList<>(v)));
-        this.typeDictionary = createTypeDictionary(dependencySet, rocksDao);
+        this.typeDictionary = createTypeDictionary();
     }
 
     public DirectedGraph mergeWithCHA(final long id) {
@@ -494,58 +494,66 @@ public class CGMerger {
     /**
      * Create a mapping from types and method signatures to callable IDs.
      *
-     * @param dependenciesIds IDs of dependencies
-     * @param rocksDao        rocks DAO
      * @return a type dictionary
      */
-    private Map<String, Map<String, LongSet>> createTypeDictionary(
-            final Set<Long> dependenciesIds, final RocksDao rocksDao) {
+    private Map<String, Map<String, LongSet>> createTypeDictionary() {
         final long startTime = System.currentTimeMillis();
         var result = new HashMap<String, Map<String, LongSet>>();
         int noCGCounter = 0, noMetadaCounter = 0;
-        for (Long dependencyId : dependenciesIds) {
-            DirectedGraph cg;
-            try {
-                cg = rocksDao.getGraphData(dependencyId);
-            } catch (RocksDBException e) {
-                throw new RuntimeException("An exception occurred retrieving CGs from rocks DB", e);
-            }
+        for (Long dependencyId : dependencySet) {
+            DirectedGraph cg = getGraphData(dependencyId);
             if (cg == null) {
                 noCGCounter++;
                 continue;
             }
-            GraphMetadata metadata;
-            try {
-                metadata = rocksDao.getGraphMetadata(dependencyId, cg);
-            } catch (RocksDBException e) {
-                throw new RuntimeException("An exception occurred retrieving metadata from rocks " +
-                    "DB", e);
-            }
+            GraphMetadata metadata = getGraphMetadata(dependencyId, cg);
             if (metadata == null) {
                 noMetadaCounter++;
                 continue;
             }
-            logger.info("For {} dependencies failed to retrieve {} graph data and {} metadata " +
-                "from rocks db.", dependenciesIds.size(), noCGCounter, noMetadaCounter);
 
             final var nodesData = metadata.gid2NodeMetadata;
-            for (Long nodeId : nodesData.keySet()) {
+            for (final var nodeId : nodesData.keySet()) {
                 final var nodeData = nodesData.get(nodeId.longValue());
                 final var typeUri = nodeData.type;
-                var signaturesMap = result.getOrDefault(typeUri, new HashMap<>());
+                final var signaturesMap = result.getOrDefault(typeUri, new HashMap<>());
                 final var signature = nodeData.signature;
-                var signatureIds = signaturesMap.getOrDefault(signature, new LongOpenHashSet());
+                final var signatureIds = signaturesMap.getOrDefault(signature,
+                    new LongOpenHashSet());
                 signatureIds.add(nodeId.longValue());
                 signaturesMap.put(signature, signatureIds);
                 result.put(typeUri, signaturesMap);
             }
         }
+        logger.info("For {} dependencies failed to retrieve {} graph data and {} metadata " +
+            "from rocks db.", dependencySet.size(), noCGCounter, noMetadaCounter);
 
         logger.info("Created the type dictionary with {} types in {} seconds", result.size(),
                 new DecimalFormat("#0.000")
                         .format((System.currentTimeMillis() - startTime) / 1000d));
 
         return result;
+    }
+
+    private GraphMetadata getGraphMetadata(Long dependencyId, DirectedGraph cg) {
+        GraphMetadata metadata;
+        try {
+            metadata = rocksDao.getGraphMetadata(dependencyId, cg);
+        } catch (RocksDBException e) {
+            throw new RuntimeException("An exception occurred retrieving metadata from rocks " +
+                "DB", e);
+        }
+        return metadata;
+    }
+
+    private DirectedGraph getGraphData(Long dependencyId) {
+        DirectedGraph cg;
+        try {
+            cg = rocksDao.getGraphData(dependencyId);
+        } catch (RocksDBException e) {
+            throw new RuntimeException("An exception occurred retrieving CGs from rocks DB", e);
+        }
+        return cg;
     }
 
 
