@@ -334,9 +334,9 @@ public class CGMergerTest {
 
     @Test
     public void mergeAllDepsWithExternalsTest() {
-        merger = new CGMerger(Arrays.asList(imported, importer));
+        merger = new CGMerger(Arrays.asList(imported, importer), true);
 
-        final var cg = merger.mergeAllDeps(true);
+        final var cg = merger.mergeAllDeps();
         final var uris = merger.getAllUris();
         assertEquals(4, cg.edgeSet().size());
         assertEquals(5, uris.size());
