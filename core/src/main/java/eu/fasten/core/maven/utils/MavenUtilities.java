@@ -19,22 +19,20 @@
 package eu.fasten.core.maven.utils;
 
 import eu.fasten.core.data.Constants;
+import okhttp3.Call;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
-
+import okhttp3.ResponseBody;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.BufferedReader;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.MalformedURLException;
-import java.net.UnknownHostException;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
@@ -78,30 +76,26 @@ public class MavenUtilities {
      * @param mavenRepos the list of predefined maven repositories
      * @return an optional pom file instance
      */
-    public static Optional<File> downloadPom(String groupId, String artifactId, String version, List<String> mavenRepos) throws IOException {
+    public static Optional<File> downloadPom(String groupId, String artifactId, String version, List<String> mavenRepos) {
         for (var repo : mavenRepos) {
             var pomUrl = MavenUtilities.getPomUrl(groupId.trim(), artifactId.trim(), version.trim(), repo);
-            Optional<File> pom;
             try {
-                pom = httpGetToFile(pomUrl);
-            } catch (FileNotFoundException | UnknownHostException | MalformedURLException e) {
+                File pom = httpGetToFile(pomUrl);
+                return Optional.of(pom);
+            } catch (IOException e) {
                 continue;
-            }
-            if (pom.isPresent()) {
-                return pom;
             }
         }
         return Optional.empty();
     }
 
-    public static Optional<File> downloadPomFile(String pomUrl) throws IOException {
-        Optional<File> pom;
+    public static Optional<File> downloadPomFile(String pomUrl) {
         try {
-            pom = httpGetToFile(pomUrl);
-        } catch (FileNotFoundException | UnknownHostException | MalformedURLException e) {
+            File pom = httpGetToFile(pomUrl);
+            return Optional.of(pom);
+        } catch (IOException e) {
             return Optional.empty();
         }
-        return pom;
     }
 
     /**
@@ -137,35 +131,40 @@ public class MavenUtilities {
      * @param url The url of the wanted file.
      * @return a temporarily saved file.
      */
-    private static Optional<File> httpGetToFile(String url)
-            throws IOException {
+    private static File httpGetToFile(String url) throws IOException {
         logger.debug("HTTP GET: " + url);
         try {
             final var tempFile = Files.createTempFile("fasten", ".pom");
-            final Response response = getHttpResponse(url);
-            final InputStream in = Objects.requireNonNull(response.body()).byteStream();
-            Files.copy(in, tempFile, StandardCopyOption.REPLACE_EXISTING);
-            in.close();
-            Objects.requireNonNull(response.body()).close();
-            return Optional.of(new File(tempFile.toAbsolutePath().toString()));
-        } catch (FileNotFoundException | MalformedURLException | UnknownHostException e) {
-            logger.error("Could not find URL: {}", e.getMessage(), e);
-            throw e;
+
+            try (ResponseBody response = getHttpResponse(url); InputStream in = response.byteStream()) {
+                Files.copy(in, tempFile, StandardCopyOption.REPLACE_EXISTING);
+            }
+            // TODO why this complicated construct and not just return tempFile?
+            return tempFile.toAbsolutePath().toFile();
         } catch (IOException e) {
             logger.error("Error getting file from URL: " + url, e);
             throw e;
         }
     }
 
-    private static Response getHttpResponse(String url) throws IOException {
+    private static ResponseBody getHttpResponse(String url) {
         OkHttpClient client = new OkHttpClient();
         Request request = new Request.Builder().url(url).addHeader("Connection", "close").build();
-        Response response = client.newCall(request).execute();
+        Call call = client.newCall(request);
+
+        Response response = null;
+        try {
+            response = call.execute();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        ResponseBody body = Objects.requireNonNull(response.body());
         if (response.code() == 200) {
-            return response;
+            return response.body();
         } else {
-            Objects.requireNonNull(response.body()).close();
-            throw new IOException();
+            body.close();
+            throw new IllegalStateException("unexpected query result");
         }
     }
 
@@ -212,14 +211,15 @@ public class MavenUtilities {
         }
     }
 
-    public static boolean mavenArtifactExists(String groupId, String artifactId, String version, String artifactRepo) throws IOException {
+    public static boolean mavenArtifactExists(String groupId, String artifactId, String version, String artifactRepo) {
         if (artifactRepo == null || artifactRepo.isEmpty()) {
             artifactRepo = MAVEN_CENTRAL_REPO;
         }
         var url = getPomUrl(groupId, artifactId, version, artifactRepo);
         try {
-            return httpGetToFile(url).isPresent();
-        } catch (FileNotFoundException | UnknownHostException | MalformedURLException e) {
+            httpGetToFile(url);
+            return true;
+        } catch (IOException e) {
             return false;
         }
     }

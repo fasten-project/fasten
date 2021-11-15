@@ -91,15 +91,11 @@ public class LazyIngestionProvider {
         artifacts.forEach(a -> {
             var groupId = a.packageName.split(":")[0];
             var artifactId = a.packageName.split(":")[1];
-            try {
-                if (!MavenUtilities.mavenArtifactExists(groupId, artifactId, a.version, a.artifactRepo)) {
-                    throw new IllegalArgumentException("Maven artifact '" + a.packageName + ":" + a.version
-                            + "' could not be found in the repository of '"
-                            + (a.artifactRepo == null ? MavenUtilities.MAVEN_CENTRAL_REPO : a.artifactRepo) + "'"
-                            + " Make sure the Maven coordinate and repository are correct");
-                }
-            } catch (IOException e) {
-                e.printStackTrace();
+            if (!MavenUtilities.mavenArtifactExists(groupId, artifactId, a.version, a.artifactRepo)) {
+                throw new IllegalArgumentException("Maven artifact '" + a.packageName + ":" + a.version
+                        + "' could not be found in the repository of '"
+                        + (a.artifactRepo == null ? MavenUtilities.MAVEN_CENTRAL_REPO : a.artifactRepo) + "'"
+                        + " Make sure the Maven coordinate and repository are correct");
             }
         });
         var ingestedArtifactRecords = artifacts.stream()
