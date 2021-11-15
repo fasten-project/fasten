@@ -83,7 +83,7 @@ public class CGMerger {
     private List<Pair<DirectedGraph, ExtendedRevisionJavaCallGraph>> ercgDependencySet;
     private BiMap<Long, String> allUris;
 
-    private Map<String, Map<String, String>> externalUris = new HashMap<>();
+    private Map<String, Map<String, String>> externalUris;
 
     public BiMap<Long, String> getAllUris() {
         return this.allUris;
@@ -95,11 +95,24 @@ public class CGMerger {
      * @param dependencySet all artifacts present in a resolution
      */
     public CGMerger(final List<ExtendedRevisionJavaCallGraph> dependencySet) {
+        this(dependencySet, false);
+    }
+
+    /**
+     * Creates instance of callgraph merger.
+     *
+     * @param dependencySet all artifacts present in a resolution
+     * @param withExternals true if unresolved external calls should be kept in the generated graph
+     */
+    public CGMerger(final List<ExtendedRevisionJavaCallGraph> dependencySet, boolean withExternals) {
 
         final var UCH = createUniversalCHA(dependencySet);
         this.universalParents = UCH.getLeft();
         this.universalChildren = UCH.getRight();
         this.allUris = HashBiMap.create();
+        if (withExternals) {
+            this.externalUris = new HashMap<>();
+        }
         final var graphAndDict = getDirectedGraphsAndTypeDict(dependencySet);
         this.ercgDependencySet = graphAndDict.getLeft();
         this.typeDictionary = graphAndDict.getRight();
@@ -151,10 +164,12 @@ public class CGMerger {
         }
 
         // Index external URIs
-        for (Map.Entry<String, JavaType> entry : ercg.getClassHierarchy().get(JavaScope.externalTypes).entrySet()) {
-            Map<String, String> typeMap = this.externalUris.computeIfAbsent(entry.getKey(), k -> new HashMap<>());
-            for (JavaNode node : entry.getValue().getMethods().values()) {
-                typeMap.put(node.getSignature(), node.getUri().toString());
+        if (isWithExternals()) {
+            for (Map.Entry<String, JavaType> entry : ercg.getClassHierarchy().get(JavaScope.externalTypes).entrySet()) {
+                Map<String, String> typeMap = this.externalUris.computeIfAbsent(entry.getKey(), k -> new HashMap<>());
+                for (JavaNode node : entry.getValue().getMethods().values()) {
+                    typeMap.put(node.getSignature(), node.getUri().toString());
+                }
             }
         }
 
@@ -204,11 +219,15 @@ public class CGMerger {
         this.typeDictionary = createTypeDictionary();
     }
 
-    public DirectedGraph mergeWithCHA(final long id) {
-        return mergeWithCHA(id, false);
+    /**
+     * @return true if unresolved external calls should be kept in the generated graph
+     */
+    public boolean isWithExternals()
+    {
+        return this.externalUris != null;
     }
 
-    public DirectedGraph mergeWithCHA(final long id, boolean withExternals) {
+    public DirectedGraph mergeWithCHA(final long id) {
         final var callGraphData = fetchCallGraphData(id, rocksDao);
         GraphMetadata graphArcs = null;
         try {
@@ -216,7 +235,7 @@ public class CGMerger {
         } catch (RocksDBException e) {
             logger.error("Could not retrieve arcs (graph metadata) from graph database:", e);
         }
-        return mergeWithCHA(callGraphData, graphArcs, withExternals);
+        return mergeWithCHA(callGraphData, graphArcs);
     }
 
     public DirectedGraph mergeWithCHA(final String artifact) {
@@ -362,18 +381,6 @@ public class CGMerger {
      * @return merged call graph
      */
     public DirectedGraph mergeWithCHA(final DirectedGraph callGraph, final GraphMetadata metadata) {
-        return mergeWithCHA(callGraph, metadata, false);
-    }
-
-    /**
-     * Merges a call graph with its dependencies using CHA algorithm.
-     *
-     * @param callGraph DirectedGraph of the dependency to stitch
-     * @param metadata     GraphMetadata of the dependency to stitch
-     * @param withExternals true if calls to unresolved callables should be kept
-     * @return merged call graph
-     */
-    public DirectedGraph mergeWithCHA(final DirectedGraph callGraph, final GraphMetadata metadata, boolean withExternals) {
         final long totalTime = System.currentTimeMillis();
 
         if (callGraph == null) {
@@ -400,9 +407,11 @@ public class CGMerger {
                     signature =
                         CallGraphUtils.decode(StringUtils.substringAfter(FastenJavaURI.create(receiver.receiverSignature).decanonicalize().getEntity(), "."));
                 }
-                if (!resolve(edges, arc, signature, callGraph.isExternal(sourceId)) && withExternals) {
+                if (!resolve(edges, arc, signature, callGraph.isExternal(sourceId))) {
                     // The target could not be resolved, store it as external node
-                    addExternal(result, edges, arc);
+                    if (isWithExternals()) {
+                        addExternal(result, edges, arc);
+                    }
                 }
             }
         });
@@ -452,27 +461,17 @@ public class CGMerger {
      * @return merged call graph
      */
     public DirectedGraph mergeAllDeps() {
-        return mergeAllDeps(false);
-    }
-
-    /**
-     * Create fully merged for the entire dependency set.
-     *
-     * @param withExternals true if calls to unresolved callables should be kept
-     * @return merged call graph
-     */
-    public DirectedGraph mergeAllDeps(boolean withExternals) {
         List<DirectedGraph> depGraphs = new ArrayList<>();
         if (this.dbContext == null) {
             for (final var dep : this.ercgDependencySet) {
-                var merged = mergeWithCHA(dep.getKey(), getERCGArcs(dep.getRight()), withExternals);
+                var merged = mergeWithCHA(dep.getKey(), getERCGArcs(dep.getRight()));
                 if (merged != null) {
                     depGraphs.add(merged);
                 }
             }
         } else {
             for (final var dep : this.dependencySet) {
-                var merged = mergeWithCHA(dep, withExternals);
+                var merged = mergeWithCHA(dep);
                 if (merged != null) {
                     depGraphs.add(merged);
                 }
