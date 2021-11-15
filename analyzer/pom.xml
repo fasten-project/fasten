@@ -43,7 +43,6 @@
         <module>vulnerability-cache-invalidation-plugin</module>
         <module>parallel-vulnerability-cache-invalidation-plugin</module>
         <module>vulnerability-cache-processor-plugin</module>
-        <module>dummy-plugin</module>
         <module>vulnerability-statements-processor</module>
         <module>vulnerability-packages-listener</module>
         <module>dummy-plugin</module>
