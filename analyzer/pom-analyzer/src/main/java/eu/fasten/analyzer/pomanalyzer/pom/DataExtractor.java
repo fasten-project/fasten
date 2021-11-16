@@ -53,13 +53,13 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Optional;
 
 public class DataExtractor {
 
-    private final List<String> mavenRepos;
     private static final Logger logger = LoggerFactory.getLogger(DataExtractor.class);
-
+    private final List<String> mavenRepos;
     private String mavenCoordinate = null;
     private String pomContents = null;
     private Pair<String, Pair<Map<String, String>, List<DependencyManagement>>> resolutionMetadata = null;
@@ -69,12 +69,32 @@ public class DataExtractor {
     }
 
     /**
+     * Utility function that reads the contents of a file to a String.
+     */
+    private static Optional<String> fileToString(final File f) {
+        logger.trace("Loading file as string: " + f.toString());
+        try {
+            final var fr = new BufferedReader(new FileReader(f));
+            final StringBuilder result = new StringBuilder();
+            String line;
+            while ((line = fr.readLine()) != null) {
+                result.append(line);
+            }
+            fr.close();
+            return Optional.of(result.toString());
+        } catch (IOException e) {
+            logger.error("Cannot read from file: " + f.toString(), e);
+            return Optional.empty();
+        }
+    }
+
+    /**
      * Extracts Maven coordinate from the POM file.
      *
      * @param pomUrl URL to download the POM file
      * @return Maven coordinate in the form of 'groupId:artifactId:version'
      */
-    public String getMavenCoordinate(String pomUrl) throws IOException {
+    public String getMavenCoordinate(String pomUrl) {
         StringBuilder coordinate = new StringBuilder();
         try {
             var pom = getPomRootElement(pomUrl);
@@ -103,8 +123,10 @@ public class DataExtractor {
             }
         } catch (DocumentException e) {
             logger.error("Error parsing POM file from: " + pomUrl);
-        } catch (FileNotFoundException e) {
+            throw new RuntimeException(e);
+        } catch (IOException e) {
             logger.error("Error downloading POM file from: " + pomUrl);
+            throw new RuntimeException(e);
         }
         return null;
     }
@@ -182,7 +204,7 @@ public class DataExtractor {
      * @param version    version of the coordinate
      * @return Extracted packaging as String (default is "jar")
      */
-    public String extractPackagingType(String groupId, String artifactId, String version) throws IOException {
+    public String extractPackagingType(String groupId, String artifactId, String version) {
         String packaging = "jar";
         try {
             var pom = getPomRootElement(groupId, artifactId, version);
@@ -194,10 +216,6 @@ public class DataExtractor {
             }
         } catch (DocumentException e) {
             logger.error("Error parsing POM file for: "
-                    + groupId + Constants.mvnCoordinateSeparator + artifactId
-                    + Constants.mvnCoordinateSeparator + version);
-        } catch (FileNotFoundException e) {
-            logger.error("Error downloading POM file for: "
                     + groupId + Constants.mvnCoordinateSeparator + artifactId
                     + Constants.mvnCoordinateSeparator + version);
         }
@@ -212,7 +230,7 @@ public class DataExtractor {
      * @param version    version of the coordinate
      * @return Extracted project name as String
      */
-    public String extractProjectName(String groupId, String artifactId, String version) throws IOException {
+    public String extractProjectName(String groupId, String artifactId, String version) {
         String name = null;
         try {
             var pom = getPomRootElement(groupId, artifactId, version);
@@ -224,10 +242,6 @@ public class DataExtractor {
             }
         } catch (DocumentException e) {
             logger.error("Error parsing POM file for: "
-                    + groupId + Constants.mvnCoordinateSeparator + artifactId
-                    + Constants.mvnCoordinateSeparator + version);
-        } catch (FileNotFoundException e) {
-            logger.error("Error downloading POM file for: "
                     + groupId + Constants.mvnCoordinateSeparator + artifactId
                     + Constants.mvnCoordinateSeparator + version);
         }
@@ -242,7 +256,7 @@ public class DataExtractor {
      * @param version    version of the coordinate
      * @return Parent coordinate as String in the form of "groupId:artifactId:version"
      */
-    public String extractParentCoordinate(String groupId, String artifactId, String version) throws IOException {
+    public String extractParentCoordinate(String groupId, String artifactId, String version) {
         String parent = null;
         try {
             var pom = getPomRootElement(groupId, artifactId, version);
@@ -270,10 +284,6 @@ public class DataExtractor {
             }
         } catch (DocumentException e) {
             logger.error("Error parsing POM file for: "
-                    + groupId + Constants.mvnCoordinateSeparator + artifactId
-                    + Constants.mvnCoordinateSeparator + version);
-        } catch (FileNotFoundException e) {
-            logger.error("Error downloading POM file for: "
                     + groupId + Constants.mvnCoordinateSeparator + artifactId
                     + Constants.mvnCoordinateSeparator + version);
         }
@@ -373,7 +383,7 @@ public class DataExtractor {
      * @param version    version of the coordinate
      * @return Extracted repository URL as String
      */
-    public String extractRepoUrl(String groupId, String artifactId, String version) throws IOException {
+    public String extractRepoUrl(String groupId, String artifactId, String version) {
         String repoUrl = null;
         try {
             var pom = getPomRootElement(groupId, artifactId, version);
@@ -393,22 +403,20 @@ public class DataExtractor {
             logger.error("Error parsing POM file for: "
                     + groupId + Constants.mvnCoordinateSeparator + artifactId
                     + Constants.mvnCoordinateSeparator + version);
-        } catch (FileNotFoundException e) {
-            logger.error("Error downloading POM file for: "
-                    + groupId + Constants.mvnCoordinateSeparator + artifactId
-                    + Constants.mvnCoordinateSeparator + version);
         }
         return repoUrl;
     }
 
     private Element getPomRootElement(String groupId, String artifactId, String version)
-            throws IOException, DocumentException {
-        var pomByteStream =
-                (groupId + Constants.mvnCoordinateSeparator + artifactId
-                        + Constants.mvnCoordinateSeparator + version).equals(this.mavenCoordinate)
-                        ? new ByteArrayInputStream(this.pomContents.getBytes())
-                        : new ByteArrayInputStream(this.downloadPom(groupId, artifactId, version)
-                        .orElseThrow(FileNotFoundException::new).getBytes());
+            throws DocumentException {
+        String requestedCoord = groupId + Constants.mvnCoordinateSeparator + artifactId + Constants.mvnCoordinateSeparator + version;
+        boolean isCurrentCoord = requestedCoord.equals(this.mavenCoordinate);
+
+        String content = isCurrentCoord ?
+                this.pomContents :
+                this.downloadPom(groupId, artifactId, version).orElseThrow(() -> new NoSuchElementException("could not find pom file for " + requestedCoord));
+
+        var pomByteStream = new ByteArrayInputStream(content.getBytes());
         return new SAXReader().read(pomByteStream).getRootElement();
     }
 
@@ -417,7 +425,7 @@ public class DataExtractor {
         return new SAXReader().read(pomByteStream).getRootElement();
     }
 
-    private void updateResolutionMetadata(String groupId, String artifactId, String version, Element pom) throws IOException {
+    private void updateResolutionMetadata(String groupId, String artifactId, String version, Element pom) {
         if (this.resolutionMetadata == null
                 || !this.resolutionMetadata.getLeft()
                 .equals(groupId + Constants.mvnCoordinateSeparator + artifactId
@@ -436,7 +444,7 @@ public class DataExtractor {
      * @param version    version of the coordinate
      * @return Extracted commit tag representing certain version in repository
      */
-    public String extractCommitTag(String groupId, String artifactId, String version) throws IOException {
+    public String extractCommitTag(String groupId, String artifactId, String version) {
         String commitTag = null;
         try {
             var pom = getPomRootElement(groupId, artifactId, version);
@@ -454,10 +462,6 @@ public class DataExtractor {
             logger.error("Error parsing POM file for: "
                     + groupId + Constants.mvnCoordinateSeparator + artifactId
                     + Constants.mvnCoordinateSeparator + version);
-        } catch (FileNotFoundException e) {
-            logger.error("Error downloading POM file for: "
-                    + groupId + Constants.mvnCoordinateSeparator + artifactId
-                    + Constants.mvnCoordinateSeparator + version);
         }
         return commitTag;
     }
@@ -471,7 +475,7 @@ public class DataExtractor {
      * @param version    version of the coordinate
      * @return Extracted dependency information as DependencyData
      */
-    public DependencyData extractDependencyData(String groupId, String artifactId, String version) throws IOException {
+    public DependencyData extractDependencyData(String groupId, String artifactId, String version) {
         DependencyData dependencyData = new DependencyData(
                 new DependencyManagement(new ArrayList<>()), new ArrayList<>());
         try {
@@ -505,10 +509,6 @@ public class DataExtractor {
             dependencyData = new DependencyData(dependencyManagement, dependencies);
         } catch (DocumentException e) {
             logger.error("Error parsing POM file for: "
-                    + groupId + Constants.mvnCoordinateSeparator + artifactId
-                    + Constants.mvnCoordinateSeparator + version);
-        } catch (FileNotFoundException e) {
-            logger.error("Error downloading POM file for: "
                     + groupId + Constants.mvnCoordinateSeparator + artifactId
                     + Constants.mvnCoordinateSeparator + version);
         }
@@ -627,7 +627,7 @@ public class DataExtractor {
         return resolvedDependencies;
     }
 
-    private Pair<Map<String, String>, List<DependencyManagement>> extractDependencyResolutionMetadata(Node pomRoot) throws IOException {
+    private Pair<Map<String, String>, List<DependencyManagement>> extractDependencyResolutionMetadata(Node pomRoot) {
         Map<String, String> properties = new HashMap<>();
         var dependencyManagements = new ArrayList<DependencyManagement>();
         var profilesRoot = pomRoot.selectSingleNode("./*[local-name() ='profiles']");
@@ -759,7 +759,7 @@ public class DataExtractor {
         return dependencies;
     }
 
-    private Optional<String> downloadPom(String groupId, String artifactId, String version) throws IOException {
+    private Optional<String> downloadPom(String groupId, String artifactId, String version) {
         var pom = MavenUtilities.downloadPom(groupId, artifactId, version, this.mavenRepos);
 
         if (pom.isPresent()) {
@@ -782,25 +782,5 @@ public class DataExtractor {
             logger.warn("Could not delete the POM file " + pomFile.toString());
         }
         return pomFileContent;
-    }
-
-    /**
-     * Utility function that reads the contents of a file to a String.
-     */
-    private static Optional<String> fileToString(final File f) {
-        logger.trace("Loading file as string: " + f.toString());
-        try {
-            final var fr = new BufferedReader(new FileReader(f));
-            final StringBuilder result = new StringBuilder();
-            String line;
-            while ((line = fr.readLine()) != null) {
-                result.append(line);
-            }
-            fr.close();
-            return Optional.of(result.toString());
-        } catch (IOException e) {
-            logger.error("Cannot read from file: " + f.toString(), e);
-            return Optional.empty();
-        }
     }
 }
