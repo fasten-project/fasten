@@ -40,9 +40,11 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.sql.Timestamp;
 import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+
 
 public class POMAnalyzerPlugin extends Plugin {
 
@@ -53,7 +55,7 @@ public class POMAnalyzerPlugin extends Plugin {
     @Extension
     public static class POMAnalyzer implements KafkaPlugin, DBConnector {
 
-        private String consumerTopic = "fasten.mvn.pkg";
+        private List<String> consumeTopics = new LinkedList<>(Collections.singletonList("fasten.mvn.pkg"));
         private final Logger logger = LoggerFactory.getLogger(POMAnalyzer.class.getName());
         private Exception pluginError = null;
         private static DSLContext dslContext;
@@ -74,12 +76,12 @@ public class POMAnalyzerPlugin extends Plugin {
 
         @Override
         public Optional<List<String>> consumeTopic() {
-            return Optional.of(Collections.singletonList(consumerTopic));
+            return Optional.of(consumeTopics);
         }
 
         @Override
-        public void setTopic(String topicName) {
-            this.consumerTopic = topicName;
+        public void setTopics(List<String> consumeTopics) {
+            this.consumeTopics = consumeTopics;
         }
 
         @Override

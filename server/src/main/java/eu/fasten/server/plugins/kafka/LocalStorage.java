@@ -2,10 +2,11 @@ package eu.fasten.server.plugins.kafka;
 
 import org.apache.commons.codec.digest.DigestUtils;
 
-import static org.apache.commons.codec.digest.MessageDigestAlgorithms.SHA_1;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
+
+import static org.apache.commons.codec.digest.MessageDigestAlgorithms.SHA_1;
 
 public class LocalStorage {
 
