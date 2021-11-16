@@ -51,9 +51,9 @@ import java.sql.BatchUpdateException;
 import java.sql.Timestamp;
 import java.util.*;
 
-public class MetadataDBExtension implements KafkaPlugin, DBConnector {
+public abstract class MetadataDBExtension implements KafkaPlugin, DBConnector {
 
-    protected List<String> consumeTopics = new LinkedList<>(Collections.singletonList("fasten.OPAL.out"));
+    protected List<String> consumeTopics = null;
     private static DSLContext dslContext;
     protected boolean processedRecord = false;
     protected Exception pluginError = null;
