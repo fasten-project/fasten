@@ -63,7 +63,7 @@ public class MavenUtilities {
      * @param version    version of the artifact to find its dependencies
      * @return an optional pom file instance
      */
-    public static Optional<File> downloadPom(String groupId, String artifactId, String version) throws IOException {
+    public static Optional<File> downloadPom(String groupId, String artifactId, String version) {
         List<String> mavenRepos = MavenUtilities.getRepos();
         return MavenUtilities.downloadPom(groupId, artifactId, version, mavenRepos);
     }
@@ -174,7 +174,7 @@ public class MavenUtilities {
         }
     }
 
-    public static String sendGetRequest(String url) throws IOException {
+    public static String sendGetRequest(String url) {
         return MavenUtilities.downloadPomFile(url).flatMap(MavenUtilities::fileToString).orElse(null);
     }
 

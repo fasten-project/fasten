@@ -775,7 +775,7 @@ public class DataExtractor {
         return Optional.empty();
     }
 
-    private Optional<String> downloadPom(String pomUrl) throws IOException {
+    private Optional<String> downloadPom(String pomUrl) {
         var pomFile = MavenUtilities.downloadPomFile(pomUrl);
         var pomFileContent = pomFile.flatMap(DataExtractor::fileToString);
         if (pomFile.isPresent() && !pomFile.get().delete()) {
