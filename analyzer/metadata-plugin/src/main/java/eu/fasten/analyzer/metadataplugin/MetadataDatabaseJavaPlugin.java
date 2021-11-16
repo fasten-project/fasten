@@ -47,6 +47,10 @@ public class MetadataDatabaseJavaPlugin extends Plugin {
     public static class MetadataDBJavaExtension extends MetadataDBExtension {
         private static DSLContext dslContext;
 
+        public MetadataDBJavaExtension() {
+            super.consumeTopics = new LinkedList<>(Collections.singletonList("fasten.OPAL.out"));
+        }
+
         @Override
         public void setDBConnection(Map<String, DSLContext> dslContexts) {
             MetadataDBJavaExtension.dslContext = dslContexts.get(Constants.mvnForge);
