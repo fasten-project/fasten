@@ -95,7 +95,7 @@ public class PackageApiServiceImplTest {
 
         Mockito.when(kbDao.getPackageVersion(packageName, version)).thenReturn(null);
         result = service.getPackageVersion(packageName, version, null, null);
-        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, result.getStatusCode());
+        assertEquals(HttpStatus.BAD_REQUEST, result.getStatusCode());
 
         Mockito.verify(kbDao, Mockito.times(2)).getPackageVersion(packageName, version);
 

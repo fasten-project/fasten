@@ -69,7 +69,7 @@ public class PackageApiServiceImpl implements PackageApiService {
             try {
                 try {
                     LazyIngestionProvider.ingestArtifactIfNecessary(package_name, package_version, artifactRepo, date);
-                } catch (IllegalArgumentException ex) {
+                } catch (IllegalArgumentException | IllegalStateException ex) {
                     return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST);
                 } catch (IOException ex) {
                     return new ResponseEntity<>("Couldn't ingest the artifact", HttpStatus.INTERNAL_SERVER_ERROR);
