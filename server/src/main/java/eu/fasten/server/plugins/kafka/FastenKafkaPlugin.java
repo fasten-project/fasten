@@ -19,6 +19,7 @@
 package eu.fasten.server.plugins.kafka;
 
 import com.google.common.base.Strings;
+import eu.fasten.core.exceptions.UnrecoverableError;
 import eu.fasten.core.plugins.KafkaPlugin;
 import eu.fasten.server.plugins.FastenServerPlugin;
 import org.apache.commons.lang.StringUtils;
@@ -264,32 +265,43 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
      * This strategy provides at-least-once semantics.
      */
     public void processRecord(ConsumerRecord<String, String> record, Long consumeTimestamp, KafkaRecordKind kafkaRecordKind) {
-        if (localStorage != null) { // If local storage is enabled.
-            if (localStorage.exists(record.value(), record.partition())) { // This plugin already consumed this record before, we will not process it now.
-                logger.info("Already processed record with hash: " + localStorage.getSHA1(record.value()) + ", skipping it now.");
-                plugin.setPluginError(new ExistsInLocalStorageException("Record already exists in local storage. Most probably it has been processed before and the pod crashed."));
-            } else {
-                try {
-                    localStorage.store(record.value(), record.partition());
-                } catch (IOException e) {
-                    // We couldn't store the message SHA. Will just continue processing, but log the error.
-                    // This strategy might result in the deadlock/retry behavior of the same coordinate.
-                    // However, if local storage is failing we can't store the CG's either and that's already a problem.
-                    logger.error("Trying to store the hash of a record, but failed due to an IOException", e);
-                } finally { // Event if we hit an IOException, we will execute this finally block.
-                    if (consumeTimeoutEnabled) {
-                        consumeWithTimeout(record.value(), consumeTimeout, exitOnTimeout);
-                    } else {
-                        plugin.consume(record.value());
+
+        try {
+            if (localStorage != null) { // If local storage is enabled.
+                if (localStorage.exists(record.value(), record.partition())) { // This plugin already consumed this record before, we will not process it now.
+                    logger.info("Already processed record with hash: " + localStorage.getSHA1(record.value()) + ", skipping it now.");
+                    plugin.setPluginError(new ExistsInLocalStorageException("Record already exists in local storage. Most probably it has been processed before and the pod crashed."));
+                } else {
+                    try {
+                        localStorage.store(record.value(), record.partition());
+                    } catch (IOException e) {
+                        // We couldn't store the message SHA. Will just continue processing, but log the error.
+                        // This strategy might result in the deadlock/retry behavior of the same coordinate.
+                        // However, if local storage is failing we can't store the CG's either and that's already a problem.
+                        logger.error("Trying to store the hash of a record, but failed due to an IOException", e);
+                    } finally { // Event if we hit an IOException, we will execute this finally block.
+                        if (consumeTimeoutEnabled) {
+                            consumeWithTimeout(record.value(), consumeTimeout, exitOnTimeout);
+                        } else {
+                            plugin.consume(record.value());
+                        }
                     }
                 }
+            } else { // If local storage is not enabled.
+                if (consumeTimeoutEnabled) {
+                    consumeWithTimeout(record.value(), consumeTimeout, exitOnTimeout);
+                } else {
+                    plugin.consume(record.value());
+                }
             }
-        } else { // If local storage is not enabled.
-            if (consumeTimeoutEnabled) {
-                consumeWithTimeout(record.value(), consumeTimeout, exitOnTimeout);
-            } else {
-                plugin.consume(record.value());
+        } catch (RuntimeException e) {
+            // In rare circumstances, plug-ins throw UnrecoverableError to crash and therefore K8s will restart the plug-in.
+            if (e instanceof UnrecoverableError) {
+                logger.error("Forced to stop the plug-in due to ", e);
+                throw e;
             }
+            logger.error("An error occurred in " + plugin.getClass().getCanonicalName(), e);
+            plugin.setPluginError(e);
         }
 
         // We always produce, it does not matter if local storage is enabled or not.
