@@ -44,14 +44,14 @@ public class MavenUtilitiesTest {
 
     @Test
     public void downloadInvalidPomTest() {
-        assertThrows(IOException.class, () -> {
+        assertThrows(IllegalStateException.class, () -> {
             MavenUtilities.downloadPom("fake", "fake", "4.12");
         });
     }
 
     @Test
     public void downloadPomWithInvalidRepoTest() {
-        assertThrows(IOException.class, () -> {
+        assertThrows(IllegalStateException.class, () -> {
             MavenUtilities.downloadPom("junit", "junit", "4.12", List.of("https://google.com/"));
         });
     }

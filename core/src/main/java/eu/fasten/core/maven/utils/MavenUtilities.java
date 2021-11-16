@@ -33,6 +33,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.ConnectException;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
@@ -82,7 +83,12 @@ public class MavenUtilities {
             try {
                 File pom = httpGetToFile(pomUrl);
                 return Optional.of(pom);
-            } catch (IOException e) {
+            } catch (ConnectException e1) {
+                // After downloading ~50-60K POMs, there will be a lot of CLOSE_WAIT connections,
+                // at some point the plug-in runs out of source ports to use. Therefore, we need to crash so that
+                // Kubernetes will restart the plug-in to kill CLOSE_WAIT connections.
+                throw new Error("Failing execution, typically due to many CLOSE_WAIT connections", e1);
+            } catch (IOException e2) {
                 continue;
             }
         }
