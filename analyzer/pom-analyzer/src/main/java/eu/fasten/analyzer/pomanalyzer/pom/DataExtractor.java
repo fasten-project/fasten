@@ -18,10 +18,21 @@
 
 package eu.fasten.analyzer.pomanalyzer.pom;
 
-import eu.fasten.core.maven.utils.MavenUtilities;
+import eu.fasten.core.data.Constants;
 import eu.fasten.core.maven.data.Dependency;
 import eu.fasten.core.maven.data.DependencyData;
 import eu.fasten.core.maven.data.DependencyManagement;
+import eu.fasten.core.maven.utils.MavenUtilities;
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
+import org.dom4j.DocumentException;
+import org.dom4j.Element;
+import org.dom4j.Node;
+import org.dom4j.io.SAXReader;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -42,29 +53,39 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Optional;
-import eu.fasten.core.data.Constants;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.lang3.tuple.Pair;
-import org.dom4j.DocumentException;
-import org.dom4j.Element;
-import org.dom4j.Node;
-import org.dom4j.io.SAXReader;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class DataExtractor {
 
-    private final List<String> mavenRepos;
     private static final Logger logger = LoggerFactory.getLogger(DataExtractor.class);
-
+    private final List<String> mavenRepos;
     private String mavenCoordinate = null;
     private String pomContents = null;
     private Pair<String, Pair<Map<String, String>, List<DependencyManagement>>> resolutionMetadata = null;
 
     public DataExtractor(List<String> mavenRepos) {
         this.mavenRepos = mavenRepos;
+    }
+
+    /**
+     * Utility function that reads the contents of a file to a String.
+     */
+    private static Optional<String> fileToString(final File f) {
+        logger.trace("Loading file as string: " + f.toString());
+        try {
+            final var fr = new BufferedReader(new FileReader(f));
+            final StringBuilder result = new StringBuilder();
+            String line;
+            while ((line = fr.readLine()) != null) {
+                result.append(line);
+            }
+            fr.close();
+            return Optional.of(result.toString());
+        } catch (IOException e) {
+            logger.error("Cannot read from file: " + f.toString(), e);
+            return Optional.empty();
+        }
     }
 
     /**
@@ -102,8 +123,10 @@ public class DataExtractor {
             }
         } catch (DocumentException e) {
             logger.error("Error parsing POM file from: " + pomUrl);
-        } catch (FileNotFoundException e) {
+            throw new RuntimeException(e);
+        } catch (IOException e) {
             logger.error("Error downloading POM file from: " + pomUrl);
+            throw new RuntimeException(e);
         }
         return null;
     }
@@ -195,10 +218,6 @@ public class DataExtractor {
             logger.error("Error parsing POM file for: "
                     + groupId + Constants.mvnCoordinateSeparator + artifactId
                     + Constants.mvnCoordinateSeparator + version);
-        } catch (FileNotFoundException e) {
-            logger.error("Error downloading POM file for: "
-                    + groupId + Constants.mvnCoordinateSeparator + artifactId
-                    + Constants.mvnCoordinateSeparator + version);
         }
         return packaging;
     }
@@ -223,10 +242,6 @@ public class DataExtractor {
             }
         } catch (DocumentException e) {
             logger.error("Error parsing POM file for: "
-                    + groupId + Constants.mvnCoordinateSeparator + artifactId
-                    + Constants.mvnCoordinateSeparator + version);
-        } catch (FileNotFoundException e) {
-            logger.error("Error downloading POM file for: "
                     + groupId + Constants.mvnCoordinateSeparator + artifactId
                     + Constants.mvnCoordinateSeparator + version);
         }
@@ -269,10 +284,6 @@ public class DataExtractor {
             }
         } catch (DocumentException e) {
             logger.error("Error parsing POM file for: "
-                    + groupId + Constants.mvnCoordinateSeparator + artifactId
-                    + Constants.mvnCoordinateSeparator + version);
-        } catch (FileNotFoundException e) {
-            logger.error("Error downloading POM file for: "
                     + groupId + Constants.mvnCoordinateSeparator + artifactId
                     + Constants.mvnCoordinateSeparator + version);
         }
@@ -392,26 +403,24 @@ public class DataExtractor {
             logger.error("Error parsing POM file for: "
                     + groupId + Constants.mvnCoordinateSeparator + artifactId
                     + Constants.mvnCoordinateSeparator + version);
-        } catch (FileNotFoundException e) {
-            logger.error("Error downloading POM file for: "
-                    + groupId + Constants.mvnCoordinateSeparator + artifactId
-                    + Constants.mvnCoordinateSeparator + version);
         }
         return repoUrl;
     }
 
     private Element getPomRootElement(String groupId, String artifactId, String version)
-            throws FileNotFoundException, DocumentException {
-        var pomByteStream =
-                (groupId + Constants.mvnCoordinateSeparator + artifactId
-                        + Constants.mvnCoordinateSeparator + version).equals(this.mavenCoordinate)
-                        ? new ByteArrayInputStream(this.pomContents.getBytes())
-                        : new ByteArrayInputStream(this.downloadPom(groupId, artifactId, version)
-                        .orElseThrow(FileNotFoundException::new).getBytes());
+            throws DocumentException {
+        String requestedCoord = groupId + Constants.mvnCoordinateSeparator + artifactId + Constants.mvnCoordinateSeparator + version;
+        boolean isCurrentCoord = requestedCoord.equals(this.mavenCoordinate);
+
+        String content = isCurrentCoord ?
+                this.pomContents :
+                this.downloadPom(groupId, artifactId, version).orElseThrow(() -> new NoSuchElementException("could not find pom file for " + requestedCoord));
+
+        var pomByteStream = new ByteArrayInputStream(content.getBytes());
         return new SAXReader().read(pomByteStream).getRootElement();
     }
 
-    private Element getPomRootElement(String pomUrl) throws FileNotFoundException, DocumentException {
+    private Element getPomRootElement(String pomUrl) throws IOException, DocumentException {
         var pomByteStream = new ByteArrayInputStream(this.downloadPom(pomUrl).orElseThrow(FileNotFoundException::new).getBytes());
         return new SAXReader().read(pomByteStream).getRootElement();
     }
@@ -451,10 +460,6 @@ public class DataExtractor {
             }
         } catch (DocumentException e) {
             logger.error("Error parsing POM file for: "
-                    + groupId + Constants.mvnCoordinateSeparator + artifactId
-                    + Constants.mvnCoordinateSeparator + version);
-        } catch (FileNotFoundException e) {
-            logger.error("Error downloading POM file for: "
                     + groupId + Constants.mvnCoordinateSeparator + artifactId
                     + Constants.mvnCoordinateSeparator + version);
         }
@@ -504,10 +509,6 @@ public class DataExtractor {
             dependencyData = new DependencyData(dependencyManagement, dependencies);
         } catch (DocumentException e) {
             logger.error("Error parsing POM file for: "
-                    + groupId + Constants.mvnCoordinateSeparator + artifactId
-                    + Constants.mvnCoordinateSeparator + version);
-        } catch (FileNotFoundException e) {
-            logger.error("Error downloading POM file for: "
                     + groupId + Constants.mvnCoordinateSeparator + artifactId
                     + Constants.mvnCoordinateSeparator + version);
         }
@@ -759,39 +760,27 @@ public class DataExtractor {
     }
 
     private Optional<String> downloadPom(String groupId, String artifactId, String version) {
-        var pom = MavenUtilities.downloadPom(groupId, artifactId, version, this.mavenRepos).flatMap(DataExtractor::fileToString);
+        var pom = MavenUtilities.downloadPom(groupId, artifactId, version, this.mavenRepos);
 
         if (pom.isPresent()) {
             this.mavenCoordinate = groupId + Constants.mvnCoordinateSeparator + artifactId
                     + Constants.mvnCoordinateSeparator + version;
-            this.pomContents = pom.get();
-            return pom;
+            this.pomContents = pom.flatMap(DataExtractor::fileToString).get();
+            if (!pom.get().delete()) {
+                logger.warn("Could not delete the POM file " + pom.toString());
+            }
+            return Optional.of(this.pomContents);
         }
 
         return Optional.empty();
     }
 
     private Optional<String> downloadPom(String pomUrl) {
-        return MavenUtilities.downloadPomFile(pomUrl).flatMap(DataExtractor::fileToString);
-    }
-
-    /**
-     * Utility function that reads the contents of a file to a String.
-     */
-    private static Optional<String> fileToString(final File f) {
-        logger.trace("Loading file as string: " + f.toString());
-        try {
-            final var fr = new BufferedReader(new FileReader(f));
-            final StringBuilder result = new StringBuilder();
-            String line;
-            while ((line = fr.readLine()) != null) {
-                result.append(line);
-            }
-            fr.close();
-            return Optional.of(result.toString());
-        } catch (IOException e) {
-            logger.error("Cannot read from file: " + f.toString(), e);
-            return Optional.empty();
+        var pomFile = MavenUtilities.downloadPomFile(pomUrl);
+        var pomFileContent = pomFile.flatMap(DataExtractor::fileToString);
+        if (pomFile.isPresent() && !pomFile.get().delete()) {
+            logger.warn("Could not delete the POM file " + pomFile.toString());
         }
+        return pomFileContent;
     }
 }

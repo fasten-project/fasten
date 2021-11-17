@@ -19,17 +19,29 @@
 package eu.fasten.core.maven.utils;
 
 import eu.fasten.core.data.Constants;
+import okhttp3.Call;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
+import okhttp3.ResponseBody;
 import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.*;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.net.UnknownHostException;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.ConnectException;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
-import java.util.*;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 
 /**
  * The helper utility class for working with maven repositories and pom files.
@@ -67,28 +79,29 @@ public class MavenUtilities {
      */
     public static Optional<File> downloadPom(String groupId, String artifactId, String version, List<String> mavenRepos) {
         for (var repo : mavenRepos) {
-            var pomUrl = MavenUtilities.getPomUrl(groupId, artifactId, version, repo);
-            Optional<File> pom;
+            var pomUrl = MavenUtilities.getPomUrl(groupId.trim(), artifactId.trim(), version.trim(), repo);
             try {
-                pom = httpGetToFile(pomUrl);
-            } catch (FileNotFoundException | UnknownHostException | MalformedURLException e) {
+                File pom = httpGetToFile(pomUrl);
+                return Optional.of(pom);
+            } catch (ConnectException e1) {
+                // After downloading ~50-60K POMs, there will be a lot of CLOSE_WAIT connections,
+                // at some point the plug-in runs out of source ports to use. Therefore, we need to crash so that
+                // Kubernetes will restart the plug-in to kill CLOSE_WAIT connections.
+                throw new Error("Failing execution, typically due to many CLOSE_WAIT connections", e1);
+            } catch (IOException e2) {
                 continue;
-            }
-            if (pom.isPresent()) {
-                return pom;
             }
         }
         return Optional.empty();
     }
 
     public static Optional<File> downloadPomFile(String pomUrl) {
-        Optional<File> pom;
         try {
-            pom = httpGetToFile(pomUrl);
-        } catch (FileNotFoundException | UnknownHostException | MalformedURLException e) {
+            File pom = httpGetToFile(pomUrl);
+            return Optional.of(pom);
+        } catch (IOException e) {
             return Optional.empty();
         }
-        return pom;
     }
 
     /**
@@ -124,21 +137,40 @@ public class MavenUtilities {
      * @param url The url of the wanted file.
      * @return a temporarily saved file.
      */
-    private static Optional<File> httpGetToFile(String url)
-            throws FileNotFoundException, UnknownHostException, MalformedURLException {
+    private static File httpGetToFile(String url) throws IOException {
         logger.debug("HTTP GET: " + url);
         try {
             final var tempFile = Files.createTempFile("fasten", ".pom");
-            final InputStream in = new URL(url).openStream();
-            Files.copy(in, tempFile, StandardCopyOption.REPLACE_EXISTING);
-            in.close();
-            return Optional.of(new File(tempFile.toAbsolutePath().toString()));
-        } catch (FileNotFoundException | MalformedURLException | UnknownHostException e) {
-            logger.error("Could not find URL: {}", e.getMessage(), e);
-            throw e;
+
+            try (ResponseBody response = getHttpResponse(url); InputStream in = response.byteStream()) {
+                Files.copy(in, tempFile, StandardCopyOption.REPLACE_EXISTING);
+            }
+            // TODO why this complicated construct and not just return tempFile?
+            return tempFile.toAbsolutePath().toFile();
         } catch (IOException e) {
             logger.error("Error getting file from URL: " + url, e);
-            return Optional.empty();
+            throw e;
+        }
+    }
+
+    private static ResponseBody getHttpResponse(String url) {
+        OkHttpClient client = new OkHttpClient();
+        Request request = new Request.Builder().url(url).addHeader("Connection", "close").build();
+        Call call = client.newCall(request);
+
+        Response response = null;
+        try {
+            response = call.execute();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+
+        ResponseBody body = Objects.requireNonNull(response.body());
+        if (response.code() == 200) {
+            return response.body();
+        } else {
+            body.close();
+            throw new IllegalStateException("unexpected query result");
         }
     }
 
@@ -191,8 +223,9 @@ public class MavenUtilities {
         }
         var url = getPomUrl(groupId, artifactId, version, artifactRepo);
         try {
-            return httpGetToFile(url).isPresent();
-        } catch (FileNotFoundException | UnknownHostException | MalformedURLException e) {
+            httpGetToFile(url);
+            return true;
+        } catch (IOException e) {
             return false;
         }
     }

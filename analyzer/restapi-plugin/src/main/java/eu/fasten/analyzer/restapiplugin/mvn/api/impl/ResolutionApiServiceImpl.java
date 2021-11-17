@@ -44,7 +44,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.Timestamp;
-import java.util.*;
+import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Lazy
@@ -72,6 +73,8 @@ public class ResolutionApiServiceImpl implements ResolutionApiService {
                 LazyIngestionProvider.ingestArtifactWithDependencies(package_name, version);
             } catch (IllegalArgumentException e) {
                 return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
+            } catch (IOException e) {
+                return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
             }
             return new ResponseEntity<>("Package version not found, but should be processed soon. Try again later", HttpStatus.CREATED);
         }
@@ -204,7 +207,7 @@ public class ResolutionApiServiceImpl implements ResolutionApiService {
             try {
                 LazyIngestionProvider.ingestArtifactIfNecessary(package_name, version, null, (long) -1);
                 return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
-            } catch (IllegalArgumentException ill) {
+            } catch (IllegalArgumentException | IOException ill) {
                 return new ResponseEntity<>(ill.getMessage(), HttpStatus.BAD_REQUEST);
             }
         } catch (JSONException e) {

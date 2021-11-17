@@ -28,10 +28,13 @@ import org.dom4j.io.SAXReader;
 import org.json.JSONObject;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
@@ -52,14 +55,14 @@ public class DataExtractorTest {
     }
 
     @Test
-    public void extractRepoUrlTest() {
+    public void extractRepoUrlTest() throws IOException {
         var expected = "http://github.com/junit-team/junit/tree/master";
         var actual = dataExtractor.extractRepoUrl("junit", "junit", "4.12");
         assertEquals(expected, actual);
     }
 
     @Test
-    public void getMavenCoordinateTest() {
+    public void getMavenCoordinateTest() throws IOException {
         var expected = "junit:junit:4.12";
         var actual = dataExtractor.getMavenCoordinate("https://repo1.maven.org/maven2/junit/junit/4.12/junit-4.12.pom");
         assertEquals(expected, actual);
@@ -74,14 +77,14 @@ public class DataExtractorTest {
     }
 
     @Test
-    public void extractCommitTagTest() {
+    public void extractCommitTagTest() throws IOException {
         var expected = "r4.12";
         var actual = dataExtractor.extractCommitTag("junit", "junit", "4.12");
         assertEquals(expected, actual);
     }
 
     @Test
-    public void extractDependencyDataTest() {
+    public void extractDependencyDataTest() throws IOException {
         var expected = DependencyData.fromJSON(new JSONObject("{\n" +
                 "   \"dependencyManagement\":{\n" +
                 "      \"dependencies\":[\n" +
@@ -115,7 +118,7 @@ public class DataExtractorTest {
     }
 
     @Test
-    public void extractDependencyDataWithParentPropertiesTest() {
+    public void extractDependencyDataWithParentPropertiesTest() throws IOException {
         var expected = DependencyData.fromJSON(new JSONObject("{\n" +
                 "   \"dependencyManagement\":{\n" +
                 "      \"dependencies\":[\n" +
@@ -263,21 +266,21 @@ public class DataExtractorTest {
     }
 
     @Test
-    public void extractPackagingTypeTest() {
+    public void extractPackagingTypeTest() throws IOException {
         var expected = "pom";
         var actual = dataExtractor.extractPackagingType("org.wso2.carbon.identity.inbound.auth.sts", "org.wso2.carbon.identity.sts.passive.server.feature", "5.2.9");
         assertEquals(expected, actual);
     }
 
     @Test
-    public void extractPackagingTypeFromPropertiesTest() {
+    public void extractPackagingTypeFromPropertiesTest() throws IOException {
         var expected = "war";
         var actual = dataExtractor.extractPackagingType("org.graphity", "client", "1.1.3");
         assertEquals(expected, actual);
     }
 
     @Test
-    public void extractAllDataTest() {
+    public void extractAllDataTest() throws IOException {
         var expectedDependencyData = DependencyData.fromJSON(new JSONObject("{\n" +
                 "   \"dependencyManagement\":{\n" +
                 "      \"dependencies\":[\n" +
@@ -334,7 +337,7 @@ public class DataExtractorTest {
     }
 
     @Test
-    public void multipleReposTest() {
+    public void multipleReposTest() throws IOException {
         this.dataExtractor = new DataExtractor(List.of("https://repo.maven.apache.org/maven2/"));
         var result = this.dataExtractor.extractDependencyData("abbot", "abbot", "1.4.0");
         assertEquals(new DependencyData(new DependencyManagement(new ArrayList<>()), List.of(new Dependency("junit", "junit", "4.8.2", new ArrayList<>(), "test", false, "", ""))), result);
@@ -350,7 +353,7 @@ public class DataExtractorTest {
     }
 
     @Test
-    public void noProjectNameTest() {
+    public void noProjectNameTest() throws IOException {
         var result = dataExtractor.extractProjectName("com.alicp.jetcache", "jetcache-redis-lettuce", "2.5.13");
         assertNull(result);
     }
@@ -403,7 +406,7 @@ public class DataExtractorTest {
     }
 
     @Test
-    public void extractParentTest() {
+    public void extractParentTest() throws IOException {
         var expected = "org.apache.logging.log4j" + Constants.mvnCoordinateSeparator + "log4j" + Constants.mvnCoordinateSeparator + "2.13.3";
         var actual = dataExtractor.extractParentCoordinate("org.apache.logging.log4j", "log4j-api", "2.13.3");
         assertEquals(expected, actual);

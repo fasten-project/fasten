@@ -20,6 +20,8 @@ package eu.fasten.analyzer.restapiplugin.mvn.api;
 
 import org.springframework.http.ResponseEntity;
 
+import java.io.IOException;
+
 public interface PackageApiService {
 
     ResponseEntity<String> getAllPackages(int offset, int limit);
@@ -33,7 +35,7 @@ public interface PackageApiService {
     ResponseEntity<String> getPackageVersion(String package_name,
                                              String package_version,
                                              String artifactRepo,
-                                             Long date);
+                                             Long date) throws IOException;
 
     ResponseEntity<String> getPackageMetadata(String package_name,
                                               String package_version);
@@ -43,9 +45,9 @@ public interface PackageApiService {
                                                int offset,
                                                int limit,
                                                String artifactRepo,
-                                               Long date);
+                                               Long date) throws IOException;
 
     ResponseEntity<String> searchPackageNames(String packageName, int offset, int limit);
 
-    ResponseEntity<String> getERCGLink(String packageName, String version, String artifactRepo, Long date);
+    ResponseEntity<String> getERCGLink(String packageName, String version, String artifactRepo, Long date) throws IOException;
 }
