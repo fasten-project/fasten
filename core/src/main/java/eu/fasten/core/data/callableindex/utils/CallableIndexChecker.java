@@ -85,7 +85,7 @@ public class CallableIndexChecker implements Runnable {
 
     @Override
     public void run() {
-        RocksDao rocksDb = connectToReadOnlyRocksDB();
+        RocksDao rocksDb = connectToReadOnlyRocksDB(this.graphDbPath);
 
         if (artifactId != null & outputPath != null) {
             extractMetaDataForArtifact(rocksDb);
@@ -142,7 +142,7 @@ public class CallableIndexChecker implements Runnable {
         if (isNotUsingDb) {
             packageVersionIds = generateNPackageIds(10000000L);
         } else {
-            var metadataDb = connectToPostgres();
+            var metadataDb = connectToPostgres(metadataDbUrl, metadataDbUser);
             packageVersionIds = metadataDb
                 .select(PackageVersions.PACKAGE_VERSIONS.ID)
                 .from(PackageVersions.PACKAGE_VERSIONS)
@@ -156,7 +156,7 @@ public class CallableIndexChecker implements Runnable {
         return LongStream.rangeClosed(0L, endInclusive).boxed().collect(Collectors.toList());
     }
 
-    private DSLContext connectToPostgres() {
+    public static DSLContext connectToPostgres(String metadataDbUrl, String metadataDbUser) {
         try {
             return PostgresConnector.getDSLContext(metadataDbUrl, metadataDbUser, true);
         } catch (Exception e) {
@@ -223,9 +223,9 @@ public class CallableIndexChecker implements Runnable {
         return strGraph.toString();
     }
 
-    private RocksDao connectToReadOnlyRocksDB() {
+    public static RocksDao connectToReadOnlyRocksDB(String path) {
         try {
-            return RocksDBConnector.createReadOnlyRocksDBAccessObject(this.graphDbPath);
+            return RocksDBConnector.createReadOnlyRocksDBAccessObject(path);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

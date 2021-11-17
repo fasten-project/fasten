@@ -81,7 +81,6 @@ public class CGMerger {
     private List<Pair<DirectedGraph, ExtendedRevisionJavaCallGraph>> ercgDependencySet;
     private BiMap<Long, String> allUris;
 
-
     public BiMap<Long, String> getAllUris() {
         return this.allUris;
     }
