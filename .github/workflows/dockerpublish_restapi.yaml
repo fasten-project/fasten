@@ -2,18 +2,18 @@ name: Publish Docker image
 
 on:
   push:
-    # Publish `vulnerability-restapi` as Docker `latest` image.
+    # Publish `develop` as Docker `latest` image.
     branches:
-      - vulnerability-restapi
+      - develop
 
   # Run tests for any PRs.
   pull_request:
     branches:
-      - vulnerability-restapi
+      - develop
 
 env:
   # TODO: Change variable to your image's name.
-  IMAGE_NAME: fasten.restapi.vulnerability
+  IMAGE_NAME: fasten.restapi.snapshot
 
 jobs:
 
@@ -36,7 +36,7 @@ jobs:
       - name: Build REST API jar
         run: cd analyzer/restapi-plugin && mvn clean install spring-boot:repackage
       - name: Build image
-        run: cd analyzer/restapi-plugin && docker build -t fasten.restapi.vulnerability .
+        run: cd analyzer/restapi-plugin && docker build -t fasten.restapi.snapshot .
       - name: Log into registry
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login docker.pkg.github.com -u ${{ github.actor }} --password-stdin
       - name: Push image
@@ -60,7 +60,6 @@ jobs:
           # Push images
           docker tag $IMAGE_NAME $IMAGE_ID:$VERSION
           docker push $IMAGE_ID:$VERSION
-          
+
           docker tag $IMAGE_NAME $IMAGE_ID:latest
           docker push $IMAGE_ID:latest
-          

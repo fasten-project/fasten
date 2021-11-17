@@ -93,7 +93,5 @@ public class PackageApi {
                                        @RequestParam(required = false) Long releaseDate) {
         return service.getERCGLink(packageName, version, artifactRepo, releaseDate);
     }
-
-
 }
 
