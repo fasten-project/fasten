@@ -84,6 +84,7 @@ public class CGMerger {
     private BiMap<Long, String> allUris;
 
     private Map<String, Map<String, String>> externalUris;
+    private long externalGlobaIds = 0;
 
     public BiMap<Long, String> getAllUris() {
         return this.allUris;
@@ -102,7 +103,8 @@ public class CGMerger {
      * Creates instance of callgraph merger.
      *
      * @param dependencySet all artifacts present in a resolution
-     * @param withExternals true if unresolved external calls should be kept in the generated graph
+     * @param withExternals true if unresolved external calls should be kept in the generated graph, they will be
+     *            assigned negative ids
      */
     public CGMerger(final List<ExtendedRevisionJavaCallGraph> dependencySet, boolean withExternals) {
 
@@ -442,7 +444,7 @@ public class CGMerger {
                     Long target = this.allUris.inverse().get(nodeURI);
                     if (target == null) {
                         // Allocate a global id to the external node
-                        target = this.allUris.keySet().stream().max(Long::compareTo).orElse(0L) + 1;
+                        target = --this.externalGlobaIds;
 
                         // Add the external node to the graph if not already there
                         this.allUris.put(target, nodeURI);
