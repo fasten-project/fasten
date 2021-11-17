@@ -131,7 +131,7 @@ public class CallableIndexChecker implements Runnable {
             }
             successfulGraphMetadata++;
 
-        } catch (RocksDBException ignored) {
+        } catch (RocksDBException | NegativeArraySizeException ignored) {
             logger.error("Retrieving data for package version ID " + packageVersionId,
                 ignored);
         }
