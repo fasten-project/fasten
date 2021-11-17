@@ -14,6 +14,8 @@ import org.jgrapht.graph.DefaultEdge;
 
 public class MergedDirectedGraph extends DefaultDirectedGraph<Long, LongLongPair> implements DirectedGraph, Serializable {
 
+    private final LongSet externalNodes = new LongOpenHashSet();
+
     public MergedDirectedGraph() {
         this(MergedEdge.class);
     }
@@ -51,7 +53,16 @@ public class MergedDirectedGraph extends DefaultDirectedGraph<Long, LongLongPair
 
     @Override
     public LongSet externalNodes() {
-        return LongSet.of();
+        return this.externalNodes;
+    }
+
+    public boolean addExternalNode(long node) {
+        boolean result = addVertex(node);
+        if (result) {
+            this.externalNodes.add(node);
+        }
+
+        return result;
     }
 
     @Override
@@ -61,9 +72,8 @@ public class MergedDirectedGraph extends DefaultDirectedGraph<Long, LongLongPair
 
     @Override
     public boolean isExternal(long node) {
-        return false;
+        return this.externalNodes.contains(node);
     }
-
 
     @Override
     public LongIterator iterator() {
@@ -76,7 +86,12 @@ public class MergedDirectedGraph extends DefaultDirectedGraph<Long, LongLongPair
     }
 
     public boolean removeVertex(long node) {
-        return super.removeVertex(node);
+        boolean result = super.removeVertex(node);
+        if (result) {
+            this.externalNodes.remove(node);
+        }
+
+        return result;
     }
 
     public static class MergedEdge extends DefaultEdge implements LongLongPair {

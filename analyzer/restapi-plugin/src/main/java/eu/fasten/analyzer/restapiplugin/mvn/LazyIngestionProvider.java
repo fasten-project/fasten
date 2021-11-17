@@ -24,6 +24,8 @@ import eu.fasten.core.maven.MavenResolver;
 import eu.fasten.core.maven.utils.MavenUtilities;
 import org.apache.commons.math3.util.Pair;
 import org.json.JSONObject;
+
+import java.io.IOException;
 import java.sql.Timestamp;
 import java.util.List;
 import java.util.Objects;
@@ -35,7 +37,7 @@ public class LazyIngestionProvider {
         return KnowledgeBaseConnector.kbDao.isArtifactIngested(packageName, version);
     }
 
-    public static void ingestArtifactIfNecessary(String packageName, String version, String artifactRepo, Long date) throws IllegalArgumentException {
+    public static void ingestArtifactIfNecessary(String packageName, String version, String artifactRepo, Long date) throws IllegalArgumentException, IOException {
         var groupId = packageName.split(Constants.mvnCoordinateSeparator)[0];
         var artifactId = packageName.split(Constants.mvnCoordinateSeparator)[1];
         if (!MavenUtilities.mavenArtifactExists(groupId, artifactId, version, artifactRepo)) {
@@ -62,14 +64,20 @@ public class LazyIngestionProvider {
         }
     }
 
-    public static void ingestArtifactWithDependencies(String packageName, String version) throws IllegalArgumentException {
+    public static void ingestArtifactWithDependencies(String packageName, String version) throws IllegalArgumentException, IOException {
         var groupId = packageName.split(Constants.mvnCoordinateSeparator)[0];
         var artifactId = packageName.split(Constants.mvnCoordinateSeparator)[0];
         ingestArtifactIfNecessary(packageName, version, null, null);
         var mavenResolver = new MavenResolver();
         var dependencies = mavenResolver.resolveDependencies(groupId + ":" + artifactId + ":" + version);
         ingestArtifactIfNecessary(packageName, version, null, null);
-        dependencies.forEach(d -> ingestArtifactIfNecessary(d.groupId + Constants.mvnCoordinateSeparator + d.artifactId, d.version.toString(), null, null));
+        dependencies.forEach(d -> {
+            try {
+                ingestArtifactIfNecessary(d.groupId + Constants.mvnCoordinateSeparator + d.artifactId, d.version.toString(), null, null);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        });
     }
 
     public static void batchIngestArtifacts(List<IngestedArtifact> artifacts) throws IllegalArgumentException {

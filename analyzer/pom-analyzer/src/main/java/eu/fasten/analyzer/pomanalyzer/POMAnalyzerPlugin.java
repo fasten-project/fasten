@@ -39,7 +39,12 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.sql.Timestamp;
-import java.util.*;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
 
 public class POMAnalyzerPlugin extends Plugin {
 
