@@ -116,6 +116,7 @@ public class TauStats {
 			final Set<Revision> dependencySet = tauStats.resolver.resolveDependencies(groupId, artifactId, version, -1, context, true);
 			final String name = groupId + ":" + artifactId + "$" + version;
 			LOGGER.info("Analyzing graph " + name  + " with id " + gid);
+			LOGGER.info("Dependencies: " + dependencySet);
 
 			var deps = LongLinkedOpenHashSet.toSet(dependencySet.stream().mapToLong(x -> x.id));
 			deps.addAndMoveToFirst(gid);
@@ -195,7 +196,7 @@ public class TauStats {
 
 				t = weighted ? WeightedTau.HYPERBOLIC.compute(lb, gf) : KendallTau.INSTANCE.compute(lb, gf);
 				if (Double.isNaN(t)) t = 0;
-				System.out.println("\t-+ " + r + ":" + t + " \t" + localForward.size());
+				System.out.print("\t-+ " + r + ":" + t + " \t" + localForward.size());
 
 				t = weighted ? WeightedTau.HYPERBOLIC.compute(lb, lf) : KendallTau.INSTANCE.compute(lb, lf);
 				if (Double.isNaN(t)) t = 0;
@@ -203,7 +204,9 @@ public class TauStats {
 
 				t = weighted ? WeightedTau.HYPERBOLIC.compute(gb, gf) : KendallTau.INSTANCE.compute(gb, gf);
 				if (Double.isNaN(t)) t = 0;
-				System.out.println("\tg+- " + r + ":" + t + " \t" + localForward.size());
+				System.out.print("\tg+- " + r + ":" + t + " \t" + localForward.size());
+
+				System.out.println();
 			}
 		}
 	}
