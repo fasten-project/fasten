@@ -1,10 +1,6 @@
 package eu.fasten.server.plugins.kafka;
 
 import eu.fasten.core.plugins.KafkaPlugin;
-
-import java.lang.reflect.Field;
-import java.util.*;
-
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
@@ -13,7 +9,21 @@ import org.apache.kafka.clients.producer.KafkaProducer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.mockito.Mockito.*;
+import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Properties;
+
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class KafkaPluginConsumeBehaviourTest {
 
@@ -27,9 +37,13 @@ public class KafkaPluginConsumeBehaviourTest {
     public void setupMocks(FastenKafkaPlugin kafkaPlugin) throws IllegalAccessException {
         // Hacky way to override consumer and producer with a mock.
         KafkaConsumer<String, String> mockConsumer = mock(KafkaConsumer.class);
-        FieldUtils.writeField(kafkaPlugin, "connection", mockConsumer, true);
+        FieldUtils.writeField(kafkaPlugin, "connNorm", mockConsumer, true);
+        FieldUtils.writeField(kafkaPlugin, "connPrio", mockConsumer, true);
         KafkaProducer<String, String> mockProducer = mock(KafkaProducer.class);
         FieldUtils.writeField(kafkaPlugin, "producer", mockProducer, true);
+        List<String> mockTopics = mock(List.class);
+        FieldUtils.writeField(kafkaPlugin, "prioTopics", mockTopics, true);
+        FieldUtils.writeField(kafkaPlugin, "normTopics", mockTopics, true);
 
         // Another set of mocks.
         ConsumerRecords<String, String> records = mock(ConsumerRecords.class);
@@ -45,7 +59,7 @@ public class KafkaPluginConsumeBehaviourTest {
 
     @Test
     public void testNoLocalStorageNoTimeout() throws IllegalAccessException {
-        FastenKafkaPlugin kafkaPlugin = spy(new FastenKafkaPlugin(false, new Properties(), new Properties(), dummyPlugin, 0, null, null, "", false, 0, false, false, ""));
+        FastenKafkaPlugin kafkaPlugin = spy(new FastenKafkaPlugin(false, new Properties(), new Properties(), new Properties(), dummyPlugin, 0, null, null, "", false, 0, false, false, ""));
         setupMocks(kafkaPlugin);
 
         kafkaPlugin.handleConsuming();
@@ -55,7 +69,7 @@ public class KafkaPluginConsumeBehaviourTest {
 
     @Test
     public void testNoLocalStorageTimeout() throws IllegalAccessException {
-        FastenKafkaPlugin kafkaPlugin = spy(new FastenKafkaPlugin(false, new Properties(), new Properties(), dummyPlugin, 0, null, null, "", false, 0, false, false, ""));
+        FastenKafkaPlugin kafkaPlugin = spy(new FastenKafkaPlugin(false, new Properties(), new Properties(), new Properties(), dummyPlugin, 0, null, null, "", false, 0, false, false, ""));
         setupMocks(kafkaPlugin);
 
         kafkaPlugin.handleConsuming();
@@ -71,7 +85,7 @@ public class KafkaPluginConsumeBehaviourTest {
         localStorage.clear(List.of(1));
         localStorage.store("{key: 'Im a record!'}", 0);
 
-        FastenKafkaPlugin kafkaPlugin = spy(new FastenKafkaPlugin(false, new Properties(), new Properties(), dummyPlugin, 0, null, null, "", true, 5, false, true, "src/test/resources"));
+        FastenKafkaPlugin kafkaPlugin = spy(new FastenKafkaPlugin(false, new Properties(), new Properties(), new Properties(), dummyPlugin, 0, null, null, "", true, 5, false, true, "src/test/resources"));
         setupMocks(kafkaPlugin);
 
         kafkaPlugin.handleConsuming();
@@ -87,7 +101,7 @@ public class KafkaPluginConsumeBehaviourTest {
         LocalStorage localStorage = new LocalStorage("src/test/resources");
         localStorage.clear(List.of(0));
 
-        FastenKafkaPlugin kafkaPlugin = spy(new FastenKafkaPlugin(false, new Properties(), new Properties(), dummyPlugin, 0, null, null, "", false, 5, false, true, "src/test/resources"));
+        FastenKafkaPlugin kafkaPlugin = spy(new FastenKafkaPlugin(false, new Properties(), new Properties(), new Properties(), dummyPlugin, 0, null, null, "", false, 5, false, true, "src/test/resources"));
         setupMocks(kafkaPlugin);
 
         kafkaPlugin.handleConsuming();
@@ -101,24 +115,48 @@ public class KafkaPluginConsumeBehaviourTest {
         LocalStorage localStorage = new LocalStorage("src/test/resources");
         localStorage.clear(List.of(1));
 
-        FastenKafkaPlugin kafkaPlugin = spy(new FastenKafkaPlugin(false, new Properties(), new Properties(), dummyPlugin, 0, null, null, "", true, 5, false, true, "src/test/resources"));
+        FastenKafkaPlugin kafkaPlugin = spy(new FastenKafkaPlugin(false, new Properties(), new Properties(), new Properties(), dummyPlugin, 0, null, null, "", true, 5, false, true, "src/test/resources"));
         setupMocks(kafkaPlugin);
 
         kafkaPlugin.handleConsuming();
         verify(dummyPlugin).consume("{key: 'Im a record!'}");
     }
 
-    //From: https://stackoverflow.com/questions/19600527/java-program-setting-an-environment-variable
     public static void setEnv(String key, String value) {
+        var map = new HashMap<String, String>();
+        map.put(key, value);
         try {
-            Map<String, String> env = System.getenv();
-            Class<?> cl = env.getClass();
-            Field field = cl.getDeclaredField("m");
-            field.setAccessible(true);
-            Map<String, String> writableEnv = (Map<String, String>) field.get(env);
-            writableEnv.put(key, value);
+            setEnvMap(map);
         } catch (Exception e) {
-            throw new IllegalStateException("Failed to set environment variable", e);
+            e.printStackTrace();
+        }
+    }
+
+    // https://stackoverflow.com/questions/318239/how-do-i-set-environment-variables-from-java
+    private static void setEnvMap(Map<String, String> newenv) throws Exception {
+        try {
+            Class<?> processEnvironmentClass = Class.forName("java.lang.ProcessEnvironment");
+            Field theEnvironmentField = processEnvironmentClass.getDeclaredField("theEnvironment");
+            theEnvironmentField.setAccessible(true);
+            Map<String, String> env = (Map<String, String>) theEnvironmentField.get(null);
+            env.putAll(newenv);
+            Field theCaseInsensitiveEnvironmentField = processEnvironmentClass.getDeclaredField("theCaseInsensitiveEnvironment");
+            theCaseInsensitiveEnvironmentField.setAccessible(true);
+            Map<String, String> cienv = (Map<String, String>)     theCaseInsensitiveEnvironmentField.get(null);
+            cienv.putAll(newenv);
+        } catch (NoSuchFieldException e) {
+            Class[] classes = Collections.class.getDeclaredClasses();
+            Map<String, String> env = System.getenv();
+            for(Class cl : classes) {
+                if("java.util.Collections$UnmodifiableMap".equals(cl.getName())) {
+                    Field field = cl.getDeclaredField("m");
+                    field.setAccessible(true);
+                    Object obj = field.get(env);
+                    Map<String, String> map = (Map<String, String>) obj;
+                    map.clear();
+                    map.putAll(newenv);
+                }
+            }
         }
     }
 
@@ -131,7 +169,8 @@ public class KafkaPluginConsumeBehaviourTest {
         }
 
         @Override
-        public void setTopic(String topicName) {
+        public void setTopics(List<String> consumeTopics) {
+
         }
 
         @Override

@@ -18,6 +18,7 @@
 
 package eu.fasten.analyzer.repoanalyzer;
 
+import static eu.fasten.core.utils.TestUtils.getTestResource;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -55,8 +56,7 @@ class RepoAnalyzerPluginTest {
     void consume() throws IOException, DocumentException, InterruptedException {
         assertTrue(plugin.produce().isEmpty());
 
-        var repoPath = new File(Objects.requireNonNull(RepoAnalyzerPluginTest.class.getClassLoader()
-                .getResource("simpleMavenRepo")).getFile()).getAbsolutePath();
+        var repoPath = getTestResource("simpleMavenRepo").getAbsolutePath();
         var json = new JSONObject();
         json.put("repoPath", repoPath);
 

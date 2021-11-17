@@ -194,7 +194,7 @@
         <dependency>
             <groupId>org.jooq</groupId>
             <artifactId>jooq</artifactId>
-            <version>3.14.8</version>
+            <version>3.14.15</version>
         </dependency>
         <dependency>
             <!-- This dependency can be removed once jOOQ v3.15 is out,
@@ -237,6 +237,11 @@
             <artifactId>commons-codec</artifactId>
             <version>1.15</version>
         </dependency>
+        <dependency>
+            <groupId>com.squareup.okhttp3</groupId>
+            <artifactId>okhttp</artifactId>
+            <version>4.9.2</version>
+        </dependency>
 
 
         <!-- Integration tests -->
@@ -257,15 +262,20 @@
             <artifactId>maven-invoker</artifactId>
             <version>3.0.1</version>
         </dependency>
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>2.8.6</version>
+        </dependency>
     </dependencies>
 
     <build>
         <plugins>
-            <!-- jOOQ code generation plugin -->
+<!--             jOOQ code generation plugin-->
 <!--            <plugin>-->
 <!--                <groupId>org.jooq</groupId>-->
 <!--                <artifactId>jooq-codegen-maven</artifactId>-->
-<!--                <version>3.12.3</version>-->
+<!--                <version>3.14.15</version>-->
 <!--                <executions>-->
 <!--                    <execution>-->
 <!--                        <goals>-->
@@ -284,13 +294,18 @@
 <!--                    <jdbc>-->
 <!--                        <driver>org.postgresql.Driver</driver>-->
 <!--                        <url>jdbc:postgresql:fasten_java</url>-->
-<!--                        <user>postgres</user>-->
-<!--                        <password>pass123</password>-->
+<!--                        <user>fasten</user>-->
+<!--                        <password>fasten1234</password>-->
 <!--                    </jdbc>-->
 <!--                    <generator>-->
+<!--                        <generate>-->
+<!--                            <generatedAnnotation>true</generatedAnnotation>-->
+<!--                            <javaTimeTypes>false</javaTimeTypes>-->
+<!--                        </generate>-->
 <!--                        <database>-->
 <!--                            <name>org.jooq.meta.postgres.PostgresDatabase</name>-->
 <!--                            <includes>.*</includes>-->
+<!--                            <excludes>pg_stat_.*</excludes>-->
 <!--                            <inputSchema>public</inputSchema>-->
 <!--                        </database>-->
 <!--                        <target>-->

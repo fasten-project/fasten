@@ -30,7 +30,7 @@ public interface DBConnector extends FastenPlugin {
     /**
      * This methods sets DB connections for plug-ins.
      *
-     * @param dslContexts A set of DSL contexts for JOOQ to query the database.
+     * @param dslContexts A map of config key (e.g., forge) to JOOQs database contexts.
      */
     void setDBConnection(Map<String, DSLContext> dslContexts);
 }

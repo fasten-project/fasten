@@ -35,9 +35,9 @@ public interface KafkaPlugin extends FastenPlugin {
     /**
      * Overrides a consume topic of a plug-in.
      *
-     * @param topicName new consume topic
+     * @param consumeTopics new consume topic
      */
-    void setTopic(String topicName);
+    void setTopics(List<String> consumeTopics);
 
     /**
      * Process an incoming record. This method return only when a record has been

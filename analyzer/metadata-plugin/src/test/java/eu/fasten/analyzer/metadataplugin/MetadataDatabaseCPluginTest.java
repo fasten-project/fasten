@@ -43,7 +43,7 @@ public class MetadataDatabaseCPluginTest {
     public void setUp() {
         var dslContext = Mockito.mock(DSLContext.class);
         metadataDBExtension = new MetadataDatabaseCPlugin.MetadataDBCExtension();
-        metadataDBExtension.setTopic("fasten.debian.cg");
+        metadataDBExtension.setTopics(Collections.singletonList("fasten.debian.cg"));
         metadataDBExtension.setDBConnection(new HashMap<>(Map.of(Constants.debianForge, dslContext)));
     }
 
@@ -160,10 +160,9 @@ public class MetadataDatabaseCPluginTest {
     public void consumerTopicChangeTest() {
         var topics1 = Optional.of(Collections.singletonList("fasten.debian.cg"));
         assertEquals(topics1, metadataDBExtension.consumeTopic());
-        var differentTopic = "DifferentKafkaTopic";
-        var topics2 = Optional.of(Collections.singletonList(differentTopic));
-        metadataDBExtension.setTopic(differentTopic);
-        assertEquals(topics2, metadataDBExtension.consumeTopic());
+        var differentTopic = Collections.singletonList("DifferentKafkaTopic");
+        metadataDBExtension.setTopics(differentTopic);
+        assertEquals(Optional.of(differentTopic), metadataDBExtension.consumeTopic());
     }
 
     @Test
