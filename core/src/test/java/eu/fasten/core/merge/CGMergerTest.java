@@ -350,6 +350,7 @@ public class CGMergerTest {
             ".simpleImport/Importer.sourceMethod()%2Fjava.lang%2FVoidType");
         final var external = uris.inverse().get("/java.lang/Object.%3Cinit%3E()VoidType");
 
+        assertEquals(-1L, external);
         assertEquals(LongSet.of(external), cg.externalNodes());
 
         assertEquals(
