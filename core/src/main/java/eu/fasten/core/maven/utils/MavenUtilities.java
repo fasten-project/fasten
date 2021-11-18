@@ -19,6 +19,7 @@
 package eu.fasten.core.maven.utils;
 
 import eu.fasten.core.data.Constants;
+import eu.fasten.core.exceptions.UnrecoverableError;
 import okhttp3.Call;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -146,7 +147,7 @@ public class MavenUtilities {
             // After downloading ~50-60K POMs, there will be a lot of CLOSE_WAIT connections,
             // at some point the plug-in runs out of source ports to use. Therefore, we need to crash so that
             // Kubernetes will restart the plug-in to kill CLOSE_WAIT connections.
-            throw new Error("Failing execution, typically due to many CLOSE_WAIT connections", e);
+            throw new UnrecoverableError("Failing execution, typically due to many CLOSE_WAIT connections", e);
         } catch (IOException e) {
             logger.error("Error getting file from URL: " + url, e);
             throw e;
