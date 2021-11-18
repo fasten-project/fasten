@@ -56,7 +56,7 @@ public final class DependencyGraphUtilities {
             graph.addVertex(node);
         }
         for (var edge : dependencyGraph.edgeSet()) {
-            var reversedEdges = new DependencyEdge(edge.target, edge.source, edge.scope, edge.optional, edge.exclusions, edge.type);
+            var reversedEdges = new DependencyEdge(edge.target, edge.source);
             graph.addEdge(reversedEdges.source, reversedEdges.target, reversedEdges);    // Reverse edges
         }
         logger.info("Graph transposed: {} ms", System.currentTimeMillis() - startTs);
@@ -90,8 +90,6 @@ public final class DependencyGraphUtilities {
         kryo.register(HashSet.class);
         kryo.register(Revision.class);
         kryo.register(DependencyEdge.class);
-        kryo.register(Dependency.Exclusion.class);
-        kryo.register(Class.forName("eu.fasten.core.dependents.data.Dependency$Exclusion"));
         kryo.register(java.sql.Timestamp.class);
         kryo.register(java.util.ArrayList.class);
         kryo.register(Class.forName("java.util.Collections$UnmodifiableSet"));

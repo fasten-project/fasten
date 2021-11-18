@@ -35,59 +35,21 @@ public class Dependency extends Product {
     public static final Dependency empty = new Dependency("", "");
 
     public final List<VersionConstraint> versionConstraints;
-    public final List<Exclusion> exclusions;
-    public final String scope;
-    public final boolean optional;
-    public final String type;
-    public final String classifier;
-
-    /**
-     * Valid dependency scopes. Defined by maven.
-     * Learn more: http://maven.apache.org/pom.html
-     */
-    public static final String[] SCOPES = {
-            "compile",
-            "provided",
-            "runtime",
-            "test",
-            "system",
-            "import"
-    };
 
     /**
      * Constructor for Dependency object.
-     * (From https://maven.apache.org/ref/3.6.3/maven-model/maven.html#class_dependency)
      *
      * @param packageName
      * @param versionConstraints List of version constraints of the dependency
-     * @param exclusions         List of exclusions
-     * @param scope              Scope of the dependency
-     * @param optional           Is dependency optional
-     * @param type               Type of the dependency
-     * @param classifier         Classifier for dependency
      */
     public Dependency(final String packageName,
-                      final List<VersionConstraint> versionConstraints,
-                      final List<Exclusion> exclusions, final String scope, final boolean optional,
-                      final String type, final String classifier) {
+                      final List<VersionConstraint> versionConstraints) {
         super(packageName);
         this.versionConstraints = versionConstraints;
-        this.exclusions = exclusions;
-        this.scope = scope.toLowerCase();
-        this.optional = optional;
-        this.type = type.toLowerCase();
-        this.classifier = classifier.toLowerCase();
-    }
-
-    public Dependency(final String packageName, final String version,
-                      final List<Exclusion> exclusions, final String scope, final boolean optional,
-                      final String type, final String classifier) {
-        this(packageName, VersionConstraint.resolveMultipleVersionConstraints(version),
-                exclusions, scope, optional, type, classifier);
     }
 
     public Dependency(final String packageName, final String version) {
-        this(packageName, version, new ArrayList<>(), "", false, "", "");
+        this(packageName, VersionConstraint.resolveMultipleVersionConstraints(version));
     }
 
     public Product product() {
@@ -119,16 +81,7 @@ public class Dependency extends Product {
         for (var constraint : this.versionConstraints) {
             constraintsJson.put(constraint.toJSON());
         }
-        json.put("versionConstraints", constraintsJson);
-        final var exclusionsJson = new JSONArray();
-        for (var exclusion : this.exclusions) {
-            exclusionsJson.put(exclusion.toJSON());
-        }
-        json.put("exclusions", exclusionsJson);
-        json.put("scope", this.scope);
-        json.put("optional", this.optional);
-        json.put("type", this.type);
-        json.put("classifier", this.classifier);
+        json.put("versionConstraints", constraintsJson);       
         return json;
     }
 
@@ -145,14 +98,6 @@ public class Dependency extends Product {
         var builder = new StringBuilder();
         builder.append(this.packageName);
         builder.append(Constants.mvnCoordinateSeparator);
-        if (!this.type.isEmpty()) {
-            builder.append(this.type);
-            builder.append(Constants.mvnCoordinateSeparator);
-        }
-        if (!this.classifier.isEmpty()) {
-            builder.append(this.classifier);
-            builder.append(Constants.mvnCoordinateSeparator);
-        }
         builder.append(this.getVersion());
         return builder.toString();
     }
@@ -161,30 +106,6 @@ public class Dependency extends Product {
         return this.packageName +
                 Constants.mvnCoordinateSeparator +
                 this.getVersion();
-    }
-
-    public String toFullCanonicalForm() {
-        var builder = new StringBuilder();
-        builder.append(this.packageName);
-        builder.append(Constants.mvnCoordinateSeparator);
-        if (!this.type.isEmpty()) {
-            builder.append(this.type);
-        } else {
-            builder.append("jar");
-        }
-        builder.append(Constants.mvnCoordinateSeparator);
-        if (!this.classifier.isEmpty()) {
-            builder.append(this.classifier);
-            builder.append(Constants.mvnCoordinateSeparator);
-        }
-        builder.append(this.getVersion());
-        builder.append(Constants.mvnCoordinateSeparator);
-        if (!this.scope.isEmpty()) {
-            builder.append(this.scope);
-        } else {
-            builder.append("compile");
-        }
-        return builder.toString();
     }
 
     @Override
@@ -230,19 +151,7 @@ public class Dependency extends Product {
                 versionConstraints.add(VersionConstraint.fromJSON(constraintsJson.getJSONObject(i)));
             }
         }
-        var exclusions = new ArrayList<Exclusion>();
-        if (json.has("exclusions")) {
-            var exclusionsJson = json.getJSONArray("exclusions");
-            for (var i = 0; i < exclusionsJson.length(); i++) {
-                exclusions.add(Exclusion.fromJSON(exclusionsJson.getJSONObject(i)));
-            }
-        }
-        var scope = json.optString("scope");
-        var optional = json.optBoolean("optional", false);
-        var type = json.optString("type");
-        var classifier = json.optString("classifier");
-        return new Dependency(packageName, versionConstraints, exclusions, scope,
-                optional, type, classifier);
+        return new Dependency(packageName, versionConstraints);
     }
 
 
@@ -416,68 +325,6 @@ public class Dependency extends Product {
                 versionConstraints.add(new VersionConstraint(versionRange));
             }
             return versionConstraints;
-        }
-    }
-
-    public static class Exclusion implements Serializable {
-
-        public String packageName;
-
-        public Exclusion() {}
-
-        /**
-         * Constructor for Exclusion object.
-         * Exclusion defines a dependency which must be excluded from transitive dependencies.
-         *
-         * @param packageName    groupId of excluded coordinate
-         */
-        public Exclusion(final String packageName) {
-            this.packageName = packageName;
-        }
-
-        @Override
-        public boolean equals(Object o) {
-            if (this == o) {
-                return true;
-            }
-            if (o == null || getClass() != o.getClass()) {
-                return false;
-            }
-            Exclusion exclusion = (Exclusion) o;
-            return packageName.equals(exclusion.packageName);
-        }
-
-        /**
-         * Converts Exclusion object into JSON.
-         *
-         * @return JSONObject representation of exclusion
-         */
-        public JSONObject toJSON() {
-            final var json = new JSONObject();
-            json.put("packageName", this.packageName);
-            return json;
-        }
-
-        /**
-         * Creates a Exclusion object from JSON.
-         *
-         * @param json JSONObject representation of exclusion
-         * @return Exclusion object
-         */
-        public static Exclusion fromJSON(JSONObject json) {
-            var packageName = json.getString("packageName");
-            return new Exclusion(packageName);
-        }
-
-        @Override
-        public int hashCode() {
-            int result = 31 * (packageName != null ? packageName.hashCode() : 0);
-            return result;
-        }
-
-        @Override
-        public String toString() {
-            return toJSON().toString();
         }
     }
 }

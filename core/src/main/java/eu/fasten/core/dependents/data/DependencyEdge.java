@@ -26,22 +26,13 @@ public class DependencyEdge implements Serializable {
 
     public Revision source;
     public Revision target;
-    public String scope;
-    public boolean optional;
-    public List<Dependency.Exclusion> exclusions;
-    public String type;
 
     public DependencyEdge() {
     }
 
-    public DependencyEdge(Revision source, Revision target, String scope, boolean optional,
-                          List<Dependency.Exclusion> exclusions, String type) {
+    public DependencyEdge(Revision source, Revision target) {
         this.source = source;
         this.target = target;
-        this.scope = scope;
-        this.optional = optional;
-        this.exclusions = exclusions;
-        this.type = type;
     }
 
     @Override
@@ -53,32 +44,16 @@ public class DependencyEdge implements Serializable {
             return false;
         }
         DependencyEdge that = (DependencyEdge) o;
-        if (optional != that.optional) {
-            return false;
-        }
         if (!Objects.equals(source, that.source)) {
             return false;
         }
-        if (!Objects.equals(target, that.target)) {
-            return false;
-        }
-        if (!Objects.equals(scope, that.scope)) {
-            return false;
-        }
-        if (!Objects.equals(type, that.type)) {
-            return false;
-        }
-        return Objects.equals(exclusions, that.exclusions);
+        return Objects.equals(target, that.target);
     }
 
     @Override
     public int hashCode() {
         int result = source != null ? source.hashCode() : 0;
         result = 31 * result + (target != null ? target.hashCode() : 0);
-        result = 31 * result + (scope != null ? scope.hashCode() : 0);
-        result = 31 * result + (type != null ? type.hashCode() : 0);
-        result = 31 * result + (optional ? 1 : 0);
-        result = 31 * result + (exclusions != null ? exclusions.hashCode() : 0);
         return result;
     }
 
@@ -87,10 +62,6 @@ public class DependencyEdge implements Serializable {
         return "DependencyEdge{" +
                 "source=" + source +
                 ", target=" + target +
-                ", scope='" + scope + '\'' +
-                ", optional=" + optional +
-                ", exclusions=" + exclusions +
-                ", type='" + type + '\'' +
                 '}';
     }
 }

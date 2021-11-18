@@ -35,22 +35,6 @@ public class DependencyTest {
         assertEquals(expected, expected);
     }
 
-
-    @Test
-    public void equalsTest() {
-        Assertions.assertEquals(new Dependency("package", "4.12"), new Dependency("package", "4.12", new ArrayList<>(), "compile", false, "jar", ""));
-        Assertions.assertEquals(new Dependency("package", "4.12"), new Dependency("package", "4.12", new ArrayList<>(), "", false, "jar", ""));
-        Assertions.assertEquals(new Dependency("package", "4.12"), new Dependency("package", "4.12", new ArrayList<>(), "compile", false, "", ""));
-    }
-
-    @Test
-    public void exclusionTest() {
-        var expected = new Dependency.Exclusion("package");
-        var json = expected.toJSON();
-        var actual = Dependency.Exclusion.fromJSON(json);
-        assertEquals(expected, actual);
-    }
-
     @Test
     public void versionConstraintTest() {
         var expected = new Dependency.VersionConstraint("1.0", false, "1.0", false);
