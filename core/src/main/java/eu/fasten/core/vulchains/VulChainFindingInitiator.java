@@ -1,8 +1,6 @@
-package eu.fasten.core.examples;
+package eu.fasten.core.vulchains;
 
 import eu.fasten.core.data.Constants;
-import eu.fasten.core.data.DirectedGraph;
-import eu.fasten.core.data.callableindex.RocksDao;
 import eu.fasten.core.data.callableindex.utils.CallableIndexChecker;
 import eu.fasten.core.data.metadatadb.codegen.tables.Callables;
 import eu.fasten.core.data.metadatadb.codegen.tables.Modules;
@@ -10,43 +8,27 @@ import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
 import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
 import eu.fasten.core.maven.GraphMavenResolver;
 import eu.fasten.core.maven.data.Revision;
-import eu.fasten.core.merge.CGMerger;
 import eu.fasten.core.merge.CallGraphUtils;
-import it.unimi.dsi.fastutil.Pair;
-import it.unimi.dsi.fastutil.longs.LongLongPair;
 import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenHashSet;
-import java.io.File;
 import java.io.IOException;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.jgrapht.GraphPath;
-import org.jgrapht.alg.connectivity.ConnectivityInspector;
-import org.jgrapht.alg.shortestpath.AllDirectedPaths;
 import org.jooq.DSLContext;
-import org.rocksdb.RocksDBException;
 import picocli.CommandLine;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import me.tongfei.progressbar.ProgressBar;
 
 
-@CommandLine.Command(name = "ReachableVulnerabilityExample")
-public class ReachableVulnerabilityExample implements Runnable {
+@CommandLine.Command(name = "VulChainFindingInitiator")
+public class VulChainFindingInitiator implements Runnable {
 
-    private static final Logger logger = LoggerFactory.getLogger(CallableIndexChecker.class);
-
-    @CommandLine.Option(names = {"-c", "--callable-index-path"},
-        paramLabel = "INDEX_PATH",
-        required = true,
-        description = "Path to the callable index")
-    String callableIndexPath;
+    private static final Logger logger = LoggerFactory.getLogger(VulChainFindingInitiator.class);
 
     @CommandLine.Option(names = {"-d", "--database"},
         paramLabel = "DB_URL",
@@ -71,97 +53,35 @@ public class ReachableVulnerabilityExample implements Runnable {
     String depGraphPath;
 
     public static void main(String[] args) {
-        final int exitCode = new CommandLine(new ReachableVulnerabilityExample()).execute(args);
+
+        final int exitCode = new CommandLine(new VulChainFindingInitiator()).execute(args);
         System.exit(exitCode);
     }
 
     @Override
     public void run() {
 
-        checkIfArgumentsAreProvided(this.outputDir, this.callableIndexPath, this.metadataDbUrl,
-            this.metadataDbUser);
+        checkIfArgumentsAreProvided(this.outputDir, this.metadataDbUrl, this.metadataDbUser);
 
-        var rocksDb = CallableIndexChecker.connectToReadOnlyRocksDB(this.callableIndexPath);
-        var metadataDb =
-            CallableIndexChecker.connectToPostgres(this.metadataDbUrl, this.metadataDbUser);
-        var graphResolver = buildResolver(metadataDb);
+            var metadataDb =
+                CallableIndexChecker.connectToPostgres(this.metadataDbUrl, this.metadataDbUser);
+            var graphResolver = buildResolver(metadataDb);
 
+            var vulRevisions = queryVulRevisions(metadataDb);
+            logger.info("Retrieved {} vulnerable packages, writing them to file.", vulRevisions.size());
+            writeVulCoordsToFile(vulRevisions);
 
-        var vulRevisions = queryVulRevisions(metadataDb);
-        logger.info("Retrieved {} vulnerable packages, writing them to file.", vulRevisions.size());
-        writeVulCoordsToFile(vulRevisions);
+            final var dependentsMap = getDependents(graphResolver, vulRevisions);
+            logger.info("Resolved dependents, writing them to file.");
+            writeDependentsToFile(dependentsMap);
 
-        final var dependentsMap = getDependents(graphResolver, vulRevisions);
-        logger.info("Resolved dependents, writing them to file.");
-        writeDependentsToFile(dependentsMap);
-
-        ProgressBar vulProgress = new ProgressBar("Vulnerabilities", dependentsMap.size());
-        vulProgress.start();
-        int counter = 0;
-        for (final var vulDependents : dependentsMap.entrySet()) {
-
-            final var vulCallables = queryCallableVuls(metadataDb, vulDependents.getKey());
-            if (vulCallables.isEmpty()) {
-                counter++;
-                continue;
-            }
-            var depProg = new ProgressBar("Dependents", vulDependents.getValue().size());
-
-            for (final var dependent : vulDependents.getValue()) {
-
-                final var ids = resolveDepIds(metadataDb, graphResolver, vulDependents, dependent);
-                final var merger = new CGMerger(ids, metadataDb, rocksDb);
-                final var vulPaths = getVulPaths(rocksDb, merger, vulCallables, dependent);
-                if (vulPaths == null || vulPaths.isEmpty()) {
-                    continue;
-                }
-
-                writeVulPathToFile(dependent, vulPaths, merger);
-                depProg.step();
-            }
-            depProg.stop();
-            vulProgress.step();
-        }
-        logger.info("No vulnerable callable for {} packages", counter);
-        vulProgress.stop();
-
-    }
-
-    private Map<Pair<Long, Long>, List<GraphPath<Long, LongLongPair>>> getVulPaths(RocksDao rocksDb,
-                                                                                   CGMerger merger,
-                                                                                   List<Long> vulCallables,
-                                                                                   Revision dependent) {
-
-        final var mergedGraph = merger.mergeAllDeps();
-        final var inspector = new ConnectivityInspector<>(mergedGraph);
-        Map<Pair<Long, Long>, List<GraphPath<Long, LongLongPair>>> vulPaths = new HashMap<>();
-        DirectedGraph dependentCG = null;
-        try {
-            dependentCG = rocksDb.getGraphData(dependent.id);
-        } catch (RocksDBException e) {
-            logger.warn("Failed to fetch the data of" + dependent.id + "package", e);
-        }
-        if (dependentCG == null) {
-            return null;
-        }
-        for (Long vulNode : vulCallables) {
-            for (Long dependentNode : dependentCG.nodes()) {
-                if (mergedGraph.containsVertex(dependentNode) &&
-                    mergedGraph.containsVertex(vulNode)) {
-                    logger.info("########### Source and target are in the merged graph ##########");
-                    if (inspector.pathExists(dependentNode, vulNode)) {
-                        logger.info("########### There is a path between source and target " +
-                            "#########");
-                        final var pathFinder = new AllDirectedPaths<>(mergedGraph);
-                        vulPaths.put(Pair.of(dependentNode, vulNode),
-                            pathFinder.getAllPaths(dependentNode,
-                                vulNode, true, null));
-                    }
+            for (final var vulDependents : dependentsMap.entrySet()) {
+                for (Revision dependent : vulDependents.getValue()) {
+                    final var ids =
+                        resolveDepIds(metadataDb, graphResolver, vulDependents, dependent);
                 }
             }
 
-        }
-        return vulPaths;
     }
 
     private Set<Long> resolveDepIds(DSLContext metadataDb,
@@ -174,34 +94,6 @@ public class ReachableVulnerabilityExample implements Runnable {
         dependencySet.add(vulDependents.getKey());
         addIDsToRevisionsWithoutID(metadataDb, dependencySet);
         return dependencySet.stream().map(r -> r.id).collect(Collectors.toSet());
-    }
-
-    private void writeVulPathToFile(Revision dependent,
-                                    Map<Pair<Long, Long>, List<GraphPath<Long, LongLongPair>>> vulPaths,
-                                    CGMerger merger) {
-        List<String[]> content = new ArrayList<>();
-        final var pckgDir = this.outputDir + "/" + dependent.toString();
-        final var uris = merger.getAllUris();
-        content.add(new String[] {"source", "target", "paths"});
-        if (new File(pckgDir).mkdir()) {
-            for (final var sourceTargetPath : vulPaths.entrySet()) {
-                for (final var path : sourceTargetPath.getValue()) {
-                    final var pathsIDs = path.getEdgeList();
-                    content.add(new String[] {
-                        uris.get((sourceTargetPath.getKey().left())),
-                        uris.get(sourceTargetPath.getKey().right()),
-                        pathsIDs.stream().map(pair -> uris.get(pair.leftLong()) + "->" +
-                            uris.get(pair.rightLong())).collect(Collectors.joining(","))
-                    });
-                }
-            }
-            try {
-                CallGraphUtils.writeToCSV(content, pckgDir + "/vulPaths.csv");
-            } catch (IOException e) {
-                logger.error("Error happened while writing vul paths of package" +
-                    dependent.toString(), e);
-            }
-        }
     }
 
     private void addIDsToRevisionsWithoutID(
