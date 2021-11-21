@@ -19,7 +19,10 @@
 package eu.fasten.core.data.metadatadb;
 
 import com.github.t9t.jooq.json.JsonbDSL;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 import eu.fasten.core.data.Constants;
+import eu.fasten.core.data.FastenJavaURI;
 import eu.fasten.core.data.metadatadb.codegen.Keys;
 import eu.fasten.core.data.metadatadb.codegen.enums.Access;
 import eu.fasten.core.data.metadatadb.codegen.enums.CallableType;
@@ -1051,37 +1054,18 @@ public class MetadataDao {
                 .limit(limit)
                 .fetch();
 
-        // Returning the result
         logger.debug("Total rows: " + queryResult.size());
-        var res = queryResult.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
 
-
-        //// Insert user-friendly formatted method signature
-
-        // Parse result json string back into object
-        JSONArray json;
-        try {
-            json = new JSONArray(res);
-        } catch (JSONException err) {
-            logger.error("Error JSON Parser: " + err.toString());
-            return null;
+        List<FastenJavaURI> items = new ArrayList<>();
+        for (var partialUri : queryResult.getValues(Callables.CALLABLES.FASTEN_URI)) {
+            var fullUri = FastenUriUtils.generateFullFastenUri("mvn", packageName, packageVersion, partialUri);
+            var uriObj = new FastenJavaURI(fullUri);
+            items.add(uriObj);
         }
 
-        // Go through each callable, parse fasten uri, insert signature.
-        for (Object j : json) {
-            JSONObject jObj = (JSONObject) j;
-            var uri = jObj.getString("fasten_uri");
-
-            try {
-                var uriObject = FastenUriUtils.parsePartialFastenUri(uri);
-                jObj.put("method_name", uriObject.get(2));
-                jObj.put("method_args", uriObject.get(3));
-            } catch (IllegalArgumentException err) {
-                logger.warn("Error FASTEN URI Parser: " + err.toString());
-            }
-        }
-
-        return json.toString();
+        GsonBuilder builder = new GsonBuilder();
+        Gson gson = builder.create();
+        return gson.toJson(items);
     }
 
     public String getPackageBinaryModules(String packageName, String packageVersion, int offset, int limit) throws PackageVersionNotFoundException {
