@@ -1056,16 +1056,34 @@ public class MetadataDao {
 
         logger.debug("Total rows: " + queryResult.size());
 
-        List<FastenJavaURI> items = new ArrayList<>();
-        for (var partialUri : queryResult.getValues(Callables.CALLABLES.FASTEN_URI)) {
-            var fullUri = FastenUriUtils.generateFullFastenUri("mvn", packageName, packageVersion, partialUri);
-            var uriObj = new FastenJavaURI(fullUri);
-            items.add(uriObj);
+        var res = queryResult.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
+
+        // Parse result json string back into object
+        JSONArray json;
+        try {
+            json = new JSONArray(res);
+        } catch (JSONException err) {
+            logger.error("Error JSON Parser: " + err.toString());
+            return null;
         }
 
         GsonBuilder builder = new GsonBuilder();
         Gson gson = builder.create();
-        return gson.toJson(items);
+
+        // Go through each callable, parse fasten uri, insert signature.
+        for (Object j : json) {
+            try {
+                JSONObject jObj = (JSONObject) j;
+                var partialUri = jObj.getString("fasten_uri");
+                var fullUri = FastenUriUtils.generateFullFastenUri("mvn", packageName, packageVersion, partialUri);
+                var uriObj = new FastenJavaURI(fullUri);
+                var js =  gson.toJson(uriObj);
+                jObj.put("fasten_uri", new JSONObject(js));
+            } catch (IllegalArgumentException err) {
+                logger.warn("Error FASTEN URI Parser: " + err.toString());
+            }
+        }
+        return json.toString();
     }
 
     public String getPackageBinaryModules(String packageName, String packageVersion, int offset, int limit) throws PackageVersionNotFoundException {
