@@ -298,7 +298,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
             // In rare circumstances, plug-ins throw UnrecoverableError to crash and therefore K8s will restart the plug-in.
             logger.error("Forced to stop the plug-in due to ", e);
             throw e;
-        } catch (RuntimeException e) {
+        } catch (Exception e) {
             logger.error("An error occurred in " + plugin.getClass().getCanonicalName(), e);
             plugin.setPluginError(e);
         }
