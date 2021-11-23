@@ -42,17 +42,17 @@ class JSONUtilsTest {
         var coordinate =
             new MavenCoordinate("com.github.shoothzj", "java-tool", "3.0.30.RELEASE", "jar");
         graph = PartialCallGraph.createExtendedRevisionJavaCallGraph(coordinate,
-            "", "CHA", 1574072773, MavenUtilities.MAVEN_CENTRAL_REPO, true);
+            "", "CHA", 1574072773, MavenUtilities.MAVEN_CENTRAL_REPO, PreservedCalls.ONLY_STATIC_CALLSITES);
 
         coordinate =
             new MavenCoordinate("abbot", "costello", "1.4.0", "jar");
         artifact = PartialCallGraph.createExtendedRevisionJavaCallGraph(coordinate,
-            "", "CHA", 1574072773, MavenUtilities.MAVEN_CENTRAL_REPO, true);
+            "", "CHA", 1574072773, MavenUtilities.MAVEN_CENTRAL_REPO, PreservedCalls.ONLY_STATIC_CALLSITES);
 
         coordinate =
             new MavenCoordinate("abbot", "abbot", "1.4.0", "jar");
         dependency = PartialCallGraph.createExtendedRevisionJavaCallGraph(coordinate,
-            "", "CHA", 1574072773, MavenUtilities.MAVEN_CENTRAL_REPO, true);
+            "", "CHA", 1574072773, MavenUtilities.MAVEN_CENTRAL_REPO, PreservedCalls.ONLY_STATIC_CALLSITES);
         final var deps = new ArrayList<>(Collections.singletonList(dependency));
         deps.add(artifact);
         final var merger = new CGMerger(deps);
@@ -101,7 +101,7 @@ class JSONUtilsTest {
         for (int i = 0; i < coordsSize; i++) {
             MavenCoordinate coord = coords.get(i);
             final var cg = PartialCallGraph.createExtendedRevisionJavaCallGraph(coord,
-                "", "CHA", 1574072773, MavenUtilities.getRepos().get(0), true);
+                "", "CHA", 1574072773, MavenUtilities.getRepos().get(0), PreservedCalls.ONLY_STATIC_CALLSITES);
 
             logger.debug("Serialization for: {}", coord.getCoordinate());
             final var ser1 = avgConsumption(cg, "direct", "direct", 20, 20);
