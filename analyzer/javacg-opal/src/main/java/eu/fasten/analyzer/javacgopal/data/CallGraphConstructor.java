@@ -50,22 +50,23 @@ public class CallGraphConstructor {
 	 * Constructs a call graph given file, algorithm and a main class in case of
 	 * application.
 	 *
-	 * @param file      file of the package to analyze
-	 * @param mainClass main class of the package in case of application
-	 * @param algorithm algorithm for generating call graph
+	 * @param packageFileToAnalyze file of the package to analyze
+	 * @param mainClass            main class of the package in case of application
+	 * @param algorithm            algorithm for generating call graph
 	 */
-	public CallGraphConstructor(final File file, final String mainClass, CGAlgorithm algorithm) {
+	public CallGraphConstructor(final File packageFileToAnalyze, final String mainClass, CGAlgorithm algorithm) {
 		try {
 			OPALLogger.updateLogger(GlobalLogContext$.MODULE$, new ConsoleOPALLogger(false, Fatal$.MODULE$));
 
 			if (mainClass == null || mainClass.isEmpty()) {
-				this.project = Project.apply(file);
+				this.project = Project.apply(packageFileToAnalyze);
 
 			} else {
-				final var log = Project.apply(file);
+				final var log = Project.apply(packageFileToAnalyze);
 				OPALLogger.updateLogger(log.logContext(), new ConsoleOPALLogger(false, Fatal$.MODULE$));
 
-				this.project = Project.apply(file, log.logContext().successor(), createConfig(mainClass));
+				this.project = Project.apply(packageFileToAnalyze, log.logContext().successor(),
+						createConfig(mainClass));
 			}
 
 			OPALLogger.updateLogger(project.logContext(), new ConsoleOPALLogger(false, Fatal$.MODULE$));
@@ -114,23 +115,17 @@ public class CallGraphConstructor {
 	 * @return {@link CallGraph} resulting call graph
 	 */
 	private static CallGraph generateCallGraph(final Project<?> project, CGAlgorithm algorithm) {
-		final CallGraph result;
 		switch (algorithm) {
 		case RTA:
-			result = project.get(RTACallGraphKey$.MODULE$);
-			break;
+			return project.get(RTACallGraphKey$.MODULE$);
 		case CHA:
-			result = project.get(CHACallGraphKey$.MODULE$);
-			break;
+			return project.get(CHACallGraphKey$.MODULE$);
 		case AllocationSiteBasedPointsTo:
-			result = project.get(AllocationSiteBasedPointsToCallGraphKey$.MODULE$);
-			break;
+			return project.get(AllocationSiteBasedPointsToCallGraphKey$.MODULE$);
 		case TypeBasedPointsTo:
-			result = project.get(TypeBasedPointsToCallGraphKey$.MODULE$);
-			break;
+			return project.get(TypeBasedPointsToCallGraphKey$.MODULE$);
 		default:
 			throw new IllegalStateException("Unexpected value: " + algorithm);
 		}
-		return result;
 	}
 }
