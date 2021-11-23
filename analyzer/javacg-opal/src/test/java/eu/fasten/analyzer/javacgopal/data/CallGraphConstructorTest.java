@@ -35,7 +35,7 @@ class CallGraphConstructorTest {
                 .getResource("SingleSourceToTarget.class"))
                 .getFile());
 
-        var cg = new CallGraphConstructor(file, "", "CHA");
+        var cg = new CallGraphConstructor(file, "", CGAlgorithm.CHA);
 
         var confValue1 = cg.getProject().config().getValue("org.opalj.br.analyses.cg.InitialEntryPointsKey.analysis");
         assertEquals("org.opalj.br.analyses.cg.LibraryEntryPointsFinder",
@@ -52,7 +52,7 @@ class CallGraphConstructorTest {
                 .getResource("SingleSourceToTarget.class"))
                 .getFile());
 
-        var cg = new CallGraphConstructor(file, null, "CHA");
+        var cg = new CallGraphConstructor(file, null, CGAlgorithm.CHA);
 
         var confValue1 = cg.getProject().config().getValue("org.opalj.br.analyses.cg.InitialEntryPointsKey.analysis");
         assertEquals("org.opalj.br.analyses.cg.LibraryEntryPointsFinder",
@@ -69,7 +69,7 @@ class CallGraphConstructorTest {
                 .getResource("SingleSourceToTarget.class"))
                 .getFile());
 
-        var cg = new CallGraphConstructor(file, "SingleSourceToTarget", "CHA");
+        var cg = new CallGraphConstructor(file, "SingleSourceToTarget", CGAlgorithm.CHA);
 
         var confValue1 = cg.getProject().config().getValue("org.opalj.br.analyses.cg.InitialEntryPointsKey.analysis");
         assertEquals("org.opalj.br.analyses.cg.ConfigurationEntryPointsFinder",
@@ -88,7 +88,7 @@ class CallGraphConstructorTest {
     void constructRTA() throws OPALException {
         var file = getTestResource("SingleSourceToTarget.class");
 
-        var cg = new CallGraphConstructor(file, "", "RTA");
+        var cg = new CallGraphConstructor(file, "", CGAlgorithm.RTA);
 
         assertNotNull(cg.getCallGraph());
         assertNotNull(cg.getProject());
@@ -99,7 +99,7 @@ class CallGraphConstructorTest {
     void constructCHA() throws OPALException {
         var file = getTestResource("SingleSourceToTarget.class");
 
-        var cg = new CallGraphConstructor(file, "", "CHA");
+        var cg = new CallGraphConstructor(file, "", CGAlgorithm.CHA);
 
         assertNotNull(cg.getCallGraph());
         assertNotNull(cg.getProject());
@@ -110,7 +110,7 @@ class CallGraphConstructorTest {
     void constructAllocationSiteBasedPointsTo() throws OPALException {
         var file = getTestResource("SingleSourceToTarget.class");
 
-        var cg = new CallGraphConstructor(file, "", "AllocationSiteBasedPointsTo");
+        var cg = new CallGraphConstructor(file, "", CGAlgorithm.AllocationSiteBasedPointsTo);
 
         assertNotNull(cg.getCallGraph());
         assertNotNull(cg.getProject());
@@ -121,23 +121,10 @@ class CallGraphConstructorTest {
     void constructTypeBasedPointsTo() throws OPALException {
         var file = getTestResource("SingleSourceToTarget.class");
 
-        var cg = new CallGraphConstructor(file, "", "TypeBasedPointsTo");
+        var cg = new CallGraphConstructor(file, "", CGAlgorithm.TypeBasedPointsTo);
 
         assertNotNull(cg.getCallGraph());
         assertNotNull(cg.getProject());
         assertTrue(cg.getCallGraph().numEdges() > 0);
     }
-
-    @Test
-    void constructWrongAlgorithm() {
-        var file = new File(Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
-                .getResource("SingleSourceToTarget.class"))
-                .getFile());
-
-        Exception exception = assertThrows(OPALException.class, () ->
-                new CallGraphConstructor(file, "", "WrongAlgorithm"));
-
-        assertEquals("java.lang.IllegalStateException: Unexpected value: WrongAlgorithm", exception.getMessage());
-    }
-
 }

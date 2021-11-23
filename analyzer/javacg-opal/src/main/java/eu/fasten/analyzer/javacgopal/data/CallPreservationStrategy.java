@@ -18,6 +18,6 @@
 
 package eu.fasten.analyzer.javacgopal.data;
 
-public enum PreservedCalls {
+public enum CallPreservationStrategy {
 	ONLY_STATIC_CALLSITES, INCLUDING_ALL_SUBTYPES
 }
