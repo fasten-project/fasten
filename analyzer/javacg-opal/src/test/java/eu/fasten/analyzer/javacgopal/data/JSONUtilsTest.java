@@ -93,7 +93,7 @@ class JSONUtilsTest {
     }
 
     @Test
-    void batchOfCGsTest() throws IOException, OPALException, MissingArtifactException {
+    void batchOfCGsTest() throws IOException {
         final var coordsSize = (coords.size() * batchVolume)/100;
 
         logger.debug("Testing {} serialization", coordsSize);

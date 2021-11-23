@@ -50,8 +50,7 @@ public class CallGraphConstructor {
      * @param mainClass main class of the package in case of application
      * @param algorithm algorithm for generating call graph
      */
-    public CallGraphConstructor(final File file, final String mainClass, final String algorithm)
-            throws OPALException {
+    public CallGraphConstructor(final File file, final String mainClass, final String algorithm) {
         try {
             OPALLogger.updateLogger(GlobalLogContext$.MODULE$,
                     new ConsoleOPALLogger(false, Fatal$.MODULE$));
@@ -72,11 +71,7 @@ public class CallGraphConstructor {
                     new ConsoleOPALLogger(false, Fatal$.MODULE$));
             this.callGraph = generateCallGraph(project, algorithm);
         } catch (Exception e) {
-            var opalException = new OPALException(
-                    "Original error type: " + e.getClass().getSimpleName()
-                            + "; Original message: " + e.getMessage());
-            opalException.setStackTrace(e.getStackTrace());
-            throw opalException;
+            throw new OPALException(e);
         }
     }
 
