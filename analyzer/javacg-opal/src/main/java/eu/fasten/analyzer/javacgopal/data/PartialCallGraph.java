@@ -18,18 +18,6 @@
 
 package eu.fasten.analyzer.javacgopal.data;
 
-import com.google.common.collect.Lists;
-import eu.fasten.core.data.opal.MavenCoordinate;
-import eu.fasten.analyzer.javacgopal.data.analysis.OPALClassHierarchy;
-import eu.fasten.analyzer.javacgopal.data.analysis.OPALMethod;
-import eu.fasten.analyzer.javacgopal.data.analysis.OPALType;
-import eu.fasten.core.data.opal.exceptions.MissingArtifactException;
-import eu.fasten.core.data.opal.exceptions.OPALException;
-import eu.fasten.core.data.*;
-import org.apache.commons.lang3.tuple.Pair;
-import org.apache.commons.text.StringEscapeUtils;
-import org.opalj.br.*;
-import org.opalj.br.analyses.Project;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -41,7 +29,15 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
-import org.opalj.collection.immutable.RefArray;
+
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.tuple.Pair;
+import org.apache.commons.text.StringEscapeUtils;
+import org.opalj.br.Annotation;
+import org.opalj.br.ElementValuePair;
+import org.opalj.br.Method;
+import org.opalj.br.ObjectType;
+import org.opalj.br.analyses.Project;
 import org.opalj.tac.AITACode;
 import org.opalj.tac.ComputeTACAIKey$;
 import org.opalj.tac.DUVar;
@@ -50,6 +46,20 @@ import org.opalj.tac.TACMethodParameter;
 import org.opalj.value.ValueInformation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.common.collect.Lists;
+
+import eu.fasten.analyzer.javacgopal.data.analysis.OPALClassHierarchy;
+import eu.fasten.analyzer.javacgopal.data.analysis.OPALMethod;
+import eu.fasten.analyzer.javacgopal.data.analysis.OPALType;
+import eu.fasten.core.data.Constants;
+import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
+import eu.fasten.core.data.JavaGraph;
+import eu.fasten.core.data.JavaScope;
+import eu.fasten.core.data.JavaType;
+import eu.fasten.core.data.opal.MavenCoordinate;
+import eu.fasten.core.data.opal.exceptions.MissingArtifactException;
+import eu.fasten.core.data.opal.exceptions.OPALException;
 import scala.Function1;
 import scala.collection.JavaConverters;
 
@@ -58,7 +68,7 @@ import scala.collection.JavaConverters;
  * calls (edges) are known as internal calls and Cross-artifact calls are known as external calls.
  */
 public class PartialCallGraph {
-
+	
     private static final Logger logger = LoggerFactory.getLogger(PartialCallGraph.class);
 
     private final EnumMap<JavaScope, Map<String, JavaType>> classHierarchy;
