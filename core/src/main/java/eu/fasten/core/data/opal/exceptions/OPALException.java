@@ -1,16 +1,21 @@
 package eu.fasten.core.data.opal.exceptions;
 
 /**
- * Exception that is thrown whenever any type of an exception occurs
- * inside OPAL library code.
+ * Exception wraps exceptions thrown by OPAL library.
  */
-public class OPALException extends Exception {
-    /**
-     * Creates an OPALException with a message.
-     *
-     * @param message error message
-     */
-    public OPALException(String message) {
-        super(message);
-    }
+public class OPALException extends RuntimeException {
+
+	private static final long serialVersionUID = 3553121464323074257L;
+
+	public OPALException(String message) {
+		super(message);
+	}
+
+	public OPALException(Throwable t) {
+		super(t);
+	}
+
+	public OPALException(String message, Throwable t) {
+		super(message, t);
+	}
 }

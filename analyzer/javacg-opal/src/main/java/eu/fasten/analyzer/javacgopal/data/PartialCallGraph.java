@@ -89,11 +89,7 @@ public class PartialCallGraph {
             if (e.getStackTrace().length > 0) {
                 var stackTrace = e.getStackTrace()[0];
                 if (stackTrace.toString().startsWith("org.opalj")) {
-                    var opalException = new OPALException(
-                            "Original error type: " + e.getClass().getSimpleName()
-                                    + "; Original message: " + e.getMessage());
-                    opalException.setStackTrace(e.getStackTrace());
-                    throw opalException;
+                    throw new OPALException(e);
                 }
             }
             throw e;

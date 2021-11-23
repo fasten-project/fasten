@@ -1,16 +1,21 @@
 package eu.fasten.core.data.opal.exceptions;
 
 /**
- * This exception is thrown whenever
+ * Exception used to indicate when an artifact cannot be found.
  */
-public class MissingArtifactException extends Exception {
+public class MissingArtifactException extends RuntimeException {
 
-    /**
-     * Creates a MissingArtifactException.
-     * @param message the exception message.
-     * @param cause the exception cause.
-     */
-    public MissingArtifactException(String message, Throwable cause) {
-        super(message, cause);
-    }
+	private static final long serialVersionUID = -4154873419230733231L;
+
+	public MissingArtifactException(String message) {
+		super(message);
+	}
+
+	public MissingArtifactException(Throwable t) {
+		super(t);
+	}
+
+	public MissingArtifactException(String message, Throwable t) {
+		super(message, t);
+	}
 }

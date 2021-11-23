@@ -325,8 +325,7 @@ public class CGandStitchingTest {
     }
 
     @Test
-    public void souldNotGetIllegalArgumentExceptionWhileMerging() throws
-        OPALException, MissingArtifactException {
+    public void shouldNotGetIllegalArgumentExceptionWhileMerging() {
 
         final var depSet = new ArrayList<>(Arrays.asList(getRCG("info.picocli:picocli:4.0.4"),
             getRCG("net.bytebuddy:byte-buddy:1.10.5"),
@@ -336,8 +335,7 @@ public class CGandStitchingTest {
         merger.mergeWithCHA(depSet.get(2));
     }
 
-    private ExtendedRevisionJavaCallGraph getRCG(String coordStr)
-        throws OPALException, MissingArtifactException {
+    private ExtendedRevisionJavaCallGraph getRCG(String coordStr) {
         final var coord = MavenCoordinate.fromString(coordStr,"jar");
 
         final var dep1 =

@@ -211,7 +211,7 @@ public class Main implements Runnable {
      */
     public <T> DirectedGraph merge(final T artifact,
                                                    final List<T> dependencies)
-            throws IOException, OPALException, MissingArtifactException {
+            throws IOException, MissingArtifactException {
         final long startTime = System.currentTimeMillis();
         final DirectedGraph result;
         final var deps = new ArrayList<ExtendedRevisionJavaCallGraph>();
@@ -260,7 +260,7 @@ public class Main implements Runnable {
     public <T> ExtendedRevisionJavaCallGraph generate(final T artifact,
                                                       final String mainClass,
                                                       final String algorithm, final boolean writeToFile)
-            throws MissingArtifactException, OPALException, IOException {
+            throws MissingArtifactException, IOException {
         final ExtendedRevisionJavaCallGraph revisionCallGraph;
 
         final long startTime = System.currentTimeMillis();
