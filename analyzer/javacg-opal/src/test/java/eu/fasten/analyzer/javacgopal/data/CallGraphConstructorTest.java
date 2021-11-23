@@ -137,8 +137,7 @@ class CallGraphConstructorTest {
         Exception exception = assertThrows(OPALException.class, () ->
                 new CallGraphConstructor(file, "", "WrongAlgorithm"));
 
-        assertEquals("Original error type: IllegalStateException; "
-                + "Original message: Unexpected value: WrongAlgorithm", exception.getMessage());
+        assertEquals("java.lang.IllegalStateException: Unexpected value: WrongAlgorithm", exception.getMessage());
     }
 
 }
