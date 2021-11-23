@@ -45,43 +45,58 @@ public class CallGraphConstructor {
 
 	private final Project<URL> project;
 	private final CallGraph callGraph;
+	private final CGAlgorithm algorithm;
 
 	/**
 	 * Constructs a call graph given file, algorithm and a main class in case of
 	 * application.
 	 *
-	 * @param packageFileToAnalyze file of the package to analyze
-	 * @param mainClass            main class of the package in case of application
-	 * @param algorithm            algorithm for generating call graph
+	 * @param pkg       package to be analyzed
+	 * @param mainClass main class of the package in case of application
+	 * @param algorithm algorithm for generating call graph
 	 */
-	public CallGraphConstructor(final File packageFileToAnalyze, final String mainClass, CGAlgorithm algorithm) {
+	public CallGraphConstructor(final File pkg, final String mainClass, CGAlgorithm algorithm) {
+		this(new File[] { pkg }, new File[0],mainClass, algorithm);
+	}
+
+	/**
+	 * Constructs a call graph given file, algorithm and a main class in case of
+	 * application.
+	 *
+	 * @param pkg       package to be analyzed
+	 * @param deps      array of all dependencies that should be considered as well
+	 * @param mainClass main class of the package in case of application
+	 * @param algorithm algorithm for generating call graph
+	 */
+	public CallGraphConstructor(File[] classFiles, File[] deps, final String mainClass, CGAlgorithm algorithm) {
+		assertDependencies(classFiles, deps);
+		this.algorithm = algorithm;
 		try {
+			project = Project.apply(classFiles, deps, GlobalLogContext$.MODULE$, createConfig(mainClass));
+
 			OPALLogger.updateLogger(GlobalLogContext$.MODULE$, new ConsoleOPALLogger(false, Fatal$.MODULE$));
-
-			if (mainClass == null || mainClass.isEmpty()) {
-				this.project = Project.apply(packageFileToAnalyze);
-
-			} else {
-				final var log = Project.apply(packageFileToAnalyze);
-				OPALLogger.updateLogger(log.logContext(), new ConsoleOPALLogger(false, Fatal$.MODULE$));
-
-				this.project = Project.apply(packageFileToAnalyze, log.logContext().successor(),
-						createConfig(mainClass));
-			}
-
 			OPALLogger.updateLogger(project.logContext(), new ConsoleOPALLogger(false, Fatal$.MODULE$));
-			this.callGraph = generateCallGraph(project, algorithm);
+
+			callGraph = generateCallGraph();
 		} catch (Exception e) {
 			throw new OPALException(e);
 		}
 	}
 
-	public Project<URL> getProject() {
-		return project;
-	}
-
-	public CallGraph getCallGraph() {
-		return callGraph;
+	private static void assertDependencies(File[] classFiles, File[] deps) {
+		for (File c : classFiles) {
+			if (!c.exists() || !c.isFile()) {
+				throw new IllegalArgumentException("class file does not exist or is not a file: " + c);
+			}
+			if(!c.getName().endsWith(".class")) {
+				throw new IllegalArgumentException("provide file does not look like a class file: " + c);
+			}
+		}
+		for (File dep : deps) {
+			if (!dep.exists() || !dep.isFile()) {
+				throw new IllegalArgumentException("dependency does not exist or is not a file: " + dep);
+			}
+		}
 	}
 
 	/**
@@ -93,19 +108,29 @@ public class CallGraphConstructor {
 	private Config createConfig(String mainClass) {
 		var entryPointFinder = "org.opalj.br.analyses.cg.ConfigurationEntryPointsFinder";
 		var instantiatedTypeFinder = "org.opalj.br.analyses.cg.ApplicationInstantiatedTypesFinder";
-		var initialEntryPoints = Stream
-				.of(ConfigValueFactory.fromMap(Map.of("declaringClass", mainClass.replace('.', '/'), "name", "main")))
-				.collect(Collectors.toList());
 
-		return ConfigFactory.load()
+		Config cfg = ConfigFactory.load()
 				.withValue("org.opalj.br.reader.ClassFileReader.Invokedynamic.rewrite",
 						ConfigValueFactory.fromAnyRef(true))
 				.withValue("org.opalj.br.analyses.cg.InitialEntryPointsKey.analysis",
 						ConfigValueFactory.fromAnyRef(entryPointFinder))
-				.withValue("org.opalj.br.analyses.cg.InitialEntryPointsKey.entryPoints",
-						ConfigValueFactory.fromIterable(initialEntryPoints))
 				.withValue("org.opalj.br.analyses.cg.InitialInstantiatedTypesKey.analysis",
 						ConfigValueFactory.fromAnyRef(instantiatedTypeFinder));
+
+		boolean hasMainClass = mainClass != null && !mainClass.isEmpty();
+		if (hasMainClass) {
+			var initialEntryPoints = Stream
+					.of(ConfigValueFactory
+							.fromMap(Map.of("declaringClass", mainClass.replace('.', '/'), "name", "main")))
+					.collect(Collectors.toList());
+
+			cfg = cfg.withValue("org.opalj.br.analyses.cg.InitialEntryPointsKey.entryPoints",
+					ConfigValueFactory.fromIterable(initialEntryPoints));
+		}
+
+		System.out.println(cfg.toString());
+		
+		return cfg;
 	}
 
 	/**
@@ -114,7 +139,7 @@ public class CallGraphConstructor {
 	 * @param project {@link Project} the project to generate call graph for
 	 * @return {@link CallGraph} resulting call graph
 	 */
-	private static CallGraph generateCallGraph(final Project<?> project, CGAlgorithm algorithm) {
+	private CallGraph generateCallGraph() {
 		switch (algorithm) {
 		case RTA:
 			return project.get(RTACallGraphKey$.MODULE$);
@@ -127,5 +152,13 @@ public class CallGraphConstructor {
 		default:
 			throw new IllegalStateException("Unexpected value: " + algorithm);
 		}
+	}
+
+	public Project<URL> getProject() {
+		return project;
+	}
+
+	public CallGraph getCallGraph() {
+		return callGraph;
 	}
 }
