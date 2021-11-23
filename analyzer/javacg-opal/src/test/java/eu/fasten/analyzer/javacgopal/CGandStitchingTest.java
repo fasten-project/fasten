@@ -298,15 +298,15 @@ public class CGandStitchingTest {
     @Test
     public void virtualReceiverTypes() throws OPALException, URISyntaxException {
         var cg = getRCG("merge/hashCode/complex/User.class","importer","0.0.0");
-        asserReceiver(cg, "invokedynamic","[/merge.hashCode.complex/Child]");
+        assertReceiver(cg, "invokedynamic","[/merge.hashCode.complex/Child]");
         cg = getRCG("merge/hashCode/interFace/User.class","importer","0.0.0");
-        asserReceiver(cg, "invokeinterface","[/merge.hashCode.interFace/Child]");
+        assertReceiver(cg, "invokeinterface","[/merge.hashCode.interFace/Child]");
         cg = getRCG("merge/hashCode/User.class","importer","0.0.0");
-        asserReceiver(cg, "invokedynamic","[/merge.interFace/Child]");
+        assertReceiver(cg, "invokedynamic","[/merge.interFace/Child]");
 
     }
 
-    public void asserReceiver(ExtendedRevisionJavaCallGraph cg, String callType, String type){
+    public void assertReceiver(ExtendedRevisionJavaCallGraph cg, String callType, String type){
         for (final var edge : cg.getGraph().getExternalCalls().entrySet()) {
             for (final var cs : edge.getValue().entrySet()) {
                 final var metadata = (Map<Object,Object>)cs.getValue();
