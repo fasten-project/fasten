@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 import eu.fasten.analyzer.javacgopal.data.CallGraphConstructor;
 import eu.fasten.analyzer.javacgopal.data.PartialCallGraph;
+import eu.fasten.analyzer.javacgopal.data.PreservedCalls;
 import eu.fasten.core.data.opal.exceptions.OPALException;
 import eu.fasten.core.data.FastenURI;
 import eu.fasten.core.data.JavaScope;
@@ -557,7 +558,7 @@ class OPALTypeTest {
         return new PartialCallGraph(new CallGraphConstructor(
             new File(Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
                 .getResource(s)).getFile()), "",
-            "CHA"), false);
+            "CHA"), PreservedCalls.INCLUDING_ALL_SUBTYPES);
     }
 }
 

@@ -33,6 +33,7 @@ import org.opalj.tac.DUVar;
 import org.opalj.tac.Stmt;
 import org.opalj.tac.UVar;
 import org.opalj.value.ValueInformation;
+import eu.fasten.analyzer.javacgopal.data.PreservedCalls;
 import scala.Tuple2;
 import scala.collection.Iterator;
 import scala.collection.JavaConverters;
@@ -232,7 +233,7 @@ public class OPALClassHierarchy {
                             final Iterator<Tuple2<Object, Iterator<DeclaredMethod>>> targets,
                             final Stmt<DUVar<ValueInformation>>[] stmts,
                             final JavaGraph resultGraph, List<Integer> incompeletes,
-                            final Set<Integer> visitedPCs, final boolean callSiteOnly) {
+                            final Set<Integer> visitedPCs, PreservedCalls callSiteOnly) {
         final var edges = this.getSubGraph(source, targets, stmts, incompeletes, visitedPCs, callSiteOnly);
         resultGraph.append(edges);
     }
@@ -249,7 +250,7 @@ public class OPALClassHierarchy {
                              final Iterator<Tuple2<Object, Iterator<DeclaredMethod>>> targets,
                              final Stmt<DUVar<ValueInformation>>[] stmts,
                              final List<Integer> incompeletes,
-                             final Set<Integer> visitedPCs, boolean callSiteOnly) {
+                             final Set<Integer> visitedPCs, PreservedCalls callSiteOnly) {
 
         final var callSites = new HashMap<List<Integer>, Map<Object, Object>>();
 
@@ -260,14 +261,14 @@ public class OPALClassHierarchy {
                     .asJavaIterable(opalCallSite._2().toIterable())) {
                     final var pc = (Integer) opalCallSite._1();
                     incompeletes.remove(pc);
-                    if (!callSiteOnly) {
-                        processPC(source, stmts, visitedPCs, callSites, callSites,
-                            opalCallSite, targetDeclaration, pc);
-                    } else {
+                    if (callSiteOnly == PreservedCalls.ONLY_STATIC_CALLSITES) {
                         if (!visitedPCs.contains(pc)) {
                             processPC(source, stmts, visitedPCs, callSites, callSites,
                                 opalCallSite, targetDeclaration, pc);
                         }
+                    } else {
+                        processPC(source, stmts, visitedPCs, callSites, callSites,
+                                opalCallSite, targetDeclaration, pc);
                     }
                 }
             }

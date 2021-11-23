@@ -19,6 +19,7 @@
 package eu.fasten.analyzer.javacgopal;
 
 import eu.fasten.analyzer.javacgopal.data.PartialCallGraph;
+import eu.fasten.analyzer.javacgopal.data.PreservedCalls;
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
 import eu.fasten.core.data.JSONUtils;
@@ -79,7 +80,7 @@ public class OPALPlugin extends Plugin {
                 // Generate CG and measure construction duration.
                 logger.info("[CG-GENERATION] [UNPROCESSED] [-1] [" + mavenCoordinate.getCoordinate() + "] [NONE] ");
                 this.graph = PartialCallGraph.createExtendedRevisionJavaCallGraph(mavenCoordinate,
-                        "", "CHA", kafkaConsumedJson.optLong("date", -1), artifactRepository, true);
+                        "", "CHA", kafkaConsumedJson.optLong("date", -1), artifactRepository, PreservedCalls.ONLY_STATIC_CALLSITES);
                 long endTime = System.nanoTime();
                 long duration = (endTime - startTime) / 1000000; // Compute duration in ms. 
 

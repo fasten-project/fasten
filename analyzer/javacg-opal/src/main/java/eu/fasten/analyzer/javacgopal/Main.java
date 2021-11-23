@@ -21,6 +21,7 @@ package eu.fasten.analyzer.javacgopal;
 import eu.fasten.analyzer.javacgopal.data.CallGraphConstructor;
 import eu.fasten.core.data.opal.MavenCoordinate;
 import eu.fasten.analyzer.javacgopal.data.PartialCallGraph;
+import eu.fasten.analyzer.javacgopal.data.PreservedCalls;
 import eu.fasten.core.data.opal.exceptions.MissingArtifactException;
 import eu.fasten.core.data.opal.exceptions.OPALException;
 import eu.fasten.core.data.DirectedGraph;
@@ -280,7 +281,7 @@ public class Main implements Runnable {
                     .createExtendedRevisionJavaCallGraph((MavenCoordinate) artifact, mainClass,
                             algorithm, Long.parseLong(this.commands.computations.timestamp),
                             (repos == null || repos.size() < 1) ? MavenUtilities.MAVEN_CENTRAL_REPO : repos.get(0),
-                            false);
+                            PreservedCalls.INCLUDING_ALL_SUBTYPES);
         }
 
         logger.info("Generated the call graph in {} seconds.", new DecimalFormat("#0.000")
