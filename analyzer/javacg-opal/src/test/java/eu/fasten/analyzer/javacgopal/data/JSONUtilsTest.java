@@ -1,13 +1,7 @@
 package eu.fasten.analyzer.javacgopal.data;
 
-import eu.fasten.core.data.opal.MavenCoordinate;
-import eu.fasten.core.data.opal.exceptions.MissingArtifactException;
-import eu.fasten.core.data.opal.exceptions.OPALException;
-import eu.fasten.core.data.ExtendedBuilderJava;
-import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
-import eu.fasten.core.data.JSONUtils;
-import eu.fasten.core.maven.utils.MavenUtilities;
-import eu.fasten.core.merge.CGMerger;
+import static eu.fasten.core.utils.TestUtils.getTestResource;
+
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
@@ -16,18 +10,25 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+
 import org.jooq.tools.csv.CSVReader;
 import org.json.JSONObject;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-
 import org.skyscreamer.jsonassert.JSONAssert;
 import org.skyscreamer.jsonassert.JSONCompareMode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static eu.fasten.core.utils.TestUtils.getTestResource;
+import eu.fasten.core.data.ExtendedBuilderJava;
+import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
+import eu.fasten.core.data.JSONUtils;
+import eu.fasten.core.data.opal.MavenCoordinate;
+import eu.fasten.core.data.opal.exceptions.MissingArtifactException;
+import eu.fasten.core.data.opal.exceptions.OPALException;
+import eu.fasten.core.maven.utils.MavenUtilities;
+import eu.fasten.core.merge.CGMerger;
 
 class JSONUtilsTest {
     private static final Logger logger = LoggerFactory.getLogger(JSONUtilsTest.class);

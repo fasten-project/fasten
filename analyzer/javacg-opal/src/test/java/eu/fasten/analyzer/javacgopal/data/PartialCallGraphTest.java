@@ -24,18 +24,9 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import eu.fasten.core.data.opal.MavenCoordinate;
-import eu.fasten.core.data.opal.exceptions.MissingArtifactException;
-import eu.fasten.core.data.opal.exceptions.OPALException;
-import eu.fasten.core.data.Constants;
-import eu.fasten.core.data.JavaScope;
-import eu.fasten.core.data.FastenJavaURI;
-import eu.fasten.core.data.FastenURI;
 import java.io.File;
 import java.util.HashMap;
 import java.util.Objects;
-import eu.fasten.core.maven.utils.MavenUtilities;
-import it.unimi.dsi.fastutil.ints.IntIntPair;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
@@ -58,6 +49,16 @@ import org.opalj.collection.immutable.RefArray;
 import org.opalj.collection.immutable.UIDSet;
 import org.opalj.collection.immutable.UIDSet1;
 import org.opalj.tac.cg.CallGraph;
+
+import eu.fasten.core.data.Constants;
+import eu.fasten.core.data.FastenJavaURI;
+import eu.fasten.core.data.FastenURI;
+import eu.fasten.core.data.JavaScope;
+import eu.fasten.core.data.opal.MavenCoordinate;
+import eu.fasten.core.data.opal.exceptions.MissingArtifactException;
+import eu.fasten.core.data.opal.exceptions.OPALException;
+import eu.fasten.core.maven.utils.MavenUtilities;
+import it.unimi.dsi.fastutil.ints.IntIntPair;
 import scala.Option;
 import scala.collection.Iterator;
 import scala.collection.mutable.HashSet;
