@@ -65,8 +65,8 @@ public class PartialCallGraph {
     private final JavaGraph graph;
     private final int nodeCount;
 
-    public PartialCallGraph(CallGraphConstructor constructor) throws OPALException{
-        this(constructor, true);
+    public PartialCallGraph(CallGraphConstructor constructor) {
+        this(constructor, PreservedCalls.ONLY_STATIC_CALLSITES);
     }
 
     /**
@@ -75,7 +75,7 @@ public class PartialCallGraph {
      *
      * @param constructor call graph constructor
      */
-    public PartialCallGraph(CallGraphConstructor constructor, boolean callSiteOnly) throws OPALException {
+    public PartialCallGraph(CallGraphConstructor constructor, PreservedCalls callSiteOnly) {
         this.graph = new JavaGraph();
 
         try {
@@ -122,8 +122,7 @@ public class PartialCallGraph {
      */
     public static ExtendedRevisionJavaCallGraph createExtendedRevisionJavaCallGraph(
             final MavenCoordinate coordinate, final String mainClass,
-            final String algorithm, final long timestamp, final String artifactRepo, final boolean callSiteOnly)
-            throws MissingArtifactException, OPALException {
+            final String algorithm, final long timestamp, final String artifactRepo, PreservedCalls callSiteOnly) {
 
         File file = null;
         try {
@@ -232,7 +231,7 @@ public class PartialCallGraph {
      * @param callSiteOnly
      */
     private void createGraphWithExternalCHA(final CallGraphConstructor cgConstructor,
-                                            final OPALClassHierarchy cha, boolean callSiteOnly) {
+                                            final OPALClassHierarchy cha, PreservedCalls callSiteOnly) {
         final var cg = cgConstructor.getCallGraph();
         final var tac = cgConstructor.getProject().get(ComputeTACAIKey$.MODULE$);
         for (final var sourceDeclaration : JavaConverters
