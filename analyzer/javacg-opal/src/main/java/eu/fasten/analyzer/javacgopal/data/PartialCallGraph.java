@@ -144,6 +144,7 @@ public class PartialCallGraph {
                     partialCallGraph.getGraph());
         } finally {
             if (file != null) {
+            	// TODO use apache commons FileUtils instead
                 file.delete();
             }
         }
@@ -183,6 +184,8 @@ public class PartialCallGraph {
                                 final var valueContent = StringEscapeUtils.escapeJava(value.value().toJava());
                                 valueList.add(Pair.of(valuePackage + "/" + valueClass, valueContent));
                             } catch (NullPointerException ignored) {
+                            	// TODO fix swallowed exception
+                            	logger.error("!! SWALLOWED EXCEPTION !!");
                             }
                         }
                     }
@@ -283,6 +286,7 @@ public class PartialCallGraph {
                 sourceTac = tac.apply(definedSource);
 
             }catch (NoSuchElementException e){
+            	// TODO investigate this warning, as it happens frequently in practice!
                 logger.warn("couldn't find the stmt");
             }
             if (sourceTac != null) {
