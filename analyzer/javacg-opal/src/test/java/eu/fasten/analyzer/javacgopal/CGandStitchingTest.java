@@ -21,6 +21,8 @@ package eu.fasten.analyzer.javacgopal;
 import static eu.fasten.core.merge.CallGraphUtils.decode;
 import static org.junit.jupiter.api.Assertions.*;
 import com.github.javaparser.utils.Log;
+
+import eu.fasten.analyzer.javacgopal.data.CGAlgorithm;
 import eu.fasten.analyzer.javacgopal.data.CallGraphConstructor;
 import eu.fasten.core.data.opal.MavenCoordinate;
 import eu.fasten.analyzer.javacgopal.data.PartialCallGraph;
@@ -69,7 +71,7 @@ public class CGandStitchingTest {
     private static ExtendedRevisionJavaCallGraph getRCG(final File file, final String product,
                                                         final String version)
         throws OPALException {
-        var opalCG = new CallGraphConstructor(file, "", "RTA");
+        var opalCG = new CallGraphConstructor(file, "", CGAlgorithm.RTA);
         var cg = new PartialCallGraph(opalCG);
         return ExtendedRevisionJavaCallGraph.extendedBuilder()
             .graph(cg.getGraph())
@@ -340,7 +342,7 @@ public class CGandStitchingTest {
 
         final var dep1 =
             new MavenCoordinate.MavenResolver().downloadArtifact(coord,"jar");
-        final var opalCG = new CallGraphConstructor(dep1, "", "RTA");
+        final var opalCG = new CallGraphConstructor(dep1, "", CGAlgorithm.RTA);
         final var cg = new PartialCallGraph(opalCG);
         return ExtendedRevisionJavaCallGraph.extendedBuilder()
             .graph(cg.getGraph())
