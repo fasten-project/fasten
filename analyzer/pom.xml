@@ -45,6 +45,7 @@
         <module>vulnerability-cache-processor-plugin</module>
         <module>vulnerability-statements-processor</module>
         <module>vulnerability-packages-listener</module>
+        <module>dummy-plugin</module>
     </modules>
 
     <build>

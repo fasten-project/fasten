@@ -26,6 +26,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
+
 @Service
 public class DependencyApiServiceImpl implements DependencyApiService {
 
@@ -45,6 +47,8 @@ public class DependencyApiServiceImpl implements DependencyApiService {
                 LazyIngestionProvider.ingestArtifactIfNecessary(package_name, package_version, artifactRepo, date);
             } catch (IllegalArgumentException ex) {
                 return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST);
+            } catch (IOException ex) {
+                return new ResponseEntity<>(ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
             }
             return new ResponseEntity<>("Package version not found, but should be processed soon. Try again later", HttpStatus.CREATED);
         }

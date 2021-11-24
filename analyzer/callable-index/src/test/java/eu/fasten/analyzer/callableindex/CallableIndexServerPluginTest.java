@@ -38,7 +38,7 @@ public class CallableIndexServerPluginTest {
     @BeforeEach
     public void setUp() {
         callableIndexFastenPlugin = new CallableIndexServerPlugin.CallableIndexFastenPlugin();
-        callableIndexFastenPlugin.setTopic("fasten.MetadataDBExtension.out");
+        //callableIndexFastenPlugin.addTopic("fasten.MetadataDBExtension.out");
     }
 
     @Test
@@ -89,9 +89,9 @@ public class CallableIndexServerPluginTest {
     public void consumerTopicChangeTest() {
         var topics1 = Optional.of(List.of("fasten.MetadataDBJavaExtension.priority.out","fasten.MetadataDBExtension.out"));
         assertEquals(topics1, callableIndexFastenPlugin.consumeTopic());
-        var differentTopic = "DifferentKafkaTopic";
-        callableIndexFastenPlugin.setTopic(differentTopic);
-        assertEquals(differentTopic, callableIndexFastenPlugin.consumeTopic().get().get(1));
+        var differentTopic = Collections.singletonList("DifferentKafkaTopic");
+        callableIndexFastenPlugin.setTopics(differentTopic);
+        assertEquals(Optional.of(differentTopic), callableIndexFastenPlugin.consumeTopic());
     }
 
     @Test

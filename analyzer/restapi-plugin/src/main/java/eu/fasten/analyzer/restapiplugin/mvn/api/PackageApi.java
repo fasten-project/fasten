@@ -19,6 +19,7 @@
 package eu.fasten.analyzer.restapiplugin.mvn.api;
 
 import eu.fasten.analyzer.restapiplugin.mvn.RestApplication;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -26,6 +27,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.io.IOException;
 
 @RestController
 @RequestMapping("/mvn/packages")
@@ -60,7 +63,11 @@ public class PackageApi {
                                              @PathVariable("pkg_ver") String package_version,
                                              @RequestParam(value = "artifactRepository", required = false) String artifactRepo,
                                              @RequestParam(required = false) Long releaseDate) {
-        return service.getPackageVersion(package_name, package_version, artifactRepo, releaseDate);
+        try {
+            return service.getPackageVersion(package_name, package_version, artifactRepo, releaseDate);
+        } catch (IOException e) {
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
     @GetMapping(value = "/{pkg}/{pkg_ver}/metadata", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -76,7 +83,11 @@ public class PackageApi {
                                                @RequestParam(required = false, defaultValue = RestApplication.DEFAULT_PAGE_SIZE) int limit,
                                                @RequestParam(value = "artifactRepository", required = false) String artifactRepo,
                                                @RequestParam(required = false) Long releaseDate) {
-        return service.getPackageCallgraph(package_name, package_version, offset, limit, artifactRepo, releaseDate);
+        try {
+            return service.getPackageCallgraph(package_name, package_version, offset, limit, artifactRepo, releaseDate);
+        } catch (IOException e) {
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 
     @GetMapping(value = "/search", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -91,7 +102,11 @@ public class PackageApi {
                                        @PathVariable("pkg_ver") String version,
                                        @RequestParam(value = "artifactRepository", required = false) String artifactRepo,
                                        @RequestParam(required = false) Long releaseDate) {
-        return service.getERCGLink(packageName, version, artifactRepo, releaseDate);
+        try {
+            return service.getERCGLink(packageName, version, artifactRepo, releaseDate);
+        } catch (IOException e) {
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
     }
 }
 

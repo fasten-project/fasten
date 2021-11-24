@@ -18,7 +18,6 @@
 
 package eu.fasten.analyzer.qualityanalyzer;
 
-import org.json.JSONObject;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -34,23 +33,22 @@ public class QualityAnalyzerPluginTest {
     @BeforeEach
     public void setup() {
         qualityAnalyzer = new QualityAnalyzerPlugin.QualityAnalyzer();
-        qualityAnalyzer.setTopic("fasten.RapidPlugin.out");
+        qualityAnalyzer.setTopics(Collections.singletonList("fasten.RapidPlugin.callable.out"));
     }
 
     @Test
     public void consumerTopicsTest() {
-        var topics = Optional.of(Collections.singletonList("fasten.RapidPlugin.out"));
+        var topics = Optional.of(Collections.singletonList("fasten.RapidPlugin.callable.out"));
         assertEquals(topics, qualityAnalyzer.consumeTopic());
     }
 
     @Test
     public void consumerTopicChangeTest() {
-        var topics1 = Optional.of(Collections.singletonList("fasten.RapidPlugin.out"));
+        var topics1 = Optional.of(Collections.singletonList("fasten.RapidPlugin.callable.out"));
         assertEquals(topics1, qualityAnalyzer.consumeTopic());
-        var differentTopic = "DifferentKafkaTopic";
-        var topics2 = Optional.of(Collections.singletonList(differentTopic));
-        qualityAnalyzer.setTopic(differentTopic);
-        assertEquals(topics2, qualityAnalyzer.consumeTopic());
+        var differentTopic = Collections.singletonList("DifferentKafkaTopic");
+        qualityAnalyzer.setTopics(differentTopic);
+        assertEquals(Optional.of(differentTopic), qualityAnalyzer.consumeTopic());
     }
 
     @Test

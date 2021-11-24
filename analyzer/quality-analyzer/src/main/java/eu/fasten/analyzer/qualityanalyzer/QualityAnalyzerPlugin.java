@@ -32,10 +32,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.BatchUpdateException;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 
 public class QualityAnalyzerPlugin extends Plugin {
@@ -48,7 +45,7 @@ public class QualityAnalyzerPlugin extends Plugin {
     public static class QualityAnalyzer implements KafkaPlugin, DBConnector {
 
         private final Logger logger = LoggerFactory.getLogger(QualityAnalyzer.class.getName());
-        private String consumerTopic = "fasten.RapidPlugin.callable.out";
+        private List<String> consumeTopics = new LinkedList<>(Collections.singletonList("fasten.RapidPlugin.callable.out"));
         private static MetadataUtils utils = null;
         private Exception pluginError = null;
 
@@ -59,12 +56,12 @@ public class QualityAnalyzerPlugin extends Plugin {
 
         @Override
         public Optional<List<String>> consumeTopic() {
-            return Optional.of(Collections.singletonList(consumerTopic));
+            return Optional.of(consumeTopics);
         }
 
         @Override
-        public void setTopic(String topicName) {
-            this.consumerTopic = topicName;
+        public void setTopics(List<String> consumeTopics) {
+            this.consumeTopics = consumeTopics;
         }
 
         @Override

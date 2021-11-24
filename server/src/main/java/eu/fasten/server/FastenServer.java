@@ -19,22 +19,18 @@
 package eu.fasten.server;
 
 import ch.qos.logback.classic.Level;
-import eu.fasten.core.plugins.*;
-import eu.fasten.server.connectors.KafkaConnector;
 import eu.fasten.core.dbconnectors.PostgresConnector;
 import eu.fasten.core.dbconnectors.RocksDBConnector;
+import eu.fasten.core.plugins.CallableIndexConnector;
+import eu.fasten.core.plugins.CallableIndexReader;
+import eu.fasten.core.plugins.DBConnector;
+import eu.fasten.core.plugins.DataWriter;
+import eu.fasten.core.plugins.DependencyGraphUser;
+import eu.fasten.core.plugins.FastenPlugin;
+import eu.fasten.core.plugins.KafkaPlugin;
+import eu.fasten.server.connectors.KafkaConnector;
 import eu.fasten.server.plugins.FastenServerPlugin;
 import eu.fasten.server.plugins.kafka.FastenKafkaPlugin;
-
-import java.net.URI;
-import java.nio.file.Path;
-import java.sql.SQLException;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
-
 import org.apache.commons.lang3.ObjectUtils;
 import org.jooq.DSLContext;
 import org.pf4j.JarPluginManager;
@@ -42,6 +38,17 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
 import picocli.CommandLine.Option;
+
+import java.net.URI;
+import java.nio.file.Path;
+import java.sql.SQLException;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.function.Supplier;
+import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 
 @CommandLine.Command(name = "FastenServer", mixinStandardHelpOptions = true)
@@ -88,7 +95,7 @@ public class FastenServer implements Runnable {
     @Option(names = {"-kt", "--topic"},
         paramLabel = "topic",
         description = "Kay-value pairs of Plugin and topic to consume from. Example - "
-            + "OPAL=fasten.OPAL.out",
+            + "OPAL=fasten.OPAL.out, You can add multiple topics by using | to separate topic names.",
         split = ",")
     Map<String, String> pluginTopic;
 
@@ -240,33 +247,43 @@ public class FastenServer implements Runnable {
         if (pluginTopic != null) {
             kafkaPlugins.stream()
                 .filter(x -> pluginTopic.containsKey(x.getClass().getSimpleName()))
-                .forEach(x -> x.setTopic(pluginTopic.get(x.getClass().getSimpleName())));
+                .forEach(x -> x.setTopics(Arrays.asList(pluginTopic.get(x.getClass().getSimpleName()).split(Pattern.quote("|")))));
         }
 
         return kafkaPlugins.stream().filter(x -> plugins.contains(x.getClass().getSimpleName()))
             .map(k -> {
-                var consumerProperties = KafkaConnector.kafkaConsumerProperties(
-                    kafkaServers,
-                    (consumerGroup.equals("undefined") ? k.getClass().getCanonicalName() :
-                        consumerGroup),
-                    // if consumergroup != undefined, set to canonical name. If we upgrade to picocli 2.4.6 we can use optionals.
-                    k.getSessionTimeout(),
-                    k.getMaxConsumeTimeout(),
-                    k.isStaticMembership());
+                var consumerNormProperties = KafkaConnector.kafkaConsumerProperties(
+                        kafkaServers,
+                        (consumerGroup.equals("undefined") ? k.getClass().getCanonicalName() :
+                                consumerGroup),
+                        // if consumergroup != undefined, set to canonical name. If we upgrade to picocli 2.4.6 we can use optionals.
+                        "",
+                        k.getSessionTimeout(),
+                        k.getMaxConsumeTimeout(),
+                        k.isStaticMembership());
+                var consumerPrioProperties = KafkaConnector.kafkaConsumerProperties(
+                        kafkaServers,
+                        (consumerGroup.equals("undefined") ? k.getClass().getCanonicalName() :
+                                consumerGroup),
+                        // if consumergroup != undefined, set to canonical name. If we upgrade to picocli 2.4.6 we can use optionals.
+                        "_priority",
+                        k.getSessionTimeout(),
+                        k.getMaxConsumeTimeout(),
+                        k.isStaticMembership());
                 var producerProperties = KafkaConnector.kafkaProducerProperties(
-                    kafkaServers,
-                    k.getClass().getCanonicalName());
+                        kafkaServers,
+                        k.getClass().getCanonicalName());
 
-                return new FastenKafkaPlugin(consumerProperties, producerProperties, k, skipOffsets,
-                    (outputDirs != null) ? outputDirs.get(k.getClass().getSimpleName()) : null,
-                    (outputLinks != null) ? outputLinks.get(k.getClass().getSimpleName()) : null,
-                    (outputTopic != null) ? outputTopic : k.getClass().getSimpleName(),
-                    (consumeTimeout != -1) ? true : false,
-                    consumeTimeout,
-                    consumeTimeoutExit,
-                    localStorage,
-                    (localStorageDir != null) ? localStorageDir :
-                        "/mnt/fasten/local_storage/" + k.getClass().getSimpleName());
+                return new FastenKafkaPlugin(consumerNormProperties, consumerPrioProperties, producerProperties, k, skipOffsets,
+                        (outputDirs != null) ? outputDirs.get(k.getClass().getSimpleName()) : null,
+                        (outputLinks != null) ? outputLinks.get(k.getClass().getSimpleName()) : null,
+                        (outputTopic != null) ? outputTopic : k.getClass().getSimpleName(),
+                        (consumeTimeout != -1) ? true : false,
+                        consumeTimeout,
+                        consumeTimeoutExit,
+                        localStorage,
+                        (localStorageDir != null) ? localStorageDir :
+                                "/mnt/fasten/local_storage/" + k.getClass().getSimpleName());
             }).collect(Collectors.toList());
     }
 
@@ -297,9 +314,9 @@ public class FastenServer implements Runnable {
     private void loadDependencyGraphResolvers(List<DependencyGraphUser> plugins) {
         plugins.forEach(p -> {
             if (dbUrls == null || depGraphPath == null) {
-                logger.error("Couldn't load dependency graph. Make sure that you have "
-                    + "provided a valid DB URL, username, password, "
-                    + "and a path to the serialized dependency graph.");
+                throw new IllegalArgumentException("Couldn't load dependency graph. Make sure that you have "
+                        + "provided a valid DB URL, username, password, "
+                        + "and a path to the serialized dependency graph.");
             }
             DSLContext dbContext = getDSLContext(dbUrls.get("mvn"));
             p.loadGraphResolver(dbContext, depGraphPath);

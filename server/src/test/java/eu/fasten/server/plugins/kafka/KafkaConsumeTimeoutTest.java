@@ -1,19 +1,16 @@
 package eu.fasten.server.plugins.kafka;
 
 import eu.fasten.core.plugins.KafkaPlugin;
-import org.apache.kafka.common.serialization.StringDeserializer;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
-
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doReturn;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.Properties;
-import java.util.Set;
 import java.util.concurrent.TimeoutException;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class KafkaConsumeTimeoutTest {
 
@@ -21,7 +18,7 @@ public class KafkaConsumeTimeoutTest {
     public void testDisableTimeout() {
         DummyPlugin dummyPlugin = new DummyPlugin(false, 0);
 
-        FastenKafkaPlugin plugin = new FastenKafkaPlugin(false, new Properties(), new Properties(), dummyPlugin, 0, null, null, "", false, -1, false, false, "");
+        FastenKafkaPlugin plugin = new FastenKafkaPlugin(false, new Properties(), new Properties(), new Properties(), dummyPlugin, 0, null, null, "", false, -1, false, false, "");
 
         assertFalse(plugin.isConsumeTimeoutEnabled());
         assertEquals(-1, plugin.getConsumeTimeout());
@@ -31,7 +28,7 @@ public class KafkaConsumeTimeoutTest {
     public void testEnableTimeout() {
         DummyPlugin dummyPlugin = new DummyPlugin(false, 0);
 
-        FastenKafkaPlugin plugin = new FastenKafkaPlugin(false, new Properties(), new Properties(), dummyPlugin, 0, null, null, "", true, 10, false, false, "");
+        FastenKafkaPlugin plugin = new FastenKafkaPlugin(false, new Properties(), new Properties(), new Properties(), dummyPlugin, 0, null, null, "", true, 10, false, false, "");
 
         assertTrue(plugin.isConsumeTimeoutEnabled());
         assertEquals(10, plugin.getConsumeTimeout());
@@ -43,7 +40,7 @@ public class KafkaConsumeTimeoutTest {
         long timeOut = 3;
         DummyPlugin dummyPlugin = new DummyPlugin(true, blockTime);
 
-        FastenKafkaPlugin plugin = new FastenKafkaPlugin(false, new Properties(), new Properties(), dummyPlugin, 0, null, null, "", true, timeOut, false, false, "");
+        FastenKafkaPlugin plugin = new FastenKafkaPlugin(false, new Properties(), new Properties(), new Properties(), dummyPlugin, 0, null, null, "", true, timeOut, false, false, "");
 
         long startTime  = System.currentTimeMillis();
         plugin.consumeWithTimeout("dummy", timeOut, false);
@@ -59,7 +56,7 @@ public class KafkaConsumeTimeoutTest {
         long timeOut = 2;
         DummyPlugin dummyPlugin = new DummyPlugin(true, blockTime);
 
-        FastenKafkaPlugin plugin = new FastenKafkaPlugin(false, new Properties(), new Properties(), dummyPlugin, 0, null, null, "", true, timeOut, false, false, "");
+        FastenKafkaPlugin plugin = new FastenKafkaPlugin(false, new Properties(), new Properties(), new Properties(), dummyPlugin, 0, null, null, "", true, timeOut, false, false, "");
 
         long startTime  = System.currentTimeMillis();
         plugin.consumeWithTimeout("dummy", timeOut, false);
@@ -77,7 +74,7 @@ public class KafkaConsumeTimeoutTest {
         long timeOut = 2;
         DummyPlugin dummyPlugin = new DummyPlugin(true, blockTime);
 
-        FastenKafkaPlugin plugin = new FastenKafkaPlugin(false, new Properties(), new Properties(), dummyPlugin, 0, null, null, "", true, timeOut, false, false, "");
+        FastenKafkaPlugin plugin = new FastenKafkaPlugin(false, new Properties(), new Properties(), new Properties(), dummyPlugin, 0, null, null, "", true, timeOut, false, false, "");
 
         long startTime  = System.currentTimeMillis();
         plugin.consumeWithTimeout("dummy", timeOut, false);
@@ -106,7 +103,7 @@ public class KafkaConsumeTimeoutTest {
         }
 
         @Override
-        public void setTopic(String topicName) {
+        public void setTopics(List<String> consumeTopics) {
 
         }
 

@@ -18,16 +18,15 @@
 
 package eu.fasten.server.connectors;
 
-import java.util.List;
-import java.util.Properties;
-
-import eu.fasten.core.plugins.KafkaPlugin;
 import org.apache.kafka.clients.consumer.ConsumerConfig;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.List;
+import java.util.Properties;
 
 public class KafkaConnector {
 
@@ -36,21 +35,22 @@ public class KafkaConnector {
     /**
      * Returns Kafka properties.
      *
-     * @param serverAddresses broker address
-     * @param groupId         group id
-     * @param sessionTimeout a value for `session.timeout.ms`.
-     * @param maxPollInterval a value for `max.poll.interval.ms`.
+     * @param serverAddresses  broker address
+     * @param groupId          group id
+     * @param sessionTimeout   a value for `session.timeout.ms`.
+     * @param maxPollInterval  a value for `max.poll.interval.ms`.
      * @param staticMemberShip if static membership should be enabled.
      * @return Kafka Properties
      */
-    public static Properties kafkaConsumerProperties(List<String> serverAddresses, String groupId, long sessionTimeout, long maxPollInterval, boolean staticMemberShip) {
+    public static Properties kafkaConsumerProperties(List<String> serverAddresses, String groupId, String clientIdSuffix,
+                                                     long sessionTimeout, long maxPollInterval, boolean staticMemberShip) {
         String deserializer = StringDeserializer.class.getName();
         Properties properties = new Properties();
 
         properties.setProperty(ConsumerConfig.BOOTSTRAP_SERVERS_CONFIG,
                 String.join(",", serverAddresses));
         properties.setProperty(ConsumerConfig.GROUP_ID_CONFIG, groupId);
-        properties.setProperty(ConsumerConfig.CLIENT_ID_CONFIG, groupId + "_client");
+        properties.setProperty(ConsumerConfig.CLIENT_ID_CONFIG, groupId + "_client" + clientIdSuffix);
         properties.setProperty(ConsumerConfig.KEY_DESERIALIZER_CLASS_CONFIG, deserializer);
         properties.setProperty(ConsumerConfig.VALUE_DESERIALIZER_CLASS_CONFIG, deserializer);
         properties.setProperty(ConsumerConfig.AUTO_OFFSET_RESET_CONFIG, "earliest");
@@ -66,8 +66,8 @@ public class KafkaConnector {
         if (staticMemberShip) {
             // Assign a static ID to the consumer based pods' unique name in K8s env.
             if (System.getenv("POD_INSTANCE_ID") != null) {
-                logger.info(String.format("Static Membership ID: %s", System.getenv("POD_INSTANCE_ID")));
-                properties.setProperty(ConsumerConfig.GROUP_INSTANCE_ID_CONFIG, System.getenv("POD_INSTANCE_ID"));
+                logger.info(String.format("Static Membership ID: %s", System.getenv("POD_INSTANCE_ID") + clientIdSuffix));
+                properties.setProperty(ConsumerConfig.GROUP_INSTANCE_ID_CONFIG, System.getenv("POD_INSTANCE_ID") + clientIdSuffix);
             } else {
                 logger.warn("Static Membership was enabled but POD_INSTANCE_ID was not defined. Plugin will proceed without Static Membership.");
             }

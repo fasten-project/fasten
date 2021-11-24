@@ -18,26 +18,27 @@
 
 package eu.fasten.analyzer.javacgopal;
 
-import eu.fasten.core.data.opal.MavenCoordinate;
 import eu.fasten.analyzer.javacgopal.data.PartialCallGraph;
-import eu.fasten.core.data.opal.exceptions.EmptyCallGraphException;
-import eu.fasten.core.data.opal.exceptions.MissingArtifactException;
-import eu.fasten.core.data.opal.exceptions.OPALException;
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
 import eu.fasten.core.data.JSONUtils;
+import eu.fasten.core.data.opal.MavenCoordinate;
+import eu.fasten.core.data.opal.exceptions.EmptyCallGraphException;
+import eu.fasten.core.data.opal.exceptions.MissingArtifactException;
+import eu.fasten.core.data.opal.exceptions.OPALException;
 import eu.fasten.core.plugins.KafkaPlugin;
-import java.io.File;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
 import org.json.JSONObject;
 import org.pf4j.Extension;
 import org.pf4j.Plugin;
 import org.pf4j.PluginWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.File;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Optional;
 
 public class OPALPlugin extends Plugin {
 
@@ -50,14 +51,14 @@ public class OPALPlugin extends Plugin {
 
         private final Logger logger = LoggerFactory.getLogger(getClass());
 
-        private String consumeTopic = "fasten.POMAnalyzer.out";
+        private List<String> consumeTopics = new LinkedList<>(Collections.singletonList("fasten.POMAnalyzer.out"));
         private Exception pluginError;
         private ExtendedRevisionJavaCallGraph graph;
         private String outputPath;
 
         @Override
         public Optional<List<String>> consumeTopic() {
-            return Optional.of(new ArrayList<>(Collections.singletonList(consumeTopic)));
+            return Optional.of(consumeTopics);
         }
 
         @Override
@@ -129,8 +130,8 @@ public class OPALPlugin extends Plugin {
         }
 
         @Override
-        public void setTopic(String topicName) {
-            this.consumeTopic = topicName;
+        public void setTopics(List<String> consumeTopics) {
+            this.consumeTopics = consumeTopics;
         }
 
         @Override

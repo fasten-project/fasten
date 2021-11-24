@@ -20,9 +20,6 @@ package eu.fasten.analyzer.repoanalyzer;
 
 import eu.fasten.analyzer.repoanalyzer.repo.RepoAnalyzerFactory;
 import eu.fasten.core.plugins.KafkaPlugin;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.pf4j.Extension;
@@ -30,6 +27,11 @@ import org.pf4j.Plugin;
 import org.pf4j.PluginWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Optional;
 
 public class RepoAnalyzerPlugin extends Plugin {
 
@@ -42,7 +44,7 @@ public class RepoAnalyzerPlugin extends Plugin {
 
         private final Logger logger = LoggerFactory.getLogger(RepoAnalyzerPlugin.class);
 
-        private String consumerTopic = "fasten.RepoCloner.out";
+        private List<String> consumeTopics = new LinkedList<>(Collections.singletonList("fasten.RepoCloner.out"));
         private Exception pluginError;
         private JSONObject statistics;
 
@@ -123,12 +125,12 @@ public class RepoAnalyzerPlugin extends Plugin {
 
         @Override
         public Optional<List<String>> consumeTopic() {
-            return Optional.of(Collections.singletonList(consumerTopic));
+            return Optional.of(consumeTopics);
         }
 
         @Override
-        public void setTopic(String topicName) {
-            this.consumerTopic = topicName;
+        public void setTopics(List<String> consumeTopics) {
+            this.consumeTopics = consumeTopics;
         }
 
         @Override

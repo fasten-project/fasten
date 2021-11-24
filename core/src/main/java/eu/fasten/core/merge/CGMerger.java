@@ -18,6 +18,29 @@
 
 package eu.fasten.core.merge;
 
+import com.google.common.collect.BiMap;
+import com.google.common.collect.HashBiMap;
+import eu.fasten.core.data.Constants;
+import eu.fasten.core.data.DirectedGraph;
+import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
+import eu.fasten.core.data.FastenJavaURI;
+import eu.fasten.core.data.FastenURI;
+import eu.fasten.core.data.JavaNode;
+import eu.fasten.core.data.JavaScope;
+import eu.fasten.core.data.JavaType;
+import eu.fasten.core.data.MergedDirectedGraph;
+import eu.fasten.core.data.callableindex.GraphMetadata;
+import eu.fasten.core.data.callableindex.RocksDao;
+import eu.fasten.core.data.metadatadb.codegen.tables.Callables;
+import eu.fasten.core.data.metadatadb.codegen.tables.ModuleNames;
+import eu.fasten.core.data.metadatadb.codegen.tables.Modules;
+import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
+import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
+import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.longs.LongLongPair;
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
+import it.unimi.dsi.fastutil.longs.LongSet;
+import it.unimi.dsi.fastutil.longs.LongSets;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -30,7 +53,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
-
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -44,29 +66,6 @@ import org.json.JSONObject;
 import org.rocksdb.RocksDBException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.google.common.collect.BiMap;
-import com.google.common.collect.HashBiMap;
-
-import eu.fasten.core.data.Constants;
-import eu.fasten.core.data.DirectedGraph;
-import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
-import eu.fasten.core.data.MergedDirectedGraph;
-import eu.fasten.core.data.FastenJavaURI;
-import eu.fasten.core.data.FastenURI;
-import eu.fasten.core.data.JavaScope;
-import eu.fasten.core.data.callableindex.GraphMetadata;
-import eu.fasten.core.data.callableindex.RocksDao;
-import eu.fasten.core.data.metadatadb.codegen.tables.Callables;
-import eu.fasten.core.data.metadatadb.codegen.tables.ModuleNames;
-import eu.fasten.core.data.metadatadb.codegen.tables.Modules;
-import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
-import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
-import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
-import it.unimi.dsi.fastutil.longs.LongLongPair;
-import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
-import it.unimi.dsi.fastutil.longs.LongSet;
-import it.unimi.dsi.fastutil.longs.LongSets;
 
 public class CGMerger {
 
@@ -84,6 +83,8 @@ public class CGMerger {
     private List<Pair<DirectedGraph, ExtendedRevisionJavaCallGraph>> ercgDependencySet;
     private BiMap<Long, String> allUris;
 
+    private Map<String, Map<String, String>> externalUris;
+    private long externalGlobaIds = 0;
 
     public BiMap<Long, String> getAllUris() {
         return this.allUris;
@@ -95,11 +96,25 @@ public class CGMerger {
      * @param dependencySet all artifacts present in a resolution
      */
     public CGMerger(final List<ExtendedRevisionJavaCallGraph> dependencySet) {
+        this(dependencySet, false);
+    }
+
+    /**
+     * Creates instance of callgraph merger.
+     *
+     * @param dependencySet all artifacts present in a resolution
+     * @param withExternals true if unresolved external calls should be kept in the generated graph, they will be
+     *            assigned negative ids
+     */
+    public CGMerger(final List<ExtendedRevisionJavaCallGraph> dependencySet, boolean withExternals) {
 
         final var UCH = createUniversalCHA(dependencySet);
         this.universalParents = UCH.getLeft();
         this.universalChildren = UCH.getRight();
         this.allUris = HashBiMap.create();
+        if (withExternals) {
+            this.externalUris = new HashMap<>();
+        }
         final var graphAndDict = getDirectedGraphsAndTypeDict(dependencySet);
         this.ercgDependencySet = graphAndDict.getLeft();
         this.typeDictionary = graphAndDict.getRight();
@@ -150,6 +165,16 @@ public class CGMerger {
             }
         }
 
+        // Index external URIs
+        if (isWithExternals()) {
+            for (Map.Entry<String, JavaType> entry : ercg.getClassHierarchy().get(JavaScope.externalTypes).entrySet()) {
+                Map<String, String> typeMap = this.externalUris.computeIfAbsent(entry.getKey(), k -> new HashMap<>());
+                for (JavaNode node : entry.getValue().getMethods().values()) {
+                    typeMap.put(node.getSignature(), node.getUri().toString());
+                }
+            }
+        }
+
         return result;
     }
 
@@ -172,7 +197,7 @@ public class CGMerger {
                 .forEach((k, v) -> this.universalChildren.put(k, new ArrayList<>(v)));
         this.universalParents = new HashMap<>(universalCHA.getLeft().size());
         universalCHA.getLeft().forEach((k, v) -> this.universalParents.put(k, new ArrayList<>(v)));
-        this.typeDictionary = createTypeDictionary(this.dependencySet, dbContext, rocksDao);
+        this.typeDictionary = createTypeDictionary();
     }
 
     /**
@@ -193,12 +218,25 @@ public class CGMerger {
                 .forEach((k, v) -> this.universalChildren.put(k, new ArrayList<>(v)));
         this.universalParents = new HashMap<>(universalCHA.getLeft().size());
         universalCHA.getLeft().forEach((k, v) -> this.universalParents.put(k, new ArrayList<>(v)));
-        this.typeDictionary = createTypeDictionary(dependencySet, dbContext, rocksDao);
+        this.typeDictionary = createTypeDictionary();
+    }
+
+    /**
+     * @return true if unresolved external calls should be kept in the generated graph
+     */
+    public boolean isWithExternals()
+    {
+        return this.externalUris != null;
     }
 
     public DirectedGraph mergeWithCHA(final long id) {
         final var callGraphData = fetchCallGraphData(id, rocksDao);
-        var graphArcs = getArcs(id, callGraphData, rocksDao);
+        GraphMetadata graphArcs = null;
+        try {
+            graphArcs = rocksDao.getGraphMetadata(id, callGraphData);
+        } catch (RocksDBException e) {
+            logger.error("Could not retrieve arcs (graph metadata) from graph database:", e);
+        }
         return mergeWithCHA(callGraphData, graphArcs);
     }
 
@@ -371,7 +409,12 @@ public class CGMerger {
                     signature =
                         CallGraphUtils.decode(StringUtils.substringAfter(FastenJavaURI.create(receiver.receiverSignature).decanonicalize().getEntity(), "."));
                 }
-                resolve(edges, arc, signature, callGraph.isExternal(sourceId));
+                if (!resolve(edges, arc, signature, callGraph.isExternal(sourceId))) {
+                    // The target could not be resolved, store it as external node
+                    if (isWithExternals()) {
+                        addExternal(result, edges, arc);
+                    }
+                }
             }
         });
 
@@ -384,6 +427,34 @@ public class CGMerger {
                 (System.currentTimeMillis() - totalTime) / 1000d), result.numNodes(),
             result.numArcs());
         return result;
+    }
+
+    /**
+     * Add a non resolved edge to the {@link DirectedGraph}.
+     */
+    private synchronized void addExternal(final MergedDirectedGraph result, final Set<LongLongPair> edges, Arc arc) {
+        for (String type : arc.target.receiverTypes) {
+            // Find external node URI
+            Map<String, String> typeMap = this.externalUris.get(type);
+            if (typeMap != null) {
+                String nodeURI = typeMap.get(arc.target.receiverSignature);
+
+                if (nodeURI != null) {
+                    // Find external node id
+                    Long target = this.allUris.inverse().get(nodeURI);
+                    if (target == null) {
+                        // Allocate a global id to the external node
+                        target = --this.externalGlobaIds;
+
+                        // Add the external node to the graph if not already there
+                        this.allUris.put(target, nodeURI);
+                        result.addExternalNode(target);
+                    }
+
+                    edges.add(LongLongPair.of(arc.source, target));
+                }
+            }
+        }
     }
 
     /**
@@ -417,7 +488,7 @@ public class CGMerger {
      * @param signature     signature of the target
      * @param isCallback    true, if a given arc is a callback
      */
-    private void resolve(final Set<LongLongPair> edges,
+    private boolean resolve(final Set<LongLongPair> edges,
                          final Arc arc,
                          final String signature,
                          final boolean isCallback) {
@@ -428,7 +499,9 @@ public class CGMerger {
 	Map<String, Map<String, LongSet>> typeDictionary = this.typeDictionary;
 	Map<String, List<String>> universalParents = this.universalParents;
 	Map<String, List<String>> universalChildren = this.universalChildren;
-	
+
+    boolean resolved = false;
+
         for (String receiverTypeUri : arc.target.receiverTypes) {
 	    switch (arc.target.callType) {
                 case VIRTUAL:
@@ -438,6 +511,7 @@ public class CGMerger {
                     for (final var target : typeDictionary.getOrDefault(receiverTypeUri,
                             emptyMap).getOrDefault(signature, emptyLongSet)) {
                         addCall(edges, arc.source, target, isCallback);
+                        resolved = true;
                         foundTarget = true;
                     }
                     if (!foundTarget) {
@@ -448,6 +522,7 @@ public class CGMerger {
                                         emptyMap)
                                         .getOrDefault(signature, emptyLongSet)) {
                                     addCall(edges, arc.source, target, isCallback);
+                                    resolved = true;
                                     foundTarget = true;
                                     break;
                                 }
@@ -465,6 +540,7 @@ public class CGMerger {
                                             .getOrDefault(signature, emptyLongSet)) {
                                         addCall(edges, arc.source, target,
                                                 isCallback);
+                                        resolved = true;
                                     }
                                 }
                             }
@@ -478,10 +554,13 @@ public class CGMerger {
                     for (final var target : typeDictionary.getOrDefault(receiverTypeUri,
                             emptyMap).getOrDefault(signature, emptyLongSet)) {
                         addCall(edges, arc.source, target, isCallback);
+                        resolved = true;
                     }
                     break;
             }
         }
+
+        return resolved;
     }
 
     private ArrayList<String> getReceiver(final HashMap<String, Object> callSite) {
@@ -492,33 +571,39 @@ public class CGMerger {
     /**
      * Create a mapping from types and method signatures to callable IDs.
      *
-     * @param dependenciesIds IDs of dependencies
-     * @param dbContext       DSL context
-     * @param rocksDao        rocks DAO
      * @return a type dictionary
      */
-    private Map<String, Map<String, LongSet>> createTypeDictionary(
-            final Set<Long> dependenciesIds, final DSLContext dbContext, final RocksDao rocksDao) {
+    private Map<String, Map<String, LongSet>> createTypeDictionary() {
         final long startTime = System.currentTimeMillis();
         var result = new HashMap<String, Map<String, LongSet>>();
+        int noCGCounter = 0, noMetadaCounter = 0;
+        for (Long dependencyId : dependencySet) {
+            DirectedGraph cg = getGraphData(dependencyId);
+            if (cg == null) {
+                noCGCounter++;
+                continue;
+            }
+            GraphMetadata metadata = getGraphMetadata(dependencyId, cg);
+            if (metadata == null) {
+                noMetadaCounter++;
+                continue;
+            }
 
-        var callables = getCallables(dependenciesIds, rocksDao);
-
-        dbContext.select(Callables.CALLABLES.FASTEN_URI, Callables.CALLABLES.ID)
-                .from(Callables.CALLABLES)
-                .where(Callables.CALLABLES.ID.in(callables))
-                .fetch()
-                .forEach(callable -> {
-                    var node = new Node(FastenJavaURI.create(callable.value1()).decanonicalize());
-                    result.putIfAbsent(node.typeUri, new HashMap<>());
-                    var type = result.get(node.typeUri);
-                    var newestSet = new LongOpenHashSet();
-                    newestSet.add(callable.value2().longValue());
-                    type.merge(node.signature, newestSet, (old, newest) -> {
-                        old.addAll(newest);
-                        return old;
-                    });
-                });
+            final var nodesData = metadata.gid2NodeMetadata;
+            for (final var nodeId : nodesData.keySet()) {
+                final var nodeData = nodesData.get(nodeId.longValue());
+                final var typeUri = nodeData.type;
+                final var signaturesMap = result.getOrDefault(typeUri, new HashMap<>());
+                final var signature = nodeData.signature;
+                final var signatureIds = signaturesMap.getOrDefault(signature,
+                    new LongOpenHashSet());
+                signatureIds.add(nodeId.longValue());
+                signaturesMap.put(signature, signatureIds);
+                result.put(typeUri, signaturesMap);
+            }
+        }
+        logger.info("For {} dependencies failed to retrieve {} graph data and {} metadata " +
+            "from rocks db.", dependencySet.size(), noCGCounter, noMetadaCounter);
 
         logger.info("Created the type dictionary with {} types in {} seconds", result.size(),
                 new DecimalFormat("#0.000")
@@ -527,6 +612,26 @@ public class CGMerger {
         return result;
     }
 
+    private GraphMetadata getGraphMetadata(Long dependencyId, DirectedGraph cg) {
+        GraphMetadata metadata;
+        try {
+            metadata = rocksDao.getGraphMetadata(dependencyId, cg);
+        } catch (RocksDBException e) {
+            throw new RuntimeException("An exception occurred retrieving metadata from rocks " +
+                "DB", e);
+        }
+        return metadata;
+    }
+
+    private DirectedGraph getGraphData(Long dependencyId) {
+        DirectedGraph cg;
+        try {
+            cg = rocksDao.getGraphData(dependencyId);
+        } catch (RocksDBException e) {
+            throw new RuntimeException("An exception occurred retrieving CGs from rocks DB", e);
+        }
+        return cg;
+    }
 
     /**
      * Create a universal CHA for all dependencies including the artifact to resolve.
@@ -732,7 +837,9 @@ public class CGMerger {
         for (DirectedGraph depGraph : depGraphs) {
             numNode += depGraph.numNodes();
             for (LongLongPair longLongPair : depGraph.edgeSet()) {
-                addEdge(result, longLongPair.firstLong(), longLongPair.secondLong());
+                addNode(result, longLongPair.firstLong(), depGraph.isExternal(longLongPair.firstLong()));
+                addNode(result, longLongPair.secondLong(), depGraph.isExternal(longLongPair.secondLong()));
+                result.addEdge(longLongPair.firstLong(), longLongPair.secondLong());
             }
         }
         logger.info("Number of Augmented nodes: {}", numNode);
@@ -740,6 +847,15 @@ public class CGMerger {
         return result;
     }
 
+    private void addNode(MergedDirectedGraph result, long node, boolean external)
+    {
+        if (external) {
+            result.addExternalNode(node);
+        } else {
+            result.addInternalNode(node);
+        }
+    }
+    
     /**
      * Clone internal calls and internal arcs to the merged call graph.
      *
@@ -800,22 +916,6 @@ public class CGMerger {
             result.put(callable.value1(), new JSONObject(callable.value2().data()));
         }
         return result;
-    }
-
-    /**
-     * Retrieve external calls and constructor calls from a call graph.
-     *
-     * @param callGraphData call graph
-     * @return list of external and constructor calls
-     */
-    private GraphMetadata getArcs(final long index, final DirectedGraph callGraphData,
-                                  final RocksDao rocksDao) {
-        try {
-            return rocksDao.getGraphMetadata(index, callGraphData);
-        } catch (RocksDBException e) {
-            logger.error("Could not retrieve arcs (graph metadata) from graph database:", e);
-            return null;
-        }
     }
 
     /**
@@ -882,8 +982,8 @@ public class CGMerger {
      * @param dbContext DSL context
      * @return set of IDs of dependencies
      */
-    private Set<Long> getDependenciesIds(final List<String> dependencySet,
-                                         final DSLContext dbContext) {
+    Set<Long> getDependenciesIds(final List<String> dependencySet,
+                                 final DSLContext dbContext) {
         var coordinates = new HashSet<>(dependencySet);
 
         Condition depCondition = null;

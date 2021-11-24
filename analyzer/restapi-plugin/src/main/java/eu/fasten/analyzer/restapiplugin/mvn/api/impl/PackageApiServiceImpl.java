@@ -28,6 +28,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
+import java.io.IOException;
+
 @Service
 public class PackageApiServiceImpl implements PackageApiService {
 
@@ -67,8 +69,10 @@ public class PackageApiServiceImpl implements PackageApiService {
             try {
                 try {
                     LazyIngestionProvider.ingestArtifactIfNecessary(package_name, package_version, artifactRepo, date);
-                } catch (IllegalArgumentException ex) {
+                } catch (IllegalArgumentException | IllegalStateException ex) {
                     return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST);
+                } catch (IOException ex) {
+                    return new ResponseEntity<>("Couldn't ingest the artifact", HttpStatus.INTERNAL_SERVER_ERROR);
                 }
             } catch (IllegalArgumentException ex) {
                 return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST);
@@ -97,7 +101,7 @@ public class PackageApiServiceImpl implements PackageApiService {
                                                       int offset,
                                                       int limit,
                                                       String artifactRepo,
-                                                      Long date) {
+                                                      Long date) throws IOException {
         String result;
         try {
             result = KnowledgeBaseConnector.kbDao.getPackageCallgraph(
@@ -121,7 +125,7 @@ public class PackageApiServiceImpl implements PackageApiService {
     }
 
     @Override
-    public ResponseEntity<String> getERCGLink(String packageName, String version, String artifactRepo, Long date) {
+    public ResponseEntity<String> getERCGLink(String packageName, String version, String artifactRepo, Long date) throws IOException {
         if (KnowledgeBaseConnector.kbDao.assertPackageExistence(packageName, version)) {
             var groupId = packageName.split(Constants.mvnCoordinateSeparator)[0];
             var artifactId = packageName.split(Constants.mvnCoordinateSeparator)[1];
