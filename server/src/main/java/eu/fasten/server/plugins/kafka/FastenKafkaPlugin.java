@@ -133,6 +133,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
         this.consumeTimeoutEnabled = consumeTimeoutEnabled;
         this.consumeTimeout = consumeTimeout;
         this.exitOnTimeout = exitOnTimeout;
+        registerShutDownHook();
         logger.debug("Constructed a Kafka plugin for " + plugin.getClass().getCanonicalName());
     }
 
@@ -578,5 +579,16 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
      */
     public long getConsumeTimeout() {
         return consumeTimeout;
+    }
+
+    /**
+     * It cleans up resources after receiving the SIGTERM signal. E.g. closing Kafka connections
+     */
+    private void registerShutDownHook() {
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            this.connNorm.close();
+            this.connPrio.close();
+            logger.info("Cleaned up resources before shutting down the JVM");
+        }));
     }
 }
