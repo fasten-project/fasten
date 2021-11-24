@@ -57,6 +57,7 @@ public class Example {
 		final JSAPResult jsapResult = jsap.parse(args);
 		if (jsap.messagePrinted()) System.exit(1);
 
+		final long id = jsapResult.getLong("revisionId");
 		final String jdbcURI = jsapResult.getString("jdbcURI");
 		final String database = jsapResult.getString("database");
 		final String rocksDb = jsapResult.getString("rocksDb");
@@ -65,22 +66,21 @@ public class Example {
 		final Example example = new Example(jdbcURI, database, rocksDb, resolverGraph);
 		final DSLContext context = example.context;
 
-		long gid = 625464;
-		final var graph = example.rocksDao.getGraphData(gid);
+		final var graph = example.rocksDao.getGraphData(id);
 		if (graph == null) System.exit(1);
 		
-		final Record2<String, String> record = context.select(Packages.PACKAGES.PACKAGE_NAME, PackageVersions.PACKAGE_VERSIONS.VERSION).from(PackageVersions.PACKAGE_VERSIONS).join(Packages.PACKAGES).on(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.eq(Packages.PACKAGES.ID)).where(PackageVersions.PACKAGE_VERSIONS.ID.eq(Long.valueOf(gid))).fetchOne();
+		final Record2<String, String> record = context.select(Packages.PACKAGES.PACKAGE_NAME, PackageVersions.PACKAGE_VERSIONS.VERSION).from(PackageVersions.PACKAGE_VERSIONS).join(Packages.PACKAGES).on(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.eq(Packages.PACKAGES.ID)).where(PackageVersions.PACKAGE_VERSIONS.ID.eq(Long.valueOf(id))).fetchOne();
 		final String[] a = record.component1().split(":");
 		final String groupId = a[0];
 		final String artifactId = a[1];
 		final String version = record.component2();
 		final Set<Revision> dependencySet = example.resolver.resolveDependencies(groupId, artifactId, version, -1, context, true);
 		final String name = groupId + ":" + artifactId + "$" + version;
-		LOGGER.info("Analyzing graph " + name  + " with id " + gid);
+		LOGGER.info("Analyzing graph " + name  + " with id " + id);
 		LOGGER.info("Dependencies: " + dependencySet);
 
 		var deps = LongLinkedOpenHashSet.toSet(dependencySet.stream().mapToLong(x -> x.id));
-		deps.addAndMoveToFirst(gid);
+		deps.addAndMoveToFirst(id);
 		final var dm = new CGMerger(deps, context, example.rocksDao);
 	}
 }
