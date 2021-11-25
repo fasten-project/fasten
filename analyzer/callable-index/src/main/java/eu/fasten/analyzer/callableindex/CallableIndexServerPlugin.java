@@ -19,7 +19,6 @@
 package eu.fasten.analyzer.callableindex;
 
 import eu.fasten.core.data.Constants;
-import eu.fasten.core.data.callableindex.ExtendedGidGraph;
 import eu.fasten.core.data.callableindex.GidGraph;
 import eu.fasten.core.data.callableindex.RocksDao;
 import eu.fasten.core.plugins.CallableIndexConnector;
@@ -112,17 +111,7 @@ public class CallableIndexServerPlugin extends Plugin {
                     return;
                 }
             } else {
-                try {
-                    if (json.has("callsites_info")) {
-                        gidGraph = ExtendedGidGraph.getGraph(json);
-                    } else {
-                        gidGraph = GidGraph.getGraph(json);
-                    }
-                } catch (JSONException e) {
-                    logger.error("Could not parse GID graph", e);
-                    setPluginError(e);
-                    return;
-                }
+                throw new RuntimeException("Couldn't find the GID graph file!");
             }
 
             var artifact = gidGraph.getProduct() + "@" + gidGraph.getVersion();
