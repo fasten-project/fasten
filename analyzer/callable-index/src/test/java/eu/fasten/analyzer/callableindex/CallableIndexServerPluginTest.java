@@ -18,13 +18,17 @@
 
 package eu.fasten.analyzer.callableindex;
 
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import eu.fasten.core.data.callableindex.RocksDao;
 import eu.fasten.core.data.callableindex.GidGraph;
 import org.json.JSONObject;
+import org.json.JSONTokener;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.BeforeEach;
 import org.mockito.Mockito;
@@ -44,37 +48,35 @@ public class CallableIndexServerPluginTest {
     @Test
     public void saveToDatabaseTest() throws IOException, RocksDBException {
         var rocksDao = Mockito.mock(RocksDao.class);
-        var json = new JSONObject("{\"payload\": {" +
-                "\"index\": 1," +
-                "\"product\": \"test\"," +
-                "\"version\": \"0.0.1\"," +
-                "\"nodes\": [1, 2, 3]," +
-                "\"numInternalNodes\": 2," +
-                "\"edges\": [[1, 2], [2, 3]]" +
-                "}}");
-        var graph = GidGraph.getGraph(json.getJSONObject("payload"));
+        var json = new JSONObject("{\"payload\": {}}");
+
+        var getTestResource = Objects.requireNonNull(Thread.currentThread().getContextClassLoader().getResource("gid_graph_test.json"));
+        json.getJSONObject("payload").put("dir", getTestResource.getPath());
+        JSONTokener tokener = new JSONTokener(new FileReader(getTestResource.getFile()));
+        var graph = GidGraph.getGraph(new JSONObject(tokener));
         callableIndexFastenPlugin.setRocksDao(rocksDao);
         callableIndexFastenPlugin.consume(json.toString());
         Mockito.verify(rocksDao).saveToRocksDb(graph);
     }
 
     @Test
-    public void consumeTest() {
-        var json ="{\"payload\": {" +
-                "\"index\": 1," +
-                "\"product\": \"test\"," +
-                "\"version\": \"0.0.1\"," +
-                "\"nodes\": [0, 1, 2]," +
-                "\"numInternalNodes\": 2," +
-                "\"edges\": [[0, 1], [1, 2]]" +
-                "}}";
-        callableIndexFastenPlugin.consume(json);
+    public void consumeTest() throws FileNotFoundException {
+        var json = new JSONObject("{\"payload\": {}}");
+
+        var getTestResource = Objects.requireNonNull(Thread.currentThread().getContextClassLoader().getResource("gid_graph_test.json"));
+        json.getJSONObject("payload").put("dir", getTestResource.getPath());
+        callableIndexFastenPlugin.consume(json.toString());
         assertNull(callableIndexFastenPlugin.getPluginError());
     }
 
     @Test
     public void consumeJsonErrorTest() {
-        callableIndexFastenPlugin.consume("{\"payload\":{\"foo\":\"bar\"}}");
+        var json = new JSONObject("{\"payload\": {}}");
+
+        var getTestResource = Objects.requireNonNull(Thread.currentThread().getContextClassLoader().getResource("gid_graph_test_err.json"));
+        json.getJSONObject("payload").put("dir", getTestResource.getPath());
+        //"{\"payload\":{\"foo\":\"bar\"}}"
+        callableIndexFastenPlugin.consume(json.toString());
         assertNotNull(callableIndexFastenPlugin.getPluginError());
     }
 
