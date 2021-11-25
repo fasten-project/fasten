@@ -96,6 +96,7 @@ public class CallableIndexServerPlugin extends Plugin {
             final var path = json.optString("dir");
 
             final GidGraph gidGraph;
+
             if (path.isEmpty()) {
                 throw new RuntimeException("Provided path to GID graph file is empty");
             }
