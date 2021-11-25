@@ -9,55 +9,63 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.junit.jupiter.api.Test;
 import org.opalj.br.DeclaredMethod;
 import org.opalj.br.Method;
+import org.opalj.br.MethodDescriptor;
+import org.opalj.br.VirtualDeclaredMethod;
 import org.opalj.tac.cg.CallGraph;
 
 import com.google.common.collect.Sets;
-
-import scala.collection.Iterator;
 
 public class CallGraphConstructorIntegrationTest {
 
 	@Test
 	public void java8BasicExample() {
-		CallGraphConstructor cgc = constructFromResources("java-8-basic/target/classes/");
+		OPALCallGraph ocg = constructFromResources("java-8-basic/target/classes/");
 
-		var actual = collectMethodSignatures(cgc);
-		var expected = Sets.newHashSet();
+		var actual = collectCalls(ocg);
+		var expected = Sets.newHashSet(//
+				new Call("B.b1", "A.<init>"), //
+				new Call("B.b1", "A.a1")//
+		);
 		assertEquals(expected, actual);
 	}
 
 	@Test
 	public void java8WithDependencies() {
-		CallGraphConstructor cgc = constructFromResources( //
+		OPALCallGraph ocg = constructFromResources( //
 				"java-8-with-dependencies/target/classes/", //
 				"java-8-basic/target/java-8-basic-0.0.1-SNAPSHOT.jar");
 
-		var actual = collectMethodSignatures(cgc);
-		var expected = Sets.newHashSet();
+		var actual = collectCalls(ocg);
+		var expected = Sets.newHashSet( //
+				new Call("C.c1", "B.b1"), //
+				new Call("C.c2", "C.c1") //
+		);
 		assertEquals(expected, actual);
 	}
 
 	@Test
 	public void java8OnlyUsePackages() {
-		CallGraphConstructor cgc = constructFromResources( //
+		OPALCallGraph ocg = constructFromResources( //
 				null, // no classes
 				"java-8-with-dependencies/target/java-8-with-dependencies-0.0.1-SNAPSHOT.jar", //
 				"java-8-basic/target/java-8-basic-0.0.1-SNAPSHOT.jar");
 
-		var actual = collectMethodSignatures(cgc);
+		var actual = collectCalls(ocg);
 		var expected = Sets.newHashSet();
 		assertEquals(expected, actual);
 	}
 
-	private CallGraphConstructor constructFromResources(String projectClassFolder, String... deps) {
+	private OPALCallGraph constructFromResources(String projectClassFolder, String... deps) {
 		File[] classFiles = projectClassFolder == null //
 				? new File[0] //
 				: findClassFiles(findInResources(projectClassFolder));
 		File[] depFiles = Arrays.stream(deps).map(dep -> findInResources(dep)).toArray(File[]::new);
-		return new CallGraphConstructor(classFiles, depFiles, null, CGAlgorithm.CHA);
+		return new OPALCallGraphConstructor().construct(classFiles, depFiles, CGAlgorithm.CHA);
 	}
 
 	private File[] findClassFiles(File projectClassFolder) {
@@ -74,30 +82,102 @@ public class CallGraphConstructorIntegrationTest {
 		return f;
 	}
 
-	private Set<String> collectMethodSignatures(CallGraphConstructor cgc) {
-		Set<String> names = new HashSet<>();
+	private Set<Call> collectCalls(OPALCallGraph cgc) {
+		Set<Call> names = new HashSet<>();
 
-		CallGraph cg = cgc.getCallGraph();
-		Iterator<DeclaredMethod> it = cg.reachableMethods();
-		while (it.hasNext()) {
-			DeclaredMethod dm = it.next();
+		CallGraph cg = cgc.callGraph;
+		cg.reachableMethods().foreach(caller -> {
 
 			// find method if existing
-			if (!dm.hasSingleDefinedMethod() && !dm.hasMultipleDefinedMethods()) {
-				System.out.println("no defined method found for " + dm);
-				continue;
+			if (!caller.hasSingleDefinedMethod() && !caller.hasMultipleDefinedMethods()) {
+				// method referenced, but undefined, e.g., method from unresolved dependency
+				return null;
 			}
 
-			if (dm.hasMultipleDefinedMethods()) {
-				throw new IllegalStateException(
-						"Not clear what this means. Failing this case until we understand what happens here.");
+			if (caller.hasMultipleDefinedMethods()) {
+				String msg = "Nice, we found a case. Write a test case for this! (see %s)";
+				throw new IllegalStateException(String.format(msg, getClass()));
 			}
 
-			Method m = dm.definedMethod();
-			String name = m.fullyQualifiedSignature();
-			names.add(name);
-		}
+			cg.calleesOf(caller).foreach(pcToDMs -> {
+				pcToDMs._2.foreach(callee -> {
+
+					var isObj = "java/lang/Object".equals(callee.declaringClassType().fqn());
+					var isDefaultInit = callee.descriptor() == MethodDescriptor.DefaultConstructorDescriptor();
+					if (isObj && isDefaultInit) {
+						return null;
+					}
+
+					names.add(new Call(toStr(caller), toStr(callee)));
+					return null;
+				});
+				return null;
+			});
+
+			return null;
+		});
 
 		return names;
+	}
+
+	private static String toStr(DeclaredMethod dm) {
+
+		if (dm.hasSingleDefinedMethod()) {
+			return toStr(dm.definedMethod());
+		}
+		if (dm.hasMultipleDefinedMethods()) {
+			// use name of first hit
+			return toStr(dm.definedMethods().find(m -> true).get());
+		}
+
+		if (dm instanceof VirtualDeclaredMethod) {
+			return toStr((VirtualDeclaredMethod) dm);
+		}
+
+		throw new RuntimeException("Encountered unknown subtype of DeclaredMethod: " + dm.getClass());
+	}
+
+	private static String toStr(VirtualDeclaredMethod vdm) {
+		String className = vdm.declaringClassType().simpleName();
+		String methodName = vdm.name();
+		return String.format("%s.%s", className, methodName);
+	}
+
+	private static String toStr(Method m) {
+		StringBuilder sb = new StringBuilder();
+
+		String className = m.declaringClassFile().thisType().simpleName();
+		sb.append(className);
+
+		String methodName = m.name();
+		sb.append('.').append(methodName);
+
+		return sb.toString();
+	}
+
+	private static class Call {
+
+		public final String source;
+		public final String target;
+
+		public Call(String source, String target) {
+			this.source = source;
+			this.target = target;
+		}
+
+		@Override
+		public int hashCode() {
+			return HashCodeBuilder.reflectionHashCode(this);
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			return EqualsBuilder.reflectionEquals(this, obj);
+		}
+
+		@Override
+		public String toString() {
+			return String.format("Call(%s -> %s)", source, target);
+		}
 	}
 }

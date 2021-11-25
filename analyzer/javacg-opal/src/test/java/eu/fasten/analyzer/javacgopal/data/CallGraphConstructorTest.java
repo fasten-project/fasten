@@ -18,113 +18,81 @@
 
 package eu.fasten.analyzer.javacgopal.data;
 
-import eu.fasten.core.data.opal.exceptions.OPALException;
-import org.apache.commons.lang.StringUtils;
-import org.junit.jupiter.api.Test;
-import java.io.File;
-import java.util.Objects;
-
 import static eu.fasten.core.utils.TestUtils.getTestResource;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.io.File;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 class CallGraphConstructorTest {
 
-    @Test
-    void constructCHAEmptyMainClass() throws OPALException {
-        var file = new File(Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
-                .getResource("SingleSourceToTarget.class"))
-                .getFile());
+	private OPALCallGraphConstructor sut;
 
-        var cg = new CallGraphConstructor(file, "", CGAlgorithm.CHA);
+	@BeforeEach
+	public void setup() {
+		sut = new OPALCallGraphConstructor();
+	}
 
-        var confValue1 = cg.getProject().config().getValue("org.opalj.br.analyses.cg.InitialEntryPointsKey.analysis");
-        assertEquals("org.opalj.br.analyses.cg.LibraryEntryPointsFinder",
-                confValue1.render().substring(1, confValue1.render().length() - 1));
+	@Test
+	void constructCHAHasCorrectConfig() {
+		var file = new File(getClass().getClassLoader().getResource("SingleSourceToTarget.class").getFile());
 
-        var confValue2 = cg.getProject().config().getValue("org.opalj.br.analyses.cg.InitialInstantiatedTypesKey.analysis");
-        assertEquals("org.opalj.br.analyses.cg.LibraryInstantiatedTypesFinder",
-                confValue2.render().substring(1, confValue2.render().length() - 1));
-    }
+		var cg = sut.construct(file, CGAlgorithm.CHA);
 
-    @Test
-    void constructCHANullMainClass() throws OPALException {
-        var file = new File(Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
-                .getResource("SingleSourceToTarget.class"))
-                .getFile());
+		var confValue1 = cg.project.config().getValue("org.opalj.br.analyses.cg.InitialEntryPointsKey.analysis");
+		assertEquals("org.opalj.br.analyses.cg.LibraryEntryPointsFinder",
+				confValue1.render().substring(1, confValue1.render().length() - 1));
 
-        var cg = new CallGraphConstructor(file, null, CGAlgorithm.CHA);
+		var confValue2 = cg.project.config().getValue("org.opalj.br.analyses.cg.InitialInstantiatedTypesKey.analysis");
+		assertEquals("org.opalj.br.analyses.cg.LibraryInstantiatedTypesFinder",
+				confValue2.render().substring(1, confValue2.render().length() - 1));
+	}
 
-        var confValue1 = cg.getProject().config().getValue("org.opalj.br.analyses.cg.InitialEntryPointsKey.analysis");
-        assertEquals("org.opalj.br.analyses.cg.LibraryEntryPointsFinder",
-                confValue1.render().substring(1, confValue1.render().length() - 1));
+	@Test
+	void constructCHA() {
+		var file = getTestResource("SingleSourceToTarget.class");
 
-        var confValue2 = cg.getProject().config().getValue("org.opalj.br.analyses.cg.InitialInstantiatedTypesKey.analysis");
-        assertEquals("org.opalj.br.analyses.cg.LibraryInstantiatedTypesFinder",
-                confValue2.render().substring(1, confValue2.render().length() - 1));
-    }
+		var cg = sut.construct(file, CGAlgorithm.CHA);
 
-    @Test
-    void constructCHAWithMainClass() throws OPALException {
-        var file = new File(Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
-                .getResource("SingleSourceToTarget.class"))
-                .getFile());
+		assertNotNull(cg.callGraph);
+		assertNotNull(cg.project);
+		assertTrue(cg.callGraph.numEdges() > 0);
+	}
 
-        var cg = new CallGraphConstructor(file, "SingleSourceToTarget", CGAlgorithm.CHA);
+	@Test
+	void constructRTA() {
+		var file = getTestResource("SingleSourceToTarget.class");
 
-        var confValue1 = cg.getProject().config().getValue("org.opalj.br.analyses.cg.InitialEntryPointsKey.analysis");
-        assertEquals("org.opalj.br.analyses.cg.ConfigurationEntryPointsFinder",
-                confValue1.render().substring(1, confValue1.render().length() - 1));
+		var cg = sut.construct(file, CGAlgorithm.RTA);
 
-        var confValue2 = cg.getProject().config().getValue("org.opalj.br.analyses.cg.InitialEntryPointsKey.entryPoints");
-        assertEquals("SingleSourceToTarget", StringUtils
-                .substringBetween(confValue2.render(), "\"declaringClass\" : \"", "\","));
+		assertNotNull(cg.callGraph);
+		assertNotNull(cg.project);
+		assertTrue(cg.callGraph.numEdges() > 0);
+	}
 
-        var confValue3 = cg.getProject().config().getValue("org.opalj.br.analyses.cg.InitialInstantiatedTypesKey.analysis");
-        assertEquals("org.opalj.br.analyses.cg.ApplicationInstantiatedTypesFinder",
-                confValue3.render().substring(1, confValue3.render().length() - 1));
-    }
+	@Test
+	void constructAllocationSiteBasedPointsTo() {
+		var file = getTestResource("SingleSourceToTarget.class");
 
-    @Test
-    void constructRTA() throws OPALException {
-        var file = getTestResource("SingleSourceToTarget.class");
+		var cg = sut.construct(file, CGAlgorithm.AllocationSiteBasedPointsTo);
 
-        var cg = new CallGraphConstructor(file, "", CGAlgorithm.RTA);
+		assertNotNull(cg.callGraph);
+		assertNotNull(cg.project);
+		assertTrue(cg.callGraph.numEdges() > 0);
+	}
 
-        assertNotNull(cg.getCallGraph());
-        assertNotNull(cg.getProject());
-        assertTrue(cg.getCallGraph().numEdges() > 0);
-    }
+	@Test
+	void constructTypeBasedPointsTo() {
+		var file = getTestResource("SingleSourceToTarget.class");
 
-    @Test
-    void constructCHA() throws OPALException {
-        var file = getTestResource("SingleSourceToTarget.class");
+		var cg = sut.construct(file, CGAlgorithm.TypeBasedPointsTo);
 
-        var cg = new CallGraphConstructor(file, "", CGAlgorithm.CHA);
-
-        assertNotNull(cg.getCallGraph());
-        assertNotNull(cg.getProject());
-        assertTrue(cg.getCallGraph().numEdges() > 0);
-    }
-
-    @Test
-    void constructAllocationSiteBasedPointsTo() throws OPALException {
-        var file = getTestResource("SingleSourceToTarget.class");
-
-        var cg = new CallGraphConstructor(file, "", CGAlgorithm.AllocationSiteBasedPointsTo);
-
-        assertNotNull(cg.getCallGraph());
-        assertNotNull(cg.getProject());
-        assertTrue(cg.getCallGraph().numEdges() > 0);
-    }
-
-    @Test
-    void constructTypeBasedPointsTo() throws OPALException {
-        var file = getTestResource("SingleSourceToTarget.class");
-
-        var cg = new CallGraphConstructor(file, "", CGAlgorithm.TypeBasedPointsTo);
-
-        assertNotNull(cg.getCallGraph());
-        assertNotNull(cg.getProject());
-        assertTrue(cg.getCallGraph().numEdges() > 0);
-    }
+		assertNotNull(cg.callGraph);
+		assertNotNull(cg.project);
+		assertTrue(cg.callGraph.numEdges() > 0);
+	}
 }
