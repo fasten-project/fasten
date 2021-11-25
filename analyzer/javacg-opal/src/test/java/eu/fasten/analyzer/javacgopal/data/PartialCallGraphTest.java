@@ -18,6 +18,8 @@
 
 package eu.fasten.analyzer.javacgopal.data;
 
+import static eu.fasten.analyzer.javacgopal.data.CGAlgorithm.CHA;
+import static eu.fasten.analyzer.javacgopal.data.CallPreservationStrategy.ONLY_STATIC_CALLSITES;
 import static eu.fasten.core.utils.TestUtils.getTestResource;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -65,361 +67,320 @@ import scala.collection.mutable.HashSet;
 
 class PartialCallGraphTest {
 
-    private static PartialCallGraph singleCallCG;
-
-    @BeforeAll
-    static void setUp() throws OPALException {
-        singleCallCG = new PartialCallGraph(
-                new CallGraphConstructor(getTestResource("SingleSourceToTarget.class"),
-                        "", CGAlgorithm.CHA), CallPreservationStrategy.ONLY_STATIC_CALLSITES);
-    }
-
-    @Test
-    void testAnnotations() throws OPALException {
-        PartialCallGraph annotatedClass = new PartialCallGraph(new CallGraphConstructor(
-            new File(Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
-                .getResource("PackageApi.class")).getFile()), "", CGAlgorithm.CHA),
-        		CallPreservationStrategy.ONLY_STATIC_CALLSITES);
-    }
-
-    @Test
-    void getClassHierarchy() {
-        var cha = singleCallCG.getClassHierarchy();
-
-        assertNotNull(cha);
-        assertNotNull(cha.get(JavaScope.internalTypes));
-        assertEquals(1, cha.get(JavaScope.internalTypes).size());
-        assertEquals(1, cha.get(JavaScope.externalTypes).size());
-        assertEquals(0, cha.get(JavaScope.resolvedTypes).size());
-
-        // -------
-        // Check internal types
-        // -------
-        var SSTTInternalType = cha.get(JavaScope.internalTypes)
-                .get("/name.space/SingleSourceToTarget");
-
-        // Check filename
-        Assertions.assertEquals("name/space/SingleSourceToTarget.java", SSTTInternalType.getSourceFileName());
-
-        // Check super interfaces and classes
-        Assertions.assertEquals(0, SSTTInternalType.getSuperInterfaces().size());
-        Assertions.assertEquals(1, SSTTInternalType.getSuperClasses().size());
-        Assertions.assertEquals(FastenURI.create("/java.lang/Object"), SSTTInternalType.getSuperClasses().get(0));
-
-        // Check methods
-        Assertions.assertEquals(3, SSTTInternalType.getMethods().size());
-
-        Assertions.assertEquals(FastenURI.create("/name.space/SingleSourceToTarget.%3Cinit%3E()%2Fjava.lang%2FVoidType"),
-                SSTTInternalType.getMethods().get(0).getUri());
-        Assertions.assertEquals("public", SSTTInternalType.getMethods().get(0).getMetadata().get("access"));
-        Assertions.assertEquals(true, SSTTInternalType.getMethods().get(0).getMetadata().get("defined"));
-        Assertions.assertEquals(3, SSTTInternalType.getMethods().get(0).getMetadata().get("first"));
-        Assertions.assertEquals(3, SSTTInternalType.getMethods().get(0).getMetadata().get("last"));
-
-        // -------
-        // Check external types
-        // -------
-        var SSTTExternalType = cha.get(JavaScope.externalTypes)
-                .get("/java.lang/Object");
-
-        // Check super interfaces and classes
-        Assertions.assertEquals(0, SSTTExternalType.getSuperInterfaces().size());
-        Assertions.assertEquals(0, SSTTExternalType.getSuperClasses().size());
-
-        // Check methods
-        Assertions.assertEquals(1, SSTTExternalType.getMethods().size());
-
-        Assertions.assertEquals(FastenURI.create("/java.lang/Object.%3Cinit%3E()VoidType"),
-                SSTTExternalType.getMethods().get(3).getUri());
-        Assertions.assertEquals(0, SSTTExternalType.getMethods().get(3).getMetadata().size());
-    }
-
-    @Test
-    void getGraph() {
-        var graph = singleCallCG.getGraph();
-
-        assertNotNull(graph);
-        Assertions.assertEquals(2, graph.getCallSites().size());
-
-        // Check internal calls
-        var internalCalls = graph.getCallSites();
-
-        var call = IntIntPair.of(1, 2);
-        
-        assertNotNull(internalCalls.get(call).get("0"));
-        assertTrue(internalCalls.get(call).get("0") instanceof HashMap);
-        assertEquals(6, ((HashMap<String, Object>) internalCalls.get(call).get("0")).get("line"));
-        assertEquals("invokestatic", ((HashMap<String, Object>) internalCalls.get(call).get("0")).get("type"));
-        assertEquals("[/name.space/SingleSourceToTarget]",
-                ((HashMap<String, Object>) internalCalls.get(call).get("0")).get("receiver"));
-    }
-
-    @Test
-    void getNodeCount() {
-        assertEquals(4, singleCallCG.getNodeCount());
-    }
-
-    @Test
-    void OPALExceptionInConstructorNotFromOpalTest() {
-        var constructor = Mockito.mock(CallGraphConstructor.class);
-        var exception = new RuntimeException("some message");
-        exception.setStackTrace(new StackTraceElement[]{new StackTraceElement("some.class", "some method", "some file", 10)});
-        Mockito.when(constructor.getProject()).thenThrow(exception);
-
-        assertThrows(RuntimeException.class, () -> new PartialCallGraph(constructor, CallPreservationStrategy.INCLUDING_ALL_SUBTYPES));
-    }
+	private static PartialCallGraph singleCallCG;
+
+	@BeforeAll
+	static void setUp() throws OPALException {
+		OPALCallGraphConstructor cgc = new OPALCallGraphConstructor();
+		File f = getTestResource("SingleSourceToTarget.class");
+		singleCallCG = new PartialCallGraph(cgc.construct(f, CHA), ONLY_STATIC_CALLSITES);
+	}
+
+	@Test
+	void testAnnotations() throws OPALException {
+		OPALCallGraphConstructor cgc = new OPALCallGraphConstructor();
+		PartialCallGraph annotatedClass = new PartialCallGraph(cgc.construct(new File(
+				getClass().getClassLoader().getResource("PackageApi.class").getFile()),
+				CHA), ONLY_STATIC_CALLSITES);
+	}
+
+	@Test
+	void getClassHierarchy() {
+		var cha = singleCallCG.getClassHierarchy();
+
+		assertNotNull(cha);
+		assertNotNull(cha.get(JavaScope.internalTypes));
+		assertEquals(1, cha.get(JavaScope.internalTypes).size());
+		assertEquals(1, cha.get(JavaScope.externalTypes).size());
+		assertEquals(0, cha.get(JavaScope.resolvedTypes).size());
+
+		// -------
+		// Check internal types
+		// -------
+		var SSTTInternalType = cha.get(JavaScope.internalTypes).get("/name.space/SingleSourceToTarget");
+
+		// Check filename
+		Assertions.assertEquals("name/space/SingleSourceToTarget.java", SSTTInternalType.getSourceFileName());
+
+		// Check super interfaces and classes
+		Assertions.assertEquals(0, SSTTInternalType.getSuperInterfaces().size());
+		Assertions.assertEquals(1, SSTTInternalType.getSuperClasses().size());
+		Assertions.assertEquals(FastenURI.create("/java.lang/Object"), SSTTInternalType.getSuperClasses().get(0));
+
+		// Check methods
+		Assertions.assertEquals(3, SSTTInternalType.getMethods().size());
+
+		Assertions.assertEquals(
+				FastenURI.create("/name.space/SingleSourceToTarget.%3Cinit%3E()%2Fjava.lang%2FVoidType"),
+				SSTTInternalType.getMethods().get(0).getUri());
+		Assertions.assertEquals("public", SSTTInternalType.getMethods().get(0).getMetadata().get("access"));
+		Assertions.assertEquals(true, SSTTInternalType.getMethods().get(0).getMetadata().get("defined"));
+		Assertions.assertEquals(3, SSTTInternalType.getMethods().get(0).getMetadata().get("first"));
+		Assertions.assertEquals(3, SSTTInternalType.getMethods().get(0).getMetadata().get("last"));
+
+		// -------
+		// Check external types
+		// -------
+		var SSTTExternalType = cha.get(JavaScope.externalTypes).get("/java.lang/Object");
+
+		// Check super interfaces and classes
+		Assertions.assertEquals(0, SSTTExternalType.getSuperInterfaces().size());
+		Assertions.assertEquals(0, SSTTExternalType.getSuperClasses().size());
+
+		// Check methods
+		Assertions.assertEquals(1, SSTTExternalType.getMethods().size());
+
+		Assertions.assertEquals(FastenURI.create("/java.lang/Object.%3Cinit%3E()VoidType"),
+				SSTTExternalType.getMethods().get(3).getUri());
+		Assertions.assertEquals(0, SSTTExternalType.getMethods().get(3).getMetadata().size());
+	}
+
+	@Test
+	void getGraph() {
+		var graph = singleCallCG.getGraph();
+
+		assertNotNull(graph);
+		Assertions.assertEquals(2, graph.getCallSites().size());
+
+		// Check internal calls
+		var internalCalls = graph.getCallSites();
+
+		var call = IntIntPair.of(1, 2);
+
+		assertNotNull(internalCalls.get(call).get("0"));
+		assertTrue(internalCalls.get(call).get("0") instanceof HashMap);
+		assertEquals(6, ((HashMap<String, Object>) internalCalls.get(call).get("0")).get("line"));
+		assertEquals("invokestatic", ((HashMap<String, Object>) internalCalls.get(call).get("0")).get("type"));
+		assertEquals("[/name.space/SingleSourceToTarget]",
+				((HashMap<String, Object>) internalCalls.get(call).get("0")).get("receiver"));
+	}
+
+	@Test
+	void getNodeCount() {
+		assertEquals(4, singleCallCG.getNodeCount());
+	}
 
-    @Test
-    void OPALExceptionInConstructorFromOpalTest() {
-        var constructor = Mockito.mock(CallGraphConstructor.class);
-        var exception = Mockito.mock(RuntimeException.class);
-        Mockito.when(exception.getStackTrace()).thenReturn(new StackTraceElement[]{new StackTraceElement("org.opalj", "some method", "some file", 10)});
-        Mockito.when(constructor.getProject()).thenThrow(exception);
+	@Test
+	void createExtendedRevisionJavaCallGraph() throws MissingArtifactException, OPALException {
+		var coordinate = new MavenCoordinate("org.slf4j", "slf4j-api", "1.7.29", "jar");
+		var cg = PartialCallGraph.createExtendedRevisionJavaCallGraph(coordinate, CGAlgorithm.CHA, 1574072773,
+				MavenUtilities.MAVEN_CENTRAL_REPO, CallPreservationStrategy.ONLY_STATIC_CALLSITES);
+		assertNotNull(cg);
+		Assertions.assertEquals(Constants.mvnForge, cg.forge);
+		Assertions.assertEquals("1.7.29", cg.version);
+		Assertions.assertEquals(1574072773, cg.timestamp);
+		Assertions.assertEquals(new FastenJavaURI("fasten://mvn!org.slf4j:slf4j-api$1.7.29"), cg.uri);
+		Assertions.assertEquals(new FastenJavaURI("fasten://org.slf4j:slf4j-api$1.7.29"), cg.forgelessUri);
+		Assertions.assertEquals("org.slf4j:slf4j-api", cg.product);
+	}
 
-        assertThrows(OPALException.class, () -> new PartialCallGraph(constructor, CallPreservationStrategy.INCLUDING_ALL_SUBTYPES));
-    }
+	@Test
+	void internalExternalCHAMultipleDeclarations() throws OPALException {
+		var classFile = Mockito.mock(ClassFile.class);
+		var type = Mockito.mock(ObjectType.class);
 
-    @Test
-    void OPALExceptionInConstructorEmptyStacktraceTest() {
-        var constructor = Mockito.mock(CallGraphConstructor.class);
-        var exception = Mockito.mock(RuntimeException.class);
-        Mockito.when(exception.getStackTrace()).thenReturn(new StackTraceElement[]{});
-        Mockito.when(constructor.getProject()).thenThrow(exception);
+		var method = createMethod(classFile, type);
+		var methods = new RefArray<Method>(new Method[] { method });
 
-        assertThrows(RuntimeException.class, () -> new PartialCallGraph(constructor, CallPreservationStrategy.INCLUDING_ALL_SUBTYPES));
-    }
+		var arr = ConstArray._UNSAFE_from(new Method[] { method, method });
 
-    @Test
-    void createExtendedRevisionJavaCallGraph() throws MissingArtifactException, OPALException {
-        var coordinate = new MavenCoordinate("org.slf4j", "slf4j-api", "1.7.29", "jar");
-        var cg = PartialCallGraph.createExtendedRevisionJavaCallGraph(coordinate,
-                "", CGAlgorithm.CHA, 1574072773, MavenUtilities.MAVEN_CENTRAL_REPO, CallPreservationStrategy.ONLY_STATIC_CALLSITES);
-        assertNotNull(cg);
-        Assertions.assertEquals(Constants.mvnForge, cg.forge);
-        Assertions.assertEquals("1.7.29", cg.version);
-        Assertions.assertEquals(1574072773, cg.timestamp);
-        Assertions.assertEquals(new FastenJavaURI("fasten://mvn!org.slf4j:slf4j-api$1.7.29"), cg.uri);
-        Assertions.assertEquals(new FastenJavaURI("fasten://org.slf4j:slf4j-api$1.7.29"), cg.forgelessUri);
-        Assertions.assertEquals("org.slf4j:slf4j-api", cg.product);
-    }
+		var declaredMethod = Mockito.mock(DeclaredMethod.class);
+		Mockito.when(declaredMethod.definedMethods()).thenReturn(arr);
+		Mockito.when(declaredMethod.hasMultipleDefinedMethods()).thenReturn(true);
 
-    @Test
-    void internalExternalCHAMultipleDeclarations() throws OPALException {
-        var classFile = Mockito.mock(ClassFile.class);
-        var type = Mockito.mock(ObjectType.class);
+		var classHierarchy = createClassHierarchy(type);
 
-        var method = createMethod(classFile, type);
-        var methods = new RefArray<Method>(new Method[]{method});
+		Mockito.when(classFile.methods()).thenReturn(methods);
+		Mockito.when(classFile.thisType()).thenReturn(type);
+		Mockito.when(classFile.sourceFile()).thenReturn(Option.apply("filename.java"));
 
-        var arr = ConstArray._UNSAFE_from(new Method[]{method, method});
+		var classFiles = new HashSet<ClassFile>();
+		classFiles.add(classFile);
 
-        var declaredMethod = Mockito.mock(DeclaredMethod.class);
-        Mockito.when(declaredMethod.definedMethods()).thenReturn(arr);
-        Mockito.when(declaredMethod.hasMultipleDefinedMethods()).thenReturn(true);
+		var project = Mockito.mock(Project.class);
+		Mockito.when(project.classHierarchy()).thenReturn(classHierarchy);
+		Mockito.when(project.allClassFiles()).thenReturn(classFiles);
 
-        var classHierarchy = createClassHierarchy(type);
+		var callGraph = createCallGraph(declaredMethod);
 
-        Mockito.when(classFile.methods()).thenReturn(methods);
-        Mockito.when(classFile.thisType()).thenReturn(type);
-        Mockito.when(classFile.sourceFile()).thenReturn(Option.apply("filename.java"));
+		var constructor = new OPALCallGraph(CHA, project, callGraph);
 
-        var classFiles = new HashSet<ClassFile>();
-        classFiles.add(classFile);
+		var pcg = new PartialCallGraph(constructor, CallPreservationStrategy.INCLUDING_ALL_SUBTYPES);
+		assertNotNull(pcg);
 
-        var project = Mockito.mock(Project.class);
-        Mockito.when(project.classHierarchy()).thenReturn(classHierarchy);
-        Mockito.when(project.allClassFiles()).thenReturn(classFiles);
+		Mockito.verify(callGraph, Mockito.times(2)).calleesOf(declaredMethod);
+	}
 
-        var callGraph = createCallGraph(declaredMethod);
+	@Test
+	void internalExternalCHASingleDeclaration() throws OPALException {
+		var classFile = Mockito.mock(ClassFile.class);
+		var type = Mockito.mock(ObjectType.class);
 
-        var constructor = Mockito.mock(CallGraphConstructor.class);
-        Mockito.when(constructor.getProject()).thenReturn(project);
-        Mockito.when(constructor.getCallGraph()).thenReturn(callGraph);
+		var method = createMethod(classFile, type);
+		var methods = new RefArray<Method>(new Method[] { method });
 
-        var pcg = new PartialCallGraph(constructor, CallPreservationStrategy.INCLUDING_ALL_SUBTYPES);
-        assertNotNull(pcg);
+		var arr = ConstArray._UNSAFE_from(new Method[] { method });
 
-        Mockito.verify(callGraph, Mockito.times(2)).calleesOf(declaredMethod);
-    }
+		var declaredMethod = Mockito.mock(DeclaredMethod.class);
+		Mockito.when(declaredMethod.definedMethods()).thenReturn(arr);
+		Mockito.when(declaredMethod.hasSingleDefinedMethod()).thenReturn(true);
 
-    @Test
-    void internalExternalCHASingleDeclaration() throws OPALException {
-        var classFile = Mockito.mock(ClassFile.class);
-        var type = Mockito.mock(ObjectType.class);
+		var classHierarchy = createClassHierarchy(type);
 
-        var method = createMethod(classFile, type);
-        var methods = new RefArray<Method>(new Method[]{method});
+		Mockito.when(classFile.methods()).thenReturn(methods);
+		Mockito.when(classFile.thisType()).thenReturn(type);
+		Mockito.when(classFile.sourceFile()).thenReturn(Option.apply("filename.java"));
 
-        var arr = ConstArray._UNSAFE_from(new Method[]{method});
+		var classFiles = new HashSet<ClassFile>();
+		classFiles.add(classFile);
 
-        var declaredMethod = Mockito.mock(DeclaredMethod.class);
-        Mockito.when(declaredMethod.definedMethods()).thenReturn(arr);
-        Mockito.when(declaredMethod.hasSingleDefinedMethod()).thenReturn(true);
+		var project = Mockito.mock(Project.class);
+		Mockito.when(project.classHierarchy()).thenReturn(classHierarchy);
+		Mockito.when(project.allClassFiles()).thenReturn(classFiles);
 
-        var classHierarchy = createClassHierarchy(type);
+		var callGraph = createCallGraph(declaredMethod);
 
-        Mockito.when(classFile.methods()).thenReturn(methods);
-        Mockito.when(classFile.thisType()).thenReturn(type);
-        Mockito.when(classFile.sourceFile()).thenReturn(Option.apply("filename.java"));
+		var constructor = new OPALCallGraph(CHA, project, callGraph);
 
-        var classFiles = new HashSet<ClassFile>();
-        classFiles.add(classFile);
+		var pcg = new PartialCallGraph(constructor, CallPreservationStrategy.INCLUDING_ALL_SUBTYPES);
+		assertNotNull(pcg);
 
-        var project = Mockito.mock(Project.class);
-        Mockito.when(project.classHierarchy()).thenReturn(classHierarchy);
-        Mockito.when(project.allClassFiles()).thenReturn(classFiles);
+		Mockito.verify(declaredMethod, Mockito.times(1)).definedMethod();
+		Mockito.verify(callGraph, Mockito.times(1)).calleesOf(declaredMethod);
+	}
 
-        var callGraph = createCallGraph(declaredMethod);
+	@Test
+	void internalExternalCHAVirtual() throws OPALException {
+		var classFile = Mockito.mock(ClassFile.class);
+		var type = Mockito.mock(ObjectType.class);
 
-        var constructor = Mockito.mock(CallGraphConstructor.class);
-        Mockito.when(constructor.getProject()).thenReturn(project);
-        Mockito.when(constructor.getCallGraph()).thenReturn(callGraph);
+		var method = createMethod(classFile, type);
+		var methods = new RefArray<Method>(new Method[] { method });
 
-        var pcg = new PartialCallGraph(constructor, CallPreservationStrategy.INCLUDING_ALL_SUBTYPES);
-        assertNotNull(pcg);
+		var arr = ConstArray._UNSAFE_from(new Method[] { method, method });
 
-        Mockito.verify(declaredMethod, Mockito.times(1)).definedMethod();
-        Mockito.verify(callGraph, Mockito.times(1)).calleesOf(declaredMethod);
-    }
+		var declaredMethod = Mockito.mock(DeclaredMethod.class);
+		Mockito.when(declaredMethod.definedMethods()).thenReturn(arr);
+		Mockito.when(declaredMethod.isVirtualOrHasSingleDefinedMethod()).thenReturn(true);
 
-    @Test
-    void internalExternalCHAVirtual() throws OPALException {
-        var classFile = Mockito.mock(ClassFile.class);
-        var type = Mockito.mock(ObjectType.class);
+		var classHierarchy = createClassHierarchy(type);
 
-        var method = createMethod(classFile, type);
-        var methods = new RefArray<Method>(new Method[]{method});
+		Mockito.when(classFile.methods()).thenReturn(methods);
+		Mockito.when(classFile.thisType()).thenReturn(type);
+		Mockito.when(classFile.sourceFile()).thenReturn(Option.apply("filename.java"));
 
-        var arr = ConstArray._UNSAFE_from(new Method[]{method, method});
+		var classFiles = new HashSet<ClassFile>();
+		classFiles.add(classFile);
 
-        var declaredMethod = Mockito.mock(DeclaredMethod.class);
-        Mockito.when(declaredMethod.definedMethods()).thenReturn(arr);
-        Mockito.when(declaredMethod.isVirtualOrHasSingleDefinedMethod()).thenReturn(true);
+		var project = Mockito.mock(Project.class);
+		Mockito.when(project.classHierarchy()).thenReturn(classHierarchy);
+		Mockito.when(project.allClassFiles()).thenReturn(classFiles);
 
-        var classHierarchy = createClassHierarchy(type);
+		var callGraph = createCallGraph(declaredMethod);
 
-        Mockito.when(classFile.methods()).thenReturn(methods);
-        Mockito.when(classFile.thisType()).thenReturn(type);
-        Mockito.when(classFile.sourceFile()).thenReturn(Option.apply("filename.java"));
+		var constructor = new OPALCallGraph(CHA, project, callGraph);
 
-        var classFiles = new HashSet<ClassFile>();
-        classFiles.add(classFile);
+		var pcg = new PartialCallGraph(constructor, CallPreservationStrategy.INCLUDING_ALL_SUBTYPES);
+		assertNotNull(pcg);
 
-        var project = Mockito.mock(Project.class);
-        Mockito.when(project.classHierarchy()).thenReturn(classHierarchy);
-        Mockito.when(project.allClassFiles()).thenReturn(classFiles);
+		Mockito.verify(callGraph, Mockito.times(1)).calleesOf(declaredMethod);
+	}
 
-        var callGraph = createCallGraph(declaredMethod);
+	@Test
+	void internalExternalCHANoDefinition() throws OPALException {
+		var classFile = Mockito.mock(ClassFile.class);
+		var type = Mockito.mock(ObjectType.class);
 
-        var constructor = Mockito.mock(CallGraphConstructor.class);
-        Mockito.when(constructor.getProject()).thenReturn(project);
-        Mockito.when(constructor.getCallGraph()).thenReturn(callGraph);
+		var method = createMethod(classFile, type);
+		var methods = new RefArray<Method>(new Method[] { method });
 
-        var pcg = new PartialCallGraph(constructor, CallPreservationStrategy.INCLUDING_ALL_SUBTYPES);
-        assertNotNull(pcg);
+		var arr = ConstArray._UNSAFE_from(new Method[] { method, method });
 
-        Mockito.verify(callGraph, Mockito.times(1)).calleesOf(declaredMethod);
-    }
+		var declaredMethod = Mockito.mock(DeclaredMethod.class);
+		Mockito.when(declaredMethod.definedMethods()).thenReturn(arr);
 
-    @Test
-    void internalExternalCHANoDefinition() throws OPALException {
-        var classFile = Mockito.mock(ClassFile.class);
-        var type = Mockito.mock(ObjectType.class);
+		var classHierarchy = createClassHierarchy(type);
 
-        var method = createMethod(classFile, type);
-        var methods = new RefArray<Method>(new Method[]{method});
+		Mockito.when(classFile.methods()).thenReturn(methods);
+		Mockito.when(classFile.thisType()).thenReturn(type);
+		Mockito.when(classFile.sourceFile()).thenReturn(Option.apply("filename.java"));
 
-        var arr = ConstArray._UNSAFE_from(new Method[]{method, method});
+		var classFiles = new HashSet<ClassFile>();
+		classFiles.add(classFile);
 
-        var declaredMethod = Mockito.mock(DeclaredMethod.class);
-        Mockito.when(declaredMethod.definedMethods()).thenReturn(arr);
+		var project = Mockito.mock(Project.class);
+		Mockito.when(project.classHierarchy()).thenReturn(classHierarchy);
+		Mockito.when(project.allClassFiles()).thenReturn(classFiles);
 
-        var classHierarchy = createClassHierarchy(type);
+		var callGraph = createCallGraph(declaredMethod);
 
-        Mockito.when(classFile.methods()).thenReturn(methods);
-        Mockito.when(classFile.thisType()).thenReturn(type);
-        Mockito.when(classFile.sourceFile()).thenReturn(Option.apply("filename.java"));
+		var constructor = new OPALCallGraph(CHA, project, callGraph);
 
-        var classFiles = new HashSet<ClassFile>();
-        classFiles.add(classFile);
+		var pcg = new PartialCallGraph(constructor, CallPreservationStrategy.INCLUDING_ALL_SUBTYPES);
+		assertNotNull(pcg);
 
-        var project = Mockito.mock(Project.class);
-        Mockito.when(project.classHierarchy()).thenReturn(classHierarchy);
-        Mockito.when(project.allClassFiles()).thenReturn(classFiles);
+		Mockito.verify(callGraph, Mockito.never()).calleesOf(Mockito.any());
+	}
 
-        var callGraph = createCallGraph(declaredMethod);
+	private Method createMethod(ClassFile classFile, ObjectType type) {
+		var wrapperType = Mockito.mock(ObjectType.class);
+		Mockito.when(wrapperType.packageName()).thenReturn("some/package");
 
-        var constructor = Mockito.mock(CallGraphConstructor.class);
-        Mockito.when(constructor.getProject()).thenReturn(project);
-        Mockito.when(constructor.getCallGraph()).thenReturn(callGraph);
+		var baseType = Mockito.mock(BaseType.class);
+		Mockito.when(baseType.WrapperType()).thenReturn(wrapperType);
+		Mockito.when(baseType.toString()).thenReturn("typeName");
 
-        var pcg = new PartialCallGraph(constructor, CallPreservationStrategy.INCLUDING_ALL_SUBTYPES);
-        assertNotNull(pcg);
+		Mockito.when(type.asBaseType()).thenReturn(baseType);
+		Mockito.when(type.isBaseType()).thenReturn(true);
 
-        Mockito.verify(callGraph, Mockito.never()).calleesOf(Mockito.any());
-    }
+		var arrayOfParameters = new RefArray<FieldType>(new FieldType[] { type });
 
-    private Method createMethod(ClassFile classFile, ObjectType type) {
-        var wrapperType = Mockito.mock(ObjectType.class);
-        Mockito.when(wrapperType.packageName()).thenReturn("some/package");
+		var descriptor = Mockito.mock(MethodDescriptor.class);
+		Mockito.when(descriptor.parameterTypes()).thenReturn(arrayOfParameters);
+		Mockito.when(descriptor.returnType()).thenReturn(type);
 
-        var baseType = Mockito.mock(BaseType.class);
-        Mockito.when(baseType.WrapperType()).thenReturn(wrapperType);
-        Mockito.when(baseType.toString()).thenReturn("typeName");
+		var code = Mockito.mock(Code.class);
+		Mockito.when(code.firstLineNumber()).thenReturn(Option.apply(10));
+		Mockito.when(code.lineNumber(20)).thenReturn(Option.apply(30));
+		Mockito.when(code.codeSize()).thenReturn(20);
 
-        Mockito.when(type.asBaseType()).thenReturn(baseType);
-        Mockito.when(type.isBaseType()).thenReturn(true);
+		var method = Mockito.mock(Method.class);
+		Mockito.when(method.descriptor()).thenReturn(descriptor);
+		Mockito.when(method.name()).thenReturn("methodName");
+		Mockito.when(method.declaringClassFile()).thenReturn(classFile);
+		Mockito.when(method.body()).thenReturn(Option.apply(code));
+		Mockito.when(method.instructionsOption()).thenReturn(Option.apply(new Instruction[] {}));
 
-        var arrayOfParameters = new RefArray<FieldType>(new FieldType[]{type});
+		return method;
+	}
 
-        var descriptor = Mockito.mock(MethodDescriptor.class);
-        Mockito.when(descriptor.parameterTypes()).thenReturn(arrayOfParameters);
-        Mockito.when(descriptor.returnType()).thenReturn(type);
+	private ClassHierarchy createClassHierarchy(ObjectType type) {
+		var qualifiedCollection = Mockito.mock(QualifiedCollection.class);
+		Mockito.when(qualifiedCollection.s()).thenReturn(null);
 
-        var code = Mockito.mock(Code.class);
-        Mockito.when(code.firstLineNumber()).thenReturn(Option.apply(10));
-        Mockito.when(code.lineNumber(20)).thenReturn(Option.apply(30));
-        Mockito.when(code.codeSize()).thenReturn(20);
+		var uidSet = Mockito.mock(UIDSet.class);
+		Mockito.when(uidSet.nonEmpty()).thenReturn(false);
 
-        var method = Mockito.mock(Method.class);
-        Mockito.when(method.descriptor()).thenReturn(descriptor);
-        Mockito.when(method.name()).thenReturn("methodName");
-        Mockito.when(method.declaringClassFile()).thenReturn(classFile);
-        Mockito.when(method.body()).thenReturn(Option.apply(code));
-        Mockito.when(method.instructionsOption()).thenReturn(Option.apply(new Instruction[]{}));
+		var uidSetInterfaces = new UIDSet1<>(type);
 
-        return method;
-    }
+		var classHierarchy = Mockito.mock(ClassHierarchy.class);
+		Mockito.when(classHierarchy.supertypes(type)).thenReturn(uidSet);
+		Mockito.when(classHierarchy.allSuperclassTypesInInitializationOrder(type)).thenReturn(qualifiedCollection);
+		Mockito.when(classHierarchy.allSuperinterfacetypes(type, false)).thenReturn(uidSetInterfaces);
 
-    private ClassHierarchy createClassHierarchy(ObjectType type) {
-        var qualifiedCollection = Mockito.mock(QualifiedCollection.class);
-        Mockito.when(qualifiedCollection.s()).thenReturn(null);
+		return classHierarchy;
+	}
 
-        var uidSet = Mockito.mock(UIDSet.class);
-        Mockito.when(uidSet.nonEmpty()).thenReturn(false);
+	private CallGraph createCallGraph(DeclaredMethod declaredMethod) {
+		var sourceDeclarations = new HashSet<DeclaredMethod>();
+		sourceDeclarations.add(declaredMethod);
 
-        var uidSetInterfaces = new UIDSet1<>(type);
+		var sourceDeclarationIterator = Mockito.mock(Iterator.class);
+		Mockito.when(sourceDeclarationIterator.toIterable()).thenReturn(sourceDeclarations);
 
-        var classHierarchy = Mockito.mock(ClassHierarchy.class);
-        Mockito.when(classHierarchy.supertypes(type)).thenReturn(uidSet);
-        Mockito.when(classHierarchy.allSuperclassTypesInInitializationOrder(type))
-                .thenReturn(qualifiedCollection);
-        Mockito.when(classHierarchy.allSuperinterfacetypes(type, false))
-                .thenReturn(uidSetInterfaces);
+		var callGraph = Mockito.mock(CallGraph.class);
+		Mockito.when(callGraph.reachableMethods()).thenReturn(sourceDeclarationIterator);
 
-        return classHierarchy;
-    }
-
-    private CallGraph createCallGraph(DeclaredMethod declaredMethod) {
-        var sourceDeclarations = new HashSet<DeclaredMethod>();
-        sourceDeclarations.add(declaredMethod);
-
-        var sourceDeclarationIterator = Mockito.mock(Iterator.class);
-        Mockito.when(sourceDeclarationIterator.toIterable()).thenReturn(sourceDeclarations);
-
-        var callGraph = Mockito.mock(CallGraph.class);
-        Mockito.when(callGraph.reachableMethods()).thenReturn(sourceDeclarationIterator);
-
-        return callGraph;
-    }
+		return callGraph;
+	}
 }

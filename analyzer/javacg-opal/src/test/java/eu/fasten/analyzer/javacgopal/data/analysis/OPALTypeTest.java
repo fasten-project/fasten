@@ -18,6 +18,8 @@
 
 package eu.fasten.analyzer.javacgopal.data.analysis;
 
+import static eu.fasten.analyzer.javacgopal.data.CGAlgorithm.CHA;
+import static eu.fasten.analyzer.javacgopal.data.CallPreservationStrategy.INCLUDING_ALL_SUBTYPES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -53,7 +55,7 @@ import org.opalj.collection.immutable.UIDSet;
 import org.opalj.collection.immutable.UIDSet1;
 
 import eu.fasten.analyzer.javacgopal.data.CGAlgorithm;
-import eu.fasten.analyzer.javacgopal.data.CallGraphConstructor;
+import eu.fasten.analyzer.javacgopal.data.OPALCallGraphConstructor;
 import eu.fasten.analyzer.javacgopal.data.CallPreservationStrategy;
 import eu.fasten.analyzer.javacgopal.data.PartialCallGraph;
 import eu.fasten.core.data.FastenURI;
@@ -543,8 +545,8 @@ class OPALTypeTest {
 	}
 
 	private PartialCallGraph getRCG(String s) throws OPALException {
-		return new PartialCallGraph(new CallGraphConstructor(new File(
-				Objects.requireNonNull(Thread.currentThread().getContextClassLoader().getResource(s)).getFile()), "",
-				CGAlgorithm.CHA), CallPreservationStrategy.INCLUDING_ALL_SUBTYPES);
+		var cgc = new OPALCallGraphConstructor();
+		File pkg = new File(getClass().getClassLoader().getResource(s).getFile());
+		return new PartialCallGraph(cgc.construct(pkg, CHA), INCLUDING_ALL_SUBTYPES);
 	}
 }
