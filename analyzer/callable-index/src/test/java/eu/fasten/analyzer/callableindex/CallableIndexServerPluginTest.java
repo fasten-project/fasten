@@ -23,6 +23,7 @@ import eu.fasten.core.data.callableindex.RocksDao;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONTokener;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -66,7 +67,6 @@ public class CallableIndexServerPluginTest {
     @Test
     public void consumeTest() throws FileNotFoundException {
         var json = new JSONObject("{\"payload\": {}}");
-
         var getTestResource = getClass().getClassLoader().getResource("gid_graph_test.json");
         json.getJSONObject("payload").put("dir", getTestResource.getPath());
         callableIndexFastenPlugin.consume(json.toString());
