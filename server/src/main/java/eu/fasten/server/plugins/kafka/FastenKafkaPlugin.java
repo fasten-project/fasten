@@ -173,8 +173,12 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
                     handleProducing(null, System.currentTimeMillis() / 1000L, KafkaRecordKind.NORMAL);
                 }
             }
-        } catch (Exception e) {
-            logger.error("Error occurred while processing call graphs", e);
+
+        } catch (WakeupException e) {
+            if (!closed.get()) throw e;
+
+//        } catch (Exception e) {
+//            logger.error("Error occurred while processing call graphs", e);
         } finally {
             connNorm.close();
             connPrio.close();
@@ -603,8 +607,8 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
      */
     private void registerShutDownHook() {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            this.connNorm.close();
-            this.connPrio.close();
+            this.stop();
+            this.connNorm.wakeup();
             logger.info("Cleaned up resources before shutting down the JVM");
         }));
     }
