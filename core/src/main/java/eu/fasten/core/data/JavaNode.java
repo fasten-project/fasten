@@ -98,6 +98,11 @@ public class JavaNode extends Node {
     public int hashCode() {
         return uri != null ? uri.hashCode() : 0;
     }
+    
+    @Override
+    public String toString() {
+    	return String.format("%s@%d(%s)", JavaNode.class.getSimpleName(), hashCode(), uri);
+    }
   
      /**
      * Change method signature.
