@@ -1748,6 +1748,104 @@ public class MetadataDao {
     }
 
     /**
+     * Get the vulnerability by externalId.
+     *
+     * @param externalId Source-specific external ID of vulnerability, i.e. CVE-2018-14041, or GHSA-2pwh-52h7-7j84
+     * @return The vulnerability information of given externalId, null if not find.
+     */
+    public String getVulnerability(String externalId) {
+        // Tables
+        Vulnerabilities v = Vulnerabilities.VULNERABILITIES;
+        // Select clause
+        SelectField<?>[] selectClause = new SelectField[]{v.ID, v.EXTERNAL_ID, v.STATEMENT};
+        // Queries
+        // SQL query
+        /*
+            SELECT v.ID, v.EXTERNAL_ID, v.STATEMENT
+            FROM vulnerabilities AS v
+            WHERE v.EXTERNAL_ID=<externalId>
+        */
+        Record queryResult = this.context
+                .select(selectClause)
+                .from(v)
+                .where(v.EXTERNAL_ID.eq(externalId))
+                .fetchOne();
+        if (queryResult == null) {
+            return null;
+        }
+        return queryResult.formatJSON(new JSONFormat().header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).format(true).quoteNested(false));
+    }
+
+    /**
+     * Get information of all vulnerabilities
+     *
+     * @param offset
+     * @param limit
+     * @return
+     */
+    public String getAllVulnerabilities(int offset, int limit) {
+        // Tables
+        Vulnerabilities v = Vulnerabilities.VULNERABILITIES;
+        var result = context
+                .select(v.fields())
+                .from(v)
+                .offset(offset)
+                .limit(limit)
+                .fetch();
+        return result.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
+    }
+
+    public String getPackageVersionVulnerabilities(String package_name, String package_version, boolean format) {
+        // Tables
+        Vulnerabilities v = Vulnerabilities.VULNERABILITIES;
+        VulnerabilitiesXPackageVersions vp = VulnerabilitiesXPackageVersions.VULNERABILITIES_X_PACKAGE_VERSIONS;
+
+        var package_version_id = getPackageVersionID(package_name, package_version);
+        var result = context
+                .select(v.fields())
+                .from(v)
+                .innerJoin(vp)
+                .on(v.ID.eq(vp.VULNERABILITY_ID))
+                .where(vp.PACKAGE_VERSION_ID.eq(package_version_id))
+                .fetch();
+        return result.formatJSON(new JSONFormat().format(format).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
+    }
+
+    public String getPurls(String externalId, int offset, int limit) {
+        // Tables
+        Vulnerabilities v = Vulnerabilities.VULNERABILITIES;
+        VulnerabilitiesPurls vp = VulnerabilitiesPurls.VULNERABILITIES_PURLS;
+        var result = context
+                .select(vp.fields())
+                .from(vp)
+                .innerJoin(v)
+                .on(vp.VULNERABILITY_ID.eq(v.ID))
+                .where(v.EXTERNAL_ID.eq(externalId))
+                .offset(offset)
+                .limit(limit)
+                .fetch();
+        return result.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
+
+    }
+
+    public Map getVulnerableCallables(String externalId, int offset, int limit) {
+        // Tables
+        Vulnerabilities v = Vulnerabilities.VULNERABILITIES;
+        VulnerabilitiesXCallables vc = VulnerabilitiesXCallables.VULNERABILITIES_X_CALLABLES;
+        var result = context
+                .select(vc.CALLABLE_ID)
+                .from(vc)
+                .innerJoin(v)
+                .on(vc.VULNERABILITY_ID.eq(v.ID))
+                .where(v.EXTERNAL_ID.eq(externalId))
+                .offset(offset)
+                .limit(limit)
+                .fetch();
+        var gid = result.getValues(vc.CALLABLE_ID);
+        return getFullFastenUris(gid);
+    }
+
+    /**
      * Impact analysis: the user asks the KB to compute the impact of a semantic change to a function
      *
      * @param forge       Forge of the package
