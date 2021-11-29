@@ -20,11 +20,11 @@ import org.opalj.tac.cg.CallGraph;
 
 import com.google.common.collect.Sets;
 
-public class CallGraphConstructorIntegrationTest {
+public class OPALCallGraphConstructorIntegrationTest {
 
 	@Test
 	public void java8BasicExample() {
-		OPALCallGraph ocg = constructFromResources("java-8-basic/target/classes/");
+		OPALCallGraph ocg = constructFromResources("java-8-basic/target/java-8-basic-0.0.1-SNAPSHOT.jar");
 
 		var actual = collectCalls(ocg);
 		var expected = Sets.newHashSet(//
@@ -37,8 +37,7 @@ public class CallGraphConstructorIntegrationTest {
 	@Test
 	public void java8WithDependencies() {
 		OPALCallGraph ocg = constructFromResources( //
-				"java-8-with-dependencies/target/classes/", //
-				"java-8-basic/target/java-8-basic-0.0.1-SNAPSHOT.jar");
+				"java-8-with-dependencies/target/java-8-with-dependencies-0.0.1-SNAPSHOT.jar");
 
 		var actual = collectCalls(ocg);
 		var expected = Sets.newHashSet( //
@@ -49,23 +48,35 @@ public class CallGraphConstructorIntegrationTest {
 	}
 
 	@Test
-	public void java8OnlyUsePackages() {
+	public void shouldNotFindEntrypointsInDependencies() {
 		OPALCallGraph ocg = constructFromResources( //
-				null, // no classes
-				"java-8-with-dependencies/target/java-8-with-dependencies-0.0.1-SNAPSHOT.jar", //
-				"java-8-basic/target/java-8-basic-0.0.1-SNAPSHOT.jar");
+				null, // no classes/jars used as analyzed unit
+				"java-8-with-dependencies/target/java-8-with-dependencies-0.0.1-SNAPSHOT.jar"); // only dependencies
 
 		var actual = collectCalls(ocg);
 		var expected = Sets.newHashSet();
 		assertEquals(expected, actual);
 	}
 
-	private OPALCallGraph constructFromResources(String projectClassFolder, String... deps) {
-		File[] classFiles = projectClassFolder == null //
-				? new File[0] //
-				: findClassFiles(findInResources(projectClassFolder));
+	private OPALCallGraph constructFromResources(String path, String... deps) {
+
+		File[] classFiles = null;
+		File f = null;
+
+		if (path == null) {
+			classFiles = new File[0];
+		} else if ((f = findInResources(path)).exists()) {
+			if (f.isDirectory()) {
+				classFiles = findClassFiles(f);
+			} else {
+				classFiles = new File[] { f };
+			}
+		}
+
 		File[] depFiles = Arrays.stream(deps).map(dep -> findInResources(dep)).toArray(File[]::new);
-		return new OPALCallGraphConstructor().construct(classFiles, depFiles, CGAlgorithm.CHA);
+		OPALCallGraphConstructor ocgc = new OPALCallGraphConstructor();
+
+		return ocgc.construct(classFiles, depFiles, CGAlgorithm.CHA);
 	}
 
 	private File[] findClassFiles(File projectClassFolder) {
