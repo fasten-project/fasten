@@ -22,6 +22,8 @@ import java.net.URL;
 
 import org.opalj.br.analyses.Project;
 import org.opalj.log.GlobalLogContext$;
+import org.opalj.log.LogContext;
+import org.opalj.log.LogMessage;
 import org.opalj.log.OPALLogger;
 import org.opalj.tac.cg.AllocationSiteBasedPointsToCallGraphKey$;
 import org.opalj.tac.cg.CHACallGraphKey$;
@@ -89,16 +91,10 @@ public class OPALCallGraphConstructor {
 			if (!c.exists() || !c.isFile()) {
 				throw new IllegalArgumentException("analysis unit does not exist or is not a file: " + c);
 			}
-			if (!c.getName().endsWith(".class") && !c.getName().endsWith(".jar")) {
-				throw new IllegalArgumentException("analysis unit does not look like a class/jar file: " + c);
-			}
 		}
 		for (File dep : deps) {
 			if (!dep.exists() || !dep.isFile()) {
 				throw new IllegalArgumentException("dependency does not exist or is not a file: " + dep);
-			}
-			if (!dep.getName().endsWith(".class") && !dep.getName().endsWith(".jar")) {
-				throw new IllegalArgumentException("dependency does not look like a class/jar file: " + dep);
 			}
 		}
 	}
@@ -117,5 +113,12 @@ public class OPALCallGraphConstructor {
 						ConfigValueFactory.fromAnyRef(instantiatedTypeFinder));
 
 		return cfg;
+	}
+
+	private class NoOutputLogger implements OPALLogger {
+		@Override
+		public void log(LogMessage message, LogContext ctx) {
+			// ignore all logging
+		}
 	}
 }
