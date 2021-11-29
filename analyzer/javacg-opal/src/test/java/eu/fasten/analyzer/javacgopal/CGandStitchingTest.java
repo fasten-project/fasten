@@ -54,6 +54,7 @@ import eu.fasten.analyzer.javacgopal.data.OPALCallGraphConstructor;
 import eu.fasten.analyzer.javacgopal.data.PartialCallGraphConstructor;
 import eu.fasten.analyzer.sourceanalyzer.CommentParser;
 import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
+import eu.fasten.core.data.opal.MavenArtifactDownloader;
 import eu.fasten.core.data.opal.MavenCoordinate;
 import eu.fasten.core.data.opal.exceptions.OPALException;
 import eu.fasten.core.merge.CGMerger;
@@ -345,7 +346,7 @@ public class CGandStitchingTest {
         final var coord = MavenCoordinate.fromString(coordStr,"jar");
 
         final var dep1 =
-            new MavenCoordinate.MavenResolver().downloadArtifact(coord,"jar");
+            new MavenArtifactDownloader().downloadArtifact(coord,"jar");
         final var opalCG = new OPALCallGraphConstructor().construct(dep1, RTA);
         final var cg = new PartialCallGraphConstructor().construct(opalCG, ONLY_STATIC_CALLSITES);
         return ExtendedRevisionJavaCallGraph.extendedBuilder()

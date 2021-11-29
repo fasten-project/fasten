@@ -56,6 +56,7 @@ import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
 import eu.fasten.core.data.JavaGraph;
 import eu.fasten.core.data.JavaScope;
 import eu.fasten.core.data.JavaType;
+import eu.fasten.core.data.opal.MavenArtifactDownloader;
 import eu.fasten.core.data.opal.MavenCoordinate;
 import eu.fasten.core.data.opal.exceptions.OPALException;
 import scala.Function1;
@@ -115,7 +116,7 @@ public class PartialCallGraphConstructor {
 
         File file = null;
         try {
-            file = new MavenCoordinate.MavenResolver().downloadArtifact(coordinate, artifactRepo);
+            file = new MavenArtifactDownloader().downloadArtifact(coordinate, artifactRepo);
             final var opalCG = new OPALCallGraphConstructor().construct(file, algorithm);
 
             final var partialCallGraph = new PartialCallGraphConstructor().construct(opalCG, callSiteOnly);
