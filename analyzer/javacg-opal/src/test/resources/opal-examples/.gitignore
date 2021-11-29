@@ -1,3 +1,7 @@
-!**/target
-**/target/*
-!**/target/*.jar
+!**/target/**/*
+
+**/.DS_Store
+**/*.class
+**/*.lst
+**/*.properties
+
