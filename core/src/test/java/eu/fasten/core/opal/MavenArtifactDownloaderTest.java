@@ -18,35 +18,35 @@ public class MavenArtifactDownloaderTest {
     void downloadJarEmptyRepos() {
         var coordinate = new MavenCoordinate("group", "artifact", "version", "jar");
         coordinate.setMavenRepos(new ArrayList<>());
-        var resolver = new MavenArtifactDownloader();
+        var resolver = new MavenArtifactDownloader(coordinate);
 
-        assertThrows(MissingArtifactException.class, () -> resolver.downloadArtifact(coordinate, null));
+        assertThrows(MissingArtifactException.class, () -> resolver.downloadArtifact(null));
     }
 
     @Test
     void downloadJarWrongRepos() {
         var coordinate = new MavenCoordinate("group", "artifact", "version", "jar");
         coordinate.setMavenRepos(new ArrayList<>(Collections.singletonList("repo")));
-        var resolver = new MavenArtifactDownloader();
+        var resolver = new MavenArtifactDownloader(coordinate);
 
-        assertThrows(MissingArtifactException.class, () -> resolver.downloadArtifact(coordinate, null));
+        assertThrows(MissingArtifactException.class, () -> resolver.downloadArtifact(null));
     }
 
     @Test
     void downloadJarPomPackaging() {
         var coordinate = new MavenCoordinate("group", "artifact", "version", "pom");
         coordinate.setMavenRepos(new ArrayList<>(Collections.singletonList("repo")));
-        var resolver = new MavenArtifactDownloader();
+        var resolver = new MavenArtifactDownloader(coordinate);
 
-        assertThrows(MissingArtifactException.class, () -> resolver.downloadArtifact(coordinate, null));
+        assertThrows(MissingArtifactException.class, () -> resolver.downloadArtifact(null));
     }
 
     @Test
     void downloadJarWrongPackaging() throws MissingArtifactException {
         var coordinate = new MavenCoordinate("org.slf4j", "slf4j-api", "1.7.30", "wrongPackagingType");
-        var resolver = new MavenArtifactDownloader();
+        var resolver = new MavenArtifactDownloader(coordinate);
 
-        assertNotNull(resolver.downloadArtifact(coordinate, MavenUtilities.MAVEN_CENTRAL_REPO));
+        assertNotNull(resolver.downloadArtifact(MavenUtilities.MAVEN_CENTRAL_REPO));
     }
 
 

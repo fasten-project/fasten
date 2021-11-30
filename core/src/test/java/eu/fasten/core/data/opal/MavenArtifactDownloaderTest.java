@@ -21,7 +21,6 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import java.util.ArrayList;
 import java.util.Collections;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import eu.fasten.core.data.opal.exceptions.MissingArtifactException;
@@ -29,19 +28,12 @@ import eu.fasten.core.maven.utils.MavenUtilities;
 
 public class MavenArtifactDownloaderTest {
 
-	private MavenArtifactDownloader sut;
-
-	@BeforeEach
-	public void setup() {
-		sut = new MavenArtifactDownloader();
-	}
-	
 	@Test
     void downloadJarEmptyRepos() {
         var coordinate = new MavenCoordinate("group", "artifact", "version", "jar");
         coordinate.setMavenRepos(new ArrayList<>());
 
-        assertThrows(MissingArtifactException.class, () -> sut.downloadArtifact(coordinate, null));
+        assertThrows(MissingArtifactException.class, () -> new MavenArtifactDownloader(coordinate).downloadArtifact(null));
     }
 
     @Test
@@ -49,7 +41,7 @@ public class MavenArtifactDownloaderTest {
         var coordinate = new MavenCoordinate("group", "artifact", "version", "jar");
         coordinate.setMavenRepos(new ArrayList<>(Collections.singletonList("repo")));
 
-        assertThrows(MissingArtifactException.class, () -> sut.downloadArtifact(coordinate, null));
+        assertThrows(MissingArtifactException.class, () -> new MavenArtifactDownloader(coordinate).downloadArtifact(null));
     }
 
     @Test
@@ -57,13 +49,13 @@ public class MavenArtifactDownloaderTest {
         var coordinate = new MavenCoordinate("group", "artifact", "version", "pom");
         coordinate.setMavenRepos(new ArrayList<>(Collections.singletonList("repo")));
 
-        assertThrows(MissingArtifactException.class, () -> sut.downloadArtifact(coordinate, null));
+        assertThrows(MissingArtifactException.class, () -> new MavenArtifactDownloader(coordinate).downloadArtifact(null));
     }
 
     @Test
     void downloadJarWrongPackaging() throws MissingArtifactException {
         var coordinate = new MavenCoordinate("org.slf4j", "slf4j-api", "1.7.30", "wrongPackagingType");
 
-        assertNotNull(sut.downloadArtifact(coordinate, MavenUtilities.MAVEN_CENTRAL_REPO));
+        assertNotNull(new MavenArtifactDownloader(coordinate).downloadArtifact(MavenUtilities.MAVEN_CENTRAL_REPO));
     }
 }
