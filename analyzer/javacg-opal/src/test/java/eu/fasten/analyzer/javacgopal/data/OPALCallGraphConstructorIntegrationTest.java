@@ -1,5 +1,6 @@
 package eu.fasten.analyzer.javacgopal.data;
 
+import static eu.fasten.core.utils.TestUtils.getTestResource;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.File;
@@ -85,8 +86,7 @@ public class OPALCallGraphConstructorIntegrationTest {
 
 	private File findInResources(String path) {
 		path = "opal-examples/" + path;
-		URL url = getClass().getClassLoader().getResource("");
-		File f = new File(url.getFile() + path);
+		var f = getTestResource(path);
 		if (!f.exists()) {
 			throw new RuntimeException(String.format("file does not exist in example folder: %s", f));
 		}

@@ -18,15 +18,11 @@
 
 package eu.fasten.analyzer.javacgopal.data;
 
-import static eu.fasten.core.utils.TestUtils.getTestResource;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import java.io.File;
-
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+
+import static eu.fasten.core.utils.TestUtils.getTestResource;
+import static org.junit.jupiter.api.Assertions.*;
 
 class OPALCallGraphConstructorTest {
 
@@ -39,7 +35,7 @@ class OPALCallGraphConstructorTest {
 
 	@Test
 	void constructCHAHasCorrectConfig() {
-		var file = new File(getClass().getClassLoader().getResource("SingleSourceToTarget.class").getFile());
+		var file = getTestResource("SingleSourceToTarget.class");
 
 		var cg = sut.construct(file, CGAlgorithm.CHA);
 
