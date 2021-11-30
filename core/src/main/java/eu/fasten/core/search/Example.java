@@ -24,7 +24,7 @@ import eu.fasten.core.search.predicate.CachingPredicateFactory;
 import it.unimi.dsi.fastutil.longs.LongLinkedOpenHashSet;
 
 public class Example {
-	private static final Logger LOGGER = LoggerFactory.getLogger(TauStats.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(Example.class);
 
 	/** The handle to the Postgres metadata database. */
 	private final DSLContext context;
