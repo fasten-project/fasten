@@ -105,13 +105,11 @@ public class CallableIndexServerPlugin extends Plugin {
                 gidGraph = GidGraph.getGraph(new JSONObject(tokener));
             } catch (JSONException e) {
                 logger.error("Could not parse GID graph", e);
-                setPluginError(e);
-                return;
+                throw e;
             } catch (FileNotFoundException e) {
-                logger.error("Error parsing JSON callgraph for '"
+                logger.error("The JSON GID graph for '"
                         + Paths.get(path).getFileName() + "'", e);
-                setPluginError(e);
-                return;
+                throw new RuntimeException("Couldn't find the GID graph at" + Paths.get(path).getFileName() + "on the FS");
             }
 
             var artifact = gidGraph.getProduct() + "@" + gidGraph.getVersion();
@@ -137,8 +135,7 @@ public class CallableIndexServerPlugin extends Plugin {
                 rocksDao.saveToRocksDb(gidGraph);
             } catch (Exception e) {
                 logger.error("Could not save GID graph of '" + artifact + "' into RocksDB", e);
-                setPluginError(e);
-                return;
+                throw new RuntimeException("Could not save GID graph of '" + artifact + "' into RocksDB");
             }
             if (getPluginError() == null) {
                 logger.info("Saved the '" + artifact

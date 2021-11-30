@@ -18,6 +18,16 @@
 
 package eu.fasten.analyzer.callableindex;
 
+import eu.fasten.core.data.callableindex.GidGraph;
+import eu.fasten.core.data.callableindex.RocksDao;
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.json.JSONTokener;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.mockito.Mockito;
+import org.rocksdb.RocksDBException;
+
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.io.IOException;
@@ -25,15 +35,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import eu.fasten.core.data.callableindex.RocksDao;
-import eu.fasten.core.data.callableindex.GidGraph;
-import org.json.JSONObject;
-import org.json.JSONTokener;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.BeforeEach;
-import org.mockito.Mockito;
-import org.rocksdb.RocksDBException;
-import static org.junit.jupiter.api.Assertions.*;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class CallableIndexServerPluginTest {
 
@@ -50,7 +54,7 @@ public class CallableIndexServerPluginTest {
         var rocksDao = Mockito.mock(RocksDao.class);
         var json = new JSONObject("{\"payload\": {}}");
 
-        var getTestResource = Objects.requireNonNull(Thread.currentThread().getContextClassLoader().getResource("gid_graph_test.json"));
+        var getTestResource = getClass().getClassLoader().getResource("gid_graph_test.json");
         json.getJSONObject("payload").put("dir", getTestResource.getPath());
         JSONTokener tokener = new JSONTokener(new FileReader(getTestResource.getFile()));
         var graph = GidGraph.getGraph(new JSONObject(tokener));
@@ -63,21 +67,19 @@ public class CallableIndexServerPluginTest {
     public void consumeTest() throws FileNotFoundException {
         var json = new JSONObject("{\"payload\": {}}");
 
-        var getTestResource = Objects.requireNonNull(Thread.currentThread().getContextClassLoader().getResource("gid_graph_test.json"));
+        var getTestResource = getClass().getClassLoader().getResource("gid_graph_test.json");
         json.getJSONObject("payload").put("dir", getTestResource.getPath());
         callableIndexFastenPlugin.consume(json.toString());
-        assertNull(callableIndexFastenPlugin.getPluginError());
     }
 
     @Test
     public void consumeJsonErrorTest() {
-        var json = new JSONObject("{\"payload\": {}}");
-
-        var getTestResource = Objects.requireNonNull(Thread.currentThread().getContextClassLoader().getResource("gid_graph_test_err.json"));
-        json.getJSONObject("payload").put("dir", getTestResource.getPath());
-        //"{\"payload\":{\"foo\":\"bar\"}}"
-        callableIndexFastenPlugin.consume(json.toString());
-        assertNotNull(callableIndexFastenPlugin.getPluginError());
+        assertThrows(JSONException.class, () -> {
+            var json = new JSONObject("{\"payload\": {}}");
+            var getTestResource = getClass().getClassLoader().getResource("gid_graph_test_err.json");
+            json.getJSONObject("payload").put("dir", getTestResource.getPath());
+            callableIndexFastenPlugin.consume(json.toString());
+        });
     }
 
     @Test
