@@ -175,10 +175,8 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
             }
 
         } catch (WakeupException e) {
+            // Wakeup exception is rethrown after handling shutdown signals, i.e., deleting deployments in Kubernetes.
             if (!closed.get()) throw e;
-
-//        } catch (Exception e) {
-//            logger.error("Error occurred while processing call graphs", e);
         } finally {
             connNorm.close();
             connPrio.close();
