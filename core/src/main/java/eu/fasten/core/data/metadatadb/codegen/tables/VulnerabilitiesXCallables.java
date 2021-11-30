@@ -24,6 +24,7 @@ import org.jooq.Schema;
 import org.jooq.Table;
 import org.jooq.TableField;
 import org.jooq.TableOptions;
+import org.jooq.UniqueKey;
 import org.jooq.impl.DSL;
 import org.jooq.impl.SQLDataType;
 import org.jooq.impl.TableImpl;
@@ -108,6 +109,11 @@ public class VulnerabilitiesXCallables extends TableImpl<VulnerabilitiesXCallabl
     @Override
     public List<Index> getIndexes() {
         return Arrays.<Index>asList(Indexes.VULNERABILITIES_X_CALLABLES_CALLABLE_ID, Indexes.VULNERABILITIES_X_CALLABLES_VULNERABILITY_ID);
+    }
+
+    @Override
+    public List<UniqueKey<VulnerabilitiesXCallablesRecord>> getKeys() {
+        return Arrays.<UniqueKey<VulnerabilitiesXCallablesRecord>>asList(Keys.UNIQUE_VULN_X_CALLABLE);
     }
 
     @Override

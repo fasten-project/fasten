@@ -24,6 +24,7 @@ import org.jooq.Schema;
 import org.jooq.Table;
 import org.jooq.TableField;
 import org.jooq.TableOptions;
+import org.jooq.UniqueKey;
 import org.jooq.impl.DSL;
 import org.jooq.impl.SQLDataType;
 import org.jooq.impl.TableImpl;
@@ -108,6 +109,11 @@ public class VulnerabilitiesXPackageVersions extends TableImpl<VulnerabilitiesXP
     @Override
     public List<Index> getIndexes() {
         return Arrays.<Index>asList(Indexes.VULNERABILITIES_X_PACKAGE_VERSIONS_PACKAGE_VERSION_ID, Indexes.VULNERABILITIES_X_PACKAGE_VERSIONS_VULNERABILITY_ID);
+    }
+
+    @Override
+    public List<UniqueKey<VulnerabilitiesXPackageVersionsRecord>> getKeys() {
+        return Arrays.<UniqueKey<VulnerabilitiesXPackageVersionsRecord>>asList(Keys.UNIQUE_VULN_X_PKG_VER);
     }
 
     @Override
