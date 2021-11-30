@@ -21,7 +21,7 @@ package eu.fasten.analyzer.javacgopal;
 import eu.fasten.analyzer.javacgopal.data.CGAlgorithm;
 import eu.fasten.analyzer.javacgopal.data.OPALCallGraphConstructor;
 import eu.fasten.core.data.opal.MavenCoordinate;
-import eu.fasten.analyzer.javacgopal.data.PartialCallGraph;
+import eu.fasten.analyzer.javacgopal.data.PartialCallGraphConstructor;
 import eu.fasten.analyzer.javacgopal.data.CallPreservationStrategy;
 import eu.fasten.core.data.opal.exceptions.MissingArtifactException;
 import eu.fasten.core.data.opal.exceptions.OPALException;
@@ -244,14 +244,14 @@ public class Main implements Runnable {
 
 		if (artifact instanceof File) {
 			logger.info("Generating graph for {}", ((File) artifact).getAbsolutePath());
-			final var cg = new PartialCallGraph(new OPALCallGraphConstructor().construct((File) artifact, algorithm), CallPreservationStrategy.ONLY_STATIC_CALLSITES);
+			final var cg = new PartialCallGraphConstructor().construct(new OPALCallGraphConstructor().construct((File) artifact, algorithm), CallPreservationStrategy.ONLY_STATIC_CALLSITES);
 			// TODO substantially reduce the complexity of the following statement
-			revisionCallGraph = ExtendedRevisionJavaCallGraph.extendedBuilder().graph(cg.getGraph())
+			revisionCallGraph = ExtendedRevisionJavaCallGraph.extendedBuilder().graph(cg.graph)
 					.product(cleanUpFileName((File) artifact)).version("").timestamp(0).cgGenerator("").forge("")
-					.classHierarchy(cg.getClassHierarchy()).nodeCount(cg.getNodeCount()).build();
+					.classHierarchy(cg.classHierarchy).nodeCount(cg.nodeCount).build();
 
 		} else {
-			revisionCallGraph = PartialCallGraph.createExtendedRevisionJavaCallGraph((MavenCoordinate) artifact,
+			revisionCallGraph = PartialCallGraphConstructor.createExtendedRevisionJavaCallGraph((MavenCoordinate) artifact,
 					algorithm, Long.parseLong(this.commands.computations.timestamp),
 					(repos == null || repos.size() < 1) ? MavenUtilities.MAVEN_CENTRAL_REPO : repos.get(0),
 					CallPreservationStrategy.INCLUDING_ALL_SUBTYPES);

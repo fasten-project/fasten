@@ -21,21 +21,9 @@ package eu.fasten.analyzer.javacgopal;
 import static eu.fasten.analyzer.javacgopal.data.CGAlgorithm.RTA;
 import static eu.fasten.analyzer.javacgopal.data.CallPreservationStrategy.ONLY_STATIC_CALLSITES;
 import static eu.fasten.core.merge.CallGraphUtils.decode;
-import static org.junit.jupiter.api.Assertions.*;
-import com.github.javaparser.utils.Log;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import eu.fasten.analyzer.javacgopal.data.CGAlgorithm;
-import eu.fasten.analyzer.javacgopal.data.CallPreservationStrategy;
-import eu.fasten.analyzer.javacgopal.data.OPALCallGraphConstructor;
-import eu.fasten.core.data.opal.MavenCoordinate;
-import eu.fasten.analyzer.javacgopal.data.PartialCallGraph;
-import eu.fasten.core.data.opal.exceptions.MissingArtifactException;
-import eu.fasten.core.data.opal.exceptions.OPALException;
-import eu.fasten.analyzer.sourceanalyzer.CommentParser;
-import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
-import eu.fasten.core.merge.CGMerger;
-import eu.fasten.core.merge.CallGraphUtils;
-import it.unimi.dsi.fastutil.longs.LongLongPair;
 import java.io.File;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
@@ -52,12 +40,25 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
+
 import org.apache.commons.collections.map.CompositeMap;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+
+import com.github.javaparser.utils.Log;
+
+import eu.fasten.analyzer.javacgopal.data.OPALCallGraphConstructor;
+import eu.fasten.analyzer.javacgopal.data.PartialCallGraphConstructor;
+import eu.fasten.analyzer.sourceanalyzer.CommentParser;
+import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
+import eu.fasten.core.data.opal.MavenCoordinate;
+import eu.fasten.core.data.opal.exceptions.OPALException;
+import eu.fasten.core.merge.CGMerger;
+import eu.fasten.core.merge.CallGraphUtils;
+import it.unimi.dsi.fastutil.longs.LongLongPair;
 
 
 public class CGandStitchingTest {
@@ -75,13 +76,13 @@ public class CGandStitchingTest {
                                                         final String version)
         throws OPALException {
         var opalCG = new OPALCallGraphConstructor().construct(file, RTA);
-        var cg = new PartialCallGraph(opalCG, ONLY_STATIC_CALLSITES);
+        var cg = new PartialCallGraphConstructor().construct(opalCG, ONLY_STATIC_CALLSITES);
         return ExtendedRevisionJavaCallGraph.extendedBuilder()
-            .graph(cg.getGraph())
+            .graph(cg.graph)
             .product(product)
             .version(version)
-            .classHierarchy(cg.getClassHierarchy())
-            .nodeCount(cg.getNodeCount())
+            .classHierarchy(cg.classHierarchy)
+            .nodeCount(cg.nodeCount)
             .build();
     }
 
@@ -346,13 +347,13 @@ public class CGandStitchingTest {
         final var dep1 =
             new MavenCoordinate.MavenResolver().downloadArtifact(coord,"jar");
         final var opalCG = new OPALCallGraphConstructor().construct(dep1, RTA);
-        final var cg = new PartialCallGraph(opalCG, ONLY_STATIC_CALLSITES);
+        final var cg = new PartialCallGraphConstructor().construct(opalCG, ONLY_STATIC_CALLSITES);
         return ExtendedRevisionJavaCallGraph.extendedBuilder()
-            .graph(cg.getGraph())
+            .graph(cg.graph)
             .product(coord.getProduct())
             .version(coord.getVersionConstraint())
-            .classHierarchy(cg.getClassHierarchy())
-            .nodeCount(cg.getNodeCount())
+            .classHierarchy(cg.classHierarchy)
+            .nodeCount(cg.nodeCount)
             .build();
     }
 
