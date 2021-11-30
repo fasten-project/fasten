@@ -18,8 +18,8 @@
 
 package eu.fasten.analyzer.javacgopal;
 
-import static eu.fasten.analyzer.javacgopal.data.CGAlgorithm.CHA;
-import static eu.fasten.analyzer.javacgopal.data.CallPreservationStrategy.ONLY_STATIC_CALLSITES;
+import static eu.fasten.core.data.callgraph.CGAlgorithm.CHA;
+import static eu.fasten.core.data.callgraph.CallPreservationStrategy.ONLY_STATIC_CALLSITES;
 
 import java.io.File;
 import java.util.Collections;
@@ -34,12 +34,11 @@ import org.pf4j.PluginWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import eu.fasten.analyzer.javacgopal.data.PartialCallGraphConstructor;
-import eu.fasten.analyzer.javacgopal.data.CGAlgorithm;
-import eu.fasten.analyzer.javacgopal.data.CallPreservationStrategy;
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
 import eu.fasten.core.data.JSONUtils;
+import eu.fasten.core.data.callgraph.CGAlgorithm;
+import eu.fasten.core.data.callgraph.CallPreservationStrategy;
 import eu.fasten.core.data.opal.MavenCoordinate;
 import eu.fasten.core.data.opal.exceptions.EmptyCallGraphException;
 import eu.fasten.core.data.opal.exceptions.MissingArtifactException;

@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.javacgopal.data.analysis;
+package eu.fasten.analyzer.javacgopal.data;
 
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
@@ -39,11 +39,11 @@ import org.opalj.tac.Stmt;
 import org.opalj.tac.UVar;
 import org.opalj.value.ValueInformation;
 
-import eu.fasten.analyzer.javacgopal.data.CallPreservationStrategy;
 import eu.fasten.core.data.FastenURI;
 import eu.fasten.core.data.JavaGraph;
 import eu.fasten.core.data.JavaScope;
 import eu.fasten.core.data.JavaType;
+import eu.fasten.core.data.callgraph.CallPreservationStrategy;
 import it.unimi.dsi.fastutil.ints.IntIntPair;
 import scala.Tuple2;
 import scala.collection.Iterator;

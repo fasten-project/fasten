@@ -16,10 +16,10 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.javacgopal.data.analysis;
+package eu.fasten.analyzer.javacgopal.data;
 
-import static eu.fasten.analyzer.javacgopal.data.CGAlgorithm.CHA;
-import static eu.fasten.analyzer.javacgopal.data.CallPreservationStrategy.INCLUDING_ALL_SUBTYPES;
+import static eu.fasten.core.data.callgraph.CGAlgorithm.CHA;
+import static eu.fasten.core.data.callgraph.CallPreservationStrategy.INCLUDING_ALL_SUBTYPES;
 import static eu.fasten.core.utils.TestUtils.getTestResource;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -54,11 +54,11 @@ import org.opalj.collection.immutable.RefArray;
 import org.opalj.collection.immutable.UIDSet;
 import org.opalj.collection.immutable.UIDSet1;
 
-import eu.fasten.analyzer.javacgopal.data.OPALCallGraphConstructor;
-import eu.fasten.analyzer.javacgopal.data.PartialCallGraph;
-import eu.fasten.analyzer.javacgopal.data.PartialCallGraphConstructor;
+import eu.fasten.analyzer.javacgopal.OPALCallGraphConstructor;
+import eu.fasten.analyzer.javacgopal.PartialCallGraphConstructor;
 import eu.fasten.core.data.FastenURI;
 import eu.fasten.core.data.JavaScope;
+import eu.fasten.core.data.callgraph.PartialCallGraph;
 import eu.fasten.core.data.opal.exceptions.OPALException;
 import scala.Option;
 

@@ -15,7 +15,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package eu.fasten.analyzer.javacgopal.data;
+package eu.fasten.analyzer.javacgopal;
 
 import java.io.File;
 import java.net.URL;
@@ -35,6 +35,8 @@ import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigValueFactory;
 
+import eu.fasten.analyzer.javacgopal.data.OPALCallGraph;
+import eu.fasten.core.data.callgraph.CGAlgorithm;
 import eu.fasten.core.data.opal.exceptions.OPALException;
 
 public class OPALCallGraphConstructor {

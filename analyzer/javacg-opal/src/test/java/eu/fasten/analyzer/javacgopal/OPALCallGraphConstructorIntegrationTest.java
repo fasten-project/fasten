@@ -1,4 +1,4 @@
-package eu.fasten.analyzer.javacgopal.data;
+package eu.fasten.analyzer.javacgopal;
 
 import static eu.fasten.core.utils.TestUtils.getTestResource;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -20,6 +20,10 @@ import org.opalj.br.VirtualDeclaredMethod;
 import org.opalj.tac.cg.CallGraph;
 
 import com.google.common.collect.Sets;
+
+import eu.fasten.analyzer.javacgopal.OPALCallGraphConstructor;
+import eu.fasten.analyzer.javacgopal.data.OPALCallGraph;
+import eu.fasten.core.data.callgraph.CGAlgorithm;
 
 public class OPALCallGraphConstructorIntegrationTest {
 

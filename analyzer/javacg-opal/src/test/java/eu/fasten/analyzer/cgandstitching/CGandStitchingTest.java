@@ -16,10 +16,10 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.javacgopal;
+package eu.fasten.analyzer.cgandstitching;
 
-import static eu.fasten.analyzer.javacgopal.data.CGAlgorithm.RTA;
-import static eu.fasten.analyzer.javacgopal.data.CallPreservationStrategy.ONLY_STATIC_CALLSITES;
+import static eu.fasten.core.data.callgraph.CGAlgorithm.RTA;
+import static eu.fasten.core.data.callgraph.CallPreservationStrategy.ONLY_STATIC_CALLSITES;
 import static eu.fasten.core.merge.CallGraphUtils.decode;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -50,9 +50,8 @@ import org.junit.jupiter.api.Test;
 
 import com.github.javaparser.utils.Log;
 
-import eu.fasten.analyzer.javacgopal.data.OPALCallGraphConstructor;
-import eu.fasten.analyzer.javacgopal.data.PartialCallGraphConstructor;
-import eu.fasten.analyzer.sourceanalyzer.CommentParser;
+import eu.fasten.analyzer.javacgopal.OPALCallGraphConstructor;
+import eu.fasten.analyzer.javacgopal.PartialCallGraphConstructor;
 import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
 import eu.fasten.core.data.opal.MavenArtifactDownloader;
 import eu.fasten.core.data.opal.MavenCoordinate;

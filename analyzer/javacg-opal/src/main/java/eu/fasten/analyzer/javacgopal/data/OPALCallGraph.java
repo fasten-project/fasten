@@ -20,6 +20,8 @@ import java.net.URL;
 import org.opalj.br.analyses.Project;
 import org.opalj.tac.cg.CallGraph;
 
+import eu.fasten.core.data.callgraph.CGAlgorithm;
+
 public class OPALCallGraph {
 
 	public final CGAlgorithm algorithm;

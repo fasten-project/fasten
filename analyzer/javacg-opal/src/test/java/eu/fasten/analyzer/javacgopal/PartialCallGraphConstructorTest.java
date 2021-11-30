@@ -16,10 +16,10 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.javacgopal.data;
+package eu.fasten.analyzer.javacgopal;
 
-import static eu.fasten.analyzer.javacgopal.data.CGAlgorithm.CHA;
-import static eu.fasten.analyzer.javacgopal.data.CallPreservationStrategy.ONLY_STATIC_CALLSITES;
+import static eu.fasten.core.data.callgraph.CGAlgorithm.CHA;
+import static eu.fasten.core.data.callgraph.CallPreservationStrategy.ONLY_STATIC_CALLSITES;
 import static eu.fasten.core.utils.TestUtils.getTestResource;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -50,10 +50,16 @@ import org.opalj.collection.immutable.UIDSet;
 import org.opalj.collection.immutable.UIDSet1;
 import org.opalj.tac.cg.CallGraph;
 
+import eu.fasten.analyzer.javacgopal.OPALCallGraphConstructor;
+import eu.fasten.analyzer.javacgopal.PartialCallGraphConstructor;
+import eu.fasten.analyzer.javacgopal.data.OPALCallGraph;
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.FastenJavaURI;
 import eu.fasten.core.data.FastenURI;
 import eu.fasten.core.data.JavaScope;
+import eu.fasten.core.data.callgraph.CGAlgorithm;
+import eu.fasten.core.data.callgraph.CallPreservationStrategy;
+import eu.fasten.core.data.callgraph.PartialCallGraph;
 import eu.fasten.core.data.opal.MavenCoordinate;
 import eu.fasten.core.data.opal.exceptions.MissingArtifactException;
 import eu.fasten.core.data.opal.exceptions.OPALException;

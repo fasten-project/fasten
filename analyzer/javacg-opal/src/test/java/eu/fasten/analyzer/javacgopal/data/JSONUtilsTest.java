@@ -21,9 +21,12 @@ import org.skyscreamer.jsonassert.JSONCompareMode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import eu.fasten.analyzer.javacgopal.PartialCallGraphConstructor;
 import eu.fasten.core.data.ExtendedBuilderJava;
 import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
 import eu.fasten.core.data.JSONUtils;
+import eu.fasten.core.data.callgraph.CGAlgorithm;
+import eu.fasten.core.data.callgraph.CallPreservationStrategy;
 import eu.fasten.core.data.opal.MavenCoordinate;
 import eu.fasten.core.data.opal.exceptions.MissingArtifactException;
 import eu.fasten.core.data.opal.exceptions.OPALException;

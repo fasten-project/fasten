@@ -18,16 +18,14 @@
 
 package eu.fasten.analyzer.javacgopal;
 
-import eu.fasten.analyzer.javacgopal.data.CGAlgorithm;
-import eu.fasten.analyzer.javacgopal.data.OPALCallGraphConstructor;
 import eu.fasten.core.data.opal.MavenCoordinate;
-import eu.fasten.analyzer.javacgopal.data.PartialCallGraphConstructor;
-import eu.fasten.analyzer.javacgopal.data.CallPreservationStrategy;
 import eu.fasten.core.data.opal.exceptions.MissingArtifactException;
 import eu.fasten.core.data.opal.exceptions.OPALException;
 import eu.fasten.core.data.DirectedGraph;
 import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
 import eu.fasten.core.data.JSONUtils;
+import eu.fasten.core.data.callgraph.CGAlgorithm;
+import eu.fasten.core.data.callgraph.CallPreservationStrategy;
 import eu.fasten.core.maven.utils.MavenUtilities;
 import eu.fasten.core.merge.CGMerger;
 import eu.fasten.core.merge.CallGraphUtils;

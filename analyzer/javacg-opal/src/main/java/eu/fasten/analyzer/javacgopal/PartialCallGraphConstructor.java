@@ -16,12 +16,11 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.javacgopal.data;
+package eu.fasten.analyzer.javacgopal;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -48,14 +47,16 @@ import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.Lists;
 
-import eu.fasten.analyzer.javacgopal.data.analysis.OPALClassHierarchy;
-import eu.fasten.analyzer.javacgopal.data.analysis.OPALMethod;
-import eu.fasten.analyzer.javacgopal.data.analysis.OPALType;
+import eu.fasten.analyzer.javacgopal.data.OPALCallGraph;
+import eu.fasten.analyzer.javacgopal.data.OPALClassHierarchy;
+import eu.fasten.analyzer.javacgopal.data.OPALMethod;
+import eu.fasten.analyzer.javacgopal.data.OPALType;
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
 import eu.fasten.core.data.JavaGraph;
-import eu.fasten.core.data.JavaScope;
-import eu.fasten.core.data.JavaType;
+import eu.fasten.core.data.callgraph.CGAlgorithm;
+import eu.fasten.core.data.callgraph.CallPreservationStrategy;
+import eu.fasten.core.data.callgraph.PartialCallGraph;
 import eu.fasten.core.data.opal.MavenArtifactDownloader;
 import eu.fasten.core.data.opal.MavenCoordinate;
 import eu.fasten.core.data.opal.exceptions.OPALException;
@@ -121,11 +122,8 @@ public class PartialCallGraphConstructor {
 
             final var partialCallGraph = new PartialCallGraphConstructor().construct(opalCG, callSiteOnly);
 
-            return new ExtendedRevisionJavaCallGraph(Constants.mvnForge, coordinate.getProduct(),
-                    coordinate.getVersionConstraint(), timestamp,
-                    partialCallGraph.nodeCount, Constants.opalGenerator,
-                    partialCallGraph.classHierarchy,
-                    partialCallGraph.graph);
+            return new ExtendedRevisionJavaCallGraph(Constants.mvnForge, coordinate, timestamp,
+                    partialCallGraph, Constants.opalGenerator);
         } finally {
             if (file != null) {
             	// TODO use apache commons FileUtils instead
@@ -229,38 +227,40 @@ public class PartialCallGraphConstructor {
     	final var cg = ocg.callGraph;
         final var tac = ocg.project.get(ComputeTACAIKey$.MODULE$);
         
-        for (final var sourceDeclaration : JavaConverters
-            .asJavaIterable(cg.reachableMethods().toIterable())) {
-            final List<Integer> incompeletes = new ArrayList<>();
+        cg.reachableMethods().foreach(sourceDeclaration -> {
+            final List<Integer> incompletes = new ArrayList<>();
             if (cg.incompleteCallSitesOf(sourceDeclaration) != null) {
-                JavaConverters.asJavaIterator(cg.incompleteCallSitesOf(sourceDeclaration))
-                    .forEachRemaining(pc -> incompeletes.add((int) pc));
+                cg.incompleteCallSitesOf(sourceDeclaration).foreach(pc -> incompletes.add((int) pc));
             }
             final Set<Integer> visitedPCs = new HashSet<>();
 
+            var calleesOf = cg.calleesOf(sourceDeclaration);
+
             if (sourceDeclaration.hasMultipleDefinedMethods()) {
-                for (final var source : JavaConverters
-                    .asJavaIterable(sourceDeclaration.definedMethods())) {
-                    cha.appendGraph(source, cg.calleesOf(sourceDeclaration),
-                        getStmts(tac, sourceDeclaration.definedMethod()), pcg.graph, incompeletes,
-                        visitedPCs, callSiteOnly);
-                }
+            	sourceDeclaration.definedMethods().foreach(source -> {
+					var dm = sourceDeclaration.definedMethod();
+					var stmts = getStmts(tac, dm);
+					cha.appendGraph(source, calleesOf, stmts, pcg.graph, incompletes, visitedPCs, callSiteOnly);
+                    return null;
+                });
             } else if (sourceDeclaration.hasSingleDefinedMethod()) {
                 final var definedMethod = sourceDeclaration.definedMethod();
-                cha.appendGraph(definedMethod, cg.calleesOf(sourceDeclaration),
-                    getStmts(tac, definedMethod), pcg.graph, incompeletes, visitedPCs, callSiteOnly);
+                cha.appendGraph(definedMethod, calleesOf,
+                    getStmts(tac, definedMethod), pcg.graph, incompletes, visitedPCs, callSiteOnly);
 
             } else if (sourceDeclaration.isVirtualOrHasSingleDefinedMethod()) {
 
-                cha.appendGraph(sourceDeclaration, cg.calleesOf(sourceDeclaration), getStmts(tac,
-                    null), pcg.graph, incompeletes, visitedPCs, callSiteOnly);
+                var stmts = getStmts(tac, null);
+				cha.appendGraph(sourceDeclaration, calleesOf, stmts, pcg.graph, incompletes, visitedPCs, callSiteOnly);
             }
-            if (!incompeletes.isEmpty()) {
-                logger.warn("There is an incomplete call site " +
-                    "that OPAL did not take care of. source: " + sourceDeclaration + "PCs: "+ incompeletes);
-
+            if (!incompletes.isEmpty()) {
+            	
+                String msg = "Incomplete call sites discovered by OPAL (in {}): {}";
+				logger.warn(msg, sourceDeclaration, incompletes);
             }
-        }
+            
+           return null;
+        });
     }
 
     private Stmt<DUVar<ValueInformation>>[] getStmts(Function1<Method, AITACode<TACMethodParameter, ValueInformation>> tac,

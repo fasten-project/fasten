@@ -14,7 +14,7 @@
  * the License.
  */
 
-package eu.fasten.analyzer.sourceanalyzer;
+package eu.fasten.analyzer.cgandstitching;
 
 import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.NodeList;

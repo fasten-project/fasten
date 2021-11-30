@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.javacgopal.data.analysis;
+package eu.fasten.analyzer.javacgopal.data;
 
 import com.google.common.collect.Lists;
 import eu.fasten.core.data.JavaNode;

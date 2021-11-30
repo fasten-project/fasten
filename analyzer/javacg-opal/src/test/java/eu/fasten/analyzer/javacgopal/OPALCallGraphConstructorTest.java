@@ -16,13 +16,17 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.javacgopal.data;
+package eu.fasten.analyzer.javacgopal;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static eu.fasten.core.utils.TestUtils.getTestResource;
 import static org.junit.jupiter.api.Assertions.*;
+
+import eu.fasten.analyzer.javacgopal.OPALCallGraphConstructor;
+import eu.fasten.analyzer.javacgopal.data.OPALCallGraph;
+import eu.fasten.core.data.callgraph.CGAlgorithm;
 
 class OPALCallGraphConstructorTest {
 

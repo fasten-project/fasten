@@ -28,6 +28,8 @@ import org.json.JSONObject;
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 
+import eu.fasten.core.data.callgraph.PartialCallGraph;
+import eu.fasten.core.data.opal.MavenCoordinate;
 import eu.fasten.core.utils.FastenUriUtils;
 import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
@@ -59,21 +61,15 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Enu
      * Creates {@link ExtendedRevisionJavaCallGraph} with the given data.
      *
      * @param forge          the forge.
-     * @param product        the product.
-     * @param version        the version.
+     * @param coord          the Maven coordinate to analyze.
      * @param timestamp      the timestamp (in seconds from UNIX epoch); optional: if not present,
      *                       it is set to -1.
-     * @param nodeCount      number of nodes
+     * @param pcg            the partial call graph that is used to create the ERCG
      * @param cgGenerator    The name of call graph generator that generated this call graph.
-     * @param classHierarchy class hierarchy of this revision including all classes of the revision
-     *                       <code> Map<{@link FastenURI}, {@link JavaType}> </code>
-     * @param graph          the call graph (no control is done on the graph) {@link Graph}
      */
-    public ExtendedRevisionJavaCallGraph(final String forge, final String product, final String version,
-                                         final long timestamp, int nodeCount, final String cgGenerator,
-                                         final EnumMap<JavaScope,Map<String, JavaType>> classHierarchy,
-                                         final Graph graph) {
-        super(forge, product, version, timestamp, nodeCount, cgGenerator, classHierarchy, graph);
+    public ExtendedRevisionJavaCallGraph(final String forge, final MavenCoordinate coord,
+                                         final long timestamp, PartialCallGraph pcg, final String cgGenerator) {
+        super(forge, coord.getProduct(), coord.getVersionConstraint(), timestamp, pcg.nodeCount, cgGenerator, pcg.classHierarchy, pcg.graph);
     }
 
 

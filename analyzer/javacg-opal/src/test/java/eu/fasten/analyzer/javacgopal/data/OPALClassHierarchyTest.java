@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.javacgopal.data.analysis;
+package eu.fasten.analyzer.javacgopal.data;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -50,9 +50,11 @@ import org.opalj.collection.immutable.UIDSet;
 import org.opalj.collection.immutable.UIDSet1;
 import org.opalj.tac.Stmt;
 
-import eu.fasten.analyzer.javacgopal.data.CallPreservationStrategy;
+import eu.fasten.analyzer.javacgopal.data.OPALClassHierarchy;
+import eu.fasten.analyzer.javacgopal.data.OPALType;
 import eu.fasten.core.data.JavaGraph;
 import eu.fasten.core.data.JavaScope;
+import eu.fasten.core.data.callgraph.CallPreservationStrategy;
 import scala.Option;
 import scala.Tuple2;
 import scala.collection.Iterator;

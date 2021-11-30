@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package eu.fasten.analyzer.javacgopal.data;
+package eu.fasten.core.data.callgraph;
 
 import java.util.EnumMap;
 import java.util.Map;
