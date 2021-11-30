@@ -34,7 +34,7 @@ import org.pf4j.PluginWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import eu.fasten.analyzer.javacgopal.data.PartialCallGraph;
+import eu.fasten.analyzer.javacgopal.data.PartialCallGraphConstructor;
 import eu.fasten.analyzer.javacgopal.data.CGAlgorithm;
 import eu.fasten.analyzer.javacgopal.data.CallPreservationStrategy;
 import eu.fasten.core.data.Constants;
@@ -85,7 +85,7 @@ public class OPALPlugin extends Plugin {
                 // Generate CG and measure construction duration.
                 logger.info("[CG-GENERATION] [UNPROCESSED] [-1] [" + mavenCoordinate.getCoordinate() + "] [NONE] ");
                 long date = kafkaConsumedJson.optLong("date", -1);
-				this.graph = PartialCallGraph.createExtendedRevisionJavaCallGraph(mavenCoordinate,
+				this.graph = PartialCallGraphConstructor.createExtendedRevisionJavaCallGraph(mavenCoordinate,
                         CHA, date, artifactRepository, ONLY_STATIC_CALLSITES);
                 long endTime = System.nanoTime();
                 long duration = (endTime - startTime) / 1000000; // Compute duration in ms. 

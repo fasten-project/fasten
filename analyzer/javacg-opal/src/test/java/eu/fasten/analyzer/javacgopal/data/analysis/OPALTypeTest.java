@@ -29,7 +29,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Objects;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeAll;
@@ -54,10 +53,9 @@ import org.opalj.collection.immutable.RefArray;
 import org.opalj.collection.immutable.UIDSet;
 import org.opalj.collection.immutable.UIDSet1;
 
-import eu.fasten.analyzer.javacgopal.data.CGAlgorithm;
 import eu.fasten.analyzer.javacgopal.data.OPALCallGraphConstructor;
-import eu.fasten.analyzer.javacgopal.data.CallPreservationStrategy;
 import eu.fasten.analyzer.javacgopal.data.PartialCallGraph;
+import eu.fasten.analyzer.javacgopal.data.PartialCallGraphConstructor;
 import eu.fasten.core.data.FastenURI;
 import eu.fasten.core.data.JavaScope;
 import eu.fasten.core.data.opal.exceptions.OPALException;
@@ -534,7 +532,7 @@ class OPALTypeTest {
 	}
 
 	private void assertLineNumber(PartialCallGraph cg, final String uri, final int first, final int last) {
-		for (final var type : cg.getClassHierarchy().get(JavaScope.internalTypes).values()) {
+		for (final var type : cg.classHierarchy.get(JavaScope.internalTypes).values()) {
 			for (final var node : type.getMethods().values()) {
 				if (node.getUri().toString().equals(uri)) {
 					assertEquals(first, node.getMetadata().get("first"));
@@ -547,6 +545,6 @@ class OPALTypeTest {
 	private PartialCallGraph getRCG(String s) throws OPALException {
 		var cgc = new OPALCallGraphConstructor();
 		File pkg = new File(getClass().getClassLoader().getResource(s).getFile());
-		return new PartialCallGraph(cgc.construct(pkg, CHA), INCLUDING_ALL_SUBTYPES);
+		return new PartialCallGraphConstructor().construct(cgc.construct(pkg, CHA), INCLUDING_ALL_SUBTYPES);
 	}
 }
