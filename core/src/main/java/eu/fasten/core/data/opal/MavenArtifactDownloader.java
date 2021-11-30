@@ -13,6 +13,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
+import java.util.LinkedList;
 import java.util.Optional;
 
 /**
@@ -23,69 +24,102 @@ public class MavenArtifactDownloader {
     private static final String[] packaging = {"jar", "war", "zip", "ear", "rar", "ejb", "par",
             "aar", "car", "nar", "kar"};
     private static final String[] defaultPackaging = {"zip", "aar", "tar.gz", "jar"};
+    private boolean foundPackage = false;
+    private Optional<File> artifactFile = Optional.empty();
+    private MavenCoordinate mavenCoordinate;
+    private LinkedList<String> mavenRepos;
+    private long startTime;
+
+    /**
+     * @param mavenCoordinate A Maven coordinate in the for "groupId:artifactId:version"
+     */
+    public MavenArtifactDownloader(final MavenCoordinate mavenCoordinate) {
+        this.mavenCoordinate = mavenCoordinate;
+        this.mavenRepos = mavenCoordinate.getMavenRepos();
+    }
+
+    /**
+     * It tries to download the Maven artifact with the specified extension. E.g. jar
+     */
+    private File trySpecifiedPackaging(int repoNumber) throws MissingArtifactException {
+        try {
+            if (Arrays.asList(packaging).contains(mavenCoordinate.getPackaging())) {
+                foundPackage = true;
+                artifactFile = httpGetFile(mavenCoordinate
+                        .toProductUrl(mavenRepos.get(repoNumber), mavenCoordinate.getPackaging()));
+            }
+        } catch (MissingArtifactException e) {
+            foundPackage = false;
+
+            long duration = computeDurationInMs(startTime);
+            logger.warn("[ARTIFACT-DOWNLOAD] [UNPROCESSED] [" + duration + "] [" + mavenCoordinate.getCoordinate() + "] [" + e.getClass().getSimpleName() + "] Artifact couldn't be retrieved for repo: " + mavenRepos.get(repoNumber), e);
+        }
+
+        if (artifactFile.isPresent()) {
+            long duration = computeDurationInMs(startTime);
+            logger.info("[ARTIFACT-DOWNLOAD] [SUCCESS] [" + duration + "] [" + mavenCoordinate.getCoordinate() + "] [NONE] Artifact retrieved from repo: " + mavenRepos.get(repoNumber));
+            return artifactFile.get();
+        } else if (foundPackage && repoNumber == mavenRepos.size() - 1) {
+            throw new MissingArtifactException("Artifact couldn't be retrieved for repo: " + mavenRepos.get(repoNumber), null);
+        }
+        return null;
+    }
+
+    /**
+     * It tries to download the artifact with default extensions as defined in `defaultPackaging`.
+     *
+     * @param repoNumber
+     * @throws MissingArtifactException
+     */
+    private File tryDefaultPackaging(int repoNumber) throws MissingArtifactException {
+        for (var s : defaultPackaging) {
+            startTime = System.nanoTime();
+            try {
+                foundPackage = true;
+                artifactFile = httpGetFile(mavenCoordinate.toProductUrl(mavenRepos.get(repoNumber), s));
+            } catch (MissingArtifactException e) {
+                foundPackage = false;
+
+                long duration = computeDurationInMs(startTime);
+                logger.warn("[ARTIFACT-DOWNLOAD] [UNPROCESSED] [" + duration + "] [" + mavenCoordinate.getCoordinate() + "] [" + e.getClass().getSimpleName() + "] Artifact couldn't be retrieved for repo: " + mavenRepos.get(repoNumber), e);
+            }
+
+            if (artifactFile.isPresent()) {
+                long duration = computeDurationInMs(startTime);
+                logger.info("[ARTIFACT-DOWNLOAD] [SUCCESS] [" + duration + "] [" + mavenCoordinate.getCoordinate() + "] [NONE] Artifact retrieved from repo: " + mavenRepos.get(repoNumber));
+                return artifactFile.get();
+            } else if (foundPackage && repoNumber == mavenRepos.size() - 1) {
+                throw new MissingArtifactException("Artifact couldn't be retrieved for repo: " + mavenRepos.get(repoNumber), null);
+            } else if (foundPackage) {
+                break;
+            }
+        }
+        return null;
+    }
+
 
     /**
      * Download a JAR file indicated by the provided Maven coordinate.
      *
-     * @param mavenCoordinate A Maven coordinate in the for "groupId:artifactId:version"
      * @return A temporary file on the filesystem
      */
-    public File downloadArtifact(final MavenCoordinate mavenCoordinate, String artifactRepo)
+    public File downloadArtifact(String artifactRepo)
             throws MissingArtifactException {
-        var found = false;
-        Optional<File> jar = Optional.empty();
-        var repos = mavenCoordinate.getMavenRepos();
         if (artifactRepo != null && !artifactRepo.isEmpty() && !artifactRepo.equals(MavenUtilities.MAVEN_CENTRAL_REPO)) {
-            repos.addFirst(artifactRepo);
+            mavenRepos.addFirst(artifactRepo);
         }
-        for (int i = 0; i < repos.size(); i++) {
+        for (int i = 0; i < mavenRepos.size(); i++) {
 
-            long startTime = System.nanoTime();
-
-            try {
-                if (Arrays.asList(packaging).contains(mavenCoordinate.getPackaging())) {
-                    found = true;
-                    jar = httpGetFile(mavenCoordinate
-                            .toProductUrl(repos.get(i), mavenCoordinate.getPackaging()));
-                }
-            } catch (MissingArtifactException e) {
-                found = false;
-
-                long duration = computeDurationInMs(startTime);
-                logger.warn("[ARTIFACT-DOWNLOAD] [UNPROCESSED] [" + duration + "] [" + mavenCoordinate.getCoordinate() + "] [" + e.getClass().getSimpleName() + "] Artifact couldn't be retrieved for repo: " + repos.get(i), e);
-            }
-
-            if (jar.isPresent()) {
-                long duration = computeDurationInMs(startTime);
-                logger.info("[ARTIFACT-DOWNLOAD] [SUCCESS] [" + duration + "] [" + mavenCoordinate.getCoordinate() + "] [NONE] Artifact retrieved from repo: " + repos.get(i));
-                return jar.get();
-            } else if (found && i == repos.size() - 1) {
-                throw new MissingArtifactException("Artifact couldn't be retrieved for repo: " + repos.get(i), null);
-            } else if (found) {
+            startTime = System.nanoTime();
+            var jarFile = trySpecifiedPackaging(i);
+            if (jarFile != null) {
+                return jarFile;
+            } else if (foundPackage) {
                 continue;
             }
 
-            for (var s : defaultPackaging) {
-                startTime = System.nanoTime();
-                try {
-                    found = true;
-                    jar = httpGetFile(mavenCoordinate.toProductUrl(repos.get(i), s));
-                } catch (MissingArtifactException e) {
-                    found = false;
-
-                    long duration = computeDurationInMs(startTime);
-                    logger.warn("[ARTIFACT-DOWNLOAD] [UNPROCESSED] [" + duration + "] [" + mavenCoordinate.getCoordinate() + "] [" + e.getClass().getSimpleName() + "] Artifact couldn't be retrieved for repo: " + repos.get(i), e);
-                }
-
-                if (jar.isPresent()) {long duration = computeDurationInMs(startTime);
-                    logger.info("[ARTIFACT-DOWNLOAD] [SUCCESS] [" + duration + "] [" + mavenCoordinate.getCoordinate() + "] [NONE] Artifact retrieved from repo: " + repos.get(i));
-                    return jar.get();
-                } else if (found && i == repos.size() - 1) {
-                    throw new MissingArtifactException("Artifact couldn't be retrieved for repo: " + repos.get(i), null);
-                } else if (found) {
-                    break;
-                }
-            }
+            jarFile = tryDefaultPackaging(i);
+            if (jarFile != null) return jarFile;
         }
         throw new MissingArtifactException(
                 mavenCoordinate.toURL(mavenCoordinate.getMavenRepos().size() > 0
