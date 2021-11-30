@@ -346,7 +346,7 @@ public class CGandStitchingTest {
         final var coord = MavenCoordinate.fromString(coordStr,"jar");
 
         final var dep1 =
-            new MavenArtifactDownloader().downloadArtifact(coord,"jar");
+            new MavenArtifactDownloader(coord).downloadArtifact("jar");
         final var opalCG = new OPALCallGraphConstructor().construct(dep1, RTA);
         final var cg = new PartialCallGraphConstructor().construct(opalCG, ONLY_STATIC_CALLSITES);
         return ExtendedRevisionJavaCallGraph.extendedBuilder()

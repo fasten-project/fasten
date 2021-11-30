@@ -116,7 +116,7 @@ public class PartialCallGraphConstructor {
 
         File file = null;
         try {
-            file = new MavenArtifactDownloader().downloadArtifact(coordinate, artifactRepo);
+            file = new MavenArtifactDownloader(coordinate).downloadArtifact(artifactRepo);
             final var opalCG = new OPALCallGraphConstructor().construct(file, algorithm);
 
             final var partialCallGraph = new PartialCallGraphConstructor().construct(opalCG, callSiteOnly);
