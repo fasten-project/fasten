@@ -96,22 +96,22 @@ public class CallableIndexServerPlugin extends Plugin {
             final var path = json.optString("dir");
 
             final GidGraph gidGraph;
-            if (!path.isEmpty()) {
-                try {
-                    JSONTokener tokener = new JSONTokener(new FileReader(path));
-                    gidGraph = GidGraph.getGraph(new JSONObject(tokener));
-                } catch (JSONException e) {
-                    logger.error("Could not parse GID graph", e);
-                    setPluginError(e);
-                    return;
-                } catch (FileNotFoundException e) {
-                    logger.error("Error parsing JSON callgraph for '"
-                            + Paths.get(path).getFileName() + "'", e);
-                    setPluginError(e);
-                    return;
-                }
-            } else {
-                throw new RuntimeException("Couldn't find the GID graph file!");
+            if (path.isEmpty()) {
+                throw new RuntimeException("Provided path to GID graph file is empty");
+            }
+
+            try {
+                JSONTokener tokener = new JSONTokener(new FileReader(path));
+                gidGraph = GidGraph.getGraph(new JSONObject(tokener));
+            } catch (JSONException e) {
+                logger.error("Could not parse GID graph", e);
+                setPluginError(e);
+                return;
+            } catch (FileNotFoundException e) {
+                logger.error("Error parsing JSON callgraph for '"
+                        + Paths.get(path).getFileName() + "'", e);
+                setPluginError(e);
+                return;
             }
 
             var artifact = gidGraph.getProduct() + "@" + gidGraph.getVersion();
