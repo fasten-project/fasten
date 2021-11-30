@@ -345,6 +345,7 @@ public class CGandStitchingTest {
     private ExtendedRevisionJavaCallGraph getRCG(String coordStr) {
         final var coord = MavenCoordinate.fromString(coordStr,"jar");
 
+        // TODO: avoid downloading JARs when testing on every build
         final var dep1 =
             new MavenArtifactDownloader(coord).downloadArtifact("jar");
         final var opalCG = new OPALCallGraphConstructor().construct(dep1, RTA);
