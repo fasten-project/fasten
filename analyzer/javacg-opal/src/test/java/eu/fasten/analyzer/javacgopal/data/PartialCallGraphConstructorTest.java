@@ -77,8 +77,8 @@ class PartialCallGraphConstructorTest {
 	@Test
 	void testAnnotations() throws OPALException {
 		OPALCallGraphConstructor cgc = new OPALCallGraphConstructor();
-		PartialCallGraph annotatedClass = new PartialCallGraphConstructor().construct(cgc.construct(new File(
-				getClass().getClassLoader().getResource("PackageApi.class").getFile()),
+		PartialCallGraph annotatedClass = new PartialCallGraphConstructor().construct(cgc.construct(
+				getTestResource("PackageApi.class"),
 				CHA), ONLY_STATIC_CALLSITES);
 	}
 

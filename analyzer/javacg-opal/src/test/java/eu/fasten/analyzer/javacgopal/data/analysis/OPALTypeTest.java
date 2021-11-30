@@ -20,6 +20,7 @@ package eu.fasten.analyzer.javacgopal.data.analysis;
 
 import static eu.fasten.analyzer.javacgopal.data.CGAlgorithm.CHA;
 import static eu.fasten.analyzer.javacgopal.data.CallPreservationStrategy.INCLUDING_ALL_SUBTYPES;
+import static eu.fasten.core.utils.TestUtils.getTestResource;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -515,7 +516,7 @@ class OPALTypeTest {
 	}
 
 	@Test
-	void lineNumbersSouldBeAccurate() throws OPALException {
+	void lineNumbersShouldBeAccurate() throws OPALException {
 
 		var cg = getRCG("linenumbertests/APIConsumerImpl.class");
 
@@ -544,7 +545,7 @@ class OPALTypeTest {
 
 	private PartialCallGraph getRCG(String s) throws OPALException {
 		var cgc = new OPALCallGraphConstructor();
-		File pkg = new File(getClass().getClassLoader().getResource(s).getFile());
+		File pkg = getTestResource(s);
 		return new PartialCallGraphConstructor().construct(cgc.construct(pkg, CHA), INCLUDING_ALL_SUBTYPES);
 	}
 }
