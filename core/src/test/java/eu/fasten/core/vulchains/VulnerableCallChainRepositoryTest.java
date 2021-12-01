@@ -47,7 +47,7 @@ class VulnerableCallChainRepositoryTest {
 
 
         var firstVulString = "   {\n" +
-            "      \"vulnerability\":[\n" +
+            "      \"vulnerabilities\":[\n" +
             "         {\n" +
             "            \"id\":\"NIFI-4436\",\n" +
             "            \"purls\":[\n" +
@@ -78,7 +78,7 @@ class VulnerableCallChainRepositoryTest {
             "   }";
 
         var secondVulString = "   {\n" +
-            "      \"vulnerability\":[\n" +
+            "      \"vulnerabilities\":[\n" +
             "         {\n" +
             "            \"id\":\"NIFI-4436\",\n" +
             "            \"purls\":[\n" +

@@ -24,7 +24,7 @@ public class VulnerableCallChainJsonUtilsTest {
         var vc = new VulnerableCallChain(new LinkedList<>(), new LinkedList<>());
 
         var actual = VulnerableCallChainJsonUtils.toJson(vc);
-        var expected = "{\"vulnerability\":[],\"chain\":[]}";
+        var expected = "{\"vulnerabilities\":[],\"chain\":[]}";
         Assertions.assertEquals(expected, actual);
     }
 
@@ -43,7 +43,8 @@ public class VulnerableCallChainJsonUtilsTest {
         var vc = new VulnerableCallChain(new LinkedList<>(), chains);
 
         var actual = VulnerableCallChainJsonUtils.toJson(vc);
-        var expected = "{\"vulnerability\":[],\"chain\":[\"fasten://mvn!g:a$1.0.0/x/C.m()%2Fjava.lang%2FVoidType\"]}";
+        var expected = "{\"vulnerabilities\":[],\"chain\":[\"fasten://mvn!g:a$1.0.0/x/C.m()" +
+            "%2Fjava.lang%2FVoidType\"]}";
         Assertions.assertEquals(expected, actual);
     }
 }
