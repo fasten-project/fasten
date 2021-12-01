@@ -13,12 +13,12 @@ import java.util.HashSet;
 import java.util.Set;
 import org.apache.commons.io.FileUtils;
 
-public class VulRepository {
+public class VulnerableCallChainRepository {
     int MAXSETSIZE = 5;
 
     private final String rootDir;
 
-    public VulRepository(String rootDir) throws FileNotFoundException {
+    public VulnerableCallChainRepository(String rootDir) throws FileNotFoundException {
         if (new File(rootDir).exists()) {
             this.rootDir = rootDir;
         } else {
@@ -26,7 +26,7 @@ public class VulRepository {
         }
     }
 
-    public Set<VulnerableChain> getChainsForPackage(final String packag, final String version) {
+    public Set<VulnerableCallChain> getChainsForPackage(final String packag, final String version) {
         final var vulFile = getFilePath(packag, version);
         String reader;
         try {
@@ -34,11 +34,11 @@ public class VulRepository {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        Type setType = new TypeToken<HashSet<VulnerableChain>>(){}.getType();
-        Set<VulnerableChain> fullSet = JsonUtils.fromJson(reader, setType);
+        Type setType = new TypeToken<HashSet<VulnerableCallChain>>(){}.getType();
+        Set<VulnerableCallChain> fullSet = VulnerableCallChainJsonUtils.fromJson(reader, setType);
         if (fullSet.size()>MAXSETSIZE) {
-            Set<VulnerableChain> truncatedSet = new HashSet<>();
-            for (VulnerableChain vulRepository : fullSet) {
+            Set<VulnerableCallChain> truncatedSet = new HashSet<>();
+            for (VulnerableCallChain vulRepository : fullSet) {
                 truncatedSet.add(vulRepository);
                 if (truncatedSet.size() == MAXSETSIZE) {
                     break;
@@ -50,9 +50,9 @@ public class VulRepository {
 
     }
 
-    public Set<VulnerableChain> getChainsForModule(final FastenURI module) {
+    public Set<VulnerableCallChain> getChainsForModule(final FastenURI module) {
         final var packgVul = getChainsForPackage(module.getProduct(), module.getVersion());
-        final var result = new HashSet<VulnerableChain>();
+        final var result = new HashSet<VulnerableCallChain>();
         for (final var vulnerableChain : packgVul) {
             if (result.size() == MAXSETSIZE) {
                 break;
@@ -67,9 +67,9 @@ public class VulRepository {
         return result;
     }
 
-    public Set<VulnerableChain> getChainsForCallable(final FastenURI callable) {
+    public Set<VulnerableCallChain> getChainsForCallable(final FastenURI callable) {
         final var packgVul = getChainsForPackage(callable.getProduct(), callable.getVersion());
-        final var result = new HashSet<VulnerableChain>();
+        final var result = new HashSet<VulnerableCallChain>();
         for (final var vulnerableChain : packgVul) {
             if (result.size() == MAXSETSIZE) {
                 break;
@@ -86,9 +86,9 @@ public class VulRepository {
 
 
     public void store(final String packag, final String version,
-                      final Set<VulnerableChain> vulns) {
+                      final Set<VulnerableCallChain> vulns) {
         final var vulFileFile = new File(getFilePath(packag, version));
-        final var jsonString = JsonUtils.toJson(vulns);
+        final var jsonString = VulnerableCallChainJsonUtils.toJson(vulns);
         writeContent(jsonString, vulFileFile);
     }
 

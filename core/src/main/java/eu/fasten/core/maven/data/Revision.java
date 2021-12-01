@@ -25,7 +25,6 @@ import org.json.JSONObject;
 
 import java.io.Serializable;
 import java.sql.Timestamp;
-import java.time.format.DateTimeFormatter;
 import java.util.Objects;
 
 /**

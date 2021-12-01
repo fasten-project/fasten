@@ -8,11 +8,11 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
-public class VulnerableChain {
+public class VulnerableCallChain {
     List<Vulnerability> vulnerabilities;
     List<FastenURI> chain;
 
-    public VulnerableChain(List<Vulnerability> vulnerabilities, List<FastenURI> chain) {
+    public VulnerableCallChain(List<Vulnerability> vulnerabilities, List<FastenURI> chain) {
         this.vulnerabilities = vulnerabilities;
         this.chain = chain;
     }

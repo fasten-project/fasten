@@ -24,26 +24,26 @@ import org.skyscreamer.jsonassert.JSONCompareMode;
 import org.testcontainers.shaded.org.apache.commons.io.FileUtils;
 
 
-class VulRepositoryTest {
+class VulnerableCallChainRepositoryTest {
 
     @TempDir
     public static File tempDir;
 
-    private static VulRepository vulRepository;
+    private static VulnerableCallChainRepository vulnerableCallChainRepository;
     private static String fullVulString;
-    private static HashSet<VulnerableChain> vulFromObject;
-    private static Set<VulnerableChain> firstVulFromString;
+    private static HashSet<VulnerableCallChain> vulFromObject;
+    private static Set<VulnerableCallChain> firstVulFromString;
     private static File packageFile;
 
     @Test
     public void setupThrowsExceptionWhenFolderDoesNotExist() {
-        Assertions.assertThrows(FileNotFoundException.class, () -> new VulRepository("a/b/c"));
+        Assertions.assertThrows(FileNotFoundException.class, () -> new VulnerableCallChainRepository("a/b/c"));
     }
 
     @BeforeAll
     static void setup() throws IOException {
 
-        vulRepository = new VulRepository(tempDir.getAbsolutePath());
+        vulnerableCallChainRepository = new VulnerableCallChainRepository(tempDir.getAbsolutePath());
 
 
         var firstVulString = "   {\n" +
@@ -110,10 +110,11 @@ class VulRepositoryTest {
         fullVulString = "[\n" + firstVulString +",\n" + secondVulString + "]";
         packageFile = new File(tempDir.getAbsoluteFile() + "/g:a:1.0.0.json");
         FileUtils.write(packageFile, fullVulString, StandardCharsets.UTF_8);
-        Type setType = new TypeToken<HashSet<VulnerableChain>>(){}.getType();
-        firstVulFromString = JsonUtils.fromJson("[" + firstVulString +"]", setType);
+        Type setType = new TypeToken<HashSet<VulnerableCallChain>>(){}.getType();
+        firstVulFromString = VulnerableCallChainJsonUtils
+            .fromJson("[" + firstVulString +"]", setType);
 
-        VulnerableChain vulChainObj1 = new VulnerableChain(
+        VulnerableCallChain vulChainObj1 = new VulnerableCallChain(
             Collections.singletonList(new Vulnerability("NIFI-4436")),
             List.of(FastenURI.create("fasten://mvn!g:a$1.0.0/merge.simpleImport" +
                     "/Importer.sourceMethod()%2Fjava.lang%2FVoidType"),
@@ -121,7 +122,7 @@ class VulRepositoryTest {
                     "/Imported.targetMethod()%2Fjava.lang%2FVoidType"),
                 FastenURI.create("fasten://mvn!Imported$1/merge.simpleImport/Imported" +
                     ".%3Cinit%3E()%2Fjava.lang%2FVoidType")));
-        VulnerableChain vulChainObject2 = new VulnerableChain(
+        VulnerableCallChain vulChainObject2 = new VulnerableCallChain(
             Collections.singletonList(new Vulnerability("NIFI-4436")),
             List.of(FastenURI.create("fasten://mvn!Imported$1/merge.simpleImport" +
                     "/Imported.targetMethod()%2Fjava.lang%2FVoidType"),
@@ -134,7 +135,7 @@ class VulRepositoryTest {
     @Test
     public void store() {
         packageFile.delete();
-        vulRepository.store("g:a", "1.0.0", vulFromObject);
+        vulnerableCallChainRepository.store("g:a", "1.0.0", vulFromObject);
         String actual;
         try {
             actual = Files.readString(Paths.get(tempDir.getAbsolutePath()+"/g:a:1.0.0.json"));
@@ -147,14 +148,14 @@ class VulRepositoryTest {
 
     @Test
     public void getChainsForPackage() {
-        final var actual = vulRepository.getChainsForPackage("g:a", "1.0.0");
+        final var actual = vulnerableCallChainRepository.getChainsForPackage("g:a", "1.0.0");
         Assertions.assertEquals(vulFromObject, actual);
     }
 
     @Test
     void getChainsForModule() {
         var module = FastenURI.create("fasten://mvn!g:a$1.0.0/merge.simpleImport/Importer");
-        var actual = vulRepository.getChainsForModule(module);
+        var actual = vulnerableCallChainRepository.getChainsForModule(module);
         Assertions.assertEquals(firstVulFromString, actual);
     }
 
@@ -162,7 +163,7 @@ class VulRepositoryTest {
     void getChainsForCallable() {
         var callable = FastenURI.create("fasten://mvn!g:a$1.0.0/merge.simpleImport/Importer" +
             ".sourceMethod()%2Fjava.lang%2FVoidType");
-        var actual = vulRepository.getChainsForCallable(callable);
+        var actual = vulnerableCallChainRepository.getChainsForCallable(callable);
         Assertions.assertEquals(firstVulFromString, actual);
     }
 

@@ -9,7 +9,7 @@ import eu.fasten.core.data.FastenURI;
 import java.io.IOException;
 import java.lang.reflect.Type;
 
-public class JsonUtils {
+public class VulnerableCallChainJsonUtils {
 
 
     public static Gson getGson() {
