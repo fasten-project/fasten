@@ -150,7 +150,37 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
 
     @Override
     public void run() {
-        if (plugin.consumeTopic().isPresent()) {
+        subscribeToTopics();
+        
+        if (this.skipOffsets == 1) {
+            skipPartitionOffsets();
+        }
+
+        try {
+            while (!isConnectionsClosed.get()) {
+                try {
+                	if (plugin.consumeTopic().isPresent()) {
+	                	handleConsuming();
+	                } else {
+	                    doCommitSync(KafkaRecordKind.NORMAL);
+	                    handleProducing(null, System.currentTimeMillis() / 1000L, KafkaRecordKind.NORMAL);
+	                }
+	            } catch (WakeupException e) {
+	                if (isConnectionsClosed.get()) {
+		                // WakeupException is used to interrupt long-running polls, e.g., we are use it
+	                	// to interrupt polls when handling shutdown signals. The exception can be ignored.
+	                }
+	            }
+            }
+        } finally {
+            connNorm.close();
+            connPrio.close();
+            logger.info("Plugin {} stopped gracefully", plugin.name());
+        }
+    }
+
+	private void subscribeToTopics() {
+		if (plugin.consumeTopic().isPresent()) {
             normTopics = plugin.consumeTopic().get().stream().filter(s -> !s.contains("priority")).collect(Collectors.toList());
             connNorm.subscribe(normTopics);
 
@@ -159,31 +189,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
                 connPrio.subscribe(prioTopics);
             }
         }
-        if (this.skipOffsets == 1) {
-            skipPartitionOffsets();
-        }
-
-        try {
-            while (!isConnectionsClosed.get()) {
-                if (plugin.consumeTopic().isPresent()) {
-                    handleConsuming();
-                } else {
-                    doCommitSync(KafkaRecordKind.NORMAL);
-                    handleProducing(null, System.currentTimeMillis() / 1000L, KafkaRecordKind.NORMAL);
-                }
-            }
-        } catch (WakeupException e) {
-            // Wakeup exception is caught after handling shutdown signals, i.e., deleting deployments in Kubernetes.
-            // This exception is used to wake up Kafka consumers/clients
-            if (!isConnectionsClosed.get()) {
-                throw e;
-            }
-        } finally {
-            connNorm.close();
-            connPrio.close();
-            logger.info("Plugin {} stopped", plugin.name());
-        }
-    }
+	}
 
     /**
      * Starts the plugin.
@@ -205,7 +211,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
     public void handleConsuming() {
         boolean hasConsumedPriorityRecord = false;
 
-        // Keep the normal consumer alive when there are tons of priority records to process
+        // Refresh connection timeout of normal consumer when priority records are processed
         sendHeartBeat(connNorm);
 
         if (!prioTopics.isEmpty()) {
@@ -411,19 +417,8 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
      * @return stdout message
      */
     private String getStdOutMsg(String input, String payload, long consumeTimestamp) {
-        JSONObject stdoutMsg = new JSONObject();
-        stdoutMsg.put("created_at", System.currentTimeMillis() / 1000L);
-        stdoutMsg.put("consumed_at", consumeTimestamp);
-        stdoutMsg.put("plugin_name", plugin.getClass().getSimpleName());
-        stdoutMsg.put("plugin_version", plugin.version());
-        try {
-            stdoutMsg.put("host", InetAddress.getLocalHost().getHostName());
-        } catch (UnknownHostException e) {
-            stdoutMsg.put("host", "unknown");
-        }
-        stdoutMsg.put("input", StringUtils.isNotEmpty(input) ? new JSONObject(input) : "");
+        JSONObject stdoutMsg = getStdMsg(input, consumeTimestamp);
         stdoutMsg.put("payload", StringUtils.isNotEmpty(payload) ? new JSONObject(payload) : "");
-
         return stdoutMsg.toString();
     }
 
@@ -434,27 +429,32 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
      * @return stderr message
      */
     private String getStdErrMsg(String input, Throwable pluginError, long consumeTimestamp) {
-        JSONObject stderrMsg = new JSONObject();
-        stderrMsg.put("created_at", System.currentTimeMillis() / 1000L);
-        stderrMsg.put("plugin_name", plugin.getClass().getSimpleName());
-        stderrMsg.put("consumed_at", consumeTimestamp);
-        stderrMsg.put("plugin_version", plugin.version());
-        try {
-            stderrMsg.put("host", InetAddress.getLocalHost().getHostName());
-        } catch (UnknownHostException e) {
-            stderrMsg.put("host", "unknown");
-        }
-        stderrMsg.put("input", !Strings.isNullOrEmpty(input) ? new JSONObject(input) : "");
-
+        
         JSONObject error = new JSONObject();
         error.put("error", pluginError.getClass().getSimpleName());
         error.put("msg", pluginError.getMessage());
         error.put("stacktrace", pluginError.getStackTrace());
 
+        JSONObject stderrMsg = getStdMsg(input, consumeTimestamp);
         stderrMsg.put("err", error);
 
         return stderrMsg.toString();
     }
+
+	private JSONObject getStdMsg(String input, long consumeTimestamp) {
+		JSONObject stdoutMsg = new JSONObject();
+        stdoutMsg.put("created_at", System.currentTimeMillis() / 1000L);
+        stdoutMsg.put("consumed_at", consumeTimestamp);
+        stdoutMsg.put("plugin_name", plugin.getClass().getSimpleName());
+        stdoutMsg.put("plugin_version", plugin.version());
+        try {
+            stdoutMsg.put("host", InetAddress.getLocalHost().getHostName());
+        } catch (UnknownHostException e) {
+            stdoutMsg.put("host", "unknown");
+        }
+        stdoutMsg.put("input", StringUtils.isNotEmpty(input) ? new JSONObject(input) : "");
+		return stdoutMsg;
+	}
 
     /**
      * This is a synchronous commits and will block until either the commit succeeds
