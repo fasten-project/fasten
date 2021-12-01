@@ -19,6 +19,7 @@
 package eu.fasten.core.maven.data;
 
 import eu.fasten.core.data.Constants;
+import org.apache.maven.artifact.versioning.ArtifactVersion;
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 import org.json.JSONObject;
 
@@ -32,7 +33,7 @@ import java.util.Objects;
  */
 public class Revision extends MavenProduct implements Serializable {
 
-    public DefaultArtifactVersion version;
+    public ArtifactVersion version;
     public Timestamp createdAt;
 
     public Revision() {}
@@ -50,6 +51,13 @@ public class Revision extends MavenProduct implements Serializable {
 
         this.version = new DefaultArtifactVersion(version);
         this.createdAt = createdAt;
+    }
+
+    public Revision(String groupId, String artifactId, String version) {
+        super(0, groupId, artifactId);
+
+        this.version = new DefaultArtifactVersion(version);
+        this.createdAt = new Timestamp(-1);
     }
 
     public MavenProduct product() {
@@ -74,6 +82,10 @@ public class Revision extends MavenProduct implements Serializable {
     public String toString() {
         return String.format("%s%s%s%s%s", groupId, Constants.mvnCoordinateSeparator,
                 artifactId, Constants.mvnCoordinateSeparator, version);
+    }
+
+    public String toCoordinate(){
+        return groupId + ":" + artifactId + ":" + version;
     }
 
     public JSONObject toJSON() {

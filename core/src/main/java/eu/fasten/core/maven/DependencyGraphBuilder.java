@@ -27,6 +27,7 @@ import eu.fasten.core.maven.data.Dependency;
 import eu.fasten.core.maven.data.Revision;
 import eu.fasten.core.maven.data.DependencyEdge;
 import eu.fasten.core.maven.utils.DependencyGraphUtilities;
+import org.apache.maven.artifact.versioning.ArtifactVersion;
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultDirectedGraph;
@@ -131,7 +132,7 @@ public class DependencyGraphBuilder {
         }).collect(Collectors.toList());
     }
 
-    private boolean checkVersionLowerBound(Dependency.VersionConstraint constraint, DefaultArtifactVersion version) {
+    private boolean checkVersionLowerBound(Dependency.VersionConstraint constraint, ArtifactVersion version) {
         if (constraint.lowerBound.isEmpty()) {
             return true;
         }
@@ -142,7 +143,7 @@ public class DependencyGraphBuilder {
         }
     }
 
-    private boolean checkVersionUpperBound(Dependency.VersionConstraint constraint, DefaultArtifactVersion version) {
+    private boolean checkVersionUpperBound(Dependency.VersionConstraint constraint, ArtifactVersion version) {
         if (constraint.upperBound.isEmpty()) {
             return true;
         }

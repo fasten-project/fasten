@@ -9,11 +9,11 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 
 public class VulnerableChain {
-    List<Vulnerability> vulnerability;
+    List<Vulnerability> vulnerabilities;
     List<FastenURI> chain;
 
-    public VulnerableChain(List<Vulnerability> vulnerability, List<FastenURI> chain) {
-        this.vulnerability = vulnerability;
+    public VulnerableChain(List<Vulnerability> vulnerabilities, List<FastenURI> chain) {
+        this.vulnerabilities = vulnerabilities;
         this.chain = chain;
     }
 
