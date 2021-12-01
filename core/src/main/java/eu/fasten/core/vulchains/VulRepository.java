@@ -14,6 +14,7 @@ import java.util.Set;
 import org.apache.commons.io.FileUtils;
 
 public class VulRepository {
+    int MAXSETSIZE = 5;
 
     private final String rootDir;
 
@@ -34,8 +35,18 @@ public class VulRepository {
             throw new RuntimeException(e);
         }
         Type setType = new TypeToken<HashSet<VulnerableChain>>(){}.getType();
-
-        return JsonUtils.fromJson(reader, setType);
+        Set<VulnerableChain> fullSet = JsonUtils.fromJson(reader, setType);
+        if (fullSet.size()>MAXSETSIZE) {
+            Set<VulnerableChain> truncatedSet = new HashSet<>();
+            for (VulnerableChain vulRepository : fullSet) {
+                truncatedSet.add(vulRepository);
+                if (truncatedSet.size() == MAXSETSIZE) {
+                    break;
+                }
+            }
+            return truncatedSet;
+        }
+        return fullSet;
 
     }
 
@@ -43,9 +54,13 @@ public class VulRepository {
         final var packgVul = getChainsForPackage(module.getProduct(), module.getVersion());
         final var result = new HashSet<VulnerableChain>();
         for (final var vulnerableChain : packgVul) {
+            if (result.size() == MAXSETSIZE) {
+                break;
+            }
             for (final var uriInChain : vulnerableChain.chain) {
                 if (uriInChain.toString().startsWith(module.toString())) {
                     result.add(vulnerableChain);
+                    break;
                 }
             }
         }
@@ -56,9 +71,13 @@ public class VulRepository {
         final var packgVul = getChainsForPackage(callable.getProduct(), callable.getVersion());
         final var result = new HashSet<VulnerableChain>();
         for (final var vulnerableChain : packgVul) {
+            if (result.size() == MAXSETSIZE) {
+                break;
+            }
             for (final var uriInChain : vulnerableChain.chain) {
                 if (uriInChain.equals(callable)) {
                     result.add(vulnerableChain);
+                    break;
                 }
             }
         }
