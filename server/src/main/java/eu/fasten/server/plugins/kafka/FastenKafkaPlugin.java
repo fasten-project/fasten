@@ -44,7 +44,6 @@ import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.ExecutionException;
@@ -70,8 +69,6 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
     private final String outputTopic;
 
     private enum KafkaRecordKind {NORMAL, PRIORITY}
-
-    private Date lastTimeNormPollCalled;
 
     private final int skipOffsets;
 
@@ -199,18 +196,6 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
     }
 
     /**
-     * Whether the poll() method of the normal Kafka connection should be called to avoid CommitFailedException considering
-     * the `max.poll.interval.ms` time, i.e., consumeTimeout value,
-     */
-    private boolean shouldNormPollBeCalled() {
-        if (this.lastTimeNormPollCalled != null) {
-            return (new Date().getTime() - this.lastTimeNormPollCalled.getTime()) > (getConsumeTimeout() - 10000);
-        }
-        // To call the poll() method for the first time and initialize lastTimeNormPollCalled
-        return true;
-    }
-
-    /**
      * Consumes a message from a Kafka topics and passes it to a plugin.
      */
     public void handleConsuming() {
@@ -236,7 +221,6 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
                 connNorm.resume(connNorm.assignment());
             }
             ConsumerRecords<String, String> records = connNorm.poll(this.pollTimeout);
-            //this.lastTimeNormPollCalled = new Date();
             Long consumeTimestamp = System.currentTimeMillis() / 1000L;
 
             // Keep a list of all records and offsets we processed (by default this is only 1).
