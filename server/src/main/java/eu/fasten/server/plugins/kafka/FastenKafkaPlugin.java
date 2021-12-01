@@ -163,23 +163,25 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
             skipPartitionOffsets();
         }
 
-        while (!isConnectionsClosed.get()) {
-            try {
+        try {
+            while (!isConnectionsClosed.get()) {
                 if (plugin.consumeTopic().isPresent()) {
                     handleConsuming();
                 } else {
                     doCommitSync(KafkaRecordKind.NORMAL);
                     handleProducing(null, System.currentTimeMillis() / 1000L, KafkaRecordKind.NORMAL);
                 }
-            } catch (WakeupException e) {
-                // Wakeup exception is caught after handling shutdown signals, i.e., deleting deployments in Kubernetes.
-                // This exception is used to wake up Kafka consumers/clients
-                if (!isConnectionsClosed.get()) { throw e; }
-            } finally {
-                connNorm.close();
-                connPrio.close();
-                logger.info("Plugin {} stopped", plugin.name());
             }
+        } catch (WakeupException e) {
+            // Wakeup exception is caught after handling shutdown signals, i.e., deleting deployments in Kubernetes.
+            // This exception is used to wake up Kafka consumers/clients
+            if (!isConnectionsClosed.get()) {
+                throw e;
+            }
+        } finally {
+            connNorm.close();
+            connPrio.close();
+            logger.info("Plugin {} stopped", plugin.name());
         }
     }
 
