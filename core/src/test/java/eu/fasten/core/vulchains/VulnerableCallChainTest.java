@@ -39,7 +39,7 @@ public class VulnerableCallChainTest {
     @Test
     void testToString() {
         Assertions.assertTrue(sut.toString().contains("chain=[]\n" +
-            "  vulnerability=[]\n" +
+            "  vulnerabilities=[]\n" +
             "]"));
         Assertions.assertTrue(sut1.toString().contains("chain={fasten://mvn!g:a$1.0.0/x/C.m()" +
             "%2Fjava.lang%2FVoidType}\n" +
