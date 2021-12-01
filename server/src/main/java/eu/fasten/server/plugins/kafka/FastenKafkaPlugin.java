@@ -59,7 +59,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
 
     private final KafkaPlugin plugin;
 
-    private final AtomicBoolean closed = new AtomicBoolean(false);
+    private final AtomicBoolean isConnectionsClosed = new AtomicBoolean(false);
     private KafkaConsumer<String, String> connNorm;
     private KafkaConsumer<String, String> connPrio;
     private KafkaProducer<String, String> producer;
@@ -150,34 +150,36 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
 
     @Override
     public void run() {
-        try {
-            if (plugin.consumeTopic().isPresent()) {
-                normTopics = plugin.consumeTopic().get().stream().filter(s -> !s.contains("priority")).collect(Collectors.toList());
-                connNorm.subscribe(normTopics);
+        if (plugin.consumeTopic().isPresent()) {
+            normTopics = plugin.consumeTopic().get().stream().filter(s -> !s.contains("priority")).collect(Collectors.toList());
+            connNorm.subscribe(normTopics);
 
-                prioTopics = plugin.consumeTopic().get().stream().filter(s -> s.contains("priority")).collect(Collectors.toList());
-                if (!prioTopics.isEmpty()) { connPrio.subscribe(prioTopics); }
+            prioTopics = plugin.consumeTopic().get().stream().filter(s -> s.contains("priority")).collect(Collectors.toList());
+            if (!prioTopics.isEmpty()) {
+                connPrio.subscribe(prioTopics);
             }
-            if (this.skipOffsets == 1) {
-                skipPartitionOffsets();
-            }
+        }
+        if (this.skipOffsets == 1) {
+            skipPartitionOffsets();
+        }
 
-            while (!closed.get()) {
+        while (!isConnectionsClosed.get()) {
+            try {
                 if (plugin.consumeTopic().isPresent()) {
                     handleConsuming();
                 } else {
                     doCommitSync(KafkaRecordKind.NORMAL);
                     handleProducing(null, System.currentTimeMillis() / 1000L, KafkaRecordKind.NORMAL);
                 }
+            } catch (WakeupException e) {
+                // Wakeup exception is caught after handling shutdown signals, i.e., deleting deployments in Kubernetes.
+                // This exception is used to wake up Kafka consumers/clients
+                if (!isConnectionsClosed.get()) { throw e; }
+            } finally {
+                connNorm.close();
+                connPrio.close();
+                logger.info("Plugin {} stopped", plugin.name());
             }
-
-        } catch (WakeupException e) {
-            // Wakeup exception is rethrown after handling shutdown signals, i.e., deleting deployments in Kubernetes.
-            if (!closed.get()) throw e;
-        } finally {
-            connNorm.close();
-            connPrio.close();
-            logger.info("Plugin {} stopped", plugin.name());
         }
     }
 
@@ -192,7 +194,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
      * Sends a wake up signal to Kafka consumer and stops it.
      */
     public void stop() {
-        closed.set(true);
+        isConnectionsClosed.set(true);
     }
 
     /**
@@ -200,6 +202,9 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
      */
     public void handleConsuming() {
         boolean hasConsumedPriorityRecord = false;
+
+        // Keep the normal consumer alive when there are tons of priority records to process
+        sendHeartBeat(connNorm);
 
         if (!prioTopics.isEmpty()) {
             ConsumerRecords<String, String> prioRecords = connPrio.poll(this.pollTimeout);
@@ -213,13 +218,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
             doCommitSync(KafkaRecordKind.PRIORITY);
         }
 
-        if (!normTopics.isEmpty()) {
-            // Pause the normal consumer if there are priority records to process.
-            if (hasConsumedPriorityRecord) {
-                connNorm.pause(connNorm.assignment());
-            } else {
-                connNorm.resume(connNorm.assignment());
-            }
+        if (!normTopics.isEmpty() && !hasConsumedPriorityRecord) {
             ConsumerRecords<String, String> records = connNorm.poll(this.pollTimeout);
             Long consumeTimestamp = System.currentTimeMillis() / 1000L;
 
@@ -516,6 +515,17 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
     }
 
     /**
+     * This method can be used to simulate Kafka's heartbeat to avoid the eviction of a consumer.
+     */
+    private static void sendHeartBeat(KafkaConsumer<String, String> kafkaConn) {
+        // See https://stackoverflow.com/a/43722731
+        var currentlyAssignedPartitions = kafkaConn.assignment();
+        kafkaConn.pause(currentlyAssignedPartitions);
+        kafkaConn.poll(Duration.ZERO);
+        kafkaConn.resume(currentlyAssignedPartitions);
+    }
+
+    /**
      * This is a dummy poll method for calling lazy methods such as seek.
      *
      * @param consumer Kafka consumer
@@ -595,8 +605,10 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
     private void registerShutDownHook() {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             this.stop();
+            // It aborts (long-running) polls for handling process signals in this case.
             this.connNorm.wakeup();
-            logger.info("Cleaned up resources before shutting down the JVM");
+            this.connPrio.wakeup();
+            logger.info("Waking up the Kafka consumers before shutting down the JVM");
         }));
     }
 }
