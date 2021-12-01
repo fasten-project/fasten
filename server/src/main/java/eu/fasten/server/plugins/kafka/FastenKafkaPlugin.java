@@ -228,9 +228,15 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
             doCommitSync(KafkaRecordKind.PRIORITY);
         }
 
-        if (!normTopics.isEmpty() && (!hasConsumedPriorityRecord || shouldNormPollBeCalled())) {
+        if (!normTopics.isEmpty()) {
+            // Pause the normal consumer if there are priority records to process.
+            if (hasConsumedPriorityRecord) {
+                connNorm.pause(connNorm.assignment());
+            } else {
+                connNorm.resume(connNorm.assignment());
+            }
             ConsumerRecords<String, String> records = connNorm.poll(this.pollTimeout);
-            this.lastTimeNormPollCalled = new Date();
+            //this.lastTimeNormPollCalled = new Date();
             Long consumeTimestamp = System.currentTimeMillis() / 1000L;
 
             // Keep a list of all records and offsets we processed (by default this is only 1).
@@ -488,7 +494,6 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
             logger.error("Commit failed", e);
         }
     }
-
 
     /**
      * This method adds one to the offset of all the partitions of a topic.
