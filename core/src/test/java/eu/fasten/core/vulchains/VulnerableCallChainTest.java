@@ -43,7 +43,7 @@ public class VulnerableCallChainTest {
             "]"));
         Assertions.assertTrue(sut1.toString().contains("chain={fasten://mvn!g:a$1.0.0/x/C.m()" +
             "%2Fjava.lang%2FVoidType}\n" +
-            "  vulnerability={{\"id\":\"1234\",\"purls\":[],\"first_patched_purls\":[],\"references\":[],\"patch_links\":[],\"exploits\":[],\"patches\":[]}}\n" +
+            "  vulnerabilities={{\"id\":\"1234\",\"purls\":[],\"first_patched_purls\":[],\"references\":[],\"patch_links\":[],\"exploits\":[],\"patches\":[]}}\n" +
             "]"));
 
     }
