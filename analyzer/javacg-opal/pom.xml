@@ -151,10 +151,7 @@
 										<Plugin-Class>eu.fasten.analyzer.javacgopal.OPALPlugin</Plugin-Class>
 										<Plugin-Id>opal-plugin</Plugin-Id>
 										<Plugin-Version>0.0.1</Plugin-Version>
-										<Plugin-Description>
-											Given a Maven coordinate or a file,
-											generates call graphs and puts them into a Kafka topic
-										</Plugin-Description>
+										<Plugin-Description>Generates CGs for Maven packages/files</Plugin-Description>
 										<Plugin-License>Apache License 2.0</Plugin-License>
 									</manifestEntries>
 								</transformer>
