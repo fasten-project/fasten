@@ -40,7 +40,7 @@ public class StitchingApiServiceImplTest {
         service = new StitchingApiServiceImpl();
         kbDao = Mockito.mock(MetadataDao.class);
         KnowledgeBaseConnector.kbDao = kbDao;
-        KnowledgeBaseConnector.dbContext = Mockito.mock(DSLContext.class);
+        KnowledgeBaseConnector.dbJavaContext = Mockito.mock(DSLContext.class);
     }
 
     @Test

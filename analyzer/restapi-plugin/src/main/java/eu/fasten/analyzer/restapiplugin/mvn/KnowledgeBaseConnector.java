@@ -49,14 +49,29 @@ public class KnowledgeBaseConnector {
 
     public static String rcgBaseUrl;
 
-    public static String dependencyGraphPath;
+    public static String dependencyMavenGraphPath;
+
+    public static String dependencyPyPiGraphPath;
+
+    public static String dependencyDebianGraphPath;
+
+    /**
+     * Java Database connection context
+     */
+    public static DSLContext dbJavaContext;
+
+    /**
+     * Python Database connection context
+     */
+    public static DSLContext dbPythonContext;
 
     public static String vulnerableCallChainsPath;
 
     /**
-     * Database connection context
+     * C Database connection context
      */
-    public static DSLContext dbContext;
+    public static DSLContext dbCContext;
+
 
     public static KafkaProducer<String, String> kafkaProducer;
 
@@ -69,16 +84,42 @@ public class KnowledgeBaseConnector {
     private String kbUser;
 
     /**
-     * KnowledgeBase address, retrieved from the server configuration file.
+     * KnowledgeBase Java address, retrieved from the server configuration file.
      */
-    @Value("${kb.url}")
-    private String kbUrl;
+    @Value("${kb.java.url}")
+    private String kbJavaUrl;
 
     /**
-     * Path to the serialized dependency graph
+     * KnowledgeBase Python address, retrieved from the server configuration file.
      */
-    @Value("${kb.depgraph.path}")
-    private String depGraphPath;
+    @Value("${kb.python.url}")
+    private String kbPythonUrl;
+    
+
+    /**
+     * KnowledgeBase C address, retrieved from the server configuration file.
+     */
+    @Value("${kb.c.url}")
+    private String kbCUrl;
+    
+    /**
+     * Path to the Maven serialized dependency graph
+     */
+    @Value("${kb.maven.depgraph.path}")
+    private String depMavenGraphPath;
+
+    /**
+     * Path to the PyPi serialized dependency graph
+     */
+    @Value("${kb.pypi.depgraph.path}")
+    private String depPyPiGraphPath;
+
+    /**
+     * Path to the Debian serialized dependency graph
+     */
+    @Value("${kb.debian.depgraph.path}")
+    private String depDebianGraphPath;
+
 
     @Value("${kb.graphdb.path}")
     private String graphdbPath;
@@ -100,10 +141,14 @@ public class KnowledgeBaseConnector {
      */
     @PostConstruct
     public void connectToKnowledgeBase() {
-        logger.info("Establishing connection to the KnowledgeBase at " + kbUrl + ", user " + kbUser + "...");
         try {
-            dbContext = PostgresConnector.getDSLContext(kbUrl, kbUser, true);
-            kbDao = new MetadataDao(dbContext);
+            logger.info("Establishing connection to the Java KnowledgeBase at " + kbJavaUrl + ", user " + kbUser + "...");
+            dbJavaContext = PostgresConnector.getDSLContext(kbJavaUrl, kbUser, true);
+            logger.info("Establishing connection to the Python KnowledgeBase at " + kbPythonUrl + ", user " + kbUser + "...");
+            dbPythonContext  = PostgresConnector.getDSLContext(kbPythonUrl, kbUser, true);
+            logger.info("Establishing connection to the C KnowledgeBase at " + kbCUrl + ", user " + kbUser + "...");
+            dbCContext  = PostgresConnector.getDSLContext(kbCUrl, kbUser, true);
+            kbDao = new MetadataDao(dbJavaContext);
         } catch (SQLException e) {
             logger.error("Couldn't connect to the KnowledgeBase", e);
             System.exit(1);
@@ -126,11 +171,27 @@ public class KnowledgeBaseConnector {
 
 
     /**
-     * Retrieves the dependency graph if possible, otherwise constructs the graph from database.
+     * Retrieves the Maven dependency graph if possible, otherwise constructs the graph from database.
      */
     @PostConstruct
     public void setDependencyGraphPath() {
-        KnowledgeBaseConnector.dependencyGraphPath = depGraphPath;
+        KnowledgeBaseConnector.dependencyMavenGraphPath = depMavenGraphPath;
+    }
+
+    /**
+     * Retrieves the PyPi dependency graph if possible, otherwise constructs the graph from database.
+     */
+    @PostConstruct
+    public void setPyPiDependencyGraphPath() {
+        KnowledgeBaseConnector.dependencyPyPiGraphPath = depPyPiGraphPath;
+    }
+
+    /**
+     * Retrieves the Debian dependency graph if possible, otherwise constructs the graph from database.
+     */
+    @PostConstruct
+    public void setDebianDependencyGraphPath() {
+        KnowledgeBaseConnector.dependencyDebianGraphPath = depDebianGraphPath;
     }
 
     /**
