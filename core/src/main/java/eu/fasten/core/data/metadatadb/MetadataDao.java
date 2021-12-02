@@ -1827,15 +1827,18 @@ public class MetadataDao {
         return  result.formatJSON(new JSONFormat().format(format).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
     }
 
-    public String getPackageVersionString(String purl) {
+    public List<String> getPackageVersionString(String purl) {
         VulnerabilitiesPurls vp = VulnerabilitiesPurls.VULNERABILITIES_PURLS;
-        var result = context
+        var result = new ArrayList<String>();
+        var record = context
                 .select(vp.PACKAGE_NAME, vp.PACKAGE_VERSION)
                 .from(vp)
                 .where(vp.PURL.eq(purl))
                 .limit(1)
                 .fetchOne();
-        return String.format("%s@%s",result.component1(), result.component2());
+        result.add(record.component1()); // pkg_name
+        result.add(record.component2()); // pkg_version
+        return result;
     }
 
     public String getPurls(String externalId, int offset, int limit) {
