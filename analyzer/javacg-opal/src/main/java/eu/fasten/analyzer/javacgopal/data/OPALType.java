@@ -43,7 +43,7 @@ public class OPALType {
 
     private final String sourceFileName;
     private final Map<Method, Integer> methods;
-    private final LinkedList<ObjectType> superClasses;
+    private final List<ObjectType> superClasses;
     private final List<ObjectType> superInterfaces;
     private final String access;
     private final boolean isFinal;
@@ -57,7 +57,7 @@ public class OPALType {
      * @param superInterfaces a list of interfaces that this type implements.
      * @param sourceFileName  name of the source file that this type belongs to.
      */
-    public OPALType(final Map<Method, Integer> methods, final LinkedList<ObjectType> superClasses,
+    public OPALType(final Map<Method, Integer> methods, final List<ObjectType> superClasses,
                     final List<ObjectType> superInterfaces, final String sourceFileName,
                     final String access, final boolean isFinal,
                     final Map<String, List<Pair<String, String>>> annotations) {
@@ -74,7 +74,7 @@ public class OPALType {
         return methods;
     }
 
-    public LinkedList<ObjectType> getSuperClasses() {
+    public List<ObjectType> getSuperClasses() {
         return superClasses;
     }
 
@@ -104,7 +104,7 @@ public class OPALType {
                                                final ObjectType klass) {
         final var superTypes = extractSuperClasses(projectHierarchy, klass);
 
-        final LinkedList<FastenURI> superClassesURIs;
+        final List<FastenURI> superClassesURIs;
         if (superTypes != null) {
             superClassesURIs = toURIClasses(superTypes);
         } else {
@@ -127,7 +127,7 @@ public class OPALType {
      * @return map of FastenURI and corresponding Types
      */
     public static Pair<String, JavaType> getType(final OPALType type, final ObjectType klass) {
-        final LinkedList<FastenURI> superClassesURIs;
+        final List<FastenURI> superClassesURIs;
         if (type.getSuperClasses() != null) {
             superClassesURIs = toURIClasses(type.getSuperClasses());
         } else {
@@ -209,8 +209,8 @@ public class OPALType {
      * @param types chain of types
      * @return list of URIs
      */
-    public static LinkedList<FastenURI> toURIClasses(final LinkedList<ObjectType> types) {
-        final LinkedList<FastenURI> result = new LinkedList<>();
+    public static List<FastenURI> toURIClasses(final List<ObjectType> types) {
+        final List<FastenURI> result = new LinkedList<>();
         types.forEach(objectType -> result.add(OPALMethod.getTypeURI(objectType)));
         return result;
     }

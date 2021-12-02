@@ -29,6 +29,7 @@ import eu.fasten.core.data.opal.MavenCoordinate;
 public class ExtendedRevisionCallGraphConstructor {
 
 	private OPALCallGraphConstructor ocgc = new OPALCallGraphConstructor();
+	private PartialCallGraphConstructor pcg = new PartialCallGraphConstructor();
 
 	public ExtendedRevisionJavaCallGraph create(MavenCoordinate coordinate,
 			CGAlgorithm algorithm, long timestamp, String artifactRepo, CallPreservationStrategy cps) {
@@ -38,7 +39,8 @@ public class ExtendedRevisionCallGraphConstructor {
 
 			file = new MavenArtifactDownloader(coordinate).downloadArtifact(artifactRepo);
 			var opalCG = ocgc.construct(file, algorithm);
-			var partialCallGraph = new PartialCallGraphConstructor().construct(opalCG, cps);
+			var partialCallGraph = pcg.construct(opalCG, cps);
+			// TODO We are supporting multiple Maven Repos... shouldn't this be reflected in the forge?
 			return new ExtendedRevisionJavaCallGraph(Constants.mvnForge, coordinate, timestamp, partialCallGraph,
 					Constants.opalGenerator);
 		} finally {

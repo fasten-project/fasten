@@ -98,7 +98,7 @@ class OPALTypeTest {
 
 		assertEquals("source.java", type.getSourceFileName());
 		assertEquals(123, type.getMethods().get(method));
-		assertEquals(superClass, type.getSuperClasses().peek());
+		assertEquals(superClass, type.getSuperClasses().get(0));
 		assertEquals(superInterface, type.getSuperInterfaces().get(0));
 		assertEquals(annotations, type.getAnnotations());
 	}

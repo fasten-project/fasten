@@ -53,7 +53,7 @@ public class JavaType {
     /**
      * Classes that this type inherits from in the order of instantiation.
      */
-    private final LinkedList<FastenURI> superClasses;
+    private final List<FastenURI> superClasses;
     private final Map<String, JavaNode> definedMethods;
 
     public Map<String, JavaNode> getDefinedMethods() {
@@ -90,7 +90,7 @@ public class JavaType {
      */
     public JavaType(final String uri, final String sourceFile, final Int2ObjectMap<JavaNode> methods,
                     final Map<String, JavaNode> defineds,
-                    final LinkedList<FastenURI> superClasses,
+                    final List<FastenURI> superClasses,
                     final List<FastenURI> superInterfaces, final String access,
                     final boolean isFinal, Map<String, List<Pair<String, String>>> annotations) {
         this.uri = uri;
@@ -184,7 +184,7 @@ public class JavaType {
         return this.methods;
     }
 
-    public LinkedList<FastenURI> getSuperClasses() {
+    public List<FastenURI> getSuperClasses() {
         return superClasses;
     }
 

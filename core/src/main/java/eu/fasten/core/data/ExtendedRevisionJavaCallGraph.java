@@ -78,6 +78,7 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Enu
      *
      * @param json JSONObject of a revision call graph.
      */
+    // TODO this constructor should be eliminated in the revision.
     public ExtendedRevisionJavaCallGraph(final JSONObject json) throws JSONException {
         super(json, ExtendedRevisionJavaCallGraph.class);
         this.graph = new JavaGraph(json.getJSONArray("call-sites"));

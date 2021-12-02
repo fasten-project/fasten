@@ -21,7 +21,6 @@ import static eu.fasten.core.utils.TestUtils.getTestResource;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.File;
 import java.util.HashMap;
@@ -76,11 +75,7 @@ class PartialCallGraphConstructorTest {
 		singleCallCG = sut.construct(cgc.construct(f, CHA), ONLY_STATIC_CALLSITES);
 	}
 	
-	@Test
-	public void convertTestToIntegrationTest() {
-		// TODO convert the whole test suite to an integration test
-		fail();
-	}
+	// TODO convert this whole test suite to an integration test
 
 	@Test
 	void testAnnotations() throws OPALException {
@@ -210,7 +205,7 @@ class PartialCallGraphConstructorTest {
 		var pcg = new PartialCallGraphConstructor().construct(constructor, CallPreservationStrategy.INCLUDING_ALL_SUBTYPES);
 		assertNotNull(pcg);
 
-		Mockito.verify(callGraph, Mockito.times(2)).calleesOf(declaredMethod);
+		Mockito.verify(callGraph, Mockito.times(1)).reachableMethods();
 	}
 
 	@Test
@@ -248,8 +243,7 @@ class PartialCallGraphConstructorTest {
 		var pcg = new PartialCallGraphConstructor().construct(constructor, CallPreservationStrategy.INCLUDING_ALL_SUBTYPES);
 		assertNotNull(pcg);
 
-		Mockito.verify(declaredMethod, Mockito.times(1)).definedMethod();
-		Mockito.verify(callGraph, Mockito.times(1)).calleesOf(declaredMethod);
+		Mockito.verify(callGraph, Mockito.times(1)).reachableMethods();
 	}
 
 	@Test
@@ -287,7 +281,7 @@ class PartialCallGraphConstructorTest {
 		var pcg = new PartialCallGraphConstructor().construct(constructor, CallPreservationStrategy.INCLUDING_ALL_SUBTYPES);
 		assertNotNull(pcg);
 
-		Mockito.verify(callGraph, Mockito.times(1)).calleesOf(declaredMethod);
+		Mockito.verify(callGraph, Mockito.times(1)).reachableMethods();
 	}
 
 	@Test
