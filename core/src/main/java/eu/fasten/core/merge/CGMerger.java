@@ -92,7 +92,7 @@ public class CGMerger {
     public BiMap<Long, String> getAllUrisFromDB(DirectedGraph dg){
         Set<Long> gIDs = new HashSet<>();
         for (Long node : dg.nodes()) {
-            if (node <0) {
+            if (node > 0) {
                 gIDs.add(node);
             }
         }
