@@ -168,6 +168,7 @@ public class OPALClassHierarchy {
             return Arrays.asList(this.addMethodToExternals((DeclaredMethod) source),
                     this.addMethodToExternals((DeclaredMethod) target));
         } else {
+        	// TODO investigate this closer, the instanceof checks seem to have holes.
             return new ArrayList<>();
         }
     }

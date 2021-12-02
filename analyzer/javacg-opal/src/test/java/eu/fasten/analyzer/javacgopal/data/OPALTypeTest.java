@@ -508,8 +508,8 @@ class OPALTypeTest {
 		var classHierarchy = Mockito.mock(ClassHierarchy.class);
 		Mockito.when(classHierarchy.allSuperinterfacetypes(currentType, false)).thenReturn(uidSet);
 
-		assertEquals(1, OPALType.extractSuperInterfaces(classHierarchy, currentType).size());
-		assertEquals(superInterface, OPALType.extractSuperInterfaces(classHierarchy, currentType).get(0));
+		assertEquals(1, OPALType.extractImplementedInterfaces(classHierarchy, currentType).size());
+		assertEquals(superInterface, OPALType.extractImplementedInterfaces(classHierarchy, currentType).get(0));
 	}
 
 	@Test

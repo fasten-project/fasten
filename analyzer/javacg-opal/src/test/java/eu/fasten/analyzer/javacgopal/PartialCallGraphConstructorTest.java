@@ -21,6 +21,7 @@ import static eu.fasten.core.utils.TestUtils.getTestResource;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.File;
 import java.util.HashMap;
@@ -29,6 +30,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
+import org.opalj.br.Annotation;
 import org.opalj.br.BaseType;
 import org.opalj.br.ClassFile;
 import org.opalj.br.ClassHierarchy;
@@ -72,6 +74,12 @@ class PartialCallGraphConstructorTest {
 
 		File f = getTestResource("SingleSourceToTarget.class");
 		singleCallCG = sut.construct(cgc.construct(f, CHA), ONLY_STATIC_CALLSITES);
+	}
+	
+	@Test
+	public void convertTestToIntegrationTest() {
+		// TODO convert the whole test suite to an integration test
+		fail();
 	}
 
 	@Test
@@ -184,6 +192,7 @@ class PartialCallGraphConstructorTest {
 		var classHierarchy = createClassHierarchy(type);
 
 		Mockito.when(classFile.methods()).thenReturn(methods);
+		Mockito.when(classFile.annotations()).thenReturn(new RefArray<Annotation>(new Annotation[0]));
 		Mockito.when(classFile.thisType()).thenReturn(type);
 		Mockito.when(classFile.sourceFile()).thenReturn(Option.apply("filename.java"));
 
@@ -221,6 +230,7 @@ class PartialCallGraphConstructorTest {
 		var classHierarchy = createClassHierarchy(type);
 
 		Mockito.when(classFile.methods()).thenReturn(methods);
+		Mockito.when(classFile.annotations()).thenReturn(new RefArray<Annotation>(new Annotation[0]));
 		Mockito.when(classFile.thisType()).thenReturn(type);
 		Mockito.when(classFile.sourceFile()).thenReturn(Option.apply("filename.java"));
 
@@ -259,6 +269,7 @@ class PartialCallGraphConstructorTest {
 		var classHierarchy = createClassHierarchy(type);
 
 		Mockito.when(classFile.methods()).thenReturn(methods);
+		Mockito.when(classFile.annotations()).thenReturn(new RefArray<Annotation>(new Annotation[0]));
 		Mockito.when(classFile.thisType()).thenReturn(type);
 		Mockito.when(classFile.sourceFile()).thenReturn(Option.apply("filename.java"));
 
@@ -295,6 +306,7 @@ class PartialCallGraphConstructorTest {
 		var classHierarchy = createClassHierarchy(type);
 
 		Mockito.when(classFile.methods()).thenReturn(methods);
+		Mockito.when(classFile.annotations()).thenReturn(new RefArray<Annotation>(new Annotation[0]));
 		Mockito.when(classFile.thisType()).thenReturn(type);
 		Mockito.when(classFile.sourceFile()).thenReturn(Option.apply("filename.java"));
 

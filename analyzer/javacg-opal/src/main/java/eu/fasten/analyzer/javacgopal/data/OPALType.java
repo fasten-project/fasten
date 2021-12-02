@@ -114,7 +114,7 @@ public class OPALType {
         String uri = OPALMethod.getTypeURI(klass).toString();
 		return Map.of(uri,
                 new JavaType(uri, "", toURIDeclaredMethods(methods), new HashMap<>(),superClassesURIs,
-                        toURIInterfaces(extractSuperInterfaces(projectHierarchy, klass)),
+                        toURIInterfaces(extractImplementedInterfaces(projectHierarchy, klass)),
                         "", false, new HashMap<>()));
     }
 
@@ -337,7 +337,7 @@ public class OPALType {
      * @param currentClass   type that to be checked for super interfaces
      * @return A list of {@link ObjectType} as super interfaces of the passed type.
      */
-    public static List<ObjectType> extractSuperInterfaces(final ClassHierarchy classHierarchy,
+    public static List<ObjectType> extractImplementedInterfaces(final ClassHierarchy classHierarchy,
                                                           final ObjectType currentClass) {
         return Lists.newArrayList(JavaConverters.asJavaIterable(classHierarchy
                 .allSuperinterfacetypes(currentClass, false)));
