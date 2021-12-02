@@ -18,14 +18,33 @@ package eu.fasten.core.data.callgraph;
 import java.util.EnumMap;
 import java.util.Map;
 
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
+import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringStyle;
+
 import eu.fasten.core.data.JavaGraph;
 import eu.fasten.core.data.JavaScope;
 import eu.fasten.core.data.JavaType;
 
 public class PartialCallGraph {
 
-	public JavaGraph graph;
-	public int nodeCount;
-	public EnumMap<JavaScope, Map<String, JavaType>> classHierarchy;
+	public JavaGraph graph = new JavaGraph();
+	public int nodeCount = -1;
+	public EnumMap<JavaScope, Map<String, JavaType>> classHierarchy = new EnumMap<>(JavaScope.class);
 
+	@Override
+	public boolean equals(Object obj) {
+		return EqualsBuilder.reflectionEquals(this, obj);
+	}
+
+	@Override
+	public int hashCode() {
+		return HashCodeBuilder.reflectionHashCode(this);
+	}
+
+	@Override
+	public String toString() {
+		return ToStringBuilder.reflectionToString(this, ToStringStyle.MULTI_LINE_STYLE);
+	}
 }

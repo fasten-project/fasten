@@ -15,6 +15,86 @@
  */
 package eu.fasten.core.data.callgraph;
 
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+
+import java.util.HashMap;
+import java.util.Map;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import eu.fasten.core.data.JavaGraph;
+import eu.fasten.core.data.JavaScope;
+import it.unimi.dsi.fastutil.ints.IntIntPair;
+
 public class PartialCallGraphTest {
-	// TODO add tests
+	
+	private PartialCallGraph sut;
+
+	@BeforeEach
+	public void setup() {
+		sut = new PartialCallGraph();
+	}
+	
+	@Test
+	public void defaults() {
+		assertNotNull(sut.graph);
+		assertNotNull(sut.classHierarchy);
+		assertEquals(-1, sut.nodeCount);
+	}
+	
+	@Test
+	public void equalityDefault() {
+		var a = new PartialCallGraph();
+		var b = new PartialCallGraph();
+		
+		assertEquals(a, b);
+		assertEquals(a.hashCode(), b.hashCode());
+	}
+	
+	@Test
+	public void equalityDiffGraph() {
+		var cs = new HashMap<IntIntPair, Map<Object, Object>>();
+		cs.put(IntIntPair.of(0, 1), null);
+		
+		var a = new PartialCallGraph();
+		a.graph.append(new JavaGraph(cs));
+		var b = new PartialCallGraph();
+		
+		assertNotEquals(a, b);
+		assertNotEquals(a.hashCode(), b.hashCode());
+	}
+	
+	@Test
+	public void equalityDiffClassHierarchy() {
+		var a = new PartialCallGraph();
+		a.classHierarchy.put(JavaScope.internalTypes, null);
+		var b = new PartialCallGraph();
+		
+		assertNotEquals(a, b);
+		assertNotEquals(a.hashCode(), b.hashCode());
+	}
+	
+	@Test
+	public void equalityDiffNodeCount() {
+		var a = new PartialCallGraph();
+		a.nodeCount = 123;
+		var b = new PartialCallGraph();
+		
+		assertNotEquals(a, b);
+		assertNotEquals(a.hashCode(), b.hashCode());
+	}
+	
+	@Test
+	public void toStringImplemented() {
+		var actual = new PartialCallGraph().toString();
+		
+		// contains field info
+		assertTrue(actual.contains("classHierarchy"));
+		// prints multi-line
+		assertTrue(actual.contains("\n"));
+	}
 }
