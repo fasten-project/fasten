@@ -59,6 +59,7 @@ import org.jgrapht.graph.DefaultDirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
 import org.jooq.Condition;
 import org.jooq.DSLContext;
+import org.jooq.Record2;
 import org.jooq.Record3;
 import org.json.JSONObject;
 import org.rocksdb.RocksDBException;
@@ -82,7 +83,26 @@ public class CGMerger {
     private BiMap<Long, String> allUris;
 
     public BiMap<Long, String> getAllUris() {
-        return this.allUris;
+        if (this.allUris != null) {
+            return this.allUris;
+        }
+        return HashBiMap.create();
+    }
+
+    public BiMap<Long, String> getAllUrisFromDB(DirectedGraph dg){
+        Set<Long> gIDs = new HashSet<>();
+        for (Long node : dg.nodes()) {
+            if (node <0) {
+                gIDs.add(node);
+            }
+        }
+        BiMap<Long, String> uris = HashBiMap.create();
+        dbContext
+            .select(Callables.CALLABLES.ID, Callables.CALLABLES.FASTEN_URI)
+            .from(Callables.CALLABLES)
+            .where(Callables.CALLABLES.ID.in(gIDs))
+            .fetch().forEach(record -> uris.put(record.component1(), record.component2()));
+        return uris;
     }
 
     /**
