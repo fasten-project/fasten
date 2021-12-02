@@ -1,26 +1,22 @@
 /*
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
+ * Copyright 2021 Delft University of Technology
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ * 
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package eu.fasten.analyzer.javacgopal;
 
 import static eu.fasten.core.data.callgraph.CGAlgorithm.CHA;
 import static eu.fasten.core.data.callgraph.CallPreservationStrategy.ONLY_STATIC_CALLSITES;
-import static eu.fasten.core.maven.utils.MavenUtilities.MAVEN_CENTRAL_REPO;
 import static eu.fasten.core.utils.TestUtils.getTestResource;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -38,7 +34,6 @@ import org.opalj.br.ClassFile;
 import org.opalj.br.ClassHierarchy;
 import org.opalj.br.Code;
 import org.opalj.br.DeclaredMethod;
-import org.opalj.br.DefinedMethod;
 import org.opalj.br.FieldType;
 import org.opalj.br.Method;
 import org.opalj.br.MethodDescriptor;
@@ -53,14 +48,10 @@ import org.opalj.collection.immutable.UIDSet1;
 import org.opalj.tac.cg.CallGraph;
 
 import eu.fasten.analyzer.javacgopal.data.OPALCallGraph;
-import eu.fasten.core.data.Constants;
-import eu.fasten.core.data.FastenJavaURI;
 import eu.fasten.core.data.FastenURI;
 import eu.fasten.core.data.JavaScope;
 import eu.fasten.core.data.callgraph.CallPreservationStrategy;
 import eu.fasten.core.data.callgraph.PartialCallGraph;
-import eu.fasten.core.data.opal.MavenCoordinate;
-import eu.fasten.core.data.opal.exceptions.MissingArtifactException;
 import eu.fasten.core.data.opal.exceptions.OPALException;
 import it.unimi.dsi.fastutil.ints.IntIntPair;
 import scala.Option;
