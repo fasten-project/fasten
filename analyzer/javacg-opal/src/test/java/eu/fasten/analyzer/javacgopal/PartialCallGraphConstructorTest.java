@@ -20,6 +20,7 @@ package eu.fasten.analyzer.javacgopal;
 
 import static eu.fasten.core.data.callgraph.CGAlgorithm.CHA;
 import static eu.fasten.core.data.callgraph.CallPreservationStrategy.ONLY_STATIC_CALLSITES;
+import static eu.fasten.core.maven.utils.MavenUtilities.MAVEN_CENTRAL_REPO;
 import static eu.fasten.core.utils.TestUtils.getTestResource;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -29,7 +30,7 @@ import java.io.File;
 import java.util.HashMap;
 
 import org.junit.jupiter.api.Assertions;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.opalj.br.BaseType;
@@ -37,6 +38,7 @@ import org.opalj.br.ClassFile;
 import org.opalj.br.ClassHierarchy;
 import org.opalj.br.Code;
 import org.opalj.br.DeclaredMethod;
+import org.opalj.br.DefinedMethod;
 import org.opalj.br.FieldType;
 import org.opalj.br.Method;
 import org.opalj.br.MethodDescriptor;
@@ -50,20 +52,16 @@ import org.opalj.collection.immutable.UIDSet;
 import org.opalj.collection.immutable.UIDSet1;
 import org.opalj.tac.cg.CallGraph;
 
-import eu.fasten.analyzer.javacgopal.OPALCallGraphConstructor;
-import eu.fasten.analyzer.javacgopal.PartialCallGraphConstructor;
 import eu.fasten.analyzer.javacgopal.data.OPALCallGraph;
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.FastenJavaURI;
 import eu.fasten.core.data.FastenURI;
 import eu.fasten.core.data.JavaScope;
-import eu.fasten.core.data.callgraph.CGAlgorithm;
 import eu.fasten.core.data.callgraph.CallPreservationStrategy;
 import eu.fasten.core.data.callgraph.PartialCallGraph;
 import eu.fasten.core.data.opal.MavenCoordinate;
 import eu.fasten.core.data.opal.exceptions.MissingArtifactException;
 import eu.fasten.core.data.opal.exceptions.OPALException;
-import eu.fasten.core.maven.utils.MavenUtilities;
 import it.unimi.dsi.fastutil.ints.IntIntPair;
 import scala.Option;
 import scala.collection.Iterator;
@@ -73,19 +71,33 @@ class PartialCallGraphConstructorTest {
 
 	private static PartialCallGraph singleCallCG;
 
-	@BeforeAll
-	static void setUp() throws OPALException {
-		OPALCallGraphConstructor cgc = new OPALCallGraphConstructor();
+	private OPALCallGraphConstructor cgc;
+	private PartialCallGraphConstructor sut;
+
+	@BeforeEach
+	public void setup() {
+		cgc = new OPALCallGraphConstructor();
+		sut = new PartialCallGraphConstructor();
+
 		File f = getTestResource("SingleSourceToTarget.class");
-		singleCallCG = new PartialCallGraphConstructor().construct(cgc.construct(f, CHA), ONLY_STATIC_CALLSITES);
+		singleCallCG = sut.construct(cgc.construct(f, CHA), ONLY_STATIC_CALLSITES);
 	}
 
 	@Test
 	void testAnnotations() throws OPALException {
-		OPALCallGraphConstructor cgc = new OPALCallGraphConstructor();
-		PartialCallGraph annotatedClass = new PartialCallGraphConstructor().construct(cgc.construct(
+		PartialCallGraph pcg = sut.construct(cgc.construct(
 				getTestResource("PackageApi.class"),
 				CHA), ONLY_STATIC_CALLSITES);
+		
+		var internals = pcg.classHierarchy.get(JavaScope.internalTypes);
+		String testType = "/eu.fasten.analyzer.restapiplugin.mvn.api/PackageApi";
+		assertTrue(internals.containsKey(testType));
+		
+		var t = internals.get(testType);
+		var actuals = t.getAnnotations();
+		
+		// TODO create meaningful test expectation
+		assertTrue(actuals.containsKey("org.springframework.web.bind.annotation/RequestMapping"));
 	}
 
 	@Test
@@ -125,18 +137,18 @@ class PartialCallGraphConstructorTest {
 		// -------
 		// Check external types
 		// -------
-		var SSTTExternalType = cha.get(JavaScope.externalTypes).get("/java.lang/Object");
-
+		var actual = cha.get(JavaScope.externalTypes).get("/java.lang/Object");
+		
 		// Check super interfaces and classes
-		Assertions.assertEquals(0, SSTTExternalType.getSuperInterfaces().size());
-		Assertions.assertEquals(0, SSTTExternalType.getSuperClasses().size());
+		Assertions.assertEquals(0, actual.getSuperInterfaces().size());
+		Assertions.assertEquals(0, actual.getSuperClasses().size());
 
 		// Check methods
-		Assertions.assertEquals(1, SSTTExternalType.getMethods().size());
+		Assertions.assertEquals(1, actual.getMethods().size());
 
 		Assertions.assertEquals(FastenURI.create("/java.lang/Object.%3Cinit%3E()VoidType"),
-				SSTTExternalType.getMethods().get(3).getUri());
-		Assertions.assertEquals(0, SSTTExternalType.getMethods().get(3).getMetadata().size());
+				actual.getMethods().get(3).getUri());
+		Assertions.assertEquals(0, actual.getMethods().get(3).getMetadata().size());
 	}
 
 	@Test
@@ -162,20 +174,6 @@ class PartialCallGraphConstructorTest {
 	@Test
 	void getNodeCount() {
 		assertEquals(4, singleCallCG.nodeCount);
-	}
-
-	@Test
-	void createExtendedRevisionJavaCallGraph() throws MissingArtifactException, OPALException {
-		var coordinate = new MavenCoordinate("org.slf4j", "slf4j-api", "1.7.29", "jar");
-		var cg = PartialCallGraphConstructor.createExtendedRevisionJavaCallGraph(coordinate, CGAlgorithm.CHA, 1574072773,
-				MavenUtilities.MAVEN_CENTRAL_REPO, CallPreservationStrategy.ONLY_STATIC_CALLSITES);
-		assertNotNull(cg);
-		Assertions.assertEquals(Constants.mvnForge, cg.forge);
-		Assertions.assertEquals("1.7.29", cg.version);
-		Assertions.assertEquals(1574072773, cg.timestamp);
-		Assertions.assertEquals(new FastenJavaURI("fasten://mvn!org.slf4j:slf4j-api$1.7.29"), cg.uri);
-		Assertions.assertEquals(new FastenJavaURI("fasten://org.slf4j:slf4j-api$1.7.29"), cg.forgelessUri);
-		Assertions.assertEquals("org.slf4j:slf4j-api", cg.product);
 	}
 
 	@Test
@@ -228,7 +226,7 @@ class PartialCallGraphConstructorTest {
 		var declaredMethod = Mockito.mock(DeclaredMethod.class);
 		Mockito.when(declaredMethod.definedMethods()).thenReturn(arr);
 		Mockito.when(declaredMethod.hasSingleDefinedMethod()).thenReturn(true);
-
+		
 		var classHierarchy = createClassHierarchy(type);
 
 		Mockito.when(classFile.methods()).thenReturn(methods);

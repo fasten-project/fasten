@@ -21,7 +21,7 @@ import org.skyscreamer.jsonassert.JSONCompareMode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import eu.fasten.analyzer.javacgopal.PartialCallGraphConstructor;
+import eu.fasten.analyzer.javacgopal.ExtendedRevisionCallGraphConstructor;
 import eu.fasten.core.data.ExtendedBuilderJava;
 import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
 import eu.fasten.core.data.JSONUtils;
@@ -45,17 +45,18 @@ class JSONUtilsTest {
 
         var coordinate =
             new MavenCoordinate("com.github.shoothzj", "java-tool", "3.0.30.RELEASE", "jar");
-        graph = PartialCallGraphConstructor.createExtendedRevisionJavaCallGraph(coordinate,
+        var ercgConstructor = new ExtendedRevisionCallGraphConstructor();
+		graph = ercgConstructor.create(coordinate,
             CGAlgorithm.CHA, 1574072773, MavenUtilities.MAVEN_CENTRAL_REPO, CallPreservationStrategy.ONLY_STATIC_CALLSITES);
 
         coordinate =
             new MavenCoordinate("abbot", "costello", "1.4.0", "jar");
-        artifact = PartialCallGraphConstructor.createExtendedRevisionJavaCallGraph(coordinate,
+        artifact = ercgConstructor.create(coordinate,
             CGAlgorithm.CHA, 1574072773, MavenUtilities.MAVEN_CENTRAL_REPO, CallPreservationStrategy.ONLY_STATIC_CALLSITES);
 
         coordinate =
             new MavenCoordinate("abbot", "abbot", "1.4.0", "jar");
-        dependency = PartialCallGraphConstructor.createExtendedRevisionJavaCallGraph(coordinate,
+        dependency = ercgConstructor.create(coordinate,
             CGAlgorithm.CHA, 1574072773, MavenUtilities.MAVEN_CENTRAL_REPO, CallPreservationStrategy.ONLY_STATIC_CALLSITES);
         final var deps = new ArrayList<>(Collections.singletonList(dependency));
         deps.add(artifact);
@@ -104,7 +105,7 @@ class JSONUtilsTest {
 
         for (int i = 0; i < coordsSize; i++) {
             MavenCoordinate coord = coords.get(i);
-            final var cg = PartialCallGraphConstructor.createExtendedRevisionJavaCallGraph(coord,
+            final var cg = new ExtendedRevisionCallGraphConstructor().create(coord,
                 CGAlgorithm.CHA, 1574072773, MavenUtilities.getRepos().get(0), CallPreservationStrategy.ONLY_STATIC_CALLSITES);
 
             logger.debug("Serialization for: {}", coord.getCoordinate());

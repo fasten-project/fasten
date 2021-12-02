@@ -84,7 +84,7 @@ public class OPALPlugin extends Plugin {
                 // Generate CG and measure construction duration.
                 logger.info("[CG-GENERATION] [UNPROCESSED] [-1] [" + mavenCoordinate.getCoordinate() + "] [NONE] ");
                 long date = kafkaConsumedJson.optLong("date", -1);
-				this.graph = PartialCallGraphConstructor.createExtendedRevisionJavaCallGraph(mavenCoordinate,
+				this.graph = new ExtendedRevisionCallGraphConstructor().create(mavenCoordinate,
                         CHA, date, artifactRepository, ONLY_STATIC_CALLSITES);
                 long endTime = System.nanoTime();
                 long duration = (endTime - startTime) / 1000000; // Compute duration in ms. 

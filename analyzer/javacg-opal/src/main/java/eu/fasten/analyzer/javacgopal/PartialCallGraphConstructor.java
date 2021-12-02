@@ -18,7 +18,6 @@
 
 package eu.fasten.analyzer.javacgopal;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -51,14 +50,9 @@ import eu.fasten.analyzer.javacgopal.data.OPALCallGraph;
 import eu.fasten.analyzer.javacgopal.data.OPALClassHierarchy;
 import eu.fasten.analyzer.javacgopal.data.OPALMethod;
 import eu.fasten.analyzer.javacgopal.data.OPALType;
-import eu.fasten.core.data.Constants;
-import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
 import eu.fasten.core.data.JavaGraph;
-import eu.fasten.core.data.callgraph.CGAlgorithm;
 import eu.fasten.core.data.callgraph.CallPreservationStrategy;
 import eu.fasten.core.data.callgraph.PartialCallGraph;
-import eu.fasten.core.data.opal.MavenArtifactDownloader;
-import eu.fasten.core.data.opal.MavenCoordinate;
 import eu.fasten.core.data.opal.exceptions.OPALException;
 import scala.Function1;
 import scala.collection.JavaConverters;
@@ -101,35 +95,6 @@ public class PartialCallGraphConstructor {
         }
         
         return pcg;
-    }
-
-    /**
-     * Creates RevisionCallGraph using OPAL call graph generator for a given maven
-     * coordinate. It also sets the forge to "mvn".
-     *
-     * @param coordinate maven coordinate of the revision to be processed
-     * @param timestamp  timestamp of the revision release
-     * @return RevisionCallGraph of the given coordinate.
-     */
-    public static ExtendedRevisionJavaCallGraph createExtendedRevisionJavaCallGraph(
-            final MavenCoordinate coordinate, 
-            CGAlgorithm algorithm, final long timestamp, final String artifactRepo, CallPreservationStrategy callSiteOnly) {
-
-        File file = null;
-        try {
-            file = new MavenArtifactDownloader(coordinate).downloadArtifact(artifactRepo);
-            final var opalCG = new OPALCallGraphConstructor().construct(file, algorithm);
-
-            final var partialCallGraph = new PartialCallGraphConstructor().construct(opalCG, callSiteOnly);
-
-            return new ExtendedRevisionJavaCallGraph(Constants.mvnForge, coordinate, timestamp,
-                    partialCallGraph, Constants.opalGenerator);
-        } finally {
-            if (file != null) {
-            	// TODO use apache commons FileUtils instead
-                file.delete();
-            }
-        }
     }
 
     /**
@@ -228,10 +193,11 @@ public class PartialCallGraphConstructor {
         final var tac = ocg.project.get(ComputeTACAIKey$.MODULE$);
         
         cg.reachableMethods().foreach(sourceDeclaration -> {
-            final List<Integer> incompletes = new ArrayList<>();
-            if (cg.incompleteCallSitesOf(sourceDeclaration) != null) {
-                cg.incompleteCallSitesOf(sourceDeclaration).foreach(pc -> incompletes.add((int) pc));
-            }
+            
+            // remember all incomplete(?) call sites
+        	final List<Integer> incompletes = new ArrayList<>();
+            cg.incompleteCallSitesOf(sourceDeclaration).foreach(pc -> incompletes.add((int) pc));
+			
             final Set<Integer> visitedPCs = new HashSet<>();
 
             var calleesOf = cg.calleesOf(sourceDeclaration);

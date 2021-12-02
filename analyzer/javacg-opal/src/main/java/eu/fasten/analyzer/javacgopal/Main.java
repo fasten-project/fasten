@@ -249,7 +249,7 @@ public class Main implements Runnable {
 					.classHierarchy(cg.classHierarchy).nodeCount(cg.nodeCount).build();
 
 		} else {
-			revisionCallGraph = PartialCallGraphConstructor.createExtendedRevisionJavaCallGraph((MavenCoordinate) artifact,
+			revisionCallGraph = new ExtendedRevisionCallGraphConstructor().create((MavenCoordinate) artifact,
 					algorithm, Long.parseLong(this.commands.computations.timestamp),
 					(repos == null || repos.size() < 1) ? MavenUtilities.MAVEN_CENTRAL_REPO : repos.get(0),
 					CallPreservationStrategy.INCLUDING_ALL_SUBTYPES);
