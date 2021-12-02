@@ -51,15 +51,6 @@ public class JavaGraph extends Graph {
     }
 
     /**
-     * Creates {@link JavaGraph} from given call-sites
-     *
-     * @param callSites call-sites map
-     */
-    public JavaGraph(final HashMap<IntIntPair, Map<Object, Object>> callSites) {
-        this.callSites = callSites;
-    }
-
-    /**
      * Creates {@link JavaGraph} with all fields empty.
      */
     public JavaGraph() {
