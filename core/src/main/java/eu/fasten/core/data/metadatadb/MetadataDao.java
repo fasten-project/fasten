@@ -1812,6 +1812,7 @@ public class MetadataDao {
     }
 
     public String getPurlVulnerabilities(String purl, boolean format) {
+        if (!assertPurlExistence(purl)) return null;
         // Tables
         Vulnerabilities v = Vulnerabilities.VULNERABILITIES;
         VulnerabilitiesPurls vp = VulnerabilitiesPurls.VULNERABILITIES_PURLS;
@@ -1827,18 +1828,14 @@ public class MetadataDao {
         return  result.formatJSON(new JSONFormat().format(format).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
     }
 
-    public List<String> getPackageVersionString(String purl) {
+    public boolean assertPurlExistence(String purl) {
         VulnerabilitiesPurls vp = VulnerabilitiesPurls.VULNERABILITIES_PURLS;
-        var result = new ArrayList<String>();
         var record = context
-                .select(vp.PACKAGE_NAME, vp.PACKAGE_VERSION)
+                .select(vp.fields())
                 .from(vp)
                 .where(vp.PURL.eq(purl))
-                .limit(1)
                 .fetchOne();
-        result.add(record.component1()); // pkg_name
-        result.add(record.component2()); // pkg_version
-        return result;
+        return record != null;
     }
 
     public String getPurls(String externalId, int offset, int limit) {
