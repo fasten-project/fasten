@@ -1834,6 +1834,7 @@ public class MetadataDao {
                 .select(vp.fields())
                 .from(vp)
                 .where(vp.PURL.eq(purl))
+                .limit(1)
                 .fetchOne();
         return record != null;
     }
