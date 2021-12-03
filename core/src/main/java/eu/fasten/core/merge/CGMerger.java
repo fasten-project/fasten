@@ -18,6 +18,8 @@
 
 package eu.fasten.core.merge;
 
+import static org.jooq.impl.DSL.*;
+
 import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import eu.fasten.core.data.Constants;
@@ -59,7 +61,6 @@ import org.jgrapht.graph.DefaultDirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
 import org.jooq.Condition;
 import org.jooq.DSLContext;
-import org.jooq.Record2;
 import org.jooq.Record3;
 import org.json.JSONObject;
 import org.rocksdb.RocksDBException;
@@ -98,9 +99,13 @@ public class CGMerger {
         }
         BiMap<Long, String> uris = HashBiMap.create();
         dbContext
-            .select(Callables.CALLABLES.ID, Callables.CALLABLES.FASTEN_URI)
-            .from(Callables.CALLABLES)
+            .select(Callables.CALLABLES.ID, concat(Callables.CALLABLES.ID,
+                Callables.CALLABLES.FASTEN_URI))
+            .from(Callables.CALLABLES, Modules.MODULES, PackageVersions.PACKAGE_VERSIONS, Packages.PACKAGES)
             .where(Callables.CALLABLES.ID.in(gIDs))
+            .and(Modules.MODULES.ID.eq(Callables.CALLABLES.MODULE_ID))
+            .and(PackageVersions.PACKAGE_VERSIONS.ID.eq(Modules.MODULES.PACKAGE_VERSION_ID))
+            .and(Packages.PACKAGES.ID.eq(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID))
             .fetch().forEach(record -> uris.put(record.component1(), record.component2()));
         return uris;
     }
