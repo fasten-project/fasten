@@ -1811,6 +1811,33 @@ public class MetadataDao {
         return result.formatJSON(new JSONFormat().format(format).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
     }
 
+    public String getPurlVulnerabilities(String purl, boolean format) {
+        if (!assertPurlExistence(purl)) return null;
+        // Tables
+        Vulnerabilities v = Vulnerabilities.VULNERABILITIES;
+        VulnerabilitiesPurls vp = VulnerabilitiesPurls.VULNERABILITIES_PURLS;
+
+        // Query
+        var result = context
+                .select(v.fields())
+                .from(v)
+                .innerJoin(vp)
+                .on(v.ID.eq(vp.VULNERABILITY_ID))
+                .where(vp.PURL.eq(purl))
+                .fetch();
+        return  result.formatJSON(new JSONFormat().format(format).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
+    }
+
+    public boolean assertPurlExistence(String purl) {
+        VulnerabilitiesPurls vp = VulnerabilitiesPurls.VULNERABILITIES_PURLS;
+        var record = context
+                .select(vp.fields())
+                .from(vp)
+                .where(vp.PURL.eq(purl))
+                .fetchOne();
+        return record != null;
+    }
+
     public String getPurls(String externalId, int offset, int limit) {
         // Tables
         Vulnerabilities v = Vulnerabilities.VULNERABILITIES;
