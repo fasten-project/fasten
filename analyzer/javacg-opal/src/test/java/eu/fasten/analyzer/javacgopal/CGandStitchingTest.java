@@ -20,6 +20,7 @@ package eu.fasten.analyzer.javacgopal;
 
 import static eu.fasten.core.merge.CallGraphUtils.decode;
 import static org.junit.jupiter.api.Assertions.*;
+
 import com.github.javaparser.utils.Log;
 import eu.fasten.analyzer.javacgopal.data.CallGraphConstructor;
 import eu.fasten.core.data.opal.MavenCoordinate;
@@ -52,13 +53,25 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 
 public class CGandStitchingTest {
 
+    private String sampleDepset;
+
+    @BeforeEach
+    void setUp() {
+        sampleDepset = "org.apache.sling:org.apache.sling.xss:2.0.6,org.owasp" +
+            ".antisamy:antisamy:1.5.2:provided,net.sourceforge.nekohtml:nekohtml:1.9.16:provided,xerces:xercesImpl:2.9.1:provided,commonshttpclient:commonshttpclient:3.1:provided,commonslogging:commonslogging:1.0.4:provided,commonscodec:commonscodec:1.2:provided,batik:batikcss:1.6:provided,batik:batikext:1.6:provided,batik:batikutil:1.6:provided,batik:batikguiutil:1.6:provided,xmlapis:xmlapisext:1.3.04:provided,org.owasp.esapi:esapi:2.1.0:provided,commonsconfiguration:commonsconfiguration:1.5:provided,commonsdigester:commonsdigester:1.8:provided,commonsbeanutils:commonsbeanutilscore:1.7.0:provided,commonsfileupload:commonsfileupload:1.2:provided,commonscollections:commonscollections:3.2:provided,log4j:log4j:1.2.16:provided,xom:xom:1.2.5:provided,xmlapis:xmlapis:1.3.03:provided,xalan:xalan:2.7.0:provided,org.beanshell:bshcore:2.0b4:provided,org.owasp.encoder:encoder:1.1.1:provided,javax.servlet:javax.servletapi:3.1.0:provided,org.osgi:osgi.core:6.0.0:provided,org.slf4j:slf4japi:1.7.6:provided,org.apache.sling:org.apache.sling.api:2.11.0:provided,org.apache.sling:org.apache.sling.serviceusermapper:1.2.0:provided,com.google.code.findbugs:jsr305:2.0.0:provided,org.apache.geronimo.specs:geronimojson_1.0_spec:1.0alpha1:provided,org.apache.commons:commonslang3:3.6:provided,junit:junit:4.12:test,org.hamcrest:hamcrestcore:1.3:test,org.mockito:mockitoall:1.10.19:test,org.powermock:powermockapimockito:1.6.5:test,org.mockito:mockitocore:1.10.19:test,org.objenesis:objenesis:2.1:test,org.powermock:powermockapimockitocommon:1.6.5:test,org.powermock:powermockapisupport:1.6.5:test,org.powermock:powermockcore:1.6.5:test,org.powermock:powermockreflect:1.6.5:test,org.apache.sling:org.apache.sling.commons.johnzon:1.0.0:test,org.slf4j:slf4jsimple:1.7.6:test,org.apache.sling:org.apache.sling.testing.slingmock:2.2.14:test,org.apache.sling:org.apache.sling.testing.osgimock:2.3.4:test,org.osgi:osgi.cmpn:6.0.0:provided,com.google.guava:guava:15.0:test,org.reflections:reflections:0.9.9:test,org.javassist:javassist:3.18.2GA:test,com.google.code.findbugs:annotations:2.0.1:test,org.apache.sling:org.apache.sling.testing.jcrmock:1.3.2:test,org.apache.jackrabbit:jackrabbitjcrcommons:2.8.0:test,org.apache.sling:org.apache.sling.testing.resourceresolvermock:1.1.20:test,org.apache.sling:org.apache.sling.servlethelpers:1.1.2:test,org.apache.sling:org.apache.sling.commons.osgi:2.4.0:test,org.apache.sling:org.apache.sling.models.api:1.2.2:test,org.apache.sling:org.apache.sling.models.impl:1.2.2:test,org.apache.sling:org.apache.sling.resourceresolver:1.4.8:test,org.apache.sling:org.apache.sling.jcr.api:2.3.0:test,org.apache.sling:org.apache.sling.jcr.resource:2.7.4:test,org.apache.sling:org.apache.sling.scripting.api:2.1.8:test,org.apache.sling:org.apache.sling.scripting.core:2.0.36:test,org.apache.sling:org.apache.sling.commons.mime:2.1.8:test,org.apache.sling:org.apache.sling.jcr.contentparser:1.2.4:test,org.apache.jackrabbit.vault:org.apache.jackrabbit.vault:3.1.18:test,org.apache.johnzon:johnzoncore:1.0.0:test,org.apache.sling:org.apache.sling.commons.classloader:1.3.2:test,org.apache.sling:org.apache.sling.settings:1.3.8:test,org.apache.sling:org.apache.sling.i18n:2.4.4:test,org.apache.sling:org.apache.sling.adapter:2.1.6:test,org.apache.sling:org.apache.sling.resourcebuilder:1.0.2:test,org.apache.jackrabbit:jackrabbitapi:2.11.3:test,commonsio:commonsio:2.4:test,commonslang:commonslang:2.5:provided,commonsbeanutils:commonsbeanutils:1.8.3:provided,org.apache.geronimo.specs:geronimoatinject_1.0_spec:1.0:test,javax.jcr:jcr:2.0:provided,org.osgi:osgi.annotation:6.0.1:provided,org.osgi:org.osgi.service.component.annotations:1.3.0:provided,org.osgi:org.osgi.service.metatype.annotations:1.3.0:provided";
+
+    }
+
     public static ExtendedRevisionJavaCallGraph getRCG(final String path, final String product,
-                                                       final String version) throws OPALException, URISyntaxException {
+                                                       final String version)
+        throws OPALException, URISyntaxException {
         final var file =
             new File(Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
                 .getResource(path)).toURI().getPath());
@@ -82,15 +95,16 @@ public class CGandStitchingTest {
 
     @Test
     public void staticInitializer() throws OPALException, URISyntaxException {
-        final var importer = getRCG("merge/staticInitializer/Importer.class","importer","0.0.0");
+        final var importer = getRCG("merge/staticInitializer/Importer.class", "importer", "0.0.0");
         final var imported = getRCG("merge/staticInitializer/Imported.class", "imported", "1.1.1");
-        Assertions.assertEquals("/merge.staticInitializer/Importer.<init>()/java.lang/VoidType '->'\n" +
-                "/java.lang/Object.<init>()/java.lang/VoidType\n" +
-                "\n" +
-                "/merge.staticInitializer/Importer.sourceMethod()/java.lang/VoidType '->'\n" +
-                "/merge.staticInitializer/Imported.<init>()/java.lang/VoidType\n" +
-                "\n",
-            toString(importer));
+        Assertions
+            .assertEquals("/merge.staticInitializer/Importer.<init>()/java.lang/VoidType '->'\n" +
+                    "/java.lang/Object.<init>()/java.lang/VoidType\n" +
+                    "\n" +
+                    "/merge.staticInitializer/Importer.sourceMethod()/java.lang/VoidType '->'\n" +
+                    "/merge.staticInitializer/Imported.<init>()/java.lang/VoidType\n" +
+                    "\n",
+                toString(importer));
 
         final var mergedRcg = merge(importer, Arrays.asList(importer, imported));
 
@@ -107,8 +121,9 @@ public class CGandStitchingTest {
     private String toString(ExtendedRevisionJavaCallGraph mergedRcg) {
         return CallGraphUtils.getString(CallGraphUtils.convertToNodePairs(mergedRcg));
     }
+
     private List<Pair<String, String>> merge(ExtendedRevisionJavaCallGraph artifact,
-                                        List<ExtendedRevisionJavaCallGraph> deps) {
+                                             List<ExtendedRevisionJavaCallGraph> deps) {
         final var cgMerger = new CGMerger(deps);
         final var mergedCG = cgMerger.mergeWithCHA(artifact);
         List<Pair<String, String>> result = new ArrayList<>();
@@ -127,22 +142,25 @@ public class CGandStitchingTest {
         final var user =
             deps.stream().filter(ercg -> ercg.product.equals("User.class")).findAny().get();
 
-        final var merged =  merge(user, deps);
+        final var merged = merge(user, deps);
 
         Assertions.assertEquals(
-                "fasten://mvn!User.class$0.0.0/merge.hashCode/User.main(/java.lang/String[])/java.lang/VoidType '->'\n" +
+            "fasten://mvn!User.class$0.0.0/merge.hashCode/User.main(/java.lang/String[])/java.lang/VoidType '->'\n" +
                 "fasten://mvn!Parent.class$0.0.0/merge.hashCode/Parent.hashCode()/java.lang/IntegerType\n\n",
             toString(merged));
 
     }
 
-    private List<ExtendedRevisionJavaCallGraph> getDepSet(final String path) throws OPALException, URISyntaxException {
+    private List<ExtendedRevisionJavaCallGraph> getDepSet(final String path)
+        throws OPALException, URISyntaxException {
         final List<ExtendedRevisionJavaCallGraph> result = new ArrayList<>();
 
-        final var depFiles = new File(Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
-            .getResource(path)).toURI().getPath()).listFiles(f -> f.getPath().endsWith(".class"));
+        final var depFiles =
+            new File(Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
+                .getResource(path)).toURI().getPath())
+                .listFiles(f -> f.getPath().endsWith(".class"));
         for (final var depFile : depFiles) {
-            if (!depFile.getName().contains(" ") ) {
+            if (!depFile.getName().contains(" ")) {
                 result.add(getRCG(depFile, depFile.getName(), "0.0.0"));
             }
         }
@@ -156,18 +174,18 @@ public class CGandStitchingTest {
         Supplier<Stream<String>> projects = () -> Stream.of("app", "dep1", "dep2");
         final var version = "1.0";
 
-        final var expected = new HashMap<String,Set<String>>();
+        final var expected = new HashMap<String, Set<String>>();
         projects.get().forEach(p -> expected.putAll(getExpected(p)));
         expected.putAll(getOtherPackages());
 
         final var deps =
-            projects.get().map(s -> generate(basePath, s,version)).collect(Collectors.toList());
+            projects.get().map(s -> generate(basePath, s, version)).collect(Collectors.toList());
         final var actual =
             deps.stream().map(ercg -> toMap(merge(ercg, deps))).reduce(CompositeMap::new).get();
-        assertEqual(expected, ((Map<String, Set<String>>)actual));
+        assertEqual(expected, ((Map<String, Set<String>>) actual));
     }
 
-    private Map<? extends String,? extends Set<String>> getOtherPackages() {
+    private Map<? extends String, ? extends Set<String>> getOtherPackages() {
         final var root = "src/test/resources/merge/annotated-tests/app" +
             "/src/main/java";
         final var pckg1 = new CommentParser().extractComments(root, "inheritedandsubtyped");
@@ -189,21 +207,25 @@ public class CGandStitchingTest {
     }
 
     private Map<String, Set<String>> getExpected(final String artifact) {
-        return new CommentParser().extractComments("src/test/resources/merge/annotated-tests/"+artifact+
-            "/src/main/java", artifact+"package");
+        return new CommentParser()
+            .extractComments("src/test/resources/merge/annotated-tests/" + artifact +
+                "/src/main/java", artifact + "package");
     }
 
     private ExtendedRevisionJavaCallGraph generate(final String base, final String artifact,
                                                    final String version) {
         try {
-            return getRCG(base+"/"+artifact+"/target/"+artifact+"-"+version+"-SNAPSHOT.jar", artifact,
+            return getRCG(
+                base + "/" + artifact + "/target/" + artifact + "-" + version + "-SNAPSHOT.jar",
+                artifact,
                 version);
         } catch (OPALException | URISyntaxException e) {
             e.printStackTrace();
         }
         return null;
     }
-    public static Map<String,Set<String>> toMap(final List<Pair<String, String>> nodePairs) {
+
+    public static Map<String, Set<String>> toMap(final List<Pair<String, String>> nodePairs) {
         Map<String, Set<String>> result = new HashMap<>();
         for (final var edge : nodePairs) {
             final var source =
@@ -217,7 +239,7 @@ public class CGandStitchingTest {
         return result;
     }
 
-    public static Map<String,Set<String>> toMap(final Map<String,
+    public static Map<String, Set<String>> toMap(final Map<String,
         List<Pair<String, String>>> nodePairs) {
         Map<String, Set<String>> result = new HashMap<>();
         for (final var edge : aggregateAllEdges(nodePairs)) {
@@ -234,7 +256,7 @@ public class CGandStitchingTest {
 
     private static String getArtifact(final String uri) {
         if (uri.startsWith("//")) {
-            final var product = StringUtils.substringBetween(uri, "//","$");
+            final var product = StringUtils.substringBetween(uri, "//", "$");
             final var version = StringUtils.substringBetween(uri, "$", "/");
             return product + ":" + version + "/";
         }
@@ -243,36 +265,40 @@ public class CGandStitchingTest {
 
     private static String getMethod(final String uri) {
         final var decodedUri = java.net.URLDecoder.decode(uri, StandardCharsets.UTF_8);
-        var partialUriFormatException = "Invalid partial FASTEN URI. The format is corrupted.\nMust be: `/{namespace}/{class}.{method}({signature.args})/{signature.returnType}`";
+        var partialUriFormatException =
+            "Invalid partial FASTEN URI. The format is corrupted.\nMust be: `/{namespace}/{class}.{method}({signature.args})/{signature.returnType}`";
 
         // Method: `.{method}(`
         Pattern methodNamePattern = Pattern.compile("(?<=\\.)([^.]+)(?=\\()");
         Matcher methodNameMatcher = methodNamePattern.matcher(decodedUri);
-        if (!methodNameMatcher.find() || methodNameMatcher.group(0).isEmpty())
+        if (!methodNameMatcher.find() || methodNameMatcher.group(0).isEmpty()) {
             throw new IllegalArgumentException(partialUriFormatException);
+        }
 
         var method = methodNameMatcher.group(0) + "(";
         final var params = StringUtils.substringBetween(uri, "(", ")").split(",");
         for (String param : params) {
             param = decode(param);
             final var paramUri = param.split("/");
-            final var paramCLas = paramUri[paramUri.length-1];
+            final var paramCLas = paramUri[paramUri.length - 1];
             method = method + paramCLas + ",";
         }
-        if (params.length!=0) {
+        if (params.length != 0) {
             method = StringUtils.removeEnd(method, ",");
         }
         return method + ")";
     }
 
-    private static String getClass(final String uri){
+    private static String getClass(final String uri) {
         // Class: `/{class}.*(`
         Pattern classPattern = Pattern.compile("(?<=/)([^\\/]+)(?=\\.([^./]+)\\()");
-        var partialUriFormatException = "Invalid partial FASTEN URI. The format is corrupted.\nMust be: `/{namespace}/{class}.{method}({signature.args})/{signature.returnType}`";
+        var partialUriFormatException =
+            "Invalid partial FASTEN URI. The format is corrupted.\nMust be: `/{namespace}/{class}.{method}({signature.args})/{signature.returnType}`";
 
         Matcher classMatcher = classPattern.matcher(uri);
-        if (!classMatcher.find() || classMatcher.group(0).isEmpty())
+        if (!classMatcher.find() || classMatcher.group(0).isEmpty()) {
             throw new IllegalArgumentException(partialUriFormatException);
+        }
         var result = classMatcher.group(0);
         if (classMatcher.group(0).contains("$")) {
             result = StringUtils.substringAfter(classMatcher.group(0), "$");
@@ -297,19 +323,19 @@ public class CGandStitchingTest {
 
     @Test
     public void virtualReceiverTypes() throws OPALException, URISyntaxException {
-        var cg = getRCG("merge/hashCode/complex/User.class","importer","0.0.0");
-        asserReceiver(cg, "invokedynamic","[/merge.hashCode.complex/Child]");
-        cg = getRCG("merge/hashCode/interFace/User.class","importer","0.0.0");
-        asserReceiver(cg, "invokeinterface","[/merge.hashCode.interFace/Child]");
-        cg = getRCG("merge/hashCode/User.class","importer","0.0.0");
-        asserReceiver(cg, "invokedynamic","[/merge.interFace/Child]");
+        var cg = getRCG("merge/hashCode/complex/User.class", "importer", "0.0.0");
+        asserReceiver(cg, "invokedynamic", "[/merge.hashCode.complex/Child]");
+        cg = getRCG("merge/hashCode/interFace/User.class", "importer", "0.0.0");
+        asserReceiver(cg, "invokeinterface", "[/merge.hashCode.interFace/Child]");
+        cg = getRCG("merge/hashCode/User.class", "importer", "0.0.0");
+        asserReceiver(cg, "invokedynamic", "[/merge.interFace/Child]");
 
     }
 
-    public void asserReceiver(ExtendedRevisionJavaCallGraph cg, String callType, String type){
+    public void asserReceiver(ExtendedRevisionJavaCallGraph cg, String callType, String type) {
         for (final var edge : cg.getGraph().getExternalCalls().entrySet()) {
             for (final var cs : edge.getValue().entrySet()) {
-                final var metadata = (Map<Object,Object>)cs.getValue();
+                final var metadata = (Map<Object, Object>) cs.getValue();
                 if ((metadata.get("type").equals(callType))) {
                     Assertions.assertEquals(type, metadata.get("receiver"));
                 }
@@ -319,9 +345,10 @@ public class CGandStitchingTest {
 
     @Test
     public void missingEdges() throws OPALException, URISyntaxException {
-        final var cg = getRCG("merge/missingEdge/User.class","importer","0.0.0");
-        assertTrue(toString(cg).contains("/merge.missingEdge/User.main(/java.lang/String[])/java.lang/VoidType '->'\n" +
-            "/merge.missingEdge/Child.hashCode()/java.lang/IntegerType"));
+        final var cg = getRCG("merge/missingEdge/User.class", "importer", "0.0.0");
+        assertTrue(toString(cg).contains(
+            "/merge.missingEdge/User.main(/java.lang/String[])/java.lang/VoidType '->'\n" +
+                "/merge.missingEdge/Child.hashCode()/java.lang/IntegerType"));
     }
 
     @Test
@@ -336,14 +363,41 @@ public class CGandStitchingTest {
         merger.mergeWithCHA(depSet.get(2));
     }
 
+    @Disabled
+    @Test
+    public void manuallyCheckedDependencySetShouldNotIncludeACall() {
+
+        final var deps = sampleDepset;
+        List<ExtendedRevisionJavaCallGraph> depCGs = new ArrayList<>();
+        for (String dep : deps.split(",")) {
+            try {
+                depCGs.add(getRCG(dep));
+            } catch (MissingArtifactException | OPALException e) {
+                e.printStackTrace();
+            }
+        }
+
+        var merger = new CGMerger(depCGs);
+        var mergedCG = merger.mergeAllDeps();
+        var uris = merger.getAllUris();
+
+        var source_id = uris.inverse().get(
+            "fasten://mvn!org.apache.sling:org.apache.sling.xss$2.0.6/org.apache.commons.beanutils.converters/ArrayConverter.convertToType(%2Fjava.lang%2FClass,%2Fjava.lang%2FObject)%2Fjava.lang%2FObject");
+        for (LongLongPair longLongPair : mergedCG.outgoingEdgesOf(source_id)) {
+            Assertions.assertFalse(uris.get(longLongPair.rightLong()).contains("startElement("));
+        }
+
+    }
+
     private ExtendedRevisionJavaCallGraph getRCG(String coordStr)
-        throws OPALException, MissingArtifactException {
-        final var coord = MavenCoordinate.fromString(coordStr,"jar");
+        throws MissingArtifactException, OPALException {
+        final var coord = MavenCoordinate.fromString(coordStr, "jar");
 
         final var dep1 =
-            new MavenCoordinate.MavenResolver().downloadArtifact(coord,"jar");
+            new MavenCoordinate.MavenResolver().downloadArtifact(coord, "https://repo1.maven.org/maven2/");
         final var opalCG = new CallGraphConstructor(dep1, "", "RTA");
         final var cg = new PartialCallGraph(opalCG);
+
         return ExtendedRevisionJavaCallGraph.extendedBuilder()
             .graph(cg.getGraph())
             .product(coord.getProduct())
