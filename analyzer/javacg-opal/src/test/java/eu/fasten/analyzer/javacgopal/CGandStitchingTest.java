@@ -23,16 +23,21 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import com.github.javaparser.utils.Log;
 import eu.fasten.analyzer.javacgopal.data.CallGraphConstructor;
+import eu.fasten.core.data.FastenURI;
 import eu.fasten.core.data.opal.MavenCoordinate;
 import eu.fasten.analyzer.javacgopal.data.PartialCallGraph;
 import eu.fasten.core.data.opal.exceptions.MissingArtifactException;
 import eu.fasten.core.data.opal.exceptions.OPALException;
 import eu.fasten.analyzer.sourceanalyzer.CommentParser;
 import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
+import eu.fasten.core.data.vulnerability.Vulnerability;
 import eu.fasten.core.merge.CGMerger;
 import eu.fasten.core.merge.CallGraphUtils;
+import eu.fasten.core.vulchains.VulnerableCallChain;
+import eu.fasten.core.vulchains.VulnerableCallChainRepository;
 import it.unimi.dsi.fastutil.longs.LongLongPair;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -388,6 +393,7 @@ public class CGandStitchingTest {
         }
 
     }
+
 
     private ExtendedRevisionJavaCallGraph getRCG(String coordStr)
         throws MissingArtifactException, OPALException {
