@@ -567,8 +567,9 @@ public class CGMerger {
         try {
             metadata = rocksDao.getGraphMetadata(dependencyId, cg);
         } catch (RocksDBException e) {
-            throw new RuntimeException("An exception occurred retrieving metadata from rocks " +
+            logger.error("An exception occurred retrieving metadata from rocks " +
                 "DB", e);
+            return null;
         }
         return metadata;
     }
@@ -578,7 +579,8 @@ public class CGMerger {
         try {
             cg = rocksDao.getGraphData(dependencyId);
         } catch (RocksDBException e) {
-            throw new RuntimeException("An exception occurred retrieving CGs from rocks DB", e);
+            logger.error("An exception occurred retrieving CGs from rocks DB", e);
+            return null;
         }
         return cg;
     }
