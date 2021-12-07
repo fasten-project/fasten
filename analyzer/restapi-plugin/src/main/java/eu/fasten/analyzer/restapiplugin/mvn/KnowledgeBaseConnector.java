@@ -51,6 +51,8 @@ public class KnowledgeBaseConnector {
 
     public static String dependencyGraphPath;
 
+    public static String vulnerabilityCallChainsPath;
+
     /**
      * Database connection context
      */
@@ -80,6 +82,9 @@ public class KnowledgeBaseConnector {
 
     @Value("${kb.graphdb.path}")
     private String graphdbPath;
+
+    @Value("${kb.vulnchains.path}")
+    private String vulnChainsPath;
 
     @Value("${lima.rcg.url}")
     private String rcgUrl;
@@ -126,6 +131,14 @@ public class KnowledgeBaseConnector {
     @PostConstruct
     public void setDependencyGraphPath() {
         KnowledgeBaseConnector.dependencyGraphPath = depGraphPath;
+    }
+
+    /**
+     * Retrieves the vulnerability call chains path if possible.
+     */
+    @PostConstruct
+    public void setVulnerabilityCallChainsPath() {
+        KnowledgeBaseConnector.vulnerabilityCallChainsPath = vulnChainsPath;
     }
 
     /**
