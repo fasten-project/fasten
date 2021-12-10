@@ -5,6 +5,9 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.TypeAdapter;
 import com.google.gson.stream.JsonReader;
 import com.google.gson.stream.JsonWriter;
+import eu.fasten.core.data.FastenCURI;
+import eu.fasten.core.data.FastenJavaURI;
+import eu.fasten.core.data.FastenPythonURI;
 import eu.fasten.core.data.FastenURI;
 import java.io.IOException;
 import java.lang.reflect.Type;
@@ -24,7 +27,13 @@ public class VulnerableCallChainJsonUtils {
             @Override
             public FastenURI read(JsonReader jsonReader) throws IOException {
                 final var uri = jsonReader.nextString();
-                return FastenURI.create(uri);
+                FastenURI fastenURI;
+                if (uri.contains("mvn")) {
+                    fastenURI = FastenJavaURI.create(uri);
+                }else {
+                    fastenURI = FastenURI.create(uri);
+                }
+                return fastenURI;
             }
         }) //
          .create();
