@@ -28,7 +28,7 @@ public class VulnerableCallChainJsonUtils {
             public FastenURI read(JsonReader jsonReader) throws IOException {
                 final var uri = jsonReader.nextString();
                 FastenURI fastenURI;
-                if (uri.contains("mvn")) {
+                if (uri.startsWith("fasten://mvn")) {
                     fastenURI = FastenJavaURI.create(uri);
                 }else {
                     fastenURI = FastenURI.create(uri);

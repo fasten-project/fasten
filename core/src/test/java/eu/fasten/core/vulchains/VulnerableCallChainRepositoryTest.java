@@ -189,7 +189,7 @@ class VulnerableCallChainRepositoryTest {
             List.of(source, target3));
         var vulchains = Set.of(vulChain1, vulChain2, vulChain3);
 
-        VulnerableCallChainRepository vulRepo = new VulnerableCallChainRepository("src/test/resources/vulpath");
+        VulnerableCallChainRepository vulRepo = new VulnerableCallChainRepository(tempDir.getAbsolutePath());
         vulRepo.store("org.apache.sling:org.apache.sling.xss","2.0.6", vulchains);
 
         var pckgVul = vulRepo.getChainsForPackage("org.apache.sling:org.apache.sling.xss","2.0.6");
