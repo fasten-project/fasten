@@ -1,3 +1,19 @@
+/*
+ * Copyright 2021 Delft University of Technology
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 package eu.fasten.core.vulchains;
 
 import eu.fasten.core.data.FastenURI;
@@ -25,9 +41,17 @@ public class VulnerableCallChainTest {
 
     @Test
     void testEquals() {
-        Assertions.assertNotEquals(sut, sut1);
-        Assertions.assertNotSame(sut1, sut1Prime);
         Assertions.assertEquals(sut1, sut1Prime);
+    }
+
+    @Test
+    void testNotEquals() {
+        Assertions.assertNotEquals(sut, sut1);
+    }
+
+    @Test
+    void testNotSame() {
+        Assertions.assertNotSame(sut1, sut1Prime);
     }
 
     @Test
