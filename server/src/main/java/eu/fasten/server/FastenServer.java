@@ -169,6 +169,7 @@ public class FastenServer implements Runnable {
 
     @Override
     public void run() {
+    	assertInputParameters();
         setLoggingLevel();
         if (!isDeployed) {
             showSysInfo();
@@ -202,7 +203,13 @@ public class FastenServer implements Runnable {
         kafkaServerPlugins.forEach(FastenServerPlugin::start);
     }
 
-    private void printPluginStatistics(List<FastenPlugin> fastenPlugins,
+    private void assertInputParameters() {
+		if(plugins == null) {
+			throw new IllegalArgumentException("At least one plugin needs to be loaded, use -pl parameter.");
+		}
+	}
+
+	private void printPluginStatistics(List<FastenPlugin> fastenPlugins,
                                        List<DBConnector> dbPlugins, List<KafkaPlugin> kafkaPlugins,
                                        List<CallableIndexConnector> graphDbPlugins) {
         logger.info("Plugin init done: {} KafkaPlugins, {} DB plug-ins, {} GraphDB plug-ins:"
