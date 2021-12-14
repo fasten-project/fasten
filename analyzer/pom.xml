@@ -4,6 +4,20 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <modelVersion>4.0.0</modelVersion>
+
+    <parent>
+        <groupId>eu.fasten</groupId>
+        <artifactId>parent</artifactId>
+        <version>0.0.1-SNAPSHOT</version>
+    </parent>
+
+    <artifactId>analyzer</artifactId>
+    <packaging>pom</packaging>
+    
+    <properties>
+        <project.pluginClass>TODO.override.project.pluginClass.property.in.pom</project.pluginClass>
+    </properties>
+    
     <dependencies>
         <dependency>
             <groupId>org.pf4j</groupId>
@@ -18,20 +32,13 @@
             <scope>compile</scope>
         </dependency>
     </dependencies>
-
-    <parent>
-        <groupId>eu.fasten</groupId>
-        <artifactId>parent</artifactId>
-        <version>0.0.1-SNAPSHOT</version>
-    </parent>
-
-    <artifactId>analyzer</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
-    <packaging>pom</packaging>
+    
     <description>Collection of FASTEN-specific graph analyses.</description>
 
     <modules>
         <module>javacg-opal</module>
+        <module>dummy-plugin</module>
+        <!-- TODO reenable after testing
         <module>metadata-plugin</module>
         <module>callable-index</module>
         <module>pom-analyzer</module>
@@ -45,43 +52,30 @@
         <module>vulnerability-cache-processor-plugin</module>
         <module>vulnerability-statements-processor</module>
         <module>vulnerability-packages-listener</module>
-        <module>dummy-plugin</module>
+        -->
     </modules>
 
-    <build>
-        <plugins>
+	<build>
+		<plugins>
             <plugin>
+                <!-- used to set required plugin information for PF4J -->
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-shade-plugin</artifactId>
-                <version>3.2.1</version>
-                <executions>
-                    <execution>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>shade</goal>
-                        </goals>
-                        <configuration>
-                            <minimizeJar>true</minimizeJar>
-                            <keepDependenciesWithProvidedScope>false</keepDependenciesWithProvidedScope>
-                        </configuration>
-                    </execution>
-                </executions>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>2.4</version>
                 <configuration>
-                    <filters>
-                        <filter>
-                            <artifact>*:*</artifact>
-                            <excludes>
-                                <exclude>META-INF/*.SF</exclude>
-                                <exclude>META-INF/*.DSA</exclude>
-                                <exclude>META-INF/*.RSA</exclude>
-                            </excludes>
-                        </filter>
-                    </filters>
+                    <archive>
+                        <manifestEntries>
+                            <Plugin-Id>${project.artifact.id}</Plugin-Id>
+                            <Plugin-Version>${project.version}</Plugin-Version>
+                            <Plugin-Class>${project.pluginClass}</Plugin-Class>
+                        </manifestEntries>
+                    </archive>
                 </configuration>
             </plugin>
         </plugins>
-    </build>
-<!--   Jacoco  reporting   -->
+	</build>
+
+    <!--   Jacoco  reporting   -->
     <reporting>
         <plugins>
             <plugin>
