@@ -35,9 +35,7 @@ import org.json.JSONException;
  * URIs to a map of NodeIds to CNodes.
  */
 public class ExtendedRevisionCCallGraph extends ExtendedRevisionCallGraph {
-    static {
-        classHierarchyJSONKey = "functions";
-    }
+    public static final String classHierarchyJSONKey = "functions";
     public String architecture;
     protected EnumMap<CScope, Map<String, Map<Integer, CNode>>> classHierarchy;
 
