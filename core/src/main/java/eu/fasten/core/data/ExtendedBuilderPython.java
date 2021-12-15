@@ -24,7 +24,14 @@ import java.util.Map;
 /**
  * Builder for {@link ExtendedRevisionPythonCallGraph}.
  */
-public final class ExtendedBuilderPython extends ExtendedBuilder<EnumMap<PythonScope, Map<String, PythonType>>> {
+public final class ExtendedBuilderPython extends ExtendedBuilder {
+
+    protected EnumMap<PythonScope, Map<String, PythonType>> classHierarchy;
+
+    public EnumMap<PythonScope, Map<String, PythonType>> getClassHierarchy() {
+        return classHierarchy;
+    }
+
     public ExtendedBuilderPython nodeCount(final int nodeCount) {
         this.nodeCount = nodeCount;
         return this;
