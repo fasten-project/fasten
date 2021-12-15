@@ -23,26 +23,10 @@ import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public abstract class ExtendedRevisionCallGraph<A> {
+public abstract class ExtendedRevisionCallGraph {
 
     private static final Logger logger = LoggerFactory.getLogger(ExtendedRevisionCallGraph.class);
 
-    /**
-     * Each implementation of ExtendedRevisionCallGraph provides a different
-     * data structure for saving the classHierarchy.
-     *
-     * Some languages that don't have a class hierarchy save in this field
-     * information about methods. For example, see ExtendedRevisionCCallGraph.
-     */
-    protected A classHierarchy;
-
-    /**
-     * Different languages may save the class hierarchy in a different JSON key.
-     *
-     * For instance, in C revision call graph format, a key called functions
-     * contains the information to be saved in the classHierarchy field.
-     */
-    protected static String classHierarchyJSONKey = "cha";
 
     /**
      * The number of nodes in a revision call graph.
@@ -105,7 +89,7 @@ public abstract class ExtendedRevisionCallGraph<A> {
      *
      * @param builder builder for {@link ExtendedRevisionCallGraph}
      */
-    protected ExtendedRevisionCallGraph(final ExtendedBuilder<A> builder) {
+    protected ExtendedRevisionCallGraph(final ExtendedBuilder builder) {
         this.forge = builder.getForge();
         this.product = builder.getProduct();
         this.version = builder.getVersion();
@@ -114,7 +98,6 @@ public abstract class ExtendedRevisionCallGraph<A> {
         this.uri = FastenURI.create("fasten://" + forge + "!" + product + "$" + version);
         this.forgelessUri = FastenURI.create("fasten://" + product + "$" + version);
         this.cgGenerator = builder.getCgGenerator();
-        this.classHierarchy = builder.getClassHierarchy();
         this.graph = builder.getGraph();
         this.nodeCount = builder.getNodeCount();
     }
@@ -129,12 +112,10 @@ public abstract class ExtendedRevisionCallGraph<A> {
      *                       it is set to -1.
      * @param nodeCount      number of nodes
      * @param cgGenerator    The name of call graph generator that generated this call graph.
-     * @param classHierarchy The class hierarchy
      * @param graph          the call graph (no control is done on the graph) {@link Graph}
      */
     protected ExtendedRevisionCallGraph(final String forge, final String product, final String version,
                                      final long timestamp, int nodeCount, final String cgGenerator,
-                                     final A classHierarchy,
                                      final Graph graph) {
         this.forge = forge;
         this.product = product;
@@ -144,7 +125,6 @@ public abstract class ExtendedRevisionCallGraph<A> {
         this.uri = FastenURI.create("fasten://" + forge + "!" + product + "$" + version);
         this.forgelessUri = FastenURI.create("fasten://" + product + "$" + version);
         this.cgGenerator = cgGenerator;
-        this.classHierarchy = classHierarchy;
         this.nodeCount = nodeCount;
         this.graph = graph;
     }
@@ -155,13 +135,6 @@ public abstract class ExtendedRevisionCallGraph<A> {
      * @param json JSONObject of a revision call graph.
      */
     protected ExtendedRevisionCallGraph(final JSONObject json, Class rcgClass) throws JSONException {
-        if (rcgClass.getName().equals(ExtendedRevisionCCallGraph.class.getName())) {
-            classHierarchyJSONKey = "functions";
-        } else if (rcgClass.getName().equals(ExtendedRevisionPythonCallGraph.class.getName())) {
-            classHierarchyJSONKey = "modules";
-        } else {
-            classHierarchyJSONKey = "cha";
-        }
         this.forge = json.getString("forge");
         this.product = json.getString("product");
         this.version = json.getString("version");
@@ -173,16 +146,11 @@ public abstract class ExtendedRevisionCallGraph<A> {
         if (!rcgClass.getName().equals(ExtendedRevisionJavaCallGraph.class.getName())) {
             this.graph = new Graph(json.getJSONObject("graph"));
         }
-        this.classHierarchy = getCHAFromJSON(json.getJSONObject(classHierarchyJSONKey));
         this.nodeCount = json.getInt("nodes");
     }
 
     public String getCgGenerator() {
         return cgGenerator;
-    }
-
-    public A getClassHierarchy() {
-        return classHierarchy;
     }
 
     public Graph getGraph() {
@@ -206,26 +174,11 @@ public abstract class ExtendedRevisionCallGraph<A> {
     }
 
     /**
-     * Creates a class hierarchy for the given JSONObject.
-     *
-     * @param cha JSONObject of a cha.
-     */
-    public abstract A getCHAFromJSON(final JSONObject cha);
-
-    /**
      * Returns the map of all the methods of this object.
      *
      * @return a Map of method ids and their corresponding {@link FastenURI}
      */
     public abstract <T> T mapOfAllMethods();
-
-    /**
-     * Produces the JSON representation of class hierarchy.
-     *
-     * @param cha class hierarchy
-     * @return the JSON representation
-     */
-    public abstract JSONObject classHierarchyToJSON(final A cha);
 
     /**
      * Checks whether this {@link ExtendedRevisionCallGraph} is empty, e.g. has no calls.
@@ -256,7 +209,6 @@ public abstract class ExtendedRevisionCallGraph<A> {
         if (timestamp >= 0) {
             result.put("timestamp", timestamp);
         }
-        result.put(classHierarchyJSONKey, classHierarchyToJSON(classHierarchy));
         result.put("graph", graph.toJSON());
         result.put("nodes", nodeCount);
 

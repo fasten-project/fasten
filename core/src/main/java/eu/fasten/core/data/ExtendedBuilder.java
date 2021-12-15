@@ -21,14 +21,13 @@ package eu.fasten.core.data;
 /**
  * Builder for {@link ExtendedRevisionCallGraph}.
  */
-public abstract class ExtendedBuilder<A> {
+public class ExtendedBuilder {
 
     protected String forge;
     protected String product;
     protected String version;
     protected String cgGenerator;
     protected long timestamp;
-    protected A classHierarchy;
     protected Graph graph;
     protected int nodeCount;
 
@@ -55,9 +54,6 @@ public abstract class ExtendedBuilder<A> {
         return timestamp;
     }
 
-    public A getClassHierarchy() {
-        return classHierarchy;
-    }
 
     public Graph getGraph() {
         return graph;
@@ -67,45 +63,38 @@ public abstract class ExtendedBuilder<A> {
         return nodeCount;
     }
 
-    public ExtendedBuilder<A> nodeCount(final int nodeCount) {
+    public ExtendedBuilder nodeCount(final int nodeCount) {
         this.nodeCount = nodeCount;
         return this;
     }
 
-    public ExtendedBuilder<A> forge(final String forge) {
+    public ExtendedBuilder forge(final String forge) {
         this.forge = forge;
         return this;
     }
 
-    public ExtendedBuilder<A> product(final String product) {
+    public ExtendedBuilder product(final String product) {
         this.product = product;
         return this;
     }
 
-    public ExtendedBuilder<A> version(final String version) {
+    public ExtendedBuilder version(final String version) {
         this.version = version;
         return this;
     }
 
-    public ExtendedBuilder<A> cgGenerator(final String cgGenerator) {
+    public ExtendedBuilder cgGenerator(final String cgGenerator) {
         this.cgGenerator = cgGenerator;
         return this;
     }
 
-    public ExtendedBuilder<A> timestamp(final long timestamp) {
+    public ExtendedBuilder timestamp(final long timestamp) {
         this.timestamp = timestamp;
         return this;
     }
 
-    public ExtendedBuilder<A> graph(final Graph graph) {
+    public ExtendedBuilder graph(final Graph graph) {
         this.graph = graph;
         return this;
     }
-
-    public ExtendedBuilder<A> classHierarchy(final A cha) {
-        this.classHierarchy = cha;
-        return this;
-    }
-
-    public abstract ExtendedRevisionCallGraph<A> build();
 }
