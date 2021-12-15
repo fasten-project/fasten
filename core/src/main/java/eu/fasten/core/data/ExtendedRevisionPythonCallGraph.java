@@ -124,7 +124,6 @@ public class ExtendedRevisionPythonCallGraph extends ExtendedRevisionCallGraph {
      *
      * @return a Map of method ids and their corresponding {@link FastenURI}
      */
-    @Override
     public Map<Integer, PythonNode> mapOfAllMethods() {
         Map<Integer, PythonNode> result = new HashMap<>();
         for (final var aClass : this.getClassHierarchy().get(PythonScope.internal).entrySet()) {

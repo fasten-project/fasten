@@ -210,7 +210,6 @@ public class ExtendedRevisionCCallGraph extends ExtendedRevisionCallGraph {
      *
      * @return a Map of method ids and their corresponding {@link FastenURI}
      */
-    @Override
     public Map<Integer, CNode> mapOfAllMethods() {
         Map<Integer, CNode> result = new HashMap<>();
 

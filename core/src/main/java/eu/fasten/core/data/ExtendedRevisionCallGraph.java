@@ -174,13 +174,6 @@ public abstract class ExtendedRevisionCallGraph {
     }
 
     /**
-     * Returns the map of all the methods of this object.
-     *
-     * @return a Map of method ids and their corresponding {@link FastenURI}
-     */
-    public abstract <T> T mapOfAllMethods();
-
-    /**
      * Checks whether this {@link ExtendedRevisionCallGraph} is empty, e.g. has no calls.
      *
      * @return true if this {@link ExtendedRevisionCallGraph} is empty
