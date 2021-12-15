@@ -154,6 +154,11 @@ public class ExtendedRevisionPythonCallGraph extends ExtendedRevisionCallGraph {
         return result;
     }
 
+    public JSONObject toJSON() {
+        final var result = super.toJSON();
+        result.put(classHierarchyJSONKey, classHierarchyToJSON(classHierarchy));
+        return result;
+    }
     /**
      * Produces the JSON of methods
      *
