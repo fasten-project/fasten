@@ -32,7 +32,7 @@ public final class ExtendedBuilderC extends ExtendedBuilder {
         return architecture;
     }
 
-    public String getClassHierarchy() {
+    public EnumMap<CScope, Map<String, Map<Integer, CNode>>> getClassHierarchy() {
         return classHierarchy;
     }
 
