@@ -78,7 +78,7 @@ public class ExtendedRevisionPythonCallGraph extends ExtendedRevisionCallGraph {
     }
 
     /**
-     * Creates builder to build {@link ExtendedRevisionCCallGraph}.
+     * Creates builder to build {@link ExtendedRevisionPythonCallGraph}.
      *
      * @return created builder
      */
