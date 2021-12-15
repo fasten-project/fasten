@@ -24,9 +24,13 @@ import java.util.Map;
 /**
  * Builder for {@link ExtendedRevisionJavaCallGraph}.
  */
-public final class ExtendedBuilderJava extends ExtendedBuilder<EnumMap<JavaScope, Map<String,
-    JavaType>>> {
+public final class ExtendedBuilderJava extends ExtendedBuilder {
 
+    protected EnumMap<JavaScope, Map<String, JavaType>> classHierarchy;
+
+    public EnumMap<JavaScope, Map<String, JavaType>> getClassHierarchy() {
+    return classHierarchy;
+    }
     public ExtendedBuilderJava nodeCount(final int nodeCount) {
         this.nodeCount = nodeCount;
         return this;

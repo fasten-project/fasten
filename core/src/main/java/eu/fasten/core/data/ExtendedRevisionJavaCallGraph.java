@@ -38,21 +38,21 @@ import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
  *
  * @implNote each method in the revision has a unique id in this CHA.
  */
-public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<EnumMap<JavaScope,
-    Map<String, JavaType>>> {
-    static {
-        classHierarchyJSONKey = "cha";
-    }
+public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph {
 
+    public static final String classHierarchyJSONKey = "cha";
+
+    protected EnumMap<JavaScope, Map<String, JavaType>> classHierarchy;
 
     /**
      * Creates {@link ExtendedRevisionJavaCallGraph} with the given builder.
      *
      * @param builder builder for {@link ExtendedRevisionJavaCallGraph}
      */
-    public ExtendedRevisionJavaCallGraph(final ExtendedBuilder<EnumMap<JavaScope, Map<String,
-        JavaType>>> builder) {
+    public ExtendedRevisionJavaCallGraph(final ExtendedBuilderJava builder) {
         super(builder);
+        ExtendedBuilderJava javaBuilder = (ExtendedBuilderJava) builder;
+        this.classHierarchy = javaBuilder.getClassHierarchy();
     }
 
     /**
@@ -73,7 +73,8 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Enu
                                          final long timestamp, int nodeCount, final String cgGenerator,
                                          final EnumMap<JavaScope,Map<String, JavaType>> classHierarchy,
                                          final Graph graph) {
-        super(forge, product, version, timestamp, nodeCount, cgGenerator, classHierarchy, graph);
+        super(forge, product, version, timestamp, nodeCount, cgGenerator, graph);
+        this.classHierarchy = classHierarchy;
     }
 
 
@@ -85,6 +86,7 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Enu
     public ExtendedRevisionJavaCallGraph(final JSONObject json) throws JSONException {
         super(json, ExtendedRevisionJavaCallGraph.class);
         this.graph = new JavaGraph(json.getJSONArray("call-sites"));
+        this.classHierarchy = getCHAFromJSON(json.getJSONObject(classHierarchyJSONKey));
     }
 
     /**
@@ -298,7 +300,7 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Enu
             return false;
         }
 
-        ExtendedRevisionCallGraph<?> that = (ExtendedRevisionCallGraph<?>) o;
+        ExtendedRevisionJavaCallGraph that = (ExtendedRevisionJavaCallGraph) o;
 
         if (nodeCount != that.nodeCount) {
             return false;
@@ -362,4 +364,9 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Enu
 
         return dg;
     }
+
+    public EnumMap<JavaScope, Map<String, JavaType>> getClassHierarchy() {
+    return classHierarchy;
+    }
+
 }
