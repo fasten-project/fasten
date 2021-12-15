@@ -34,22 +34,43 @@ import org.json.JSONException;
  * The data structure contains a map with CScopes to a map of functions'
  * URIs to a map of NodeIds to CNodes.
  */
-public class ExtendedRevisionCCallGraph extends ExtendedRevisionCallGraph<EnumMap<CScope, Map<String, Map<Integer, CNode>>>> {
+public class ExtendedRevisionCCallGraph extends ExtendedRevisionCallGraph {
     static {
         classHierarchyJSONKey = "functions";
     }
     public String architecture;
+    protected EnumMap<CScope, Map<String, Map<Integer, CNode>>> classHierarchy;
 
     /**
      * Creates {@link ExtendedRevisionCCallGraph} with the given builder.
      *
      * @param builder builder for {@link ExtendedRevisionCCallGraph}
      */
-    public ExtendedRevisionCCallGraph(final ExtendedBuilder<EnumMap<CScope, Map<String, Map<Integer, CNode>>>> builder) {
+    public ExtendedRevisionCCallGraph(final ExtendedBuilderC builder) {
         super(builder);
         ExtendedBuilderC cBuilder = (ExtendedBuilderC) builder;
         this.architecture = cBuilder.getArchitecture();
+        this.classHierarchy = cBuilder.getClassHierarchy();
     }
+
+    /**
+     * Creates {@link ExtendedRevisionCCallGraph} with the given data.
+     *
+     * @param forge          the forge.
+     * @param product        the product.
+     * @param version        the version.
+     * @param timestamp      the timestamp (in seconds from UNIX epoch); optional: if not present,
+     *                       it is set to -1.
+     * @param nodeCount      number of nodes
+     * @param cgGenerator    The name of call graph generator that generated this call graph.
+     * @param graph          the call graph (no control is done on the graph) {@link Graph}
+     */
+    public ExtendedRevisionCCallGraph(final String forge, final String product, final String version,
+                                     final long timestamp, int nodeCount, final String cgGenerator,
+                                     final Graph graph) {
+        super(forge, product, version, timestamp, nodeCount, cgGenerator, graph);
+    }
+
 
     /**
      * Creates {@link ExtendedRevisionCCallGraph} with the given data.
@@ -69,8 +90,10 @@ public class ExtendedRevisionCCallGraph extends ExtendedRevisionCallGraph<EnumMa
                                      final long timestamp, int nodeCount, final String cgGenerator,
                                      final EnumMap<CScope, Map<String, Map<Integer, CNode>>>classHierarchy,
                                      final Graph graph) {
-        super(forge, product, version, timestamp, nodeCount, cgGenerator, classHierarchy, graph);
+        super(forge, product, version, timestamp, nodeCount, cgGenerator, graph);
+        this.classHierarchy = classHierarchy;
     }
+
 
     /**
      * Creates {@link ExtendedRevisionCCallGraph} with the given data.
@@ -91,8 +114,9 @@ public class ExtendedRevisionCCallGraph extends ExtendedRevisionCallGraph<EnumMa
                                      final long timestamp, int nodeCount, final String cgGenerator,
                                      final EnumMap<CScope, Map<String, Map<Integer, CNode>>>classHierarchy,
                                      final Graph graph, final String architecture) {
-        super(forge, product, version, timestamp, nodeCount, cgGenerator, classHierarchy, graph);
+        super(forge, product, version, timestamp, nodeCount, cgGenerator, graph);
         this.architecture = architecture;
+        this.classHierarchy = classHierarchy;
     }
 
     /**
@@ -103,6 +127,7 @@ public class ExtendedRevisionCCallGraph extends ExtendedRevisionCallGraph<EnumMa
     public ExtendedRevisionCCallGraph(final JSONObject json) throws JSONException {
         super(json, ExtendedRevisionCCallGraph.class);
         this.architecture = json.has("architecture") ? json.getString("architecture") : null;
+        this.classHierarchy = getCHAFromJSON(json.getJSONObject(classHierarchyJSONKey));
     }
 
     /**
@@ -286,5 +311,9 @@ public class ExtendedRevisionCCallGraph extends ExtendedRevisionCallGraph<EnumMa
      */
     public String getRevisionName() {
         return this.product + "_" + this.architecture + "_" + this.version;
+    }
+
+   public EnumMap<CScope, Map<String, Map<Integer, CNode>>> getClassHierarchy() {
+        return classHierarchy;
     }
 }

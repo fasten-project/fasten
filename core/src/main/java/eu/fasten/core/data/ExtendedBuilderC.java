@@ -24,11 +24,16 @@ import java.util.Map;
 /**
  * Builder for {@link ExtendedRevisionCCallGraph}.
  */
-public final class ExtendedBuilderC extends ExtendedBuilder<EnumMap<CScope, Map<String, Map<Integer, CNode>>>> {
+public final class ExtendedBuilderC extends ExtendedBuilder {
     public String architecture;
+    protected EnumMap<CScope, Map<String, Map<Integer, CNode>>> classHierarchy;
 
     public String getArchitecture() {
         return architecture;
+    }
+
+    public String getClassHierarchy() {
+        return classHierarchy;
     }
 
     public ExtendedBuilderC nodeCount(final int nodeCount) {
