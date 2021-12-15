@@ -28,18 +28,21 @@ import org.json.JSONObject;
 import org.json.JSONException;
 
 //Map<PythonScope, Map<String, PythonType>>
-public class ExtendedRevisionPythonCallGraph extends ExtendedRevisionCallGraph<EnumMap<PythonScope, Map<String, PythonType>>> {
-    static {
-        classHierarchyJSONKey = "modules";
-    }
+public class ExtendedRevisionPythonCallGraph extends ExtendedRevisionCallGraph {
+
+    public static final String classHierarchyJSONKey = "modules";
+
+    protected EnumMap<PythonScope, Map<String, PythonType>> classHierarchy;
 
     /**
      * Creates {@link ExtendedRevisionPythonCallGraph} with the given builder.
      *
-     * @param builder builder for {@link ExtendedRevisionCCallGraph}
+     * @param builder builder for {@link ExtendedRevisionPythonCallGraph}
      */
-    public ExtendedRevisionPythonCallGraph(final ExtendedBuilder<EnumMap<PythonScope, Map<String, PythonType>>> builder) {
+    public ExtendedRevisionPythonCallGraph(final ExtendedBuilderPython builder) {
         super(builder);
+        ExtendedBuilderPython pythonBuilder = (ExtendedBuilderPython) builder;
+        this.classHierarchy = pythonBuilder.getClassHierarchy();
     }
 
     /**
@@ -60,7 +63,8 @@ public class ExtendedRevisionPythonCallGraph extends ExtendedRevisionCallGraph<E
                                      final long timestamp, int nodeCount, final String cgGenerator,
                                      final EnumMap<PythonScope, Map<String, PythonType>>classHierarchy,
                                      final Graph graph) {
-        super(forge, product, version, timestamp, nodeCount, cgGenerator, classHierarchy, graph);
+        super(forge, product, version, timestamp, nodeCount, cgGenerator, graph);
+        this.classHierarchy = classHierarchy;
     }
 
     /**
@@ -70,6 +74,7 @@ public class ExtendedRevisionPythonCallGraph extends ExtendedRevisionCallGraph<E
      */
     public ExtendedRevisionPythonCallGraph(final JSONObject json) throws JSONException {
         super(json, ExtendedRevisionPythonCallGraph.class);
+        this.classHierarchy = getCHAFromJSON(json.getJSONObject(classHierarchyJSONKey));
     }
 
     /**
@@ -160,6 +165,10 @@ public class ExtendedRevisionPythonCallGraph extends ExtendedRevisionCallGraph<E
             result.put(type.getKey(), type.getValue().toJSON());
         }
         return result;
+    }
+
+   public EnumMap<PythonScope, Map<String, PythonType>> getClassHierarchy() {
+        return classHierarchy;
     }
 
     /**
