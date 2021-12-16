@@ -86,8 +86,6 @@
         <module>core</module>
         <module>analyzer</module>
         <module>server</module>
-        <module>vulnerable-chain-plugin</module>
-        <module>vulnerable-call-chain-plugin</module>
     </modules>
 
     <dependencies>
