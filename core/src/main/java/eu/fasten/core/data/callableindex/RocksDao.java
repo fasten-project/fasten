@@ -185,6 +185,7 @@ public class RocksDao implements Closeable {
             final FastByteArrayOutputStream fbaos = new FastByteArrayOutputStream();
 			for (final LongIterator iterator = graph.iterator(); iterator.hasNext();) {
                 final long node = iterator.nextLong();
+//			    for(node: map.entrySet()){
 
                 final FastenJavaURI uri = FastenJavaURI.create(gidToUriMap.get(node)).decanonicalize();
                 writeString("/" + uri.getNamespace() + "/" + uri.getClassName(), fbaos);

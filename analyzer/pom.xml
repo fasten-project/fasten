@@ -46,6 +46,7 @@
         <module>vulnerability-statements-processor</module>
         <module>vulnerability-packages-listener</module>
         <module>dummy-plugin</module>
+        <module>vulnerable-call-chain-plugin</module>
     </modules>
 
     <build>
