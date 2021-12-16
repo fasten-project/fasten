@@ -13,9 +13,12 @@ env:
   IMAGE_NAME: fasten.server.develop.slim
 
 jobs:
-  windows-build:
-    runs-on: windows-2019
-    if: github.event_name == 'push'
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-20.04, windows-2019]
+    if: github.event_name != 'push'
 
     steps:
       - name: Checkout repo
@@ -27,7 +30,7 @@ jobs:
       - name: Build jar
         run: mvn clean install
 
-  linux-build-and-push:
+  push:
     runs-on: ubuntu-20.04
     if: github.event_name == 'push'
 
