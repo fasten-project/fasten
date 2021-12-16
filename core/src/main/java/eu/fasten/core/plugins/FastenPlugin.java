@@ -20,7 +20,7 @@ package eu.fasten.core.plugins;
 
 import org.pf4j.ExtensionPoint;
 
-import java.util.List;
+import java.util.LinkedList;
 import java.util.Optional;
 
 /**
@@ -102,7 +102,7 @@ public interface FastenPlugin extends ExtensionPoint {
      *
      * @return
      */
-    default Optional<List<String>> getWorkingSet() {
+    default Optional<LinkedList<String>> getWorkingSet() {
         return Optional.empty();
     }
 }
