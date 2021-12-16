@@ -266,18 +266,17 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
     }
 
     private void handleWorkingSet(KafkaRecordKind kafkaRecordKind) {
-        if (plugin.getWorkingSet().isPresent() && plugin.getWorkingSet().get().size() != 0) {
-            for (var record : plugin.getWorkingSet().get()) {
-                // The plug-in might spend a lot of time in processing its working set,
-                // therefore, we need to keep the Kafka consumers alive
-                sendHeartBeat(connNorm);
-                sendHeartBeat(connPrio);
-                logger.info("Read working set message from " + kafkaRecordKind.toString() + " topic");
-                processRecord(new ConsumerRecord<>(plugin.name() + "_working_set", 0, 0,
-                        "", record), System.currentTimeMillis() / 1000L, kafkaRecordKind);
-                logger.info("Successfully processed working set message from " + kafkaRecordKind.toString() + " topic");
+        if (plugin.getWorkingSet().isPresent() && !plugin.getWorkingSet().get().isEmpty()) {
+            // The plug-in might spend a lot of time in processing its working set,
+            // therefore, we need to keep the Kafka consumers alive
+            sendHeartBeat(connNorm);
+            sendHeartBeat(connPrio);
 
-            }
+            var record = plugin.getWorkingSet().get().pop();
+            logger.info("Read working set message from " + kafkaRecordKind.toString() + " topic");
+            processRecord(new ConsumerRecord<>(plugin.name() + "_working_set", 0, 0,
+                    "", record), System.currentTimeMillis() / 1000L, kafkaRecordKind);
+            logger.info("Successfully processed working set message from " + kafkaRecordKind.toString() + " topic");
         }
     }
 

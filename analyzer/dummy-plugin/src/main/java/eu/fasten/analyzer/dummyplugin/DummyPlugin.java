@@ -22,7 +22,8 @@ public class DummyPlugin extends Plugin {
 
         private final Logger logger = LoggerFactory.getLogger(DummyPlugin.class.getName());
         private List<String> consumeTopics = new LinkedList<>(Collections.singletonList("dummytopic"));
-        private List<String> workingSet = new LinkedList<>();
+        private LinkedList<String> workingSet = new LinkedList<>();
+        private boolean processedWorkingSet = false;
 
         @Override
         public Optional<List<String>> consumeTopic() {
@@ -37,10 +38,12 @@ public class DummyPlugin extends Plugin {
         @Override
         public void consume(String record) {
             logger.info("Processing" + record);
-            if (!workingSet.isEmpty()) {
+
+            if (workingSet.isEmpty() && !processedWorkingSet) {
                 IntStream.range(0, 5).forEachOrdered(n -> {
                     workingSet.add("Item " + n);
                 });
+                processedWorkingSet = true;
             }
         }
 
@@ -90,7 +93,7 @@ public class DummyPlugin extends Plugin {
         }
 
         @Override
-        public Optional<List<String>> getWorkingSet() {
+        public Optional<LinkedList<String>> getWorkingSet() {
             return Optional.of(this.workingSet);
         }
     }
