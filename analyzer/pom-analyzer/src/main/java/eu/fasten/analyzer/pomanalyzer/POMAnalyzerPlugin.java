@@ -21,6 +21,7 @@ package eu.fasten.analyzer.pomanalyzer;
 import eu.fasten.analyzer.pomanalyzer.pom.DataExtractor;
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.metadatadb.MetadataDao;
+import eu.fasten.core.maven.data.Dependency;
 import eu.fasten.core.maven.data.DependencyData;
 import eu.fasten.core.maven.utils.MavenUtilities;
 import eu.fasten.core.plugins.DBConnector;
@@ -44,6 +45,7 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.regex.Pattern;
 
 
 public class POMAnalyzerPlugin extends Plugin {
@@ -73,6 +75,9 @@ public class POMAnalyzerPlugin extends Plugin {
         private boolean restartTransaction = false;
         private boolean processedRecord = false;
         private String artifactRepository = null;
+
+        // This set contains transitive dependencies of a package version to be processed by the plugin
+        private LinkedList<String> workingSet = new LinkedList<>();
 
         @Override
         public Optional<List<String>> consumeTopic() {
@@ -258,8 +263,28 @@ public class POMAnalyzerPlugin extends Plugin {
                 final var depId = metadataDao.insertPackage(depProduct, Constants.mvnForge);
                 metadataDao.insertDependency(packageVersionId, depId,
                         dep.getVersionConstraints(), null, null, null, dep.toJSON());
+
+                addPkgVersionToWorkingSet(metadataDao, dep, depProduct);
             }
             return packageVersionId;
+        }
+
+        private void addPkgVersionToWorkingSet(MetadataDao metadataDao, Dependency dep, String depProduct) {
+            var depVersions = dep.getVersion().split(Pattern.quote(","));
+            for (String v : depVersions) {
+                if (MavenUtilities.mavenArtifactExists(dep.groupId, dep.artifactId, v, null) &&
+                        (metadataDao.getPackageVersion(depProduct, v) == null ||
+                                !metadataDao.isArtifactIngested(depProduct, v))) {
+                    var depPkgVersion = new JSONObject();
+                    depPkgVersion.put("artifactId", dep.artifactId);
+                    depPkgVersion.put("groupId", dep.groupId);
+                    depPkgVersion.put("version", v);
+                    this.workingSet.add(depPkgVersion.toString());
+                    logger.info("Added dependency {}:{} to the working set for further processing", depProduct, v);
+                } else {
+                    logger.warn("Dependency {}:{} already exists in KB or doesn't exist on Maven Central", depProduct, v);
+                }
+            }
         }
 
         private Timestamp getProperTimestamp(long timestamp) {
@@ -336,6 +361,11 @@ public class POMAnalyzerPlugin extends Plugin {
         @Override
         public void freeResource() {
 
+        }
+
+        @Override
+        public Optional<LinkedList<String>> getWorkingSet() {
+            return Optional.of(this.workingSet);
         }
     }
 }
