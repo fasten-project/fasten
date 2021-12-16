@@ -1,4 +1,4 @@
-name: Build, test, and publish slim FASTEN server image
+name: Publish slim FASTEN server image
 
 on:
   push:
@@ -13,24 +13,6 @@ env:
   IMAGE_NAME: fasten.server.develop.slim
 
 jobs:
-  build:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-20.04, windows-2019]
-    if: github.event_name != 'push'
-
-    steps:
-      - name: Checkout repo
-        uses: actions/checkout@v2
-      - name: Setup JDK 11
-        uses: actions/setup-java@v2
-        with:
-          distribution: 'temurin'
-          java-version: '11'
-      - name: Build jar
-        run: mvn clean install
-
   push:
     runs-on: ubuntu-20.04
     if: github.event_name == 'push'
