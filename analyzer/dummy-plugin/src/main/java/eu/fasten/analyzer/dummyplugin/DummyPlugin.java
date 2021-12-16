@@ -10,6 +10,7 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.IntStream;
 
 public class DummyPlugin extends Plugin {
     public DummyPlugin (PluginWrapper wrapper) {
@@ -21,6 +22,7 @@ public class DummyPlugin extends Plugin {
 
         private final Logger logger = LoggerFactory.getLogger(DummyPlugin.class.getName());
         private List<String> consumeTopics = new LinkedList<>(Collections.singletonList("dummytopic"));
+        private List<String> workingSet = new LinkedList<>();
 
         @Override
         public Optional<List<String>> consumeTopic() {
@@ -35,6 +37,11 @@ public class DummyPlugin extends Plugin {
         @Override
         public void consume(String record) {
             logger.info("Processing" + record);
+            if (!workingSet.isEmpty()) {
+                IntStream.range(0, 5).forEachOrdered(n -> {
+                    workingSet.add("Item " + n);
+                });
+            }
         }
 
         @Override
@@ -80,6 +87,11 @@ public class DummyPlugin extends Plugin {
         @Override
         public void freeResource() {
 
+        }
+
+        @Override
+        public Optional<List<String>> getWorkingSet() {
+            return Optional.of(this.workingSet);
         }
     }
 }
