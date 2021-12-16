@@ -20,6 +20,9 @@ package eu.fasten.core.plugins;
 
 import org.pf4j.ExtensionPoint;
 
+import java.util.List;
+import java.util.Optional;
+
 /**
  * Base interface for all FASTEN plugins. Used mostly for discovery and loading.
  * <p>
@@ -81,7 +84,8 @@ public interface FastenPlugin extends ExtensionPoint {
      *
      * @param throwable exception or error.
      */
-    default void setPluginError(Exception throwable) {}
+    default void setPluginError(Exception throwable) {
+    }
 
     /**
      * The purpose of this method is to release all the resources of a plug-in. For example,
@@ -89,4 +93,16 @@ public interface FastenPlugin extends ExtensionPoint {
      */
     void freeResource();
 
+    /**
+     * A plug-in can optionally have a working set that contains new records to process based on a previously processed record.
+     * This set will be processed once a normal/priority record is processed.
+     * Note that
+     * (1) The messages in the working set should have the same format as JSON strings in the input topics of the plug-in.
+     * (2) The working set is an in-memory storage and hence it is volatile.
+     *
+     * @return
+     */
+    default Optional<List<String>> getWorkingSet() {
+        return Optional.empty();
+    }
 }
