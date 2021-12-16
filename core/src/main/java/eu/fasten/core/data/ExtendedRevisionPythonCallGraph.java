@@ -35,17 +35,6 @@ public class ExtendedRevisionPythonCallGraph extends ExtendedRevisionCallGraph {
     protected EnumMap<PythonScope, Map<String, PythonType>> classHierarchy;
 
     /**
-     * Creates {@link ExtendedRevisionPythonCallGraph} with the given builder.
-     *
-     * @param builder builder for {@link ExtendedRevisionPythonCallGraph}
-     */
-    public ExtendedRevisionPythonCallGraph(final ExtendedBuilderPython builder) {
-        super(builder);
-        ExtendedBuilderPython pythonBuilder = (ExtendedBuilderPython) builder;
-        this.classHierarchy = pythonBuilder.getClassHierarchy();
-    }
-
-    /**
      * Creates {@link ExtendedRevisionPythonCallGraph} with the given data.
      *
      * @param forge          the forge.
@@ -75,15 +64,6 @@ public class ExtendedRevisionPythonCallGraph extends ExtendedRevisionCallGraph {
     public ExtendedRevisionPythonCallGraph(final JSONObject json) throws JSONException {
         super(json, ExtendedRevisionPythonCallGraph.class);
         this.classHierarchy = getCHAFromJSON(json.getJSONObject(classHierarchyJSONKey));
-    }
-
-    /**
-     * Creates builder to build {@link ExtendedRevisionPythonCallGraph}.
-     *
-     * @return created builder
-     */
-    public static ExtendedBuilderPython extendedBuilder() {
-        return new ExtendedBuilderPython();
     }
 
     /**

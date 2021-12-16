@@ -44,16 +44,6 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph {
 
     protected EnumMap<JavaScope, Map<String, JavaType>> classHierarchy;
 
-    /**
-     * Creates {@link ExtendedRevisionJavaCallGraph} with the given builder.
-     *
-     * @param builder builder for {@link ExtendedRevisionJavaCallGraph}
-     */
-    public ExtendedRevisionJavaCallGraph(final ExtendedBuilderJava builder) {
-        super(builder);
-        ExtendedBuilderJava javaBuilder = (ExtendedBuilderJava) builder;
-        this.classHierarchy = javaBuilder.getClassHierarchy();
-    }
 
     /**
      * Creates {@link ExtendedRevisionJavaCallGraph} with the given data.
@@ -89,14 +79,6 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph {
         this.classHierarchy = getCHAFromJSON(json.getJSONObject(classHierarchyJSONKey));
     }
 
-    /**
-     * Creates builder to build {@link ExtendedRevisionJavaCallGraph}.
-     *
-     * @return created builder
-     */
-    public static ExtendedBuilderJava extendedBuilder() {
-        return new ExtendedBuilderJava();
-    }
 
     public JavaGraph getGraph() {
         return (JavaGraph) this.graph;

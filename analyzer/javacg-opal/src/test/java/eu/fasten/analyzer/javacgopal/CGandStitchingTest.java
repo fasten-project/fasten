@@ -78,13 +78,7 @@ public class CGandStitchingTest {
         throws OPALException {
         var opalCG = new OPALCallGraphConstructor().construct(file, RTA);
         var cg = new PartialCallGraphConstructor().construct(opalCG, ONLY_STATIC_CALLSITES);
-        return ExtendedRevisionJavaCallGraph.extendedBuilder()
-            .graph(cg.graph)
-            .product(product)
-            .version(version)
-            .classHierarchy(cg.classHierarchy)
-            .nodeCount(cg.nodeCount)
-            .build();
+        return new ExtendedRevisionJavaCallGraph("", product, version, -1, cg.nodeCount, "", cg.classHierarchy, cg.graph);
     }
 
     @Test
@@ -350,13 +344,7 @@ public class CGandStitchingTest {
             new MavenArtifactDownloader(coord).downloadArtifact("jar");
         final var opalCG = new OPALCallGraphConstructor().construct(dep1, RTA);
         final var cg = new PartialCallGraphConstructor().construct(opalCG, ONLY_STATIC_CALLSITES);
-        return ExtendedRevisionJavaCallGraph.extendedBuilder()
-            .graph(cg.graph)
-            .product(coord.getProduct())
-            .version(coord.getVersionConstraint())
-            .classHierarchy(cg.classHierarchy)
-            .nodeCount(cg.nodeCount)
-            .build();
+        return new ExtendedRevisionJavaCallGraph("", coord.getProduct(), coord.getVersionConstraint(), -1, cg.nodeCount, "", cg.classHierarchy, cg.graph);
     }
 
 }

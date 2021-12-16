@@ -80,29 +80,6 @@ public abstract class ExtendedRevisionCallGraph {
     protected String cgGenerator;
 
     /**
-     * Dummy Constructor, we need it to create objects by using an ExtendedBuilder.
-     */
-    protected ExtendedRevisionCallGraph() {}
-
-    /**
-     * Creates {@link ExtendedRevisionCallGraph} with the given builder.
-     *
-     * @param builder builder for {@link ExtendedRevisionCallGraph}
-     */
-    protected ExtendedRevisionCallGraph(final ExtendedBuilder builder) {
-        this.forge = builder.getForge();
-        this.product = builder.getProduct();
-        this.version = builder.getVersion();
-        this.productVersion = this.product + "$" + this.version;
-        this.timestamp = builder.getTimeStamp();
-        this.uri = FastenURI.create("fasten://" + forge + "!" + product + "$" + version);
-        this.forgelessUri = FastenURI.create("fasten://" + product + "$" + version);
-        this.cgGenerator = builder.getCgGenerator();
-        this.graph = builder.getGraph();
-        this.nodeCount = builder.getNodeCount();
-    }
-
-    /**
      * Creates {@link ExtendedRevisionCallGraph} with the given data.
      *
      * @param forge          the forge.

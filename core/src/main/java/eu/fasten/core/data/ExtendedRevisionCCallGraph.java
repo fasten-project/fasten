@@ -40,18 +40,6 @@ public class ExtendedRevisionCCallGraph extends ExtendedRevisionCallGraph {
     protected EnumMap<CScope, Map<String, Map<Integer, CNode>>> classHierarchy;
 
     /**
-     * Creates {@link ExtendedRevisionCCallGraph} with the given builder.
-     *
-     * @param builder builder for {@link ExtendedRevisionCCallGraph}
-     */
-    public ExtendedRevisionCCallGraph(final ExtendedBuilderC builder) {
-        super(builder);
-        ExtendedBuilderC cBuilder = (ExtendedBuilderC) builder;
-        this.architecture = cBuilder.getArchitecture();
-        this.classHierarchy = cBuilder.getClassHierarchy();
-    }
-
-    /**
      * Creates {@link ExtendedRevisionCCallGraph} with the given data.
      *
      * @param forge          the forge.
@@ -126,15 +114,6 @@ public class ExtendedRevisionCCallGraph extends ExtendedRevisionCallGraph {
         super(json, ExtendedRevisionCCallGraph.class);
         this.architecture = json.has("architecture") ? json.getString("architecture") : null;
         this.classHierarchy = getCHAFromJSON(json.getJSONObject(classHierarchyJSONKey));
-    }
-
-    /**
-     * Creates builder to build {@link ExtendedRevisionCCallGraph}.
-     *
-     * @return created builder
-     */
-    public static ExtendedBuilderC extendedBuilder() {
-        return new ExtendedBuilderC();
     }
 
     /**

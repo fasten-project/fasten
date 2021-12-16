@@ -21,7 +21,6 @@ import org.skyscreamer.jsonassert.JSONCompareMode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import eu.fasten.core.data.ExtendedBuilderJava;
 import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
 import eu.fasten.core.data.JSONUtils;
 import eu.fasten.core.data.opal.MavenCoordinate;
@@ -74,10 +73,7 @@ class JSONUtilsTest {
 
     @Test
     void shouldNotHaveCommaInTheEnd(){
-        ExtendedBuilderJava builder = new ExtendedBuilderJava();
-        final var rcg =
-            builder.timestamp(-1).classHierarchy(graph.getClassHierarchy()).graph(graph.getGraph())
-                .forge(graph.forge).cgGenerator(graph.getCgGenerator()).version(graph.version).product(graph.product).build();
+        final var rcg = new  ExtendedRevisionJavaCallGraph(graph.forge, graph.product, graph.version, -1, 0, graph.getCgGenerator(), graph.getClassHierarchy(), graph.getGraph());
         final var rcgString = JSONUtils.toJSONString(rcg);
         Assertions.assertTrue(rcgString.endsWith("]]}"));
         JSONAssert.assertEquals(rcg.toJSON().toString(), rcgString,
