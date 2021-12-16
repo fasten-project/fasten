@@ -18,7 +18,6 @@
 
 package eu.fasten.server.plugins.kafka;
 
-import com.google.common.base.Strings;
 import eu.fasten.core.exceptions.UnrecoverableError;
 import eu.fasten.core.plugins.KafkaPlugin;
 import eu.fasten.server.plugins.FastenServerPlugin;
@@ -222,6 +221,8 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
                 hasConsumedPriorityRecord = true;
                 logger.info("Successfully processed priority message offset " + r.offset() + " from partition " + r.partition() + ".");
                 // TODO: Keep a list of processed priority messages like normal ones
+
+                handleWorkingSet(KafkaRecordKind.PRIORITY);
             }
             doCommitSync(KafkaRecordKind.PRIORITY);
         }
@@ -238,8 +239,9 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
                 logger.info("Read normal message offset " + r.offset() + " from partition " + r.partition() + ".");
                 processRecord(r, consumeTimestamp, KafkaRecordKind.NORMAL);
                 logger.info("Successfully processed normal message offset " + r.offset() + " from partition " + r.partition() + ".");
-
                 messagesProcessed.add(new ImmutablePair<>(r.offset(), r.partition()));
+
+                handleWorkingSet(KafkaRecordKind.NORMAL);
             }
 
             // Commit only after _all_ records are processed.
@@ -259,6 +261,22 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
             // If local storage is enabled, clear the correct partitions after offsets are committed.
             if (localStorage != null) {
                 localStorage.clear(messagesProcessed.stream().map((x) -> x.right).collect(Collectors.toList()));
+            }
+        }
+    }
+
+    private void handleWorkingSet(KafkaRecordKind kafkaRecordKind) {
+        if (plugin.getWorkingSet().isPresent() && plugin.getWorkingSet().get().size() != 0) {
+            for (var record : plugin.getWorkingSet().get()) {
+                // The plug-in might spend a lot of time in processing its working set,
+                // therefore, we need to keep the Kafka consumers alive
+                sendHeartBeat(connNorm);
+                sendHeartBeat(connPrio);
+                logger.info("Read working set message from " + kafkaRecordKind.toString() + " topic");
+                processRecord(new ConsumerRecord<>(plugin.name() + "_working_set", 0, 0,
+                        "", record), System.currentTimeMillis() / 1000L, kafkaRecordKind);
+                logger.info("Successfully processed working set message from " + kafkaRecordKind.toString() + " topic");
+
             }
         }
     }
