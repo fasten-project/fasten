@@ -1,5 +1,6 @@
 package eu.fasten.analyzer.dummyplugin;
 import eu.fasten.core.plugins.KafkaPlugin;
+import org.json.JSONObject;
 import org.pf4j.Extension;
 import org.pf4j.Plugin;
 import org.pf4j.PluginWrapper;
@@ -49,7 +50,9 @@ public class DummyPlugin extends Plugin {
 
         @Override
         public Optional<String> produce() {
-            return Optional.empty();
+            var json = new JSONObject();
+            json.put("dummy", "dummy");
+            return Optional.of(json.toString());
         }
 
         @Override
