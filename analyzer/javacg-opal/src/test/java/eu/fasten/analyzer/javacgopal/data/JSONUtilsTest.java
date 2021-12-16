@@ -73,7 +73,7 @@ class JSONUtilsTest {
 
     @Test
     void shouldNotHaveCommaInTheEnd(){
-        final var rcg = new  ExtendedRevisionJavaCallGraph(graph.forge, graph.product, graph.version, -1, 0, graph.getCgGenerator(), graph.getClassHierarchy(), graph.getGraph());
+        final var rcg = new  ExtendedRevisionJavaCallGraph(graph.forge, graph.product, graph.version, -1, graph.getCgGenerator(), graph.getClassHierarchy(), graph.getGraph());
         final var rcgString = JSONUtils.toJSONString(rcg);
         Assertions.assertTrue(rcgString.endsWith("]]}"));
         JSONAssert.assertEquals(rcg.toJSON().toString(), rcgString,
