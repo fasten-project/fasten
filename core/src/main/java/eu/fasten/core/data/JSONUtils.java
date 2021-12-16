@@ -90,7 +90,6 @@ public class JSONUtils {
     private static void appendArtifactInformation(StringBuilder result,
                                                   final ExtendedRevisionJavaCallGraph erjcg) {
         appendKeyValue(result, "product", erjcg.product);
-        appendKeyValue(result, "nodes", erjcg.nodeCount);
         appendKeyValue(result, "forge", erjcg.forge);
         appendKeyValue(result, "generator", erjcg.cgGenerator);
         appendKeyValue(result, "version", erjcg.version);

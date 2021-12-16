@@ -48,11 +48,6 @@ class ExtendedRevisionPythonCallGraphTest {
     }
 
     @Test
-    void getNodeCount() {
-        assertEquals(5, graph.getNodeCount());
-    }
-
-    @Test
     void toJSON() throws FileNotFoundException, URISyntaxException {
         var file = new File(Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
                 .getResource("extended-revision-call-graph/testPythonRCG.json")).toURI().getPath());
@@ -61,7 +56,7 @@ class ExtendedRevisionPythonCallGraphTest {
 
         JSONObject jsonGraph = new JSONObject(tokener);
 
-        System.out.println("HAAHAHAHAHAAAHAHAH " + jsonGraph.toString());
+        System.out.println(jsonGraph.toString());
 
         assertEquals(jsonGraph.getJSONObject("modules").getJSONObject("internal").toString(),
                 graph.toJSON().getJSONObject("modules").getJSONObject("internal").toString());

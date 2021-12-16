@@ -49,11 +49,6 @@ class ExtendedRevisionJavaCallGraphTest {
     }
 
     @Test
-    void getNodeCount() {
-        assertEquals(5, graph.getNodeCount());
-    }
-
-    @Test
     void toJSON() throws FileNotFoundException, URISyntaxException {
         var file = new File(Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
                 .getResource("extended-revision-call-graph/testRCG.json")).toURI().getPath());

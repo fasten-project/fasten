@@ -42,17 +42,16 @@ public class ExtendedRevisionPythonCallGraph extends ExtendedRevisionCallGraph {
      * @param version        the version.
      * @param timestamp      the timestamp (in seconds from UNIX epoch); optional: if not present,
      *                       it is set to -1.
-     * @param nodeCount      number of nodes
      * @param cgGenerator    The name of call graph generator that generated this call graph.
      * @param classHierarchy class hierarchy of this revision including all classes of the revision
      *                       <code> Map<{@link FastenURI}, {@link CallType}> </code>
      * @param graph          the call graph (no control is done on the graph) {@link Graph}
      */
     public ExtendedRevisionPythonCallGraph(final String forge, final String product, final String version,
-                                     final long timestamp, int nodeCount, final String cgGenerator,
+                                     final long timestamp, final String cgGenerator,
                                      final EnumMap<PythonScope, Map<String, PythonType>>classHierarchy,
                                      final Graph graph) {
-        super(forge, product, version, timestamp, nodeCount, cgGenerator, graph);
+        super(forge, product, version, timestamp, cgGenerator, graph);
         this.classHierarchy = classHierarchy;
     }
 

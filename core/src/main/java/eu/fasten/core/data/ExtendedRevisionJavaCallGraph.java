@@ -53,17 +53,16 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph {
      * @param version        the version.
      * @param timestamp      the timestamp (in seconds from UNIX epoch); optional: if not present,
      *                       it is set to -1.
-     * @param nodeCount      number of nodes
      * @param cgGenerator    The name of call graph generator that generated this call graph.
      * @param classHierarchy class hierarchy of this revision including all classes of the revision
      *                       <code> Map<{@link FastenURI}, {@link JavaType}> </code>
      * @param graph          the call graph (no control is done on the graph) {@link Graph}
      */
     public ExtendedRevisionJavaCallGraph(final String forge, final String product, final String version,
-                                         final long timestamp, int nodeCount, final String cgGenerator,
+                                         final long timestamp, final String cgGenerator,
                                          final EnumMap<JavaScope,Map<String, JavaType>> classHierarchy,
                                          final Graph graph) {
-        super(forge, product, version, timestamp, nodeCount, cgGenerator, graph);
+        super(forge, product, version, timestamp, cgGenerator, graph);
         this.classHierarchy = classHierarchy;
     }
 
@@ -267,7 +266,6 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph {
         }
         result.put(classHierarchyJSONKey, classHierarchyToJSON(classHierarchy));
         result.put("call-sites", graph.toJSON());
-        result.put("nodes", nodeCount);
 
         return result;
     }
@@ -283,9 +281,6 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph {
 
         ExtendedRevisionJavaCallGraph that = (ExtendedRevisionJavaCallGraph) o;
 
-        if (nodeCount != that.nodeCount) {
-            return false;
-        }
         if (timestamp != that.timestamp) {
             return false;
         }
@@ -319,7 +314,6 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph {
     @Override
     public int hashCode() {
         int result = classHierarchy != null ? classHierarchy.hashCode() : 0;
-        result = 31 * result + nodeCount;
         result = 31 * result + (graph != null ? graph.hashCode() : 0);
         result = 31 * result + (forge != null ? forge.hashCode() : 0);
         result = 31 * result + (product != null ? product.hashCode() : 0);

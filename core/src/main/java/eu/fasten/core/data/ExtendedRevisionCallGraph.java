@@ -29,11 +29,6 @@ public abstract class ExtendedRevisionCallGraph {
 
 
     /**
-     * The number of nodes in a revision call graph.
-     */
-    protected int nodeCount;
-
-    /**
      * Includes all the edges of the revision call graph (internal, external,
      * and resolved).
      */
@@ -87,12 +82,11 @@ public abstract class ExtendedRevisionCallGraph {
      * @param version        the version.
      * @param timestamp      the timestamp (in seconds from UNIX epoch); optional: if not present,
      *                       it is set to -1.
-     * @param nodeCount      number of nodes
      * @param cgGenerator    The name of call graph generator that generated this call graph.
      * @param graph          the call graph (no control is done on the graph) {@link Graph}
      */
     protected ExtendedRevisionCallGraph(final String forge, final String product, final String version,
-                                     final long timestamp, int nodeCount, final String cgGenerator,
+                                     final long timestamp, final String cgGenerator,
                                      final Graph graph) {
         this.forge = forge;
         this.product = product;
@@ -102,7 +96,6 @@ public abstract class ExtendedRevisionCallGraph {
         this.uri = FastenURI.create("fasten://" + forge + "!" + product + "$" + version);
         this.forgelessUri = FastenURI.create("fasten://" + product + "$" + version);
         this.cgGenerator = cgGenerator;
-        this.nodeCount = nodeCount;
         this.graph = graph;
     }
 
@@ -123,7 +116,6 @@ public abstract class ExtendedRevisionCallGraph {
         if (!rcgClass.getName().equals(ExtendedRevisionJavaCallGraph.class.getName())) {
             this.graph = new Graph(json.getJSONObject("graph"));
         }
-        this.nodeCount = json.getInt("nodes");
     }
 
     public String getCgGenerator() {
@@ -132,10 +124,6 @@ public abstract class ExtendedRevisionCallGraph {
 
     public Graph getGraph() {
         return graph;
-    }
-
-    public int getNodeCount() {
-        return nodeCount;
     }
 
     /**
@@ -180,7 +168,6 @@ public abstract class ExtendedRevisionCallGraph {
             result.put("timestamp", timestamp);
         }
         result.put("graph", graph.toJSON());
-        result.put("nodes", nodeCount);
 
         return result;
     }

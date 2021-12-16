@@ -123,7 +123,7 @@ public class PartialCallGraphConstructor {
 
             return new ExtendedRevisionJavaCallGraph(Constants.mvnForge, coordinate.getProduct(),
                     coordinate.getVersionConstraint(), timestamp,
-                    partialCallGraph.nodeCount, Constants.opalGenerator,
+                    Constants.opalGenerator,
                     partialCallGraph.classHierarchy,
                     partialCallGraph.graph);
         } finally {
