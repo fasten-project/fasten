@@ -90,9 +90,9 @@
                                 <exclude>META-INF/*.SF</exclude>
                                 <exclude>META-INF/*.DSA</exclude>
                                 <exclude>META-INF/*.RSA</exclude>
-<!--                                <exclude>eu/fasten/core/plugins/*</exclude>-->
-<!--                                <exclude>eu/fasten/core/data/callableindex/*</exclude>-->
-<!--                                <exclude>eu/fasten/core/data/*</exclude>-->
+                                <exclude>eu/fasten/core/plugins/*</exclude>
+                                <exclude>eu/fasten/core/data/callableindex/*</exclude>
+                                <exclude>eu/fasten/core/data/*</exclude>
                             </excludes>
                         </filter>
                     </filters>
