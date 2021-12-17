@@ -64,4 +64,8 @@ public class MavenProduct {
     public String toString() {
         return String.format("%s%s%s", groupId, Constants.mvnCoordinateSeparator, artifactId);
     }
+
+    public String getProductString(){
+        return String.format("%s:%s", groupId, artifactId);
+    }
 }

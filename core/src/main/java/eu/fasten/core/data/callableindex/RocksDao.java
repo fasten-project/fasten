@@ -40,6 +40,7 @@ import org.rocksdb.CompressionType;
 import org.rocksdb.DBOptions;
 import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
+import org.rocksdb.TransactionDB;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -98,11 +99,11 @@ public class RocksDao implements Closeable {
     /**
      * Constructor of RocksDao (Database Access Object).
      *
-     * @param dbDir Directory where RocksDB data will be stored
+     * @param dbDirocksDbr Directory where RocksDB data will be stored
      * @throws RocksDBException if there is an error loading or opening RocksDB instance
      */
     public RocksDao(final String dbDir, final boolean readOnly, final boolean onlyDefaultColumnFamily) throws RocksDBException {    // TODO: Remove onlyDefaultColumnFamily
-        RocksDB.loadLibrary();
+        TransactionDB.loadLibrary();
 		final ColumnFamilyOptions defaultOptions = new ColumnFamilyOptions();
         ColumnFamilyOptions metadataOptions = null;
         if (!onlyDefaultColumnFamily) {
@@ -112,12 +113,13 @@ public class RocksDao implements Closeable {
                 .setCreateIfMissing(true)
                 .setCreateMissingColumnFamilies(true);
 		final List<ColumnFamilyDescriptor> cfDescriptors = onlyDefaultColumnFamily ?
-                List.of(new ColumnFamilyDescriptor(RocksDB.DEFAULT_COLUMN_FAMILY, defaultOptions)) :
-                List.of(new ColumnFamilyDescriptor(RocksDB.DEFAULT_COLUMN_FAMILY, defaultOptions), new ColumnFamilyDescriptor(METADATA_COLUMN_FAMILY, metadataOptions));
+                List.of(new ColumnFamilyDescriptor(TransactionDB.DEFAULT_COLUMN_FAMILY, defaultOptions)) :
+                List.of(new ColumnFamilyDescriptor(TransactionDB.DEFAULT_COLUMN_FAMILY, defaultOptions),
+                    new ColumnFamilyDescriptor(METADATA_COLUMN_FAMILY, metadataOptions));
         final List<ColumnFamilyHandle> columnFamilyHandles = new ArrayList<>();
         this.rocksDb = readOnly
-                ? RocksDB.openReadOnly(dbOptions, dbDir, cfDescriptors, columnFamilyHandles)
-                : RocksDB.open(dbOptions, dbDir, cfDescriptors, columnFamilyHandles);
+                ? TransactionDB.openReadOnly(dbOptions, dbDir, cfDescriptors, columnFamilyHandles)
+                : TransactionDB.open(dbOptions, dbDir, cfDescriptors, columnFamilyHandles);
         this.defaultHandle = columnFamilyHandles.get(0);
         if (!onlyDefaultColumnFamily) {
             this.metadataHandle = columnFamilyHandles.get(1);
