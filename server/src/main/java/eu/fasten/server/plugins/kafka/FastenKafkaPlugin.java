@@ -271,7 +271,9 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
                 // The plug-in might spend a lot of time in processing its working set,
                 // therefore, we need to keep the Kafka consumers alive
                 sendHeartBeat(connNorm);
-                sendHeartBeat(connPrio);
+                if (!prioTopics.isEmpty()) {
+                    sendHeartBeat(connPrio);
+                }
 
                 var record = plugin.getWorkingSet().get().pop();
                 logger.info("Read working set message from " + kafkaRecordKind.toString() + " topic");
