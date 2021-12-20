@@ -148,7 +148,7 @@ public class MetadataDatabasePythonPlugin extends Plugin {
             return callables;
         }
 
-        protected List<CallSitesRecord> insertEdges(Graph graph, Long2LongOpenHashMap lidToGidMap,
+        protected List<CallSitesRecord> insertEdges(CPythonGraph graph, Long2LongOpenHashMap lidToGidMap,
                                                     Map<String, Long> namespaceMap, MetadataDao metadataDao) {
             final var numEdges = graph.getInternalCalls().size() + graph.getExternalCalls().size();
 

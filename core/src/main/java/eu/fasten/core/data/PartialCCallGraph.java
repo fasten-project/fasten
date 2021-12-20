@@ -48,11 +48,11 @@ public class PartialCCallGraph extends PartialCallGraph {
      * @param timestamp      the timestamp (in seconds from UNIX epoch); optional: if not present,
      *                       it is set to -1.
      * @param cgGenerator    The name of call graph generator that generated this call graph.
-     * @param graph          the call graph (no control is done on the graph) {@link Graph}
+     * @param graph          the call graph (no control is done on the graph) {@link CPythonGraph}
      */
     public PartialCCallGraph(final String forge, final String product, final String version,
                              final long timestamp, final String cgGenerator,
-                             final Graph graph) {
+                             final CPythonGraph graph) {
         super(forge, product, version, timestamp, cgGenerator, graph);
     }
 
@@ -67,13 +67,12 @@ public class PartialCCallGraph extends PartialCallGraph {
      *                       it is set to -1.
      * @param cgGenerator    The name of call graph generator that generated this call graph.
      * @param classHierarchy class hierarchy of this revision including all classes of the revision
-     *                       <code> Map<{@link FastenURI}, {@link CallType}> </code>
-     * @param graph          the call graph (no control is done on the graph) {@link Graph}
+     * @param graph          the call graph (no control is done on the graph) {@link CPythonGraph}
      */
     public PartialCCallGraph(final String forge, final String product, final String version,
                              final long timestamp, final String cgGenerator,
                              final EnumMap<CScope, Map<String, Map<Integer, CNode>>>classHierarchy,
-                             final Graph graph) {
+                             final CPythonGraph graph) {
         super(forge, product, version, timestamp, cgGenerator, graph);
         this.classHierarchy = classHierarchy;
     }
@@ -89,14 +88,13 @@ public class PartialCCallGraph extends PartialCallGraph {
      *                       it is set to -1.
      * @param cgGenerator    The name of call graph generator that generated this call graph.
      * @param classHierarchy class hierarchy of this revision including all classes of the revision
-     *                       <code> Map<{@link FastenURI}, {@link CallType}> </code>
-     * @param graph          the call graph (no control is done on the graph) {@link Graph}
+     * @param graph          the call graph (no control is done on the graph) {@link CPythonGraph}
      * @param architecture   the architecture.
      */
     public PartialCCallGraph(final String forge, final String product, final String version,
                              final long timestamp, final String cgGenerator,
                              final EnumMap<CScope, Map<String, Map<Integer, CNode>>>classHierarchy,
-                             final Graph graph, final String architecture) {
+                             final CPythonGraph graph, final String architecture) {
         super(forge, product, version, timestamp, cgGenerator, graph);
         this.architecture = architecture;
         this.classHierarchy = classHierarchy;
@@ -215,7 +213,7 @@ public class PartialCCallGraph extends PartialCallGraph {
     /**
      * Produces the JSON of methods
      *
-     * @param CScope of the cha
+     * @param scope of the cha
      */
     public static JSONObject methodsToJSON(final Map<CScope, Map<String, Map<Integer, CNode>>> cha, CScope scope) {
         final var result = new JSONObject();

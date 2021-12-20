@@ -26,7 +26,7 @@ import it.unimi.dsi.fastutil.ints.IntIntPair;
 
 import org.json.JSONArray;
 
-public class Graph {
+public class CPythonGraph {
 
     /**
      * Keeps all the internal calls of the graph. The metadata per call is stored as a map.
@@ -44,13 +44,13 @@ public class Graph {
     private final Map<IntIntPair, Map<Object, Object>> resolvedCalls;
 
     /**
-     * Creates {@link Graph} from given internal, external, and resolved calls.
+     * Creates {@link CPythonGraph} from given internal, external, and resolved calls.
      *
      * @param internalCalls internal calls map
      * @param externalCalls external calls map
      * @param resolvedCalls resolved calls map
      */
-    public Graph(final Map<IntIntPair, Map<Object, Object>> internalCalls,
+    public CPythonGraph(final Map<IntIntPair, Map<Object, Object>> internalCalls,
                  final Map<IntIntPair, Map<Object, Object>> externalCalls,
                  final Map<IntIntPair, Map<Object, Object>> resolvedCalls) {
         this.internalCalls = internalCalls;
@@ -59,23 +59,23 @@ public class Graph {
     }
 
     /**
-     * Creates {@link Graph} for the given JSONObject.
+     * Creates {@link CPythonGraph} for the given JSONObject.
      *
      * @param graph JSONObject of a graph including its internal calls and external calls.
      */
-    public Graph(final JSONObject graph) {
+    public CPythonGraph(final JSONObject graph) {
         this.internalCalls = extractCalls(graph, "internalCalls");
         this.externalCalls = extractCalls(graph, "externalCalls");
         this.resolvedCalls = extractCalls(graph, "resolvedCalls");
     }
 
     /**
-     * Creates {@link Graph} from given internal and external calls. Resolved calls are empty.
+     * Creates {@link CPythonGraph} from given internal and external calls. Resolved calls are empty.
      *
      * @param internalCalls internal calls map
      * @param externalCalls external calls map
      */
-    public Graph(final HashMap<IntIntPair, Map<Object, Object>> internalCalls,
+    public CPythonGraph(final HashMap<IntIntPair, Map<Object, Object>> internalCalls,
                  final HashMap<IntIntPair, Map<Object, Object>> externalCalls) {
         this.internalCalls = internalCalls;
         this.externalCalls = externalCalls;
@@ -83,9 +83,9 @@ public class Graph {
     }
 
     /**
-     * Creates {@link Graph} with all fields empty.
+     * Creates {@link CPythonGraph} with all fields empty.
      */
-    public Graph() {
+    public CPythonGraph() {
         this.internalCalls = new HashMap<>();
         this.externalCalls = new HashMap<>();
         this.resolvedCalls = new HashMap<>();
@@ -151,15 +151,15 @@ public class Graph {
     /**
      * Add calls from a given graph to this graph.
      *
-     * @param graph a {@link Graph} to take new calls from
+     * @param graph a {@link CPythonGraph} to take new calls from
      */
-    public void append(Graph graph) {
+    public void append(CPythonGraph graph) {
         this.internalCalls.putAll(graph.getInternalCalls());
         this.externalCalls.putAll(graph.getExternalCalls());
     }
 
     /**
-     * Converts this {@link Graph} object to its JSON representation.
+     * Converts this {@link CPythonGraph} object to its JSON representation.
      *
      * @return the corresponding JSON representation.
      */
@@ -205,7 +205,7 @@ public class Graph {
             return false;
         }
 
-        Graph graph = (Graph) o;
+        CPythonGraph graph = (CPythonGraph) o;
 
         if (internalCalls != null ? !internalCalls.equals(graph.internalCalls) :
             graph.internalCalls != null) {

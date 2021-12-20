@@ -205,7 +205,7 @@ public class MetadataDatabaseJavaPlugin extends Plugin {
             return callables;
         }
 
-        protected List<CallSitesRecord> insertEdges(Graph graph, Long2LongOpenHashMap lidToGidMap,
+        protected List<CallSitesRecord> insertEdges(CPythonGraph graph, Long2LongOpenHashMap lidToGidMap,
                                                     Map<String, Long> typesMap, MetadataDao metadataDao) {
             var javaGraph = (JavaGraph) graph;
             final var numEdges = javaGraph.getCallSites().size();

@@ -295,7 +295,7 @@ public abstract class MetadataDBExtension implements KafkaPlugin, DBConnector {
         return new ImmutablePair<>(new ArrayList<>(), 0);
     }
 
-    protected List<CallSitesRecord> insertEdges(Graph graph, Long2LongOpenHashMap lidToGidMap,
+    protected List<CallSitesRecord> insertEdges(CPythonGraph graph, Long2LongOpenHashMap lidToGidMap,
                                                 Map<String, Long> namespaceMap, MetadataDao metadataDao) {
         return new ArrayList<>();
     }

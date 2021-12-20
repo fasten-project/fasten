@@ -56,12 +56,12 @@ public class PartialJavaCallGraph extends PartialCallGraph {
      * @param cgGenerator    The name of call graph generator that generated this call graph.
      * @param classHierarchy class hierarchy of this revision including all classes of the revision
      *                       <code> Map<{@link FastenURI}, {@link JavaType}> </code>
-     * @param graph          the call graph (no control is done on the graph) {@link Graph}
+     * @param graph          the call graph (no control is done on the graph) {@link CPythonGraph}
      */
     public PartialJavaCallGraph(final String forge, final String product, final String version,
                                 final long timestamp, final String cgGenerator,
                                 final EnumMap<JavaScope,Map<String, JavaType>> classHierarchy,
-                                final Graph graph) {
+                                final CPythonGraph graph) {
         super(forge, product, version, timestamp, cgGenerator, graph);
         this.classHierarchy = classHierarchy;
     }

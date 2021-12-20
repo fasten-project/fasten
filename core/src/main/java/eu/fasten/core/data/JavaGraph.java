@@ -25,7 +25,7 @@ import org.json.JSONObject;
 import java.util.HashMap;
 import java.util.Map;
 
-public class JavaGraph extends Graph {
+public class JavaGraph extends CPythonGraph {
 
     /**
      * Keeps all the internal calls of the graph. The metadata per call is stored as a map.

@@ -19,11 +19,11 @@
 package eu.fasten.analyzer.metadataplugin;
 
 import eu.fasten.core.data.CNode;
+import eu.fasten.core.data.CPythonGraph;
 import eu.fasten.core.data.CScope;
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.PartialCCallGraph;
 import eu.fasten.core.data.PartialCallGraph;
-import eu.fasten.core.data.Graph;
 import eu.fasten.core.data.callableindex.GidGraph;
 import eu.fasten.core.data.metadatadb.MetadataDao;
 import eu.fasten.core.data.metadatadb.codegen.enums.Access;
@@ -228,7 +228,7 @@ public class MetadataDatabaseCPlugin extends Plugin {
             return new ImmutablePair<>(callables, numInternal);
         }
 
-        protected List<CallSitesRecord> insertEdges(Graph graph,
+        protected List<CallSitesRecord> insertEdges(CPythonGraph graph,
                                                     Long2LongOpenHashMap lidToGidMap, MetadataDao metadataDao) {
             final var numEdges = graph.getInternalCalls().size() + graph.getExternalCalls().size();
 

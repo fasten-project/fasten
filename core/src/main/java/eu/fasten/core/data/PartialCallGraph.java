@@ -32,7 +32,7 @@ public abstract class PartialCallGraph {
      * Includes all the edges of the revision call graph (internal, external,
      * and resolved).
      */
-    protected Graph graph;
+    protected CPythonGraph graph;
 
     /**
      * The forge.
@@ -83,11 +83,11 @@ public abstract class PartialCallGraph {
      * @param timestamp      the timestamp (in seconds from UNIX epoch); optional: if not present,
      *                       it is set to -1.
      * @param cgGenerator    The name of call graph generator that generated this call graph.
-     * @param graph          the call graph (no control is done on the graph) {@link Graph}
+     * @param graph          the call graph (no control is done on the graph) {@link CPythonGraph}
      */
     protected PartialCallGraph(final String forge, final String product, final String version,
                                final long timestamp, final String cgGenerator,
-                               final Graph graph) {
+                               final CPythonGraph graph) {
         this.forge = forge;
         this.product = product;
         this.version = version;
@@ -114,7 +114,7 @@ public abstract class PartialCallGraph {
         this.forgelessUri = FastenURI.create("fasten://" + product + "$" + version);
         this.cgGenerator = json.getString("generator");
         if (!rcgClass.getName().equals(PartialJavaCallGraph.class.getName())) {
-            this.graph = new Graph(json.getJSONObject("graph"));
+            this.graph = new CPythonGraph(json.getJSONObject("graph"));
         }
     }
 
@@ -122,7 +122,7 @@ public abstract class PartialCallGraph {
         return cgGenerator;
     }
 
-    public Graph getGraph() {
+    public CPythonGraph getGraph() {
         return graph;
     }
 
