@@ -178,11 +178,14 @@ public class POMAnalyzerPlugin extends Plugin {
             do {
                 try {
                     var metadataDao = new MetadataDao(dslContext);
+                    addDependenciesToWorkingSet(metadataDao);
+
                     dslContext.transaction(transaction -> {
                         metadataDao.setContext(DSL.using(transaction));
                         long id;
                         try {
-                            id = saveToDatabase(group + Constants.mvnCoordinateSeparator + artifact,
+                        	
+                        	id = saveToDatabase(group + Constants.mvnCoordinateSeparator + artifact,
                                     version, repoUrl, commitTag, sourcesUrl, packagingType, date,
                                     projectName, parentCoordinate, dependencyData, artifactRepository, metadataDao);
                         } catch (RuntimeException e) {
@@ -264,28 +267,31 @@ public class POMAnalyzerPlugin extends Plugin {
                 final var depId = metadataDao.insertPackage(depProduct, Constants.mvnForge);
                 metadataDao.insertDependency(packageVersionId, depId,
                         dep.getVersionConstraints(), null, null, null, dep.toJSON());
-
-                addPkgVersionToWorkingSet(metadataDao, dep, depProduct);
             }
             return packageVersionId;
         }
 
-        private void addPkgVersionToWorkingSet(MetadataDao metadataDao, Dependency dep, String depProduct) {
-            var depVersions = dep.getVersion().split(Pattern.quote(","));
-            for (String v : depVersions) {
-                if (MavenUtilities.mavenArtifactExists(dep.groupId, dep.artifactId, v, null) &&
-                        (metadataDao.getPackageVersion(depProduct, v) == null ||
-                                !metadataDao.isArtifactIngested(depProduct, v))) {
-                    var depPkgVersion = new JSONObject();
-                    depPkgVersion.put("artifactId", dep.artifactId);
-                    depPkgVersion.put("groupId", dep.groupId);
-                    depPkgVersion.put("version", v);
-                    this.workingSet.add(depPkgVersion.toString());
-                    logger.info("Added dependency {}:{} to the working set for further processing", depProduct, v);
-                } else {
-                    logger.warn("Dependency {}:{} already exists in KB or doesn't exist on Maven Central", depProduct, v);
-                }
-            }
+        private void addDependenciesToWorkingSet(MetadataDao metadataDao) {
+        	
+        	for (var dep : dependencyData.dependencies) {
+        		var depProduct = dep.groupId + Constants.mvnCoordinateSeparator + dep.artifactId;
+        		
+	            var depVersions = dep.getVersion().split(Pattern.quote(","));
+	            for (String v : depVersions) {
+	                if (MavenUtilities.mavenArtifactExists(dep.groupId, dep.artifactId, v, null) &&
+	                        (metadataDao.getPackageVersion(depProduct, v) == null ||
+	                                !metadataDao.isArtifactIngested(depProduct, v))) {
+	                    var depPkgVersion = new JSONObject();
+	                    depPkgVersion.put("artifactId", dep.artifactId);
+	                    depPkgVersion.put("groupId", dep.groupId);
+	                    depPkgVersion.put("version", v);
+	                    this.workingSet.add(depPkgVersion.toString());
+	                    logger.info("Added dependency {}:{} to the working set for further processing", depProduct, v);
+	                } else {
+	                    logger.warn("Dependency {}:{} already exists in KB or doesn't exist on Maven Central", depProduct, v);
+	                }
+	            }
+        	}
         }
 
         private Timestamp getProperTimestamp(long timestamp) {
