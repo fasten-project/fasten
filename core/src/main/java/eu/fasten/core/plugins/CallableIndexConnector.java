@@ -21,7 +21,7 @@ package eu.fasten.core.plugins;
 import eu.fasten.core.data.callableindex.RocksDao;
 
 /**
- * A plug-in that needs to access CPythonGraph database (RocksDB)
+ * A plug-in that needs to access graph database (RocksDB)
  */
 public interface CallableIndexConnector extends FastenPlugin {
 

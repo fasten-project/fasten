@@ -36,15 +36,15 @@ public class GidGraph {
     private final List<List<Long>> edges;
 
     /**
-     * Constructor for CPythonGraph.
+     * Constructor for Graph.
      *
-     * @param index            ID of the CPythonGraph (index from postgres)
+     * @param index            ID of the graph (index from postgres)
      * @param product          Product name
      * @param version          Product version
-     * @param nodes            List of Global IDs of nodes of the CPythonGraph
+     * @param nodes            List of Global IDs of nodes of the graph
      *                         (first internal nodes, then external nodes)
      * @param numInternalNodes Number of internal nodes in nodes list
-     * @param edges            List of edges of the CPythonGraph with pairs for Global IDs
+     * @param edges            List of edges of the graph with pairs for Global IDs
      */
     public GidGraph(long index, String product, String version, List<Long> nodes, int numInternalNodes,
                     List<CallSitesRecord> edges) {
@@ -83,9 +83,9 @@ public class GidGraph {
     }
 
     /**
-     * Converts the CPythonGraph object into JSON string.
+     * Converts the Graph object into JSON string.
      *
-     * @return JSON representation of the CPythonGraph
+     * @return JSON representation of the graph
      */
     public JSONObject toJSON() {
         var json = new JSONObject();
@@ -99,15 +99,15 @@ public class GidGraph {
     }
 
     /**
-     * Creates CPythonGraph object from JSON object.
+     * Creates Graph object from JSON object.
      *
-     * @param jsonGraph JSONObject representing a CPythonGraph
-     * @return CPythonGraph instance
-     * @throws JSONException if JSON CPythonGraph is null or is not in correct form
+     * @param jsonGraph JSONObject representing a graph
+     * @return Graph instance
+     * @throws JSONException if JSON graph is null or is not in correct form
      */
     public static GidGraph getGraph(JSONObject jsonGraph) throws JSONException {
         if (jsonGraph == null) {
-            throw new JSONException("JSON CPythonGraph cannot be null");
+            throw new JSONException("JSON Graph cannot be null");
         }
         var index = jsonGraph.getLong("index");
         var product = jsonGraph.getString("product");

@@ -25,17 +25,26 @@ import org.json.JSONObject;
 import java.util.HashMap;
 import java.util.Map;
 
-public class JavaGraph {
+public class JavaGraph extends Graph {
 
     /**
-     * Keeps all the internal calls of the CPythonGraph. The metadata per call is stored as a map.
+     * Keeps all the internal calls of the graph. The metadata per call is stored as a map.
      */
     private final Map<IntIntPair, Map<Object, Object>> callSites;
 
     /**
+     * Creates {@link JavaGraph} from given call-sites.
+     *
+     * @param callSites internal calls map
+     */
+    public JavaGraph(final Map<IntIntPair, Map<Object, Object>> callSites) {
+        this.callSites = callSites;
+    }
+
+    /**
      * Creates {@link JavaGraph} for the given JSONObject.
      *
-     * @param graph JSONObject of a CPythonGraph including its internal calls and external calls.
+     * @param graph JSONObject of a graph including its internal calls and external calls.
      */
     public JavaGraph(final JSONArray graph) {
         this.callSites = extractCalls(graph);
@@ -55,6 +64,13 @@ public class JavaGraph {
      */
     public JavaGraph() {
         this.callSites = new HashMap<>();
+    }
+
+    public JavaGraph(Map<IntIntPair, Map<Object, Object>> callSites,
+                     Map<IntIntPair, Map<Object, Object>> externalCalls,
+                     ConcurrentMap<IntIntPair, Map<Object, Object>> resolvedCalls) {
+        super(new HashMap<>(), externalCalls, resolvedCalls);
+        this.callSites = callSites;
     }
 
     public Map<IntIntPair, Map<Object, Object>> getCallSites() {
@@ -90,9 +106,9 @@ public class JavaGraph {
     }
 
     /**
-     * Extract calls from a provided JSON representation of a CPythonGraph for a given key.
+     * Extract calls from a provided JSON representation of a graph for a given key.
      *
-     * @param calls CPythonGraph of calls
+     * @param calls graph of calls
      * @return extracted calls
      */
     private Map<IntIntPair, Map<Object, Object>> extractCalls(JSONArray calls) {
@@ -105,7 +121,7 @@ public class JavaGraph {
     }
 
     /**
-     * Add calls from a given CPythonGraph to this CPythonGraph.
+     * Add calls from a given graph to this graph.
      *
      * @param graph a {@link JavaGraph} to take new calls from
      */

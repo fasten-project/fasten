@@ -38,11 +38,6 @@ public class PartialCCallGraph extends PartialCallGraph {
     public static final String classHierarchyJSONKey = "functions";
     public String architecture;
     protected EnumMap<CScope, Map<String, Map<Integer, CNode>>> classHierarchy;
-    /**
-     * Includes all the edges of the revision call CPythonGraph (internal, external,
-     * and resolved).
-     */
-    protected CPythonGraph CPythonGraph;
 
     /**
      * Creates {@link PartialCCallGraph} with the given data.
@@ -52,14 +47,13 @@ public class PartialCCallGraph extends PartialCallGraph {
      * @param version        the version.
      * @param timestamp      the timestamp (in seconds from UNIX epoch); optional: if not present,
      *                       it is set to -1.
-     * @param cgGenerator    The name of call CPythonGraph generator that generated this call CPythonGraph.
-     * @param CPythonGraph          the call CPythonGraph (no control is done on the CPythonGraph) {@link CPythonGraph}
+     * @param cgGenerator    The name of call graph generator that generated this call graph.
+     * @param graph          the call graph (no control is done on the graph) {@link Graph}
      */
     public PartialCCallGraph(final String forge, final String product, final String version,
                              final long timestamp, final String cgGenerator,
-                             final CPythonGraph CPythonGraph) {
-        super(forge, product, version, timestamp, cgGenerator);
-        this.CPythonGraph = CPythonGraph;
+                             final Graph graph) {
+        super(forge, product, version, timestamp, cgGenerator, graph);
     }
 
 
@@ -71,16 +65,17 @@ public class PartialCCallGraph extends PartialCallGraph {
      * @param version        the version.
      * @param timestamp      the timestamp (in seconds from UNIX epoch); optional: if not present,
      *                       it is set to -1.
-     * @param cgGenerator    The name of call CPythonGraph generator that generated this call CPythonGraph.
+     * @param cgGenerator    The name of call graph generator that generated this call graph.
      * @param classHierarchy class hierarchy of this revision including all classes of the revision
+     *                       <code> Map<{@link FastenURI}, {@link CallType}> </code>
+     * @param graph          the call graph (no control is done on the graph) {@link Graph}
      */
     public PartialCCallGraph(final String forge, final String product, final String version,
                              final long timestamp, final String cgGenerator,
-                             final EnumMap<CScope, Map<String, Map<Integer, CNode>>> classHierarchy,
-                             final CPythonGraph CPythonGraph) {
-        super(forge, product, version, timestamp, cgGenerator);
+                             final EnumMap<CScope, Map<String, Map<Integer, CNode>>>classHierarchy,
+                             final Graph graph) {
+        super(forge, product, version, timestamp, cgGenerator, graph);
         this.classHierarchy = classHierarchy;
-        this.CPythonGraph = CPythonGraph;
     }
 
 
@@ -92,15 +87,17 @@ public class PartialCCallGraph extends PartialCallGraph {
      * @param version        the version.
      * @param timestamp      the timestamp (in seconds from UNIX epoch); optional: if not present,
      *                       it is set to -1.
-     * @param cgGenerator    The name of call CPythonGraph generator that generated this call CPythonGraph.
+     * @param cgGenerator    The name of call graph generator that generated this call graph.
      * @param classHierarchy class hierarchy of this revision including all classes of the revision
+     *                       <code> Map<{@link FastenURI}, {@link CallType}> </code>
+     * @param graph          the call graph (no control is done on the graph) {@link Graph}
      * @param architecture   the architecture.
      */
     public PartialCCallGraph(final String forge, final String product, final String version,
                              final long timestamp, final String cgGenerator,
-                             final EnumMap<CScope, Map<String, Map<Integer, CNode>>> classHierarchy,
-                             final String architecture) {
-        super(forge, product, version, timestamp, cgGenerator);
+                             final EnumMap<CScope, Map<String, Map<Integer, CNode>>>classHierarchy,
+                             final Graph graph, final String architecture) {
+        super(forge, product, version, timestamp, cgGenerator, graph);
         this.architecture = architecture;
         this.classHierarchy = classHierarchy;
     }
@@ -108,13 +105,12 @@ public class PartialCCallGraph extends PartialCallGraph {
     /**
      * Creates {@link PartialCallGraph} for the given JSONObject.
      *
-     * @param json JSONObject of a revision call CPythonGraph.
+     * @param json JSONObject of a revision call graph.
      */
     public PartialCCallGraph(final JSONObject json) throws JSONException {
         super(json, PartialCCallGraph.class);
         this.architecture = json.has("architecture") ? json.getString("architecture") : null;
         this.classHierarchy = getCHAFromJSON(json.getJSONObject(classHierarchyJSONKey));
-        this.CPythonGraph = new CPythonGraph(json.getJSONObject("CPythonGraph"));
     }
 
     /**
@@ -219,7 +215,7 @@ public class PartialCCallGraph extends PartialCallGraph {
     /**
      * Produces the JSON of methods
      *
-     * @param scope of the cha
+     * @param CScope of the cha
      */
     public static JSONObject methodsToJSON(final Map<CScope, Map<String, Map<Integer, CNode>>> cha, CScope scope) {
         final var result = new JSONObject();
@@ -234,7 +230,6 @@ public class PartialCCallGraph extends PartialCallGraph {
         final var result = super.toJSON();
         result.put("architecture", architecture);
         result.put(classHierarchyJSONKey, classHierarchyToJSON(classHierarchy));
-        result.put("CPythonGraph", CPythonGraph.toJSON());
         return result;
     }
 
@@ -298,21 +293,7 @@ public class PartialCCallGraph extends PartialCallGraph {
         return this.product + "_" + this.architecture + "_" + this.version;
     }
 
-    @Override
-    public CPythonGraph getCPythonGraph() {return this.CPythonGraph;}
-
-    public EnumMap<CScope, Map<String, Map<Integer, CNode>>> getClassHierarchy() {
+   public EnumMap<CScope, Map<String, Map<Integer, CNode>>> getClassHierarchy() {
         return classHierarchy;
-    }
-
-    /**
-     * Checks whether this {@link PartialCallGraph} is empty, e.g. has no calls.
-     *
-     * @return true if this {@link PartialCallGraph} is empty
-     */
-    public boolean isCallGraphEmpty() {
-        return this.CPythonGraph.getInternalCalls().isEmpty()
-            && this.CPythonGraph.getExternalCalls().isEmpty()
-            && this.CPythonGraph.getResolvedCalls().isEmpty();
     }
 }

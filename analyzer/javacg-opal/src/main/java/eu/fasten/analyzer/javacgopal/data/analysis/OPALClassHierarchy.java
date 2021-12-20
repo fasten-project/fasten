@@ -234,7 +234,7 @@ public class OPALClassHierarchy {
     }
 
     /**
-     * Append a sub-CPythonGraph to already existing PartialJavaCallGraph.
+     * Append a sub-graph to already existing PartialJavaCallGraph.
      *  @param source      source method
      * @param targets     list of targets
      * @param resultGraph already existing PartialJavaCallGraph
@@ -250,12 +250,12 @@ public class OPALClassHierarchy {
     }
 
     /**
-     * Given a source method and a list of targets return a sub-CPythonGraph of PartialJavaCallGraph.
+     * Given a source method and a list of targets return a sub-graph of PartialJavaCallGraph.
      *
      * @param source  source method
      * @param targets list of targets
      * @param callSiteOnly
-     * @return PartialJavaCallGraph sub-CPythonGraph
+     * @return PartialJavaCallGraph sub-graph
      */
     public JavaGraph getSubGraph(final Object source,
                              final Iterator<Tuple2<Object, Iterator<DeclaredMethod>>> targets,

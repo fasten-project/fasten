@@ -161,7 +161,7 @@ public class RocksDao implements Closeable {
     }
 
     public void saveToRocksDb(final GidGraph gidGraph) throws IOException, RocksDBException {
-        // Save and obtain CPythonGraph
+        // Save and obtain graph
         final DirectedGraph graph = saveToRocksDb(gidGraph.getIndex(), gidGraph.getNodes(), gidGraph.getNumInternalNodes(), gidGraph.getEdges());
         if (gidGraph instanceof ExtendedGidGraph) {
             // Save metadata
@@ -211,9 +211,9 @@ public class RocksDao implements Closeable {
     }
 
     /**
-	 * Inserts CPythonGraph (nodes and edges) into RocksDB database.
+	 * Inserts graph (nodes and edges) into RocksDB database.
 	 *
-	 * @param index Index of the CPythonGraph (ID from postgres)
+	 * @param index Index of the graph (ID from postgres)
 	 * @param nodes List of GID nodes (first internal nodes, then external nodes)
 	 * @param numInternal Number of internal nodes in nodes list
 	 * @param edges List of edges (pairs of GIDs)
@@ -255,7 +255,7 @@ public class RocksDao implements Closeable {
             /*
              * In this case (very small graphs) there is not much difference with a compressed version, so we
              * use the fast-and-easy implementation of a DirectedGraph given in ArrayImmutableDirectedGraph. The
-             * CPythonGraph is simply serialized with kryo, as it already implements the return interface of
+             * graph is simply serialized with kryo, as it already implements the return interface of
              * getGraphData().
              */
             final Builder builder = new ArrayImmutableDirectedGraph.Builder();
@@ -273,10 +273,10 @@ public class RocksDao implements Closeable {
             return graph;
         } else {
             /*
-             * In this case we compress the CPythonGraph: first, we remap GIDs into a compact temporary ID space
-             * [0..nodes.size()). Then, we build an ArrayListMutableGraph that represent the original CPythonGraph in
-             * the temporary ID space. We run LLP on the CPythonGraph obtaining a permutation of the temporary ID space
-             * that improves greatly compression. Finally, we store the permuted CPythonGraph and the transpose using
+             * In this case we compress the graph: first, we remap GIDs into a compact temporary ID space
+             * [0..nodes.size()). Then, we build an ArrayListMutableGraph that represent the original graph in
+             * the temporary ID space. We run LLP on the graph obtaining a permutation of the temporary ID space
+             * that improves greatly compression. Finally, we store the permuted graph and the transpose using
              * BVGraph, and store the bijective mapping between GIDs and the (permuted) temporary ID space.
              */
             final long[] temporary2GID = new long[nodes.size()];
@@ -290,8 +290,8 @@ public class RocksDao implements Closeable {
                 assert result == -1; // Internal and external GIDs should be
                 // disjoint by construction
             }
-            // Create, store and load compressed versions of the CPythonGraph and of the transpose.
-            // First create the CPythonGraph as an ArrayListMutableGraph
+            // Create, store and load compressed versions of the graph and of the transpose.
+            // First create the graph as an ArrayListMutableGraph
             final ArrayListMutableGraph mutableGraph = new ArrayListMutableGraph(temporary2GID.length);
             // Add arcs between internal nodes
             for (final List<Long> edge : edges) {
@@ -310,7 +310,7 @@ public class RocksDao implements Closeable {
 
             final ImmutableGraph unpermutedGraph = mutableGraph.immutableView();
             final int numNodes = unpermutedGraph.numNodes();
-            // Run LLP on the CPythonGraph
+            // Run LLP on the graph
             final ImmutableGraph symGraph = new ArrayListMutableGraph(Transform.symmetrize(unpermutedGraph)).immutableView();
             final LayeredLabelPropagation clustering = new LayeredLabelPropagation(symGraph, null, Math.min(Runtime.getRuntime().availableProcessors(), 1 + numNodes / 100), 0, false);
             final int[] perm = clustering.computePermutation(LayeredLabelPropagation.DEFAULT_GAMMAS, null);
@@ -325,7 +325,7 @@ public class RocksDao implements Closeable {
             }
             Util.invertPermutationInPlace(sorted);
 
-            // Permute, compress and load the CPythonGraph
+            // Permute, compress and load the graph
             final ImmutableGraph graph = Transform.map(unpermutedGraph, sorted);
             BVGraph.store(graph, file.toString());
             propertyFile = new FileInputStream(file + BVGraph.PROPERTIES_EXTENSION);
@@ -392,10 +392,10 @@ public class RocksDao implements Closeable {
     }
 
     /**
-     * Retrieves CPythonGraph data from RocksDB database.
+     * Retrieves graph data from RocksDB database.
      *
-     * @param index Index of the CPythonGraph
-     * @return the directed CPythonGraph stored in the database
+     * @param index Index of the graph
+     * @return the directed graph stored in the database
      * @throws RocksDBException if there was problem retrieving data from RocksDB
      */
     public DirectedGraph getGraphData(final long index) throws RocksDBException {
@@ -423,18 +423,18 @@ public class RocksDao implements Closeable {
                 return kryo.readObject(input, ArrayImmutableDirectedGraph.class);
             }
         } catch (final NullPointerException e) {
-            logger.warn("CPythonGraph with index " + index + " could not be found");
+            logger.warn("Graph with index " + index + " could not be found");
             return null;
         }
     }
 
     /**
-     * Retrieves CPythonGraph metadata from RocksDB database.
+     * Retrieves graph metadata from RocksDB database.
      *
-     * @param index index of the CPythonGraph
-     * @param graph the CPythonGraph associated with {@code} index
-     * @return the metadata associated with the CPythonGraph, or {@code null}
-     * if no metadata record exists for the provided CPythonGraph
+     * @param index index of the graph
+     * @param graph the graph associated with {@code} index
+     * @return the metadata associated with the graph, or {@code null}
+     * if no metadata record exists for the provided graph
      * @throws RocksDBException if there was problem retrieving data from RocksDB
      */
     public GraphMetadata getGraphMetadata(final long index, final DirectedGraph graph) throws RocksDBException {
@@ -482,9 +482,9 @@ public class RocksDao implements Closeable {
 
 
     /**
-     * Deletes a CPythonGraph from the CPythonGraph database based on its index.
+     * Deletes a graph from the graph database based on its index.
      *
-     * @param index Index of thr CPythonGraph (package_version.id)
+     * @param index Index of thr graph (package_version.id)
      * @return true if deleted successfully, false otherwise
      */
     public boolean deleteCallGraph(final long index) {
@@ -492,7 +492,7 @@ public class RocksDao implements Closeable {
             rocksDb.delete(defaultHandle, Longs.toByteArray(index));
             rocksDb.delete(metadataHandle, Longs.toByteArray(index));
         } catch (final RocksDBException e) {
-            logger.error("Could not delete CPythonGraph with index " + index, e);
+            logger.error("Could not delete graph with index " + index, e);
             return false;
         }
         return true;

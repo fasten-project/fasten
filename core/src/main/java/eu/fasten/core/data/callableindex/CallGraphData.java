@@ -14,15 +14,15 @@ import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.webgraph.ImmutableGraph;
 
-/** Instances of this class contain the data relative to a call CPythonGraph that are stored in the database. */
+/** Instances of this class contain the data relative to a call graph that are stored in the database. */
 public class CallGraphData implements DirectedGraph {
-	/** The call CPythonGraph. */
+	/** The call graph. */
 	private final ImmutableGraph graph;
-	/** The transpose CPythonGraph. */
+	/** The transpose graph. */
 	private final ImmutableGraph transpose;
-	/** Properties (in the sense of {@link ImmutableGraph}) of the call CPythonGraph. */
+	/** Properties (in the sense of {@link ImmutableGraph}) of the call graph. */
 	public final Properties graphProperties;
-	/** Properties (in the sense of {@link ImmutableGraph}) of the transpose CPythonGraph. */
+	/** Properties (in the sense of {@link ImmutableGraph}) of the transpose graph. */
 	public final Properties transposeProperties;
 	/** Maps LIDs to GIDs. */
 	public final long[] LID2GID;

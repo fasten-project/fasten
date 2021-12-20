@@ -23,9 +23,9 @@ import it.unimi.dsi.fastutil.HashCommon;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 
 /**
- * This class contains the metadata associated with the nodes of a call CPythonGraph.
+ * This class contains the metadata associated with the nodes of a call graph.
  * Such metadata is stored by the {@link RocksDao} class in a suitable column family of the RocksDB
- * database, and can be recovered after reading the CPythonGraph using
+ * database, and can be recovered after reading the graph using
  * {@link RocksDao#getGraphMetadata(long, eu.fasten.core.data.DirectedGraph)}, if needed.
  */
 

@@ -73,7 +73,7 @@ public class KnowledgeBaseConnector {
     private String kbUrl;
 
     /**
-     * Path to the serialized dependency CPythonGraph
+     * Path to the serialized dependency graph
      */
     @Value("${kb.depgraph.path}")
     private String depGraphPath;
@@ -121,7 +121,7 @@ public class KnowledgeBaseConnector {
 
 
     /**
-     * Retrieves the dependency CPythonGraph if possible, otherwise constructs the CPythonGraph from database.
+     * Retrieves the dependency graph if possible, otherwise constructs the graph from database.
      */
     @PostConstruct
     public void setDependencyGraphPath() {
@@ -129,18 +129,18 @@ public class KnowledgeBaseConnector {
     }
 
     /**
-     * Established read-only connection to the CPythonGraph database.
+     * Established read-only connection to the graph database.
      */
     @PostConstruct
     public void connectToGraphDB() {
-        logger.info("Establishing connection to the CPythonGraph Database at " + graphdbPath + "...");
+        logger.info("Establishing connection to the Graph Database at " + graphdbPath + "...");
         try {
             graphDao = RocksDBConnector.createReadOnlyRocksDBAccessObject(graphdbPath);
         } catch (RuntimeException e) {
-            logger.error("Couldn't connect to the CPythonGraph Database", e);
+            logger.error("Couldn't connect to the Graph Database", e);
             System.exit(1);
         }
-        logger.info("...CPythonGraph database connection established successfully.");
+        logger.info("...Graph database connection established successfully.");
     }
 
     @PostConstruct

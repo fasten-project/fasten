@@ -25,7 +25,7 @@ public class JSONUtils {
      * Appends general information of the revision to the beginning of the StringBuilder.
      *
      * @param coordinate the object to extract the information from.
-     * @param numNodes   number of nodes in the CPythonGraph
+     * @param numNodes   number of nodes in the graph
      * @param result     the StringBuilder to append the information.
      */
     private static void appendArtifactInformation(StringBuilder result,
@@ -38,9 +38,9 @@ public class JSONUtils {
     }
 
     /**
-     * Appends CPythonGraph information of the revision to the StringBuilder.
+     * Appends graph information of the revision to the StringBuilder.
      *
-     * @param graph  the CPythonGraph object to extract the information from.
+     * @param graph  the graph object to extract the information from.
      * @param result the StringBuilder to append the information.
      */
     private static void appendGraph(StringBuilder result, final DirectedGraph graph) {
@@ -63,14 +63,14 @@ public class JSONUtils {
      * without any object creation in between. It creates a {@link StringBuilder) in the beginning
      * and only appends to it in order to decrease the memory and time consumption.
      *
-     * @param erjcg and object of java revision call CPythonGraph to be converted to JSON String.
+     * @param erjcg and object of java revision call graph to be converted to JSON String.
      * @return the corresponding JSON String.
      */
     public static String toJSONString(final PartialJavaCallGraph erjcg) {
         var result = new StringBuilder("{");
         appendArtifactInformation(result, erjcg);
         appendCha(result, erjcg.classHierarchy);
-        appendGraph(result, erjcg.getCPythonGraph());
+        appendGraph(result, erjcg.getGraph());
         if (erjcg.timestamp >= 0) {
             appendKeyValue(result, "timestamp", erjcg.timestamp, true);
         }
@@ -96,9 +96,9 @@ public class JSONUtils {
     }
 
     /**
-     * Appends CPythonGraph information of the revision to the StringBuilder.
+     * Appends graph information of the revision to the StringBuilder.
      *
-     * @param graph  the CPythonGraph object to extract the information from.
+     * @param graph  the graph object to extract the information from.
      * @param result the StringBuilder to append the information.
      */
     private static void appendGraph(StringBuilder result, final JavaGraph graph) {

@@ -11,7 +11,7 @@
 </p>
 <br/>
 
-The FASTEN core provides functionality to store and query CPythonGraph data from billions of nodes and edges.
+The FASTEN core provides functionality to store and query graph data from billions of nodes and edges.
 The module also provides a common functionality for other project modules, such as FastenURI for different languages and various revision call graphs.
 It also contains functionality for merging call graphs. 
 

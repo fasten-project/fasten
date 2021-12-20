@@ -49,7 +49,7 @@ public final class DependencyGraphUtilities {
 
     public static Graph<Revision, DependencyEdge> invertDependencyGraph(Graph<Revision,
             DependencyEdge> dependencyGraph) {
-        logger.debug("Calculating CPythonGraph transpose");
+        logger.debug("Calculating graph transpose");
         var startTs = System.currentTimeMillis();
         var graph = new DefaultDirectedGraph<Revision, DependencyEdge>(DependencyEdge.class);
         for (var node : dependencyGraph.vertexSet()) {
@@ -59,7 +59,7 @@ public final class DependencyGraphUtilities {
             var reversedEdges = new DependencyEdge(edge.target, edge.source, edge.scope, edge.optional, edge.exclusions, edge.type);
             graph.addEdge(reversedEdges.source, reversedEdges.target, reversedEdges);    // Reverse edges
         }
-        logger.info("CPythonGraph transposed: {} ms", System.currentTimeMillis() - startTs);
+        logger.info("Graph transposed: {} ms", System.currentTimeMillis() - startTs);
         return graph;
     }
 
@@ -120,7 +120,7 @@ public final class DependencyGraphUtilities {
     }
 
     /**
-     * Serialize a Maven dependency CPythonGraph to a file. Independently serializes nodes and edges.
+     * Serialize a Maven dependency graph to a file. Independently serializes nodes and edges.
      *
      * @throws Exception When the files that hold the serialized data cannot be created.
      */
@@ -138,9 +138,9 @@ public final class DependencyGraphUtilities {
     }
 
     /**
-     * Deserialize a Maven dependency CPythonGraph from the indicated file.
+     * Deserialize a Maven dependency graph from the indicated file.
      *
-     * @throws Exception When the files that hold the serialized CPythonGraph cannot be opened.
+     * @throws Exception When the files that hold the serialized graph cannot be opened.
      */
     public static Graph<Revision, DependencyEdge> deserializeDependencyGraph(String path) throws Exception {
         var startTs = System.currentTimeMillis();
@@ -159,28 +159,28 @@ public final class DependencyGraphUtilities {
         nodes.forEach(dependencyGraph::addVertex);
         edges.forEach(e -> dependencyGraph.addEdge(e.source, e.target, e));
 
-        logger.info("Deserialized CPythonGraph at {}: {} ms", path, System.currentTimeMillis() - startTs);
+        logger.info("Deserialized graph at {}: {} ms", path, System.currentTimeMillis() - startTs);
         return dependencyGraph;
     }
 
     /**
-     * Load a dependency CPythonGraph from a path. Both the nodes and edges files need to be present.
+     * Load a dependency graph from a path. Both the nodes and edges files need to be present.
      *
      * @throws Exception When deserialization fails.
      */
     public static Optional<Graph<Revision, DependencyEdge>> loadDependencyGraph(String path) throws Exception {
         if ((new File(path + ".nodes")).exists() &&
                 (new File(path + ".edges")).exists()) {
-            logger.info("Found serialized dependency CPythonGraph at {}. Deserializing.", path);
+            logger.info("Found serialized dependency graph at {}. Deserializing.", path);
             return Optional.of(DependencyGraphUtilities.deserializeDependencyGraph(path));
         } else {
-            logger.warn("CPythonGraph at {} is incomplete", path);
+            logger.warn("Graph at {} is incomplete", path);
             return Optional.empty();
         }
     }
 
     /**
-     * Builds a new Maven dependency CPythonGraph by connecting to the database and then serializes it to the provided path.
+     * Builds a new Maven dependency graph by connecting to the database and then serializes it to the provided path.
      *
      * @throws Exception When serialization fails.
      */
@@ -190,13 +190,13 @@ public final class DependencyGraphUtilities {
         var graphBuilder = new DependencyGraphBuilder();
         var graph = graphBuilder.buildDependencyGraph(dbContext);
         var tsEnd = System.currentTimeMillis();
-        logger.info("CPythonGraph has {} nodes and {} edges ({} ms)", graph.vertexSet().size(),
+        logger.info("Graph has {} nodes and {} edges ({} ms)", graph.vertexSet().size(),
                 graph.edgeSet().size(), tsEnd - tsStart);
 
         tsStart = System.currentTimeMillis();
-        logger.info("Serializing CPythonGraph to {}", path);
+        logger.info("Serializing graph to {}", path);
         DependencyGraphUtilities.serializeDependencyGraph(graph, path == null ? "mavengraph.bin" : path);
-        logger.info("Finished serializing CPythonGraph ({} ms)", System.currentTimeMillis() - tsStart);
+        logger.info("Finished serializing graph ({} ms)", System.currentTimeMillis() - tsStart);
 
         return graph;
     }

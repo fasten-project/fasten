@@ -308,7 +308,7 @@ public class CGandStitchingTest {
     }
 
     public void assertReceiver(PartialJavaCallGraph cg, String callType, String type){
-        for (final var edge : cg.getCPythonGraph().getCallSites().entrySet()) {
+        for (final var edge : cg.getGraph().getExternalCalls().entrySet()) {
             for (final var cs : edge.getValue().entrySet()) {
                 final var metadata = (Map<Object,Object>)cs.getValue();
                 if ((metadata.get("type").equals(callType))) {

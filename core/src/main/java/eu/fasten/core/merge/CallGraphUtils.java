@@ -50,10 +50,10 @@ public class CallGraphUtils {
      * path
      *
      * @param resultPath  the path for the result diff
-     * @param graphNumber the number of the CPythonGraph this number will be written as a prefix to the
+     * @param graphNumber the number of the graph this number will be written as a prefix to the
      *                    result files
-     * @param firstGraph  first CPythonGraph to be compared
-     * @param secondGraph second CPythonGraph to be compared
+     * @param firstGraph  first graph to be compared
+     * @param secondGraph second graph to be compared
      * @throws IOException throws IOException.
      */
     public static void diffInFile(final String resultPath, final int graphNumber,
@@ -76,16 +76,16 @@ public class CallGraphUtils {
      * Writes Strings to files, can be used to output the graphs.
      *
      * @param path    the path to write
-     * @param content the String representation of CPythonGraph or any other String to be written to a file
+     * @param content the String representation of graph or any other String to be written to a file
      * @param suffix  the suffix to put at the end of the path, most of the time file name
      * @throws IOException throws if IO problems occur during writing in a file
      */
     public static void writeToFile(final String path, final String content, final String suffix)
         throws IOException {
         if (content.isEmpty()) {
-            logger.info("Trying to write empty CPythonGraph");
+            logger.info("Trying to write empty graph");
         }
-        logger.info("Writing CPythonGraph to {}", path + suffix);
+        logger.info("Writing graph to {}", path + suffix);
         final var f = new File(path + suffix);
         FileUtils.write(f, content, StandardCharsets.UTF_8);
     }
@@ -94,7 +94,7 @@ public class CallGraphUtils {
      * Writes Strings to files, can be used to output the graphs.
      *
      * @param path    the path to write
-     * @param content the String representation of CPythonGraph or any other String to be written to a file
+     * @param content the String representation of graph or any other String to be written to a file
      * @throws IOException throws if IO problems occur during writing in a file
      */
     public static void writeToFile(final String path, final String content)
@@ -103,9 +103,9 @@ public class CallGraphUtils {
     }
 
     /**
-     * Converts {@link PartialCallGraph} CPythonGraph into the list of node pairs.
+     * Converts {@link PartialCallGraph} graph into the list of node pairs.
      *
-     * @param ercg call CPythonGraph
+     * @param ercg call graph
      * @return list of node pairs
      */
     public static Map<String, List<Pair<String, String>>> convertToNodePairs(
@@ -124,8 +124,16 @@ public class CallGraphUtils {
         final var types = ercg.nodeIDtoTypeNameMap();
         if (includeInternals) {
             result.put("internalTypes",
-                getEdges(ercg.getCPythonGraph().getCallSites(), methods, types));
+                getEdges(ercg.getGraph().getCallSites(), methods, types));
         }
+        result.put("resolvedTypes",
+            getEdges(ercg.getGraph().getResolvedCalls(), methods, types));
+
+        if (includeExternals) {
+            result.put("externalTypes",
+                getEdges(ercg.getGraph().getExternalCalls(), methods, types));
+        }
+
         return result;
     }
 

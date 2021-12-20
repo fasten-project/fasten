@@ -98,19 +98,19 @@ public class CallableIndexServerPlugin extends Plugin {
             final GidGraph gidGraph;
 
             if (path.isEmpty()) {
-                throw new RuntimeException("Provided path to GID CPythonGraph file is empty");
+                throw new RuntimeException("Provided path to GID graph file is empty");
             }
 
             try {
                 JSONTokener tokener = new JSONTokener(new FileReader(path));
                 gidGraph = GidGraph.getGraph(new JSONObject(tokener));
             } catch (JSONException e) {
-                logger.error("Could not parse GID CPythonGraph", e);
+                logger.error("Could not parse GID graph", e);
                 throw e;
             } catch (FileNotFoundException e) {
-                logger.error("The JSON GID CPythonGraph for '"
+                logger.error("The JSON GID graph for '"
                         + Paths.get(path).getFileName() + "'", e);
-                throw new RuntimeException("Couldn't find the GID CPythonGraph at" + Paths.get(path).getFileName() + "on the FS");
+                throw new RuntimeException("Couldn't find the GID graph at" + Paths.get(path).getFileName() + "on the FS");
             }
 
             var artifact = gidGraph.getProduct() + "@" + gidGraph.getVersion();
@@ -135,26 +135,26 @@ public class CallableIndexServerPlugin extends Plugin {
             try {
                 rocksDao.saveToRocksDb(gidGraph);
             } catch (Exception e) {
-                logger.error("Could not save GID CPythonGraph of '" + artifact + "' into RocksDB", e);
-                throw new RuntimeException("Could not save GID CPythonGraph of '" + artifact + "' into RocksDB");
+                logger.error("Could not save GID graph of '" + artifact + "' into RocksDB", e);
+                throw new RuntimeException("Could not save GID graph of '" + artifact + "' into RocksDB");
             }
             if (getPluginError() == null) {
                 logger.info("Saved the '" + artifact
-                        + "' GID CPythonGraph into RocksDB CPythonGraph database with index "
+                        + "' GID graph into RocksDB graph database with index "
                         + gidGraph.getIndex());
             }
         }
 
         @Override
         public String name() {
-            return "CPythonGraph plugin";
+            return "Graph plugin";
         }
 
         @Override
         public String description() {
             return "Callable index plugin. "
                     + "Consumes list of edges (pair of global IDs produced by PostgreSQL from Kafka"
-                    + " topic and populates CPythonGraph database (RocksDB) with consumed data";
+                    + " topic and populates graph database (RocksDB) with consumed data";
         }
 
         @Override

@@ -7,11 +7,11 @@
         <img src="https://img.shields.io/github/workflow/status/fasten-project/fasten/Java%20CI?logo=GitHub%20Actions&logoColor=white&style=for-the-badge" /></a>
     <!-- Here should be a link to Maven repo and version should be pulled from there. -->
     <a href="https://github.com/fasten-project/fasten/" alt="GitHub Workflow Status">
-                <img src="https://img.shields.io/maven-central/v/fasten/CPythonGraph?label=version&logo=Apache%20Maven&style=for-the-badge" /></a>
+                <img src="https://img.shields.io/maven-central/v/fasten/graph?label=version&logo=Apache%20Maven&style=for-the-badge" /></a>
 </p>
 <br/>
 
-The FASTEN Graph Plugin is a tool for inserting [GID Graphs](https://github.com/fasten-project/fasten/wiki/GID-Graph-format) into Graph database ([RocksDB](https://rocksdb.org/)) and retrieving them from it. The CPythonGraph plugin can be used as a standalone tool and as a part of FASTEN server.
+The FASTEN Graph Plugin is a tool for inserting [GID Graphs](https://github.com/fasten-project/fasten/wiki/GID-Graph-format) into Graph database ([RocksDB](https://rocksdb.org/)) and retrieving them from it. The graph plugin can be used as a standalone tool and as a part of FASTEN server.
 
 ## Arguments
 - `-h` `--help` Show this help message and exit.
@@ -22,7 +22,7 @@ The FASTEN Graph Plugin is a tool for inserting [GID Graphs](https://github.com/
 
 #### Insert GID Graph in the database
 ```shell script
- -f gid_graphs/CPythonGraph.json -d data/graphdb
+ -f gid_graphs/graph.json -d data/graphdb
 ```
 
 

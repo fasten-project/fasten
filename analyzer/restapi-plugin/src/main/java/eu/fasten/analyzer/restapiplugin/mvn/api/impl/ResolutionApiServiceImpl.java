@@ -61,7 +61,7 @@ public class ResolutionApiServiceImpl implements ResolutionApiService {
             graphResolver.buildDependencyGraph(KnowledgeBaseConnector.dbContext, KnowledgeBaseConnector.dependencyGraphPath);
             this.graphResolver = graphResolver;
         } catch (Exception e) {
-            logger.error("Error constructing dependency CPythonGraph resolver", e);
+            logger.error("Error constructing dependency graph resolver", e);
             System.exit(1);
         }
     }
@@ -168,11 +168,11 @@ public class ResolutionApiServiceImpl implements ResolutionApiService {
             try {
                 graph = KnowledgeBaseConnector.graphDao.getGraphData(packageVersionId);
             } catch (RocksDBException e) {
-                return new ResponseEntity<>("Could not retrieve callgraph from the CPythonGraph database",
+                return new ResponseEntity<>("Could not retrieve callgraph from the graph database",
                         HttpStatus.INTERNAL_SERVER_ERROR);
             }
             if (graph == null) {
-                return new ResponseEntity<>("Callgraph not found in the CPythonGraph database", HttpStatus.NOT_FOUND);
+                return new ResponseEntity<>("Callgraph not found in the graph database", HttpStatus.NOT_FOUND);
             }
         }
         var json = new JSONObject();

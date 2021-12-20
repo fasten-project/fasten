@@ -1,6 +1,6 @@
 ### Analysis Artifacts ###
 
-/CPythonGraph*.json
+/graph*.json
 
 ### Java ###
 

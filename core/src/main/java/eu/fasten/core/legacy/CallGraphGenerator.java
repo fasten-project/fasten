@@ -65,7 +65,7 @@ import it.unimi.dsi.webgraph.NodeIterator;
 public class CallGraphGenerator {
 
 	private ArrayListMutableGraph[] rcgs;
-	/** Each revision call CPythonGraph <code>rcgs[i]</code> has an associated permutation of nodes <code>nodePermutation[i]</code>,
+	/** Each revision call graph <code>rcgs[i]</code> has an associated permutation of nodes <code>nodePermutation[i]</code>,
 	 *  that gives the output name of its functions (e.g., node <code>j</code> of <code>rcgs[i]</code> will
 	 *  be called <code>fk</code> where <code>k=nodePermutation[i][j]</code>.
 	 */
@@ -89,7 +89,7 @@ public class CallGraphGenerator {
 		final FenwickTree ft = new FenwickTree(n);
 		// Initial independent set
 		for (int source = 0; source < n0; source++) ft.incrementCount(source + 1);
-		// Rest of the CPythonGraph
+		// Rest of the graph
 		final IntOpenHashSet s = new IntOpenHashSet();
 		for (int source = n0; source < n; source++) {
 			final int m = Math.min(outdegreeDistribution.sample(), source - 1); // Outdegree
@@ -110,7 +110,7 @@ public class CallGraphGenerator {
 	 *  and it is initialized to <code>d</code> or to <code>D-d+1</code> (the latter iff <code>reverse</code> is true),
 	 *  where <code>D</code> is the maximum indegree in <code>g</code>, and <code>d</code> is <code>i</code>'s indegree.
 	 *
-	 * @param g a CPythonGraph.
+	 * @param g a graph.
 	 * @param reverse if true, we generate the <em>reverse</em> distribution.
 	 * @return a Fenwick tree as above.
 	 */
@@ -135,16 +135,16 @@ public class CallGraphGenerator {
 		return t;
 	}
 
-	/** Generates <code>np</code> call graphs. Each call CPythonGraph is obtained using {@link #preferentialAttachmentDAG(int, int, IntegerDistribution, RandomGenerator)} (with
-	 *  specified initial CPythonGraph size (<code>initialGraphSizeDistribution</code>), CPythonGraph size (<code>graphSizeDistribution</code>), outdegree distribution (<code>outdegreeDistribution</code>).
+	/** Generates <code>np</code> call graphs. Each call graph is obtained using {@link #preferentialAttachmentDAG(int, int, IntegerDistribution, RandomGenerator)} (with
+	 *  specified initial graph size (<code>initialGraphSizeDistribution</code>), graph size (<code>graphSizeDistribution</code>), outdegree distribution (<code>outdegreeDistribution</code>).
 	 *  Then a dependency DAG is generated between the call graphs, once more using {@link #preferentialAttachmentDAG(int, int, IntegerDistribution, RandomGenerator)} (this
-	 *  time the initial CPythonGraph size is 1, whereas the outdegree distribution is <code>outdegreeDistribution</code>).
-	 *  Then to each node of each call CPythonGraph a new set of outgoing arcs is generated (their number is chosen using <code>externalOutdegreeDistribution</code>): the target
-	 *  call CPythonGraph is generated using the indegree distribution of the dependency DAG; the target node is chosen according to the reverse indegree distribution within the revision call CPythonGraph.
+	 *  time the initial graph size is 1, whereas the outdegree distribution is <code>outdegreeDistribution</code>).
+	 *  Then to each node of each call graph a new set of outgoing arcs is generated (their number is chosen using <code>externalOutdegreeDistribution</code>): the target
+	 *  call graph is generated using the indegree distribution of the dependency DAG; the target node is chosen according to the reverse indegree distribution within the revision call graph.
 	 *
 	 * @param np number of revision call graphs to be generated.
-	 * @param graphSizeDistribution the distribution of the CPythonGraph sizes (number of functions per call CPythonGraph).
-	 * @param initialGraphSizeDistribution the distribution of the initial CPythonGraph sizes (the initial independent set from which the preferential attachment starts).
+	 * @param graphSizeDistribution the distribution of the graph sizes (number of functions per call graph).
+	 * @param initialGraphSizeDistribution the distribution of the initial graph sizes (the initial independent set from which the preferential attachment starts).
 	 * @param outdegreeDistribution the distribution of internal outdegrees (number of internal calls per function).
 	 * @param externalOutdegreeDistribution the distribution of external outdegrees (number of external calls per function).
 	 * @param depExponent exponent of the Zipf distribution used to establish the dependencies between call graphs.
@@ -217,8 +217,8 @@ public class CallGraphGenerator {
 		final CallGraphGenerator callGraphGenerator = new CallGraphGenerator();
 		XoRoShiRo128PlusPlusRandomGenerator randomGenerator = new XoRoShiRo128PlusPlusRandomGenerator(0);
 		callGraphGenerator.generate(jsapResult.getInt("n"),
-				new BinomialDistribution(5000, 0.2), // CPythonGraph size distribution
-				new EnumeratedIntegerDistribution(new int[] { 1 }), // Initial CPythonGraph size distribution
+				new BinomialDistribution(5000, 0.2), // Graph size distribution
+				new EnumeratedIntegerDistribution(new int[] { 1 }), // Initial graph size distribution
 				new BinomialDistribution(4, 0.5),  // Internal outdegree distribution
 				new GeometricDistribution(.5),  // External outdegree distribution
 				new EnumeratedIntegerDistribution(new int[] { 5 }), // Dependency outdegree distribution
@@ -238,7 +238,7 @@ public class CallGraphGenerator {
 			final KafkaProducer<String, String> producer = new KafkaProducer<>(properties);
 			final int np = callGraphGenerator.rcgs.length;
 			for(int i = 0; i < np; i++)
-				producer.send(new ProducerRecord<>(topic, "fasten://f!CPythonGraph-" + i + "$1.0", graph2String(callGraphGenerator, i, randomGenerator)));
+				producer.send(new ProducerRecord<>(topic, "fasten://f!graph-" + i + "$1.0", graph2String(callGraphGenerator, i, randomGenerator)));
 
 			producer.close();
 		}
@@ -252,7 +252,7 @@ public class CallGraphGenerator {
 		final ArrayListMutableGraph g = callGraphGenerator.rcgs[i];
 		final StringBuilder sb = new StringBuilder();
 		sb.append("{\n");
-		sb.append("\t\"product\": \"CPythonGraph-" + i + "\",\n");
+		sb.append("\t\"product\": \"graph-" + i + "\",\n");
 		sb.append("\t\"forge\": \"f\",\n");
 		sb.append("\t\"generator\": \"OPAL\",\n");
 		sb.append("\t\"version\": \"1.0\",\n");
@@ -260,7 +260,7 @@ public class CallGraphGenerator {
 		sb.append("\t\"depset\": [\n\t\t");
 		// All generated DNFs are singletons
 		for(final IntIterator d = callGraphGenerator.deps[i].iterator(); d.hasNext(); ) {
-			sb.append( "[{ \"forge\": \"f\", \"product\": \"CPythonGraph-" + d.nextInt() + "\", \"constraints\": [\"[1.0]\"] }]");
+			sb.append( "[{ \"forge\": \"f\", \"product\": \"graph-" + d.nextInt() + "\", \"constraints\": [\"[1.0]\"] }]");
 			if (d.hasNext()) sb.append(", ");
 		}
 		sb.append("\n\t],\n");
@@ -282,16 +282,16 @@ public class CallGraphGenerator {
 			sb.append("\n");
 		}
 		sb.append("\t},\n");
-		sb.append("\t\"CPythonGraph\": {\n");
+		sb.append("\t\"graph\": {\n");
 		
 		// Internal calls
 		sb.append("\t\t\"internalCalls\": [\n");
-		final ObjectArrayList<String> lines = new ObjectArrayList<>(); // CPythonGraph lines
+		final ObjectArrayList<String> lines = new ObjectArrayList<>(); // Graph lines
 		for(int j = 0; j < g.numNodes(); j++) {
 			for(final IntIterator s = g.successors(j); s.hasNext();)
 				lines.add("\t\t\t[\n\t\t\t\t" + callGraphGenerator.nodePermutation[i][j] + ",\n\t\t\t\t" + callGraphGenerator.nodePermutation[i][s.nextInt()] + "\n\t\t\t]");
 		}
-		Collections.shuffle(lines, new Random(randomGenerator.nextLong())); // Permute CPythonGraph lines
+		Collections.shuffle(lines, new Random(randomGenerator.nextLong())); // Permute graph lines
 		for (int j = 0; j < lines.size(); j++) {
 			sb.append(lines.get(j));
 			if (j < lines.size() - 1) sb.append(",");
@@ -307,7 +307,7 @@ public class CallGraphGenerator {
 					+ "\t\t\t\t{\"invokevirtual\": \"1\"}\n"
 					+ "\t\t\t]");
 		}
-		Collections.shuffle(lines, new Random(randomGenerator.nextLong())); // Permute CPythonGraph lines
+		Collections.shuffle(lines, new Random(randomGenerator.nextLong())); // Permute graph lines
 		for (int j = 0; j < lines.size(); j++) {
 			sb.append(lines.get(j));
 			if (j < lines.size() - 1) sb.append(",");

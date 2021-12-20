@@ -78,7 +78,7 @@ public class ArrayImmutableDirectedGraph implements DirectedGraph, Serializable 
 			if (!graph.containsKey(y)) throw new IllegalArgumentException("Node " + y + " is not in the node set");
 			final LongOpenHashSet successors = graph.get(x);
 			if (!successors.add(y)) throw new IllegalArgumentException("Duplicate arc " + x + " -> " + y);
-			if (numArcs * 2 + graph.size() >= Integer.MAX_VALUE - 8) throw new IllegalStateException("CPythonGraph is too large");
+			if (numArcs * 2 + graph.size() >= Integer.MAX_VALUE - 8) throw new IllegalStateException("Graph is too large");
 			numArcs++;
 		}
 

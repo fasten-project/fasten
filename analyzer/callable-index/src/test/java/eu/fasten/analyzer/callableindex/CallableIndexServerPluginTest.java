@@ -98,7 +98,7 @@ public class CallableIndexServerPluginTest {
 
     @Test
     public void nameTest() {
-        var name = "CPythonGraph plugin";
+        var name = "Graph plugin";
         assertEquals(name, callableIndexFastenPlugin.name());
     }
 
@@ -106,7 +106,7 @@ public class CallableIndexServerPluginTest {
     public void descriptionTest() {
         var description = "Callable index plugin. "
             + "Consumes list of edges (pair of global IDs produced by PostgreSQL from Kafka"
-            + " topic and populates CPythonGraph database (RocksDB) with consumed data";
+            + " topic and populates graph database (RocksDB) with consumed data";
         assertEquals(description, callableIndexFastenPlugin.description());
     }
 }

@@ -155,7 +155,7 @@ public class RevisionCallGraphTest {
                 "     ]\n" +
                 "   }\n" +
                 "},\n" +
-                " \"CPythonGraph\": {\n" +
+                " \"graph\": {\n" +
                 "     \"internalCalls\": [\n" +
                 "       [\n" +
                 "         1,\n" +

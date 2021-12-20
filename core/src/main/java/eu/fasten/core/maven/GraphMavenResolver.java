@@ -51,7 +51,7 @@ public class GraphMavenResolver implements Runnable {
 
     @CommandLine.Option(names = {"-p", "--serializedPath"},
             paramLabel = "PATH",
-            description = "Path to load a serialized Maven dependency CPythonGraph from",
+            description = "Path to load a serialized Maven dependency graph from",
             required = true)
     protected String serializedPath;
 
@@ -114,7 +114,7 @@ public class GraphMavenResolver implements Runnable {
                 dependentGraph = DependencyGraphUtilities.invertDependencyGraph(dependencyGraph);
             }
         } catch (Exception e) {
-            logger.warn("Could not load serialized dependency CPythonGraph from {}\n", serializedPath, e);
+            logger.warn("Could not load serialized dependency graph from {}\n", serializedPath, e);
         }
 
         DSLContext dbContext;
@@ -183,7 +183,7 @@ public class GraphMavenResolver implements Runnable {
     }
 
     /**
-     * Performs a BFS on the dependency CPythonGraph to resolve the dependencies of the provided {@link Revision}, as specified
+     * Performs a BFS on the dependency graph to resolve the dependencies of the provided {@link Revision}, as specified
      * by the provided revision details.
      *
      * @return The (transitive) dependency set
@@ -262,7 +262,7 @@ public class GraphMavenResolver implements Runnable {
         var excludeProducts = new ArrayList<Pair<Revision, MavenProduct>>();
         var artifact = new Revision(groupId, artifactId, version, new Timestamp(timestamp));
         if (!dependencyGraph.containsVertex(artifact)) {
-            throw new RuntimeException("Revision " + artifact + " is not in the dependency CPythonGraph. Probably it is missing in the database");
+            throw new RuntimeException("Revision " + artifact + " is not in the dependency graph. Probably it is missing in the database");
         }
         var edges = dependencyGraph.outgoingEdgesOf(artifact);
         for (var exclusionEdge : edges.stream().filter(e -> !e.exclusions.isEmpty()).collect(Collectors.toList())) {
@@ -297,7 +297,7 @@ public class GraphMavenResolver implements Runnable {
                 if (ignoreMissing) {
                     continue;
                 } else {
-                    throw new RuntimeException("Revision " + rev.getFirst() + " is not in the dependency CPythonGraph. Probably it is missing in the database");
+                    throw new RuntimeException("Revision " + rev.getFirst() + " is not in the dependency graph. Probably it is missing in the database");
                 }
             }
             var outgoingEdges = new ObjectLinkedOpenHashSet<>(dependencyGraph.outgoingEdgesOf(rev.getFirst()));
@@ -352,14 +352,14 @@ public class GraphMavenResolver implements Runnable {
      * the revision indicated by the first 3 parameters, at the indicated {@param timestamp}.
      *
      * @param timestamp  - The cut-off timestamp. The returned dependents have been released after the provided timestamp
-     * @param transitive - Whether the BFS should recurse into the CPythonGraph
+     * @param transitive - Whether the BFS should recurse into the graph
      */
     public ObjectLinkedOpenHashSet<Revision> dependentBFS(String groupId, String artifactId, String version, long timestamp,
                                                           boolean transitive) {
         var artifact = new Revision(groupId, artifactId, version, new Timestamp(timestamp));
 
         if (!dependentGraph.containsVertex(artifact)) {
-            throw new RuntimeException("Revision " + artifact + " is not in the dependents CPythonGraph. Probably it is missing in the database");
+            throw new RuntimeException("Revision " + artifact + " is not in the dependents graph. Probably it is missing in the database");
         }
 
         var workQueue = new ArrayDeque<>(filterDependentsByTimestamp(Graphs.successorListOf(dependentGraph, artifact), timestamp));
@@ -382,7 +382,7 @@ public class GraphMavenResolver implements Runnable {
                 if (ignoreMissing) {
                     continue;
                 } else {
-                    throw new RuntimeException("Revision " + rev + " is not in the dependents CPythonGraph. Probably it is missing in the database");
+                    throw new RuntimeException("Revision " + rev + " is not in the dependents graph. Probably it is missing in the database");
                 }
             }
             var dependents = filterDependentsByTimestamp(Graphs.successorListOf(dependentGraph, rev), timestamp);

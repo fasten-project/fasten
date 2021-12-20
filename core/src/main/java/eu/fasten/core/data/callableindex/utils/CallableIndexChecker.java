@@ -42,10 +42,10 @@ public class CallableIndexChecker implements Runnable {
 
     private static final Logger logger = LoggerFactory.getLogger(CallableIndexChecker.class);
 
-    @CommandLine.Option(names = {"-p", "--CPythonGraph-db-path"},
+    @CommandLine.Option(names = {"-p", "--graph-db-path"},
         paramLabel = "GRAPHDB_PATH",
         required = true,
-        description = "Path to the CPythonGraph database")
+        description = "Path to the graph database")
     String graphDbPath;
 
     @CommandLine.Option(names = {"-d", "--database"},
@@ -68,7 +68,7 @@ public class CallableIndexChecker implements Runnable {
 
     @CommandLine.Option(names = {"-a", "--artifactId"},
         paramLabel = "ARTIFACT",
-        description = "The artifact id to check in the CPythonGraph database")
+        description = "The artifact id to check in the graph database")
     String artifactId;
 
     @CommandLine.Option(names = {"-o", "--outputPath"},
@@ -99,13 +99,13 @@ public class CallableIndexChecker implements Runnable {
 
             logger.info("Finished");
             if (!isNotUsingDb) {
-                logger.info("CPythonGraph database contains {} out of {} directed graphs",
+                logger.info("Graph database contains {} out of {} directed graphs",
                     successfulDirectedGraph, packageVersionIds.size());
-                logger.info("CPythonGraph database contains {} out of {} CPythonGraph metadata objects",
+                logger.info("Graph database contains {} out of {} graph metadata objects",
                     successfulGraphMetadata, packageVersionIds.size());
             } else {
-                logger.info("CPythonGraph database contains {} directed graphs", successfulDirectedGraph);
-                logger.info("CPythonGraph database contains {} CPythonGraph metadata objects",
+                logger.info("Graph database contains {} directed graphs", successfulDirectedGraph);
+                logger.info("Graph database contains {} graph metadata objects",
                     successfulGraphMetadata);
             }
         }
@@ -117,7 +117,7 @@ public class CallableIndexChecker implements Runnable {
 
             var graph = rocksDb.getGraphData(packageVersionId);
             if (graph == null) {
-                logger.info("Cannot find CPythonGraph data for package ID {}",
+                logger.info("Cannot find graph data for package ID {}",
                     packageVersionId);
                 return;
             }
@@ -171,7 +171,7 @@ public class CallableIndexChecker implements Runnable {
 
             var graph = rocksDb.getGraphData(packageVersionId);
             if (graph == null) {
-                logger.info("Cannot find CPythonGraph data for package ID {}", packageVersionId);
+                logger.info("Cannot find graph data for package ID {}", packageVersionId);
                 return;
             }
             final String edgesStr = convertEdgesToString(graph);

@@ -19,7 +19,7 @@ A collection of FASTEN-specific plugins with an ability to be loaded by and run 
 The FASTEN Graph Plugin is a tool for inserting [GID Graphs](https://github.com/fasten-project/fasten/wiki/GID-Graph-format) into Graph database ([RocksDB](https://rocksdb.org/)) and retrieving them from it.
 
 #### OPAL plugin
-The FASTEN OPAL is a tool for generating call graphs in FASTEN format using [OPAL](https://www.opal-project.de/) call CPythonGraph generator version '3.0.0'. This tool can also merge the resulted call graphs with their dependencies.
+The FASTEN OPAL is a tool for generating call graphs in FASTEN format using [OPAL](https://www.opal-project.de/) call graph generator version '3.0.0'. This tool can also merge the resulted call graphs with their dependencies.
 
 #### Metadata plugin
 The FASTEN Metadata Plugin is used for inserting [Revision Call Graphs and their metadata](https://github.com/fasten-project/fasten/wiki/Revision-Call-Graph-format) into [Metadata Database](https://github.com/fasten-project/fasten/wiki/Metadata-Database-Schema).

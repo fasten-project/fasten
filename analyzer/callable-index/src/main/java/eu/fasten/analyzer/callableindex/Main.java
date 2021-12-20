@@ -35,7 +35,7 @@ public class Main implements Runnable {
 
     @CommandLine.Option(names = {"-f", "--file"},
             paramLabel = "JSON_FILE",
-            description = "Path to JSON file which contains GID CPythonGraph")
+            description = "Path to JSON file which contains GID Graph")
     String jsonFile;
 
     @CommandLine.Option(names = {"-d", "--directory"},

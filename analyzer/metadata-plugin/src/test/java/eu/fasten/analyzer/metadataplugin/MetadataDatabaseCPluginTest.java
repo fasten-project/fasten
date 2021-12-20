@@ -108,7 +108,7 @@ public class MetadataDatabaseCPluginTest {
                 "            }\n" +
                 "        }\n" +
                 "    },\n" +
-                "    \"CPythonGraph\": {\n" +
+                "    \"graph\": {\n" +
                 "        \"internalCalls\": [],\n" +
                 "        \"externalCalls\": [\n" +
                 "            [\n" +
@@ -176,7 +176,7 @@ public class MetadataDatabaseCPluginTest {
         var description = "Metadata plugin. "
                 + "Consumes ExtendedRevisionCallgraph-formatted JSON objects from Kafka topic"
                 + " and populates metadata database with consumed data"
-                + " and writes CPythonGraph of GIDs of callgraph to another Kafka topic.";
+                + " and writes graph of GIDs of callgraph to another Kafka topic.";
         assertEquals(description, metadataDBExtension.description());
     }
 }

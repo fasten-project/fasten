@@ -42,8 +42,7 @@ public class MetadataDatabasePythonPlugin extends Plugin {
     }
 
     @Extension
-    public static class MetadataDBPythonExtension extends MetadataDBExtension implements
-        eu.fasten.analyzer.metadataplugin.MetadataDBPythonExtension {
+    public static class MetadataDBPythonExtension extends MetadataDBExtension {
         private static DSLContext dslContext;
 
         public MetadataDBPythonExtension() {
@@ -149,11 +148,8 @@ public class MetadataDatabasePythonPlugin extends Plugin {
             return callables;
         }
 
-        @Override
-        protected <T> List<CallSitesRecord> insertEdges(T pythonGraph,
-                                                            Long2LongOpenHashMap lidToGidMap,
-                                                            Map<String, Long> namespaceMap, MetadataDao metadataDao) {
-            var graph = (CPythonGraph) pythonGraph;
+        protected List<CallSitesRecord> insertEdges(Graph graph, Long2LongOpenHashMap lidToGidMap,
+                                                    Map<String, Long> namespaceMap, MetadataDao metadataDao) {
             final var numEdges = graph.getInternalCalls().size() + graph.getExternalCalls().size();
 
             // Map of all edges (internal and external)

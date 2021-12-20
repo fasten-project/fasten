@@ -11,13 +11,13 @@
 </p>
 <br/>
 
-The FASTEN OPAL plugin is a tool for generating call graphs in FASTEN format using [OPAL](https://www.opal-project.de/) call CPythonGraph generator version '3.0.0'. This tool can also merge the resulted call graphs with their dependencies. The OPAL can be used as a standalone tool for generating call graphs for libraries and application and as a part of the FASTEN server.
+The FASTEN OPAL plugin is a tool for generating call graphs in FASTEN format using [OPAL](https://www.opal-project.de/) call graph generator version '3.0.0'. This tool can also merge the resulted call graphs with their dependencies. The OPAL can be used as a standalone tool for generating call graphs for libraries and application and as a part of the FASTEN server.
 
 ## Arguments
 - `-a` `--artifact` Artifact, Maven coordinate, or a file path
 - `-d` `--dependencies` Dependencies: coordinates or files
-- `-g` `--generate` Generate call CPythonGraph for the artifact
-    - `-ga` `--genAlgorithm` Algorithm for generating a call CPythonGraph {RTA,CHA,AllocationSiteBasedPointsTo,TypeBasedPointsTo}
+- `-g` `--generate` Generate call graph for the artifact
+    - `-ga` `--genAlgorithm` Algorithm for generating a call graph {RTA,CHA,AllocationSiteBasedPointsTo,TypeBasedPointsTo}
 - `-h` `--help` Show this help message and exit.
 - `-i` `--input-type` Input of algorithms are {FILE or COORD}
 - `-m` `--merge` Merge artifact CG to dependencies
@@ -30,18 +30,18 @@ The FASTEN OPAL plugin is a tool for generating call graphs in FASTEN format usi
 
 ## Usage 
 
-#### Generate a call CPythonGraph for an artifact
+#### Generate a call graph for an artifact
 ```shell script
 -a groupId:artifactId:version -g -ga CHA -i COORD -r https://repo.maven.apache.org/maven2/ -o /some/path/to/result/file.json
 ```
 
-#### Generate a call CPythonGraph for a file
+#### Generate a call graph for a file
 Can be used for all core Maven archived projects (jar, war, zip) as well as class files.
 ```shell script
 -a /path/to/file.jar -g -ga CHA -i FILE -o /some/path/to/result/file.json
 ```
 
-#### Merge a call CPythonGraph for an artifact with its dependencies call graphs
+#### Merge a call graph for an artifact with its dependencies call graphs
 ```shell script
 -a abbot:costello:1.4.0 -d abbot:abbot:1.4.0 -m -ma CHA -i COORD -o /some/path/to/result/file.json
 ```

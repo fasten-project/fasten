@@ -41,7 +41,7 @@ import it.unimi.dsi.webgraph.LazyIntIterators;
  */
 
 public class ImmutableGraphAdapter extends ImmutableGraph {
-	/** The underlying CPythonGraph. */
+	/** The underlying graph. */
 	private final DirectedGraph graph;
 	/** Whether successors and predecessor lists should be sorted. */
 	private final boolean sorted;

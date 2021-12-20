@@ -75,7 +75,7 @@ public class Benchmark implements Runnable {
 
     @CommandLine.Option(names = {"-p", "--path"},
             paramLabel = "path",
-            description = "Path to merged call CPythonGraph file")
+            description = "Path to merged call graph file")
     String path;
 
     private static final Logger logger = LoggerFactory.getLogger(Benchmark.class);
@@ -100,7 +100,7 @@ public class Benchmark implements Runnable {
             logger.error("Could not connect to the metadata database: " + e.getMessage());
             System.exit(1);
         } catch (RuntimeException e) {
-            logger.error("Could not connect to the CPythonGraph database: " + e.getMessage());
+            logger.error("Could not connect to the graph database: " + e.getMessage());
             System.exit(1);
         }
 
@@ -118,7 +118,7 @@ public class Benchmark implements Runnable {
         System.out.format("%14s%4s%12s%4s%12s\n", "", "|", "DATABASE", "|", "LOCAL");
         System.out.println("--------------------------------------------------");
 //        System.out.format("%14s%4s%12d%4s%12d\n", "Edges", "|",
-//                directedGraph.numArcs(), "|", callgraph.getCPythonGraph().getResolvedCalls().size());
+//                directedGraph.numArcs(), "|", callgraph.getGraph().getResolvedCalls().size());
         System.out.format("%14s%4s%12d%4s%12d\n", "Unique edges", "|",
                 databaseResolvedGraph.size(), "|", localResolvedGraph.size());
 
@@ -128,8 +128,8 @@ public class Benchmark implements Runnable {
                 getMissedEdges(databaseResolvedGraph, localResolvedGraph);
 
         System.out.println("--------------------------------------------------");
-        System.out.println("Missing in database call CPythonGraph: " + missedEdgesInDatabaseMerge.size());
-        System.out.println("Missing in local call CPythonGraph: " + missedEdgesInLocalMerge.size());
+        System.out.println("Missing in database call graph: " + missedEdgesInDatabaseMerge.size());
+        System.out.println("Missing in local call graph: " + missedEdgesInLocalMerge.size());
         System.out.println("Database - Local total: "
                 + ((databaseResolvedGraph.size() > localResolvedGraph.size()) ? "+" : "-")
                 + Math.abs(databaseResolvedGraph.size() - localResolvedGraph.size()));
@@ -155,7 +155,7 @@ public class Benchmark implements Runnable {
             var tokener = new JSONTokener(new FileReader(path));
             callgraph = new PartialJavaCallGraph(new JSONObject(tokener));
         } catch (FileNotFoundException e) {
-            logger.error("Couldn't read merged call CPythonGraph file", e);
+            logger.error("Couldn't read merged call graph file", e);
             System.exit(1);
         }
         return callgraph;
@@ -165,7 +165,7 @@ public class Benchmark implements Runnable {
         var localMethodsMap = callgraph.mapOfAllMethods();
         var localResolvedGraph = new HashSet<Pair<String, String>>();
 
-//        for (var arc : callgraph.getCPythonGraph().getResolvedCalls().keySet()) {
+//        for (var arc : callgraph.getGraph().getResolvedCalls().keySet()) {
 //            var newArc = ImmutablePair
 //                    .of(localMethodsMap.get(arc.firstInt()).getUri().toString(),
 //                            localMethodsMap.get(arc.secondInt()).getUri().toString());

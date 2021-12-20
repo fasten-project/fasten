@@ -28,7 +28,7 @@
     <artifactId>analyzer</artifactId>
     <version>0.0.1-SNAPSHOT</version>
     <packaging>pom</packaging>
-    <description>Collection of FASTEN-specific CPythonGraph analyses.</description>
+    <description>Collection of FASTEN-specific graph analyses.</description>
 
     <modules>
         <module>javacg-opal</module>

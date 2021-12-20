@@ -86,7 +86,7 @@ public class MetadataDatabaseJavaPlugin extends Plugin {
             javaGraph.getClassHierarchy().get(JavaScope.internalTypes).values().forEach(v -> namespaces.addAll(JavaType.toListOfString(v.getSuperClasses())));
             javaGraph.getClassHierarchy().get(JavaScope.externalTypes).values().forEach(v -> namespaces.addAll(JavaType.toListOfString(v.getSuperInterfaces())));
             javaGraph.getClassHierarchy().get(JavaScope.externalTypes).values().forEach(v -> namespaces.addAll(JavaType.toListOfString(v.getSuperClasses())));
-            for (var edgeEntry : ((JavaGraph) graph.getCPythonGraph()).getCallSites().entrySet()) {
+            for (var edgeEntry : ((JavaGraph) graph.getGraph()).getCallSites().entrySet()) {
                 for (var obj : edgeEntry.getValue().keySet()) {
                     var pc = obj.toString();
                     var metadataMap = (Map<String, Object>) edgeEntry.getValue().get(Integer.parseInt(pc));
@@ -205,15 +205,13 @@ public class MetadataDatabaseJavaPlugin extends Plugin {
             return callables;
         }
 
-        @Override
-        protected <T> List<CallSitesRecord> insertEdges(T javaGraph,
-                                                        Long2LongOpenHashMap lidToGidMap,
+        protected List<CallSitesRecord> insertEdges(Graph graph, Long2LongOpenHashMap lidToGidMap,
                                                     Map<String, Long> typesMap, MetadataDao metadataDao) {
-            var graph = (JavaGraph) javaGraph;
-            final var numEdges = graph.getCallSites().size();
+            var javaGraph = (JavaGraph) graph;
+            final var numEdges = javaGraph.getCallSites().size();
 
             var callSites = new ArrayList<CallSitesRecord>(numEdges);
-            for (var edgeEntry : graph.getCallSites().entrySet()) {
+            for (var edgeEntry : javaGraph.getCallSites().entrySet()) {
 
                 // Get Global ID of the source callable
                 var source = lidToGidMap.get((long) edgeEntry.getKey().firstInt());
