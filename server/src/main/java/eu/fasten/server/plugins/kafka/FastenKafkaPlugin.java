@@ -18,24 +18,6 @@
 
 package eu.fasten.server.plugins.kafka;
 
-import eu.fasten.core.exceptions.UnrecoverableError;
-import eu.fasten.core.plugins.KafkaPlugin;
-import eu.fasten.server.plugins.FastenServerPlugin;
-import org.apache.commons.lang.StringUtils;
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.kafka.clients.consumer.CommitFailedException;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.clients.consumer.ConsumerRecords;
-import org.apache.kafka.clients.consumer.KafkaConsumer;
-import org.apache.kafka.clients.producer.KafkaProducer;
-import org.apache.kafka.clients.producer.ProducerRecord;
-import org.apache.kafka.common.PartitionInfo;
-import org.apache.kafka.common.TopicPartition;
-import org.apache.kafka.common.errors.WakeupException;
-import org.json.JSONObject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -52,6 +34,26 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
+
+import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.kafka.clients.consumer.CommitFailedException;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.clients.consumer.ConsumerRecords;
+import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.ProducerRecord;
+import org.apache.kafka.common.PartitionInfo;
+import org.apache.kafka.common.TopicPartition;
+import org.apache.kafka.common.errors.WakeupException;
+import org.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import eu.fasten.core.exceptions.UnrecoverableError;
+import eu.fasten.core.plugins.KafkaPlugin;
+import eu.fasten.core.plugins.KafkaPlugin.SingleRecord;
+import eu.fasten.server.plugins.FastenServerPlugin;
 
 public class FastenKafkaPlugin implements FastenServerPlugin {
     private final Logger logger = LoggerFactory.getLogger(FastenKafkaPlugin.class.getName());
@@ -221,8 +223,6 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
                 hasConsumedPriorityRecord = true;
                 logger.info("Successfully processed priority message offset " + r.offset() + " from partition " + r.partition() + ".");
                 // TODO: Keep a list of processed priority messages like normal ones
-
-                handleWorkingSet(KafkaRecordKind.PRIORITY);
             }
             doCommitSync(KafkaRecordKind.PRIORITY);
         }
@@ -240,8 +240,6 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
                 processRecord(r, consumeTimestamp, KafkaRecordKind.NORMAL);
                 logger.info("Successfully processed normal message offset " + r.offset() + " from partition " + r.partition() + ".");
                 messagesProcessed.add(new ImmutablePair<>(r.offset(), r.partition()));
-
-                handleWorkingSet(KafkaRecordKind.NORMAL);
             }
 
             // Commit only after _all_ records are processed.
@@ -261,25 +259,6 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
             // If local storage is enabled, clear the correct partitions after offsets are committed.
             if (localStorage != null) {
                 localStorage.clear(messagesProcessed.stream().map((x) -> x.right).collect(Collectors.toList()));
-            }
-        }
-    }
-
-    private void handleWorkingSet(KafkaRecordKind kafkaRecordKind) {
-        if (plugin.getWorkingSet().isPresent()) {
-            while (!plugin.getWorkingSet().get().isEmpty()) {
-                // The plug-in might spend a lot of time in processing its working set,
-                // therefore, we need to keep the Kafka consumers alive
-                sendHeartBeat(connNorm);
-                if (!prioTopics.isEmpty()) {
-                    sendHeartBeat(connPrio);
-                }
-
-                var record = plugin.getWorkingSet().get().pop();
-                logger.info("Read working set message from " + kafkaRecordKind.toString() + " topic");
-                processRecord(new ConsumerRecord<>(plugin.name() + "_working_set", 0, 0,
-                        "", record), System.currentTimeMillis() / 1000L, kafkaRecordKind);
-                logger.info("Successfully processed working set message from " + kafkaRecordKind.toString() + " topic");
             }
         }
     }
@@ -362,14 +341,19 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
                 throw plugin.getPluginError();
             }
 
-            var result = plugin.produce();
-            String payload = result.orElse(null);
-            if (result.isPresent() && writeDirectory != null && !writeDirectory.equals("")) {
-                payload = writeToFile(payload);
+            var results = plugin.produceMultiple();
+            
+            for(var res : results) {
+            	String payload = res.payload;
+            	if (writeDirectory != null && !writeDirectory.equals("")) {
+            		// replace payload with file link in case it is written
+            		payload = writeToFile(res);
+            	}
+            	
+            	emitMessage(this.producer, outputTopicName,
+            			getStdOutMsg(input, payload, consumeTimestamp));
             }
-
-            emitMessage(this.producer, outputTopicName,
-                    getStdOutMsg(input, payload, consumeTimestamp));
+            
 
         } catch (Exception e) {
             emitMessage(this.producer, String.format("fasten.%s.err", outputTopic),
@@ -405,9 +389,9 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
      * @param result message to write
      * @return Path to a newly written JSON file
      */
-    private String writeToFile(String result)
+    private String writeToFile(SingleRecord result)
             throws IOException, NullPointerException {
-        var path = plugin.getOutputPath();
+        var path = result.outputPath;
         var pathWithoutFilename = path.substring(0, path.lastIndexOf(File.separator));
 
         File directory = new File(this.writeDirectory + pathWithoutFilename);
@@ -417,7 +401,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
 
         File file = new File(this.writeDirectory + path);
         FileWriter fw = new FileWriter(file.getAbsoluteFile());
-        fw.write(result);
+        fw.write(result.payload);
         fw.flush();
         fw.close();
 
