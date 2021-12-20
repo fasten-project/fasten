@@ -25,6 +25,59 @@
                  +----+   +--------------------------+
 ```
 
+# Plugin description
+
+The License detector is triggered by the [`fasten.SyncJava.out`] Kafka consumer topic, produced by `Flink's JobManager`.
+
+The function [`extractRepoPath`](https://github.com/fasten-project/fasten/blob/endocode/compliancePlugin/analyzer/license-detector/src/main/java/eu/fasten/analyzer/licensedetector/LicenseDetectorPlugin.java#L294-L314) extracts the repository path from the `Repo cloner` Kafka message `fasten.RepoCloner.out`.
+
+The function [`extractRepoUrl`](https://github.com/fasten-project/fasten/blob/endocode/compliancePlugin/analyzer/license-detector/src/main/java/eu/fasten/analyzer/licensedetector/LicenseDetectorPlugin.java#L316-L332) extracts the repository URL, always from the `Repo cloner` Kafka message `fasten.RepoCloner.out`.
+
+## Retrieving the outbound license 
+
+The [`getOutboundLicenses()`](https://github.com/fasten-project/fasten/blob/endocode/compliancePlugin/analyzer/license-detector/src/main/java/eu/fasten/analyzer/licensedetector/LicenseDetectorPlugin.java#L120-L163) function, which is in charge of retrieving the license declared for the given project, the so-called `outbound` license, needs a repository path and URL.
+
+The plugin will first look at the `pom.xml`, passing the repository path to the [`retrievePomFile()`](https://github.com/fasten-project/fasten/blob/endocode/compliancePlugin/analyzer/license-detector/src/main/java/eu/fasten/analyzer/licensedetector/LicenseDetectorPlugin.java#L334-L370) function and then running the [`getLicensesFromPomFile()`](https://github.com/fasten-project/fasten/blob/endocode/compliancePlugin/analyzer/license-detector/src/main/java/eu/fasten/analyzer/licensedetector/LicenseDetectorPlugin.java#L165-L214) function upon the `pom.xml` file, if retrieved, to retrieve the `outbound` license. 
+
+The first function will look at all the `pom.xml` files (considering that more than one `pom.xml` could be there) inside the repository folder, choosing the one closest to the root path.
+
+The second function will parse the `pom.xml`; if license information is present will return the detected license.
+
+If license information in the `pom.xml` is missing, the license detector will query the `GitHub APIs` through the [`getLicenseFromGitHub()`](https://github.com/fasten-project/fasten/blob/6e92f3c814865e5e53b226d8a76ef28867218f32/analyzer/license-detector/src/main/java/eu/fasten/analyzer/licensedetector/LicenseDetectorPlugin.java#L215-L292) function. If the repository URL is hosted on GitHub and the API `JSON` response contains the license key, this will be set as the outbound license for the analyzed package.
+
+If any `outbound` license is retrieved, the [`chttps://github.com/fasten-project/fasten/blob/6e92f3c814865e5e53b226d8a76ef28867218f32/analyzer/license-detector/src/main/java/eu/fasten/analyzer/licensedetector/LicenseDetectorPlugin.java#L76-L118ume()`](url) method will add this information at the [`fasten.LicenseDetector.out`](https://github.com/fasten-project/fasten/wiki/Kafka-Topics#fastenlicensedetector) Kafka message.
+
+
+## Detecting license information at the file level
+
+After retrieving the `outbound` license, the license detector will scan using `Scancode` to detect license information at the file level. The function [`scanProject()`](https://github.com/fasten-project/fasten/blob/6e92f3c814865e5e53b226d8a76ef28867218f32/analyzer/license-detector/src/main/java/eu/fasten/analyzer/licensedetector/LicenseDetectorPlugin.java#L371-L440) will take in input the repository path and will provide as output  a `scancode.json` file (which will be added to the path), which will be then parsed by the [`parseScanResult()`](https://github.com/fasten-project/fasten/blob/6e92f3c814865e5e53b226d8a76ef28867218f32/analyzer/license-detector/src/main/java/eu/fasten/analyzer/licensedetector/LicenseDetectorPlugin.java#L441-L470) function. This function will store the set of licenses detected at the file level in a `JSONArray`, called [`fileLicenses`](https://github.com/fasten-project/fasten/blob/6e92f3c814865e5e53b226d8a76ef28867218f32/analyzer/license-detector/src/main/java/eu/fasten/analyzer/licensedetector/LicenseDetectorPlugin.java#L106-L112). 
+
+This `JSONArray`, if not empty, will be processed by the [`detectedLicenses.addFiles()`](https://github.com/fasten-project/fasten/blob/6e92f3c814865e5e53b226d8a76ef28867218f32/core/src/main/java/eu/fasten/core/data/metadatadb/license/DetectedLicenses.java#L31-L33
+) function, which will include it in the [`fasten.LicenseDetector.out`](https://github.com/fasten-project/fasten/wiki/Kafka-Topics#fastenlicensedetector) Kafka message, which the `license feeder` will later process.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 <!-- TODO Provide description -->
 
 <!-- TODO Shall we provide an example that can be manually triggered?
