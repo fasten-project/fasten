@@ -111,11 +111,11 @@ public class CallGraphUtils {
     public static Map<String, List<Pair<String, String>>> convertToNodePairs(
         final PartialJavaCallGraph ercg) {
 
-        return convertToNodePairs(ercg, true, true);
+        return convertToNodePairs(ercg, true);
     }
 
     public static Map<String, List<Pair<String, String>>> convertToNodePairs(
-        final PartialJavaCallGraph ercg, final boolean includeExternals,
+        final PartialJavaCallGraph ercg,
         final boolean includeInternals) {
 
         final Map<String, List<Pair<String, String>>> result =
@@ -126,14 +126,6 @@ public class CallGraphUtils {
             result.put("internalTypes",
                 getEdges(ercg.getGraph().getCallSites(), methods, types));
         }
-        result.put("resolvedTypes",
-            getEdges(ercg.getGraph().getResolvedCalls(), methods, types));
-
-        if (includeExternals) {
-            result.put("externalTypes",
-                getEdges(ercg.getGraph().getExternalCalls(), methods, types));
-        }
-
         return result;
     }
 

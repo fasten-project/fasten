@@ -27,13 +27,6 @@ public abstract class PartialCallGraph {
 
     private static final Logger logger = LoggerFactory.getLogger(PartialCallGraph.class);
 
-
-    /**
-     * Includes all the edges of the revision call graph (internal, external,
-     * and resolved).
-     */
-    protected CPythonGraph graph;
-
     /**
      * The forge.
      */
@@ -83,11 +76,9 @@ public abstract class PartialCallGraph {
      * @param timestamp      the timestamp (in seconds from UNIX epoch); optional: if not present,
      *                       it is set to -1.
      * @param cgGenerator    The name of call graph generator that generated this call graph.
-     * @param graph          the call graph (no control is done on the graph) {@link CPythonGraph}
      */
     protected PartialCallGraph(final String forge, final String product, final String version,
-                               final long timestamp, final String cgGenerator,
-                               final CPythonGraph graph) {
+                               final long timestamp, final String cgGenerator) {
         this.forge = forge;
         this.product = product;
         this.version = version;
@@ -96,7 +87,6 @@ public abstract class PartialCallGraph {
         this.uri = FastenURI.create("fasten://" + forge + "!" + product + "$" + version);
         this.forgelessUri = FastenURI.create("fasten://" + product + "$" + version);
         this.cgGenerator = cgGenerator;
-        this.graph = graph;
     }
 
     /**
@@ -104,7 +94,7 @@ public abstract class PartialCallGraph {
      *
      * @param json JSONObject of a revision call graph.
      */
-    protected PartialCallGraph(final JSONObject json, Class rcgClass) throws JSONException {
+    protected PartialCallGraph(final JSONObject json) throws JSONException {
         this.forge = json.getString("forge");
         this.product = json.getString("product");
         this.version = json.getString("version");
@@ -113,18 +103,14 @@ public abstract class PartialCallGraph {
         this.uri = FastenURI.create("fasten://" + forge + "!" + product + "$" + version);
         this.forgelessUri = FastenURI.create("fasten://" + product + "$" + version);
         this.cgGenerator = json.getString("generator");
-        if (!rcgClass.getName().equals(PartialJavaCallGraph.class.getName())) {
-            this.graph = new CPythonGraph(json.getJSONObject("graph"));
-        }
+
     }
 
     public String getCgGenerator() {
         return cgGenerator;
     }
 
-    public CPythonGraph getGraph() {
-        return graph;
-    }
+    public abstract <T> T getGraph();
 
     /**
      * If timestamp is present in the JSON set it otherwise set it to -1.
@@ -138,20 +124,7 @@ public abstract class PartialCallGraph {
         }
     }
 
-    /**
-     * Checks whether this {@link PartialCallGraph} is empty, e.g. has no calls.
-     *
-     * @return true if this {@link PartialCallGraph} is empty
-     */
-    public boolean isCallGraphEmpty() {
-        if (this.graph instanceof JavaGraph) {
-            return ((JavaGraph) graph).getCallSites().isEmpty();
-        } else {
-            return this.graph.getInternalCalls().isEmpty()
-                    && this.graph.getExternalCalls().isEmpty()
-                    && this.graph.getResolvedCalls().isEmpty();
-        }
-    }
+
 
     /**
      * Produces the JSON representation of this {@link PartialCallGraph}.
@@ -167,8 +140,6 @@ public abstract class PartialCallGraph {
         if (timestamp >= 0) {
             result.put("timestamp", timestamp);
         }
-        result.put("graph", graph.toJSON());
-
         return result;
     }
 

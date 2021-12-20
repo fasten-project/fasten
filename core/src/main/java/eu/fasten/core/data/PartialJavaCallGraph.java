@@ -44,6 +44,11 @@ public class PartialJavaCallGraph extends PartialCallGraph {
 
     protected EnumMap<JavaScope, Map<String, JavaType>> classHierarchy;
 
+    /**
+     * Includes all the edges of the revision call graph (internal, external,
+     * and resolved).
+     */
+    protected JavaGraph graph;
 
     /**
      * Creates {@link PartialJavaCallGraph} with the given data.
@@ -61,9 +66,10 @@ public class PartialJavaCallGraph extends PartialCallGraph {
     public PartialJavaCallGraph(final String forge, final String product, final String version,
                                 final long timestamp, final String cgGenerator,
                                 final EnumMap<JavaScope,Map<String, JavaType>> classHierarchy,
-                                final CPythonGraph graph) {
-        super(forge, product, version, timestamp, cgGenerator, graph);
+                                final JavaGraph graph) {
+        super(forge, product, version, timestamp, cgGenerator);
         this.classHierarchy = classHierarchy;
+        this.graph = graph;
     }
 
 
@@ -73,14 +79,14 @@ public class PartialJavaCallGraph extends PartialCallGraph {
      * @param json JSONObject of a revision call graph.
      */
     public PartialJavaCallGraph(final JSONObject json) throws JSONException {
-        super(json, PartialJavaCallGraph.class);
+        super(json);
         this.graph = new JavaGraph(json.getJSONArray("call-sites"));
         this.classHierarchy = getCHAFromJSON(json.getJSONObject(classHierarchyJSONKey));
     }
 
-
+    @Override
     public JavaGraph getGraph() {
-        return (JavaGraph) this.graph;
+        return this.graph;
     }
 
     /**
@@ -344,4 +350,12 @@ public class PartialJavaCallGraph extends PartialCallGraph {
     return classHierarchy;
     }
 
+    /**
+     * Checks whether this {@link PartialCallGraph} is empty, e.g. has no calls.
+     *
+     * @return true if this {@link PartialCallGraph} is empty
+     */
+    public boolean isCallGraphEmpty() {
+        return graph.getCallSites().isEmpty();
+    }
 }

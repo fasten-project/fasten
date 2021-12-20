@@ -295,10 +295,10 @@ public abstract class MetadataDBExtension implements KafkaPlugin, DBConnector {
         return new ImmutablePair<>(new ArrayList<>(), 0);
     }
 
-    protected List<CallSitesRecord> insertEdges(CPythonGraph graph, Long2LongOpenHashMap lidToGidMap,
-                                                Map<String, Long> namespaceMap, MetadataDao metadataDao) {
-        return new ArrayList<>();
-    }
+    protected abstract <T> List<CallSitesRecord> insertEdges(T graph,
+                                                 Long2LongOpenHashMap lidToGidMap,
+                                                Map<String, Long> namespaceMap,
+                                                MetadataDao metadataDao);
 
     protected Timestamp getProperTimestamp(long timestamp) {
         if (timestamp == -1) {

@@ -40,6 +40,12 @@ public class PartialCCallGraph extends PartialCallGraph {
     protected EnumMap<CScope, Map<String, Map<Integer, CNode>>> classHierarchy;
 
     /**
+     * Includes all the edges of the revision call graph (internal, external,
+     * and resolved).
+     */
+    protected CPythonGraph graph;
+
+    /**
      * Creates {@link PartialCCallGraph} with the given data.
      *
      * @param forge          the forge.
@@ -53,8 +59,12 @@ public class PartialCCallGraph extends PartialCallGraph {
     public PartialCCallGraph(final String forge, final String product, final String version,
                              final long timestamp, final String cgGenerator,
                              final CPythonGraph graph) {
-        super(forge, product, version, timestamp, cgGenerator, graph);
+        super(forge, product, version, timestamp, cgGenerator);
+        this.graph = graph;
     }
+
+    @Override
+    public CPythonGraph getGraph() { return graph; }
 
 
     /**
@@ -73,8 +83,9 @@ public class PartialCCallGraph extends PartialCallGraph {
                              final long timestamp, final String cgGenerator,
                              final EnumMap<CScope, Map<String, Map<Integer, CNode>>>classHierarchy,
                              final CPythonGraph graph) {
-        super(forge, product, version, timestamp, cgGenerator, graph);
+        super(forge, product, version, timestamp, cgGenerator);
         this.classHierarchy = classHierarchy;
+        this.graph = graph;
     }
 
 
@@ -95,9 +106,10 @@ public class PartialCCallGraph extends PartialCallGraph {
                              final long timestamp, final String cgGenerator,
                              final EnumMap<CScope, Map<String, Map<Integer, CNode>>>classHierarchy,
                              final CPythonGraph graph, final String architecture) {
-        super(forge, product, version, timestamp, cgGenerator, graph);
+        super(forge, product, version, timestamp, cgGenerator);
         this.architecture = architecture;
         this.classHierarchy = classHierarchy;
+        this.graph = graph;
     }
 
     /**
@@ -106,9 +118,10 @@ public class PartialCCallGraph extends PartialCallGraph {
      * @param json JSONObject of a revision call graph.
      */
     public PartialCCallGraph(final JSONObject json) throws JSONException {
-        super(json, PartialCCallGraph.class);
+        super(json);
         this.architecture = json.has("architecture") ? json.getString("architecture") : null;
         this.classHierarchy = getCHAFromJSON(json.getJSONObject(classHierarchyJSONKey));
+        this.graph = new CPythonGraph(json.getJSONObject("graph"));
     }
 
     /**
@@ -228,6 +241,7 @@ public class PartialCCallGraph extends PartialCallGraph {
         final var result = super.toJSON();
         result.put("architecture", architecture);
         result.put(classHierarchyJSONKey, classHierarchyToJSON(classHierarchy));
+        result.put("graph", graph.toJSON());
         return result;
     }
 
@@ -293,5 +307,16 @@ public class PartialCCallGraph extends PartialCallGraph {
 
    public EnumMap<CScope, Map<String, Map<Integer, CNode>>> getClassHierarchy() {
         return classHierarchy;
+    }
+
+    /**
+     * Checks whether this {@link PartialCallGraph} is empty, e.g. has no calls.
+     *
+     * @return true if this {@link PartialCallGraph} is empty
+     */
+    public boolean isCallGraphEmpty() {
+        return this.graph.getInternalCalls().isEmpty()
+            && this.graph.getExternalCalls().isEmpty()
+            && this.graph.getResolvedCalls().isEmpty();
     }
 }

@@ -205,13 +205,14 @@ public class MetadataDatabaseJavaPlugin extends Plugin {
             return callables;
         }
 
-        protected List<CallSitesRecord> insertEdges(CPythonGraph graph, Long2LongOpenHashMap lidToGidMap,
+        @Override
+        protected <T> List<CallSitesRecord> insertEdges(T javaGraph, Long2LongOpenHashMap lidToGidMap,
                                                     Map<String, Long> typesMap, MetadataDao metadataDao) {
-            var javaGraph = (JavaGraph) graph;
-            final var numEdges = javaGraph.getCallSites().size();
+            var graph = (JavaGraph) javaGraph;
+            final var numEdges = graph.getCallSites().size();
 
             var callSites = new ArrayList<CallSitesRecord>(numEdges);
-            for (var edgeEntry : javaGraph.getCallSites().entrySet()) {
+            for (var edgeEntry : graph.getCallSites().entrySet()) {
 
                 // Get Global ID of the source callable
                 var source = lidToGidMap.get((long) edgeEntry.getKey().firstInt());

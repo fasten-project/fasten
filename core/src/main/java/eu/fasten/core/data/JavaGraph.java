@@ -19,13 +19,12 @@
 package eu.fasten.core.data;
 
 import it.unimi.dsi.fastutil.ints.IntIntPair;
-import java.util.concurrent.ConcurrentMap;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import java.util.HashMap;
 import java.util.Map;
 
-public class JavaGraph extends CPythonGraph {
+public class JavaGraph {
 
     /**
      * Keeps all the internal calls of the graph. The metadata per call is stored as a map.
@@ -66,12 +65,6 @@ public class JavaGraph extends CPythonGraph {
         this.callSites = new HashMap<>();
     }
 
-    public JavaGraph(Map<IntIntPair, Map<Object, Object>> callSites,
-                     Map<IntIntPair, Map<Object, Object>> externalCalls,
-                     ConcurrentMap<IntIntPair, Map<Object, Object>> resolvedCalls) {
-        super(new HashMap<>(), externalCalls, resolvedCalls);
-        this.callSites = callSites;
-    }
 
     public Map<IntIntPair, Map<Object, Object>> getCallSites() {
         return callSites;

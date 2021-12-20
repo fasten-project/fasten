@@ -118,7 +118,7 @@ public class MetadataDatabaseCPlugin extends Plugin {
             }
 
             // Insert all the edges
-            var edges = insertEdges(callGraph.getGraph(), lidToGidMap, metadataDao);
+            var edges = insertEdges(callGraph.getGraph(), lidToGidMap, new HashMap<>(), metadataDao);
 
             // Remove duplicate nodes
             var internalIds = new LongArrayList(numInternal);
@@ -228,8 +228,11 @@ public class MetadataDatabaseCPlugin extends Plugin {
             return new ImmutablePair<>(callables, numInternal);
         }
 
-        protected List<CallSitesRecord> insertEdges(CPythonGraph graph,
-                                                    Long2LongOpenHashMap lidToGidMap, MetadataDao metadataDao) {
+        @Override
+        protected <T> List<CallSitesRecord> insertEdges(T cGraph,
+                                                        Long2LongOpenHashMap lidToGidMap,
+                                                        Map<String, Long> namespaceMap, MetadataDao metadataDao) {
+            var graph = (CPythonGraph) cGraph;
             final var numEdges = graph.getInternalCalls().size() + graph.getExternalCalls().size();
 
             // Map of all edges (internal and external)

@@ -33,6 +33,12 @@ public class PartialPythonCallGraph extends PartialCallGraph {
     protected EnumMap<PythonScope, Map<String, PythonType>> classHierarchy;
 
     /**
+     * Includes all the edges of the revision call graph (internal, external,
+     * and resolved).
+     */
+    protected CPythonGraph graph;
+
+    /**
      * Creates {@link PartialPythonCallGraph} with the given data.
      *
      * @param forge          the forge.
@@ -48,8 +54,9 @@ public class PartialPythonCallGraph extends PartialCallGraph {
                                   final long timestamp, final String cgGenerator,
                                   final EnumMap<PythonScope, Map<String, PythonType>>classHierarchy,
                                   final CPythonGraph graph) {
-        super(forge, product, version, timestamp, cgGenerator, graph);
+        super(forge, product, version, timestamp, cgGenerator);
         this.classHierarchy = classHierarchy;
+        this.graph = graph;
     }
 
     /**
@@ -58,8 +65,9 @@ public class PartialPythonCallGraph extends PartialCallGraph {
      * @param json JSONObject of a revision call graph.
      */
     public PartialPythonCallGraph(final JSONObject json) throws JSONException {
-        super(json, PartialPythonCallGraph.class);
+        super(json);
         this.classHierarchy = getCHAFromJSON(json.getJSONObject(classHierarchyJSONKey));
+        this.graph = new CPythonGraph(json.getJSONObject("graph"));
     }
 
     /**
@@ -129,9 +137,13 @@ public class PartialPythonCallGraph extends PartialCallGraph {
         return result;
     }
 
+    @Override
+    public CPythonGraph getGraph() { return graph; }
+
     public JSONObject toJSON() {
         final var result = super.toJSON();
         result.put(classHierarchyJSONKey, classHierarchyToJSON(classHierarchy));
+        result.put("graph", graph.toJSON());
         return result;
     }
     /**
@@ -158,5 +170,17 @@ public class PartialPythonCallGraph extends PartialCallGraph {
      */
     public String getRevisionName() {
         return this.product + "_" + this.version;
+    }
+
+    /**
+     * Checks whether this {@link PartialCallGraph} is empty, e.g. has no calls.
+     *
+     * @return true if this {@link PartialCallGraph} is empty
+     */
+
+    public boolean isCallGraphEmpty() {
+        return this.graph.getInternalCalls().isEmpty()
+            && this.graph.getExternalCalls().isEmpty()
+            && this.graph.getResolvedCalls().isEmpty();
     }
 }
