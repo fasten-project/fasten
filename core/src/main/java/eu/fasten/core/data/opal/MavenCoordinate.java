@@ -157,4 +157,9 @@ public class MavenCoordinate {
         return this.toURL(repo) + "/" + this.artifactID + "-" + this.versionConstraint
                 + "." + extension;
     }
+    
+    @Override
+    public String toString() {
+    	return getCoordinate();
+    }
 }

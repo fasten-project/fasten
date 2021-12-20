@@ -33,6 +33,8 @@ import org.dom4j.io.SAXReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static eu.fasten.core.data.Constants.mvnCoordinateSeparator;
+
 import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -140,24 +142,24 @@ public class DataExtractor {
      * @param artifactRepo Artifact repository (like Maven Central)
      * @return artifact's release date as Long (in ms since 01.01.1970) or null if could not extract
      */
-    public Long extractReleaseDate(String groupId, String artifactId, String version, String artifactRepo) {
+    public long extractReleaseDate(String groupId, String artifactId, String version, String artifactRepo) {
         URLConnection connection;
         try {
             connection = new URL(MavenUtilities.getPomUrl(groupId, artifactId, version, artifactRepo)).openConnection();
         } catch (IOException e) {
             logger.error("Could not extract release date", e);
-            return null;
+            return -1;
         }
         var lastModified = connection.getHeaderField("Last-Modified");
         if (lastModified == null) {
-            return null;
+            return -1;
         }
         Date releaseDate;
         try {
             releaseDate = new SimpleDateFormat("E, d MMM yyyy HH:mm:ss Z", Locale.ENGLISH).parse(lastModified);
         } catch (ParseException e) {
             logger.error("Could not parse extracted release date", e);
-            return null;
+            return -1;
         }
         return releaseDate.getTime();
     }
@@ -431,8 +433,8 @@ public class DataExtractor {
                 .equals(groupId + Constants.mvnCoordinateSeparator + artifactId
                         + Constants.mvnCoordinateSeparator + version)) {
             var metadata = this.extractDependencyResolutionMetadata(pom);
-            this.resolutionMetadata = new ImmutablePair<>(groupId + Constants.mvnCoordinateSeparator
-                    + artifactId + Constants.mvnCoordinateSeparator + version, metadata);
+            String gav = groupId + mvnCoordinateSeparator + artifactId + mvnCoordinateSeparator + version;
+			this.resolutionMetadata = new ImmutablePair<>(gav, metadata);
         }
     }
 
