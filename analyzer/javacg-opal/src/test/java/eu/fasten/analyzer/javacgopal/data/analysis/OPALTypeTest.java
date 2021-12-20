@@ -55,8 +55,8 @@ import org.opalj.collection.immutable.UIDSet;
 import org.opalj.collection.immutable.UIDSet1;
 
 import eu.fasten.analyzer.javacgopal.data.OPALCallGraphConstructor;
-import eu.fasten.analyzer.javacgopal.data.PartialCallGraph;
-import eu.fasten.analyzer.javacgopal.data.PartialCallGraphConstructor;
+import eu.fasten.analyzer.javacgopal.data.OPALPartialCallGraph;
+import eu.fasten.analyzer.javacgopal.data.OPALPartialCallGraphConstructor;
 import eu.fasten.core.data.FastenURI;
 import eu.fasten.core.data.JavaScope;
 import eu.fasten.core.data.opal.exceptions.OPALException;
@@ -532,7 +532,7 @@ class OPALTypeTest {
 
 	}
 
-	private void assertLineNumber(PartialCallGraph cg, final String uri, final int first, final int last) {
+	private void assertLineNumber(OPALPartialCallGraph cg, final String uri, final int first, final int last) {
 		for (final var type : cg.classHierarchy.get(JavaScope.internalTypes).values()) {
 			for (final var node : type.getMethods().values()) {
 				if (node.getUri().toString().equals(uri)) {
@@ -543,9 +543,9 @@ class OPALTypeTest {
 		}
 	}
 
-	private PartialCallGraph getRCG(String s) throws OPALException {
+	private OPALPartialCallGraph getRCG(String s) throws OPALException {
 		var cgc = new OPALCallGraphConstructor();
 		File pkg = getTestResource(s);
-		return new PartialCallGraphConstructor().construct(cgc.construct(pkg, CHA), INCLUDING_ALL_SUBTYPES);
+		return new OPALPartialCallGraphConstructor().construct(cgc.construct(pkg, CHA), INCLUDING_ALL_SUBTYPES);
 	}
 }

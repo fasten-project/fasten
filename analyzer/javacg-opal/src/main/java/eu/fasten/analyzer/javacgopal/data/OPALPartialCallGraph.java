@@ -22,7 +22,7 @@ import eu.fasten.core.data.JavaGraph;
 import eu.fasten.core.data.JavaScope;
 import eu.fasten.core.data.JavaType;
 
-public class PartialCallGraph {
+public class OPALPartialCallGraph {
 
 	public JavaGraph graph;
 	public int nodeCount;

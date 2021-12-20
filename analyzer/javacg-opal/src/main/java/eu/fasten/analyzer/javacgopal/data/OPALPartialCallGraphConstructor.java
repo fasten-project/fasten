@@ -21,7 +21,6 @@ package eu.fasten.analyzer.javacgopal.data;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -54,8 +53,6 @@ import eu.fasten.analyzer.javacgopal.data.analysis.OPALType;
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
 import eu.fasten.core.data.JavaGraph;
-import eu.fasten.core.data.JavaScope;
-import eu.fasten.core.data.JavaType;
 import eu.fasten.core.data.opal.MavenArtifactDownloader;
 import eu.fasten.core.data.opal.MavenCoordinate;
 import eu.fasten.core.data.opal.exceptions.OPALException;
@@ -66,20 +63,20 @@ import scala.collection.JavaConverters;
  * Call graphs that are not still fully resolved. i.e. isolated call graphs which within-artifact
  * calls (edges) are known as internal calls and Cross-artifact calls are known as external calls.
  */
-public class PartialCallGraphConstructor {
+public class OPALPartialCallGraphConstructor {
 	
-    private static final Logger logger = LoggerFactory.getLogger(PartialCallGraph.class);
+    private static final Logger logger = LoggerFactory.getLogger(OPALPartialCallGraph.class);
 	
-    private PartialCallGraph pcg;
+    private OPALPartialCallGraph pcg;
 
     /**
      * Given a file, algorithm and main class (in case of application package)
-     * it creates a {@link PartialCallGraph} for it using OPAL.
+     * it creates a {@link OPALPartialCallGraph} for it using OPAL.
      *
      * @param ocg call graph constructor
      */
-    public PartialCallGraph construct(OPALCallGraph ocg, CallPreservationStrategy callSiteOnly) {
-    	pcg = new PartialCallGraph();
+    public OPALPartialCallGraph construct(OPALCallGraph ocg, CallPreservationStrategy callSiteOnly) {
+    	pcg = new OPALPartialCallGraph();
         pcg.graph = new JavaGraph();
 
         try {
@@ -119,7 +116,7 @@ public class PartialCallGraphConstructor {
             file = new MavenArtifactDownloader(coordinate).downloadArtifact(artifactRepo);
             final var opalCG = new OPALCallGraphConstructor().construct(file, algorithm);
 
-            final var partialCallGraph = new PartialCallGraphConstructor().construct(opalCG, callSiteOnly);
+            final var partialCallGraph = new OPALPartialCallGraphConstructor().construct(opalCG, callSiteOnly);
 
             return new ExtendedRevisionJavaCallGraph(Constants.mvnForge, coordinate.getProduct(),
                     coordinate.getVersionConstraint(), timestamp,

@@ -51,7 +51,7 @@ import org.junit.jupiter.api.Test;
 import com.github.javaparser.utils.Log;
 
 import eu.fasten.analyzer.javacgopal.data.OPALCallGraphConstructor;
-import eu.fasten.analyzer.javacgopal.data.PartialCallGraphConstructor;
+import eu.fasten.analyzer.javacgopal.data.OPALPartialCallGraphConstructor;
 import eu.fasten.analyzer.sourceanalyzer.CommentParser;
 import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
 import eu.fasten.core.data.opal.MavenArtifactDownloader;
@@ -77,7 +77,7 @@ public class CGandStitchingTest {
                                                         final String version)
         throws OPALException {
         var opalCG = new OPALCallGraphConstructor().construct(file, RTA);
-        var cg = new PartialCallGraphConstructor().construct(opalCG, ONLY_STATIC_CALLSITES);
+        var cg = new OPALPartialCallGraphConstructor().construct(opalCG, ONLY_STATIC_CALLSITES);
         return new ExtendedRevisionJavaCallGraph("", product, version, -1, "", cg.classHierarchy, cg.graph);
     }
 
@@ -343,7 +343,7 @@ public class CGandStitchingTest {
         final var dep1 =
             new MavenArtifactDownloader(coord).downloadArtifact("jar");
         final var opalCG = new OPALCallGraphConstructor().construct(dep1, RTA);
-        final var cg = new PartialCallGraphConstructor().construct(opalCG, ONLY_STATIC_CALLSITES);
+        final var cg = new OPALPartialCallGraphConstructor().construct(opalCG, ONLY_STATIC_CALLSITES);
         return new ExtendedRevisionJavaCallGraph("", coord.getProduct(), coord.getVersionConstraint(), -1, "", cg.classHierarchy, cg.graph);
     }
 
