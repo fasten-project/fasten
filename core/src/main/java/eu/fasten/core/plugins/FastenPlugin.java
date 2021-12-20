@@ -92,17 +92,4 @@ public interface FastenPlugin extends ExtensionPoint {
      * closing a stream or setting a big object to null.
      */
     void freeResource();
-
-    /**
-     * A plug-in can optionally have a working set that contains new records to process based on a previously processed record.
-     * This set will be processed once a normal/priority record is processed.
-     * Note that
-     * (1) The messages in the working set should have the same format as JSON strings in the input topics of the plug-in.
-     * (2) The working set is an in-memory storage and hence it is volatile.
-     *
-     * @return
-     */
-    default Optional<LinkedList<String>> getWorkingSet() {
-        return Optional.empty();
-    }
 }
