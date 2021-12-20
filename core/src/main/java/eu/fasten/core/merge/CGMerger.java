@@ -254,6 +254,29 @@ public class CGMerger {
         return new MergedDirectedGraph();
     }
 
+    public BiMap<Long, String> getAllUrisFromDB(DirectedGraph dg){
+        Set<Long> gIDs = new HashSet<>();
+        for (Long node : dg.nodes()) {
+            if (node > 0) {
+                gIDs.add(node);
+            }
+        }
+        BiMap<Long, String> uris = HashBiMap.create();
+        dbContext
+            .select(Callables.CALLABLES.ID, Packages.PACKAGES.PACKAGE_NAME,
+                PackageVersions.PACKAGE_VERSIONS.VERSION,
+                Callables.CALLABLES.FASTEN_URI)
+            .from(Callables.CALLABLES, Modules.MODULES, PackageVersions.PACKAGE_VERSIONS, Packages.PACKAGES)
+            .where(Callables.CALLABLES.ID.in(gIDs))
+            .and(Modules.MODULES.ID.eq(Callables.CALLABLES.MODULE_ID))
+            .and(PackageVersions.PACKAGE_VERSIONS.ID.eq(Modules.MODULES.PACKAGE_VERSION_ID))
+            .and(Packages.PACKAGES.ID.eq(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID))
+            .fetch().forEach(record -> uris.put( record.component1(),
+            "fasten://mvn!" + record.component2() + "$" + record.component3() + record.component4()));
+
+        return uris;
+    }
+
     /**
      * Single arc containing source and target IDs and a list of receivers.
      */
