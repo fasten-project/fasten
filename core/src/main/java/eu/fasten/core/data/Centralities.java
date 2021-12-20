@@ -80,7 +80,7 @@ public class Centralities {
 	/**
 	 * Computes closeness centrality using all-pairs shortest-paths.
 	 *
-	 * @param directedGraph a directed graph.
+	 * @param directedGraph a directed CPythonGraph.
 	 * @return a function mapping node identifiers to their centrality score.
 	 */
 	public static Long2DoubleFunction closenessExact(final DirectedGraph directedGraph) throws IOException, InterruptedException {
@@ -91,7 +91,7 @@ public class Centralities {
 	/**
 	 * Computes closeness centrality using a parallel implementation of all-pairs shortest-paths.
 	 *
-	 * @param directedGraph a directed graph.
+	 * @param directedGraph a directed CPythonGraph.
 	 * @return a function mapping node identifiers to their centrality score.
 	 */
 	public static Long2DoubleFunction closenessExactParallel(final DirectedGraph directedGraph) throws IOException, InterruptedException {
@@ -104,7 +104,7 @@ public class Centralities {
 	/**
 	 * Approximates closeness centrality using {@linkplain HyperBall HyperBall}.
 	 *
-	 * @param directedGraph a directed graph.
+	 * @param directedGraph a directed CPythonGraph.
 	 * @param eps the desired relative error with probability 90%; the number of counters per register
 	 *            will be approximately 3.16 / {@code eps}.
 	 * @return a function mapping node identifiers to their centrality score.
@@ -121,7 +121,7 @@ public class Centralities {
 	/**
 	 * Computes Lin's centrality using a parallel implementation of all-pairs shortest-paths.
 	 *
-	 * @param directedGraph a directed graph.
+	 * @param directedGraph a directed CPythonGraph.
 	 * @return a function mapping node identifiers to their centrality score.
 	 */
 	public static Long2DoubleFunction linExactParallel(final DirectedGraph directedGraph) throws IOException, InterruptedException {
@@ -134,7 +134,7 @@ public class Centralities {
 	/**
 	 * Approximates Lin's centrality using {@linkplain HyperBall HyperBall}.
 	 *
-	 * @param directedGraph a directed graph.
+	 * @param directedGraph a directed CPythonGraph.
 	 * @param eps the desired relative error with probability 90%; the number of counters per register
 	 *            will be approximately 3.16 / {@code eps}.
 	 * @return a function mapping node identifiers to their centrality score.
@@ -156,7 +156,7 @@ public class Centralities {
 	/**
 	 * Computes harmonic centrality using all-pairs shortest-paths.
 	 *
-	 * @param directedGraph a directed graph.
+	 * @param directedGraph a directed CPythonGraph.
 	 * @return a function mapping node identifiers to their centrality score.
 	 */
 	public static Long2DoubleFunction harmonicExact(final DirectedGraph directedGraph) throws IOException, InterruptedException {
@@ -167,7 +167,7 @@ public class Centralities {
 	/**
 	 * Computes harmonic centrality using a parallel implementation of all-pairs shortest-paths.
 	 *
-	 * @param directedGraph a directed graph.
+	 * @param directedGraph a directed CPythonGraph.
 	 * @return a function mapping node identifiers to their centrality score.
 	 */
 	public static Long2DoubleFunction harmonicExactParallel(final DirectedGraph directedGraph) throws IOException, InterruptedException {
@@ -180,7 +180,7 @@ public class Centralities {
 	/**
 	 * Approximates harmonic centrality using {@linkplain HyperBall HyperBall}.
 	 *
-	 * @param directedGraph a directed graph.
+	 * @param directedGraph a directed CPythonGraph.
 	 * @param eps the desired relative error with probability 90%; the number of counters per register
 	 *            will be approximately 3.16 / {@code eps}.
 	 * @return a function mapping node identifiers to their centrality score.
@@ -197,7 +197,7 @@ public class Centralities {
 	 * Approximates left dominant eigenvector centrality using a parallel implementation of the power
 	 * method.
 	 *
-	 * @param directedGraph a directed graph.
+	 * @param directedGraph a directed CPythonGraph.
 	 * @return a function mapping node identifiers to their centrality score.
 	 */
 	public static Long2DoubleFunction eigenvectorCentralityParallel(final DirectedGraph directedGraph) throws IOException {
@@ -210,7 +210,7 @@ public class Centralities {
 	/**
 	 * Approximates Seeley's centrality using a parallel implementation of the power method.
 	 *
-	 * @param directedGraph a directed graph.
+	 * @param directedGraph a directed CPythonGraph.
 	 * @return a function mapping node identifiers to their centrality score.
 	 */
 	public static Long2DoubleFunction seeleyCentralityParallel(final DirectedGraph directedGraph) throws IOException {
@@ -224,7 +224,7 @@ public class Centralities {
 	/**
 	 * Approximates Katz centrality.
 	 *
-	 * @param directedGraph a directed graph.
+	 * @param directedGraph a directed CPythonGraph.
 	 * @return a function mapping node identifiers to their centrality score.
 	 */
 	public static Long2DoubleFunction katz(final DirectedGraph directedGraph, final double alpha) {
@@ -236,7 +236,7 @@ public class Centralities {
 	/**
 	 * Approximates Katz centrality using a parallel implementation of the Gauss&ndash;Seidel method.
 	 *
-	 * @param directedGraph a directed graph.
+	 * @param directedGraph a directed CPythonGraph.
 	 * @return a function mapping node identifiers to their centrality score.
 	 */
 	public static Long2DoubleFunction katzParallel(final DirectedGraph directedGraph, final double alpha) throws IOException {
@@ -250,7 +250,7 @@ public class Centralities {
 	/**
 	 * Approximates PageRank.
 	 *
-	 * @param directedGraph a directed graph.
+	 * @param directedGraph a directed CPythonGraph.
 	 * @param alpha the damping factor.
 	 * @return a function mapping node identifiers to their centrality score.
 	 */
@@ -263,7 +263,7 @@ public class Centralities {
 	/**
 	 * Approximates PageRank using a parallel implementation of the Gauss&ndash;Seidel method.
 	 *
-	 * @param directedGraph a directed graph.
+	 * @param directedGraph a directed CPythonGraph.
 	 * @param alpha the damping factor.
 	 * @return a function mapping node identifiers to their centrality score.
 	 */
@@ -282,7 +282,7 @@ public class Centralities {
 	 * Note that the returned score is the authoritativeness score. To obtain the hubbiness score, pass
 	 * the transpose.
 	 *
-	 * @param directedGraph a directed graph.
+	 * @param directedGraph a directed CPythonGraph.
 	 * @return a function mapping node identifiers to their centrality score.
 	 */
 	public static Long2DoubleFunction hitsParallel(final DirectedGraph directedGraph) throws IOException {
@@ -296,7 +296,7 @@ public class Centralities {
 	/**
 	 * Computes SALSA using the a non-iterative algorithm.
 	 *
-	 * @param directedGraph a directed graph.
+	 * @param directedGraph a directed CPythonGraph.
 	 * @return a function mapping node identifiers to their centrality score.
 	 */
 	public static Long2DoubleFunction salsa(final DirectedGraph directedGraph) throws IOException {
@@ -308,7 +308,7 @@ public class Centralities {
 	/**
 	 * Computes betweenness centrality.
 	 *
-	 * @param directedGraph a directed graph.
+	 * @param directedGraph a directed CPythonGraph.
 	 * @return a function mapping node identifiers to their centrality score.
 	 */
 	public static Long2DoubleFunction betweenness(final DirectedGraph directedGraph) {
@@ -320,7 +320,7 @@ public class Centralities {
 	/**
 	 * Computes betweenness centrality using a parallel breadth-first visit implementation.
 	 *
-	 * @param directedGraph a directed graph.
+	 * @param directedGraph a directed CPythonGraph.
 	 * @return a function mapping node identifiers to their centrality score.
 	 */
 	public static Long2DoubleFunction betweennessParallel(final DirectedGraph directedGraph) throws InterruptedException {
@@ -333,7 +333,7 @@ public class Centralities {
 	/**
 	 * Computes the local clustering coefficient.
 	 *
-	 * @param directedGraph a directed graph.
+	 * @param directedGraph a directed CPythonGraph.
 	 * @return a function mapping node identifiers to their local clustering coefficient.
 	 */
 	public static Long2DoubleFunction localClusteringCoefficient(final DirectedGraph directedGraph) {

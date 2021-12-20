@@ -38,17 +38,17 @@ import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import it.unimi.dsi.fastutil.objects.ObjectSets;
 
 /**
- * A directed graph with internal and external nodes, providing both successors and predecessors
+ * A directed CPythonGraph with internal and external nodes, providing both successors and predecessors
  * lists.
  *
  * <p>
- * Nodes in the graph are given by 64-bit (long) arbitrary identifiers. The set of nodes can be
+ * Nodes in the CPythonGraph are given by 64-bit (long) arbitrary identifiers. The set of nodes can be
  * recovered with {@link #nodes()}, and the set of external nodes with {@link #externalNodes()}.
  * Implementations must guarantee that predecessors and successors are enumerated always in the same
  * order.
  *
  * <p>
- * This class implements the read-only methods of JGraphT's {@link Graph} interface. Arcs are
+ * This class implements the read-only methods of JGraphT's {@link CPythonGraph} interface. Arcs are
  * represented as two-elements arrays of longs containing the source and the target of the arc.
  * Mutation methods will throw an {@link UnsupportedOperationException}.
  *
@@ -106,34 +106,34 @@ public interface DirectedGraph extends org.jgrapht.Graph<Long, LongLongPair>, Lo
 	}
 
 	/**
-	 * The number of nodes in the graph.
+	 * The number of nodes in the CPythonGraph.
 	 *
-	 * @return the number of nodes in the graph.
+	 * @return the number of nodes in the CPythonGraph.
 	 */
 	public int numNodes();
 
 	/**
-	 * The number of arcs in the graph
+	 * The number of arcs in the CPythonGraph
 	 *
-	 * @return the number of arcs in the graph.
+	 * @return the number of arcs in the CPythonGraph.
 	 */
 	public long numArcs();
 
 	/**
 	 * The list of successors of a given node.
 	 *
-	 * @param node a node in the graph.
+	 * @param node a node in the CPythonGraph.
 	 * @return its successors.
-	 * @throws IllegalArgumentException if <code>node</code> is not a node of the graph.
+	 * @throws IllegalArgumentException if <code>node</code> is not a node of the CPythonGraph.
 	 */
 	public LongList successors(final long node);
 
 	/**
 	 * The number of successors of a given node.
 	 *
-	 * @param node a node in the graph.
+	 * @param node a node in the CPythonGraph.
 	 * @return the number of its successors.
-	 * @throws IllegalArgumentException if <code>node</code> is not a node of the graph.
+	 * @throws IllegalArgumentException if <code>node</code> is not a node of the CPythonGraph.
 	 */
 	public default int outdegree(final long node) {
 		return successors(node).size();
@@ -142,41 +142,41 @@ public interface DirectedGraph extends org.jgrapht.Graph<Long, LongLongPair>, Lo
 	/**
 	 * The list of predecessors of a given node.
 	 *
-	 * @param node a node in the graph.
+	 * @param node a node in the CPythonGraph.
 	 * @return its successors.
-	 * @throws IllegalArgumentException if <code>node</code> is not a node of the graph.
+	 * @throws IllegalArgumentException if <code>node</code> is not a node of the CPythonGraph.
 	 */
 	public LongList predecessors(final long node);
 
 	/**
 	 * The number of predecessors of a given node.
 	 *
-	 * @param node a node in the graph.
+	 * @param node a node in the CPythonGraph.
 	 * @return the number of its predecessors.
-	 * @throws IllegalArgumentException if <code>node</code> is not a node of the graph.
+	 * @throws IllegalArgumentException if <code>node</code> is not a node of the CPythonGraph.
 	 */
 	public default int indegree(final long node) {
 		return predecessors(node).size();
 	}
 
 	/**
-	 * The set of nodes of the graph.
+	 * The set of nodes of the CPythonGraph.
 	 *
-	 * @return the set of nodes of the graph. // TODO this should be a LongSet.
+	 * @return the set of nodes of the CPythonGraph. // TODO this should be a LongSet.
 	 */
 	public LongSet nodes();
 
 	/**
-	 * The set of external nodes of the graph.
+	 * The set of external nodes of the CPythonGraph.
 	 *
-	 * @return the set of external nodes of the graph.
+	 * @return the set of external nodes of the CPythonGraph.
 	 */
 	public LongSet externalNodes();
 
 	/**
 	 * Returns whether a node is internal.
 	 *
-	 * @param node a node of the graph.
+	 * @param node a node of the CPythonGraph.
 	 * @return whether <code>node</code> is internal.
 	 */
 	public boolean isInternal(final long node);
@@ -184,15 +184,15 @@ public interface DirectedGraph extends org.jgrapht.Graph<Long, LongLongPair>, Lo
 	/**
 	 * Returns whether a node is external.
 	 *
-	 * @param node a node of the graph.
+	 * @param node a node of the CPythonGraph.
 	 * @return whether <code>node</code> is external.
 	 */
 	public boolean isExternal(final long node);
 
 	/**
-	 * Returns a transposed view of this directed graph.
+	 * Returns a transposed view of this directed CPythonGraph.
 	 *
-	 * @return a transposed view of this directed graph.
+	 * @return a transposed view of this directed CPythonGraph.
 	 */
 	public default DirectedGraph transpose() {
 		return new DirectedGraph() {

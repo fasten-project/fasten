@@ -1690,7 +1690,7 @@ public class MetadataDao {
     }
 
     /**
-     * Retrieve a call graph for a given a package name and a timestamp.
+     * Retrieve a call CPythonGraph for a given a package name and a timestamp.
      *
      * @param forge       Forge of the package
      * @param packageName Name of the package

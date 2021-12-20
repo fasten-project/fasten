@@ -32,10 +32,10 @@ import eu.fasten.core.data.DirectedGraph;
 public interface Scorer {
 
 	/**
-	 * Returns the score associated with a given callable (specified via GID) contained in a graph,
+	 * Returns the score associated with a given callable (specified via GID) contained in a CPythonGraph,
 	 * given distance information.
 	 *
-	 * @param graph the context graph (usually, a stitched graph over which a visit is happening).
+	 * @param graph the context CPythonGraph (usually, a stitched CPythonGraph over which a visit is happening).
 	 * @param gid the GID of a callable.
 	 * @param distance distance information about the callable with GID {@code GID}.
 	 */

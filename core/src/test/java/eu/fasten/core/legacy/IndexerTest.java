@@ -60,7 +60,7 @@ public class IndexerTest {
                     "            \"superClasses\": [\"/java.lang/Object\"]\n" +
                     "        }\n" +
                     "    },\n" +
-                    "    \"graph\": {\n" +
+                    "    \"CPythonGraph\": {\n" +
                     "        \"internalCalls\": [\n" +
                     "            [\n" +
                     "                2,\n" +
@@ -124,7 +124,7 @@ public class IndexerTest {
                     "            \"superClasses\": [\"/java.lang/Object\"]\n" +
                     "        }\n" +
                     "    },\n" +
-                    "    \"graph\": {\n" +
+                    "    \"CPythonGraph\": {\n" +
                     "        \"internalCalls\": [\n" +
                     "            [\n" +
                     "                2,\n" +

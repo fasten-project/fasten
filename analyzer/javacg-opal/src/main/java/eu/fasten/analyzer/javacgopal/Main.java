@@ -99,7 +99,7 @@ public class Main implements Runnable {
 
 	static class Opal {
 		@CommandLine.Option(names = { "-g",
-				"--generate" }, paramLabel = "GEN", description = "Generate call graph for artifact")
+				"--generate" }, paramLabel = "GEN", description = "Generate call CPythonGraph for artifact")
 		boolean doGenerate;
 	}
 
@@ -137,7 +137,7 @@ public class Main implements Runnable {
 	}
 
 	/**
-	 * Run call graph generator.
+	 * Run call CPythonGraph generator.
 	 */
 	private void runGenerate() {
 		boolean writeToFile = !this.output.isEmpty();
@@ -145,15 +145,15 @@ public class Main implements Runnable {
 		try {
 			if (commands.computations.mode.equals("COORD")) {
 				final var artifact = getArtifactCoordinate();
-				logger.info("Generating call graph for the Maven coordinate: {}", artifact.getCoordinate());
+				logger.info("Generating call CPythonGraph for the Maven coordinate: {}", artifact.getCoordinate());
 				generate(artifact, commands.computations.main, getCGAlgorithm(), writeToFile);
 			} else if (commands.computations.mode.equals("FILE")) {
 				File artifactFile = getArtifactFile();
-				logger.info("Generating call graph for artifact file: {}", artifactFile);
+				logger.info("Generating call CPythonGraph for artifact file: {}", artifactFile);
 				generate(artifactFile, commands.computations.main, getCGAlgorithm(), writeToFile);
 			}
 		} catch (IOException | OPALException | MissingArtifactException e) {
-			logger.error("Call graph couldn't be generated", e);
+			logger.error("Call CPythonGraph couldn't be generated", e);
 		}
 	}
 
@@ -165,14 +165,14 @@ public class Main implements Runnable {
 			try {
 				merge(getArtifactCoordinate(), getDependenciesCoordinates());
 			} catch (IOException | OPALException | MissingArtifactException e) {
-				logger.error("Call graph couldn't be merge for coord: {}", getArtifactCoordinate().getCoordinate(), e);
+				logger.error("Call CPythonGraph couldn't be merge for coord: {}", getArtifactCoordinate().getCoordinate(), e);
 			}
 
 		} else if (commands.computations.mode.equals("FILE")) {
 			try {
 				merge(getArtifactFile(), getDependenciesFiles());
 			} catch (IOException | OPALException | MissingArtifactException e) {
-				logger.error("Call graph couldn't be generated for file: {}", getArtifactFile().getName(), e);
+				logger.error("Call CPythonGraph couldn't be generated for file: {}", getArtifactFile().getName(), e);
 			}
 		}
 	}
@@ -184,7 +184,7 @@ public class Main implements Runnable {
 	 * @param artifact     artifact to merge
 	 * @param dependencies list of dependencies
 	 * @param <T>          artifact can be either a file or coordinate
-	 * @return a revision call graph with resolved class hierarchy and calls
+	 * @return a revision call CPythonGraph with resolved class hierarchy and calls
 	 * @throws IOException thrown in case file related exceptions occur, e.g
 	 *                     FileNotFoundException
 	 */
@@ -224,16 +224,16 @@ public class Main implements Runnable {
 	}
 
 	/**
-	 * Generate a revision call graph for a given coordinate using a specified
+	 * Generate a revision call CPythonGraph for a given coordinate using a specified
 	 * algorithm. In case the artifact is an application a main class can be
 	 * specified. If left empty a library entry point finder algorithm will be used.
 	 *
-	 * @param artifact    artifact to generate a call graph for
+	 * @param artifact    artifact to generate a call CPythonGraph for
 	 * @param mainClass   main class in case the artifact is an application
-	 * @param algorithm   algorithm for generating a call graph
+	 * @param algorithm   algorithm for generating a call CPythonGraph
 	 * @param writeToFile will be written to a file if true
 	 * @param <T>         artifact can be either a file or a coordinate
-	 * @return generated revision call graph
+	 * @return generated revision call CPythonGraph
 	 * @throws IOException file related exceptions, e.g. FileNotFoundException
 	 */
 	public <T> PartialJavaCallGraph generate(final T artifact, final String mainClass, CGAlgorithm algorithm,
@@ -243,7 +243,7 @@ public class Main implements Runnable {
 		final long startTime = System.currentTimeMillis();
 
 		if (artifact instanceof File) {
-			logger.info("Generating graph for {}", ((File) artifact).getAbsolutePath());
+			logger.info("Generating CPythonGraph for {}", ((File) artifact).getAbsolutePath());
 			final var cg = new OPALPartialCallGraphConstructor().construct(new OPALCallGraphConstructor().construct((File) artifact, algorithm), CallPreservationStrategy.ONLY_STATIC_CALLSITES);
 			revisionCallGraph = new PartialJavaCallGraph("", cleanUpFileName((File) artifact), "", 0, "", cg.classHierarchy, cg.graph);
 		} else {
@@ -253,7 +253,7 @@ public class Main implements Runnable {
 					CallPreservationStrategy.INCLUDING_ALL_SUBTYPES);
 		}
 
-		logger.info("Generated the call graph in {} seconds.",
+		logger.info("Generated the call CPythonGraph in {} seconds.",
 				new DecimalFormat("#0.000").format((System.currentTimeMillis() - startTime) / 1000d));
 
 		if (writeToFile) {

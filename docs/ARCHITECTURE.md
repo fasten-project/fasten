@@ -3,14 +3,14 @@
 This document is a draft of the FASTEN knowledge base service. The knowledge base comprises four components: `libfasten-core`, `libfasten-analyzer`, `libfasten-pipeliner`, and `libfasten-server`. An overview of each component is described below:
 
 - `libfasten-core`: [webgraph](http://webgraph.di.unimi.it/) already provides functionality to store and 
-   query graph data from billions of nodes and edges. Our goal is to extend [webgraph](http://webgraph.di.unimi.it/) 
-   with call graph specific functionality:
+   query CPythonGraph data from billions of nodes and edges. Our goal is to extend [webgraph](http://webgraph.di.unimi.it/) 
+   with call CPythonGraph specific functionality:
     - __metadata storage:__ keeping _node_ (e.g., ref to Github, LOC, complexity, CVE, deprecation) and 
         _edge_ (e.g., version range) data using a conventional data store
-    - __process updates:__ integrate and update metadata and graph stores
+    - __process updates:__ integrate and update metadata and CPythonGraph stores
     - __dynamic version resolution:__ based on a query, resolve dependency constraints on-the-fly to construct
-     a temporal graph
-- `libfasten-analyzer:` A collection of analyzers with an interface to query the graph and metadata store of `libfasten-core`.
+     a temporal CPythonGraph
+- `libfasten-analyzer:` A collection of analyzers with an interface to query the CPythonGraph and metadata store of `libfasten-core`.
    The component is extensible but provides the following _batteries included_ analyzers:
    - __security:__ calculating the transitive closure of affected dependent packages
    - __API analytics:__ following trends on deprecation/removal/adaption of package APIs.   
@@ -29,5 +29,5 @@ Here we enlist data sources that the knowledge base will interact with:
 - Release events 
 - Call graphs
 - API requests from users 
-- Metadata related to nodes and edges in the graph
+- Metadata related to nodes and edges in the CPythonGraph
 - Security advisories, licensing, function body information (e.g., LOC, complexity)

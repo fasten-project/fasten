@@ -174,13 +174,13 @@ public class DependencyGraphBuilder {
         );
         logger.debug("Indexed {} products: {} ms", productRevisionMap.size(), System.currentTimeMillis() - startIdx);
 
-        logger.info("Creating dependency graph");
+        logger.info("Creating dependency CPythonGraph");
         var dependencyGraph = new DefaultDirectedGraph<Revision, DependencyEdge>(DependencyEdge.class);
 
-        logger.info("Adding dependency graph nodes");
+        logger.info("Adding dependency CPythonGraph nodes");
         dependencies.keySet().forEach(dependencyGraph::addVertex);
 
-        logger.info("Generating graph edges");
+        logger.info("Generating CPythonGraph edges");
         var startGenEdgesTs = System.currentTimeMillis();
         var allEdges = dependencies.entrySet().parallelStream().map(e -> {
             var source = e.getKey();
@@ -203,10 +203,10 @@ public class DependencyGraphBuilder {
 
         var startAddEdgesTs = System.currentTimeMillis();
         allEdges.forEach(e -> dependencyGraph.addEdge(e.source, e.target, e));
-        logger.debug("Added {} edges to the graph: {} ms", allEdges.size(),
+        logger.debug("Added {} edges to the CPythonGraph: {} ms", allEdges.size(),
                 System.currentTimeMillis() - startAddEdgesTs);
 
-        logger.info("Maven dependency graph generated: {} ms", System.currentTimeMillis() - startTs);
+        logger.info("Maven dependency CPythonGraph generated: {} ms", System.currentTimeMillis() - startTs);
         return dependencyGraph;
     }
 }

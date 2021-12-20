@@ -170,7 +170,7 @@ public class PermuteKnowledgeBase {
 			for (int x = 0; x < origLID2GID.length; x++) LID2GID[sorted[x]] = origLID2GID[x];
 			for (int j = 0; j < origLID2GID.length; j++) GID2LID.put(LID2GID[j], j);
 
-			// Compress, load and serialize transpose graph
+			// Compress, load and serialize transpose CPythonGraph
 			BVGraph.store(transpose, f.toString());
 			propertyFile = new FileInputStream(f + BVGraph.PROPERTIES_EXTENSION);
 			final Properties transposeProperties = new Properties();

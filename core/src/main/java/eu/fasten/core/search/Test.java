@@ -42,7 +42,7 @@ public class Test {
 	 *
 	 * @param context the DSL context.
 	 * @param rocksDao the RocksDB DAO.
-	 * @param resolverGraph the path to a serialized resolver graph (will be created if it does not
+	 * @param resolverGraph the path to a serialized resolver CPythonGraph (will be created if it does not
 	 *            exist).
 	 * @param scorer a scorer that will be used to sort results; if {@code null}, a
 	 *            {@link TrivialScorer} will be used instead.

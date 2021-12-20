@@ -23,7 +23,7 @@ import eu.fasten.core.data.CScope;
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.PartialCCallGraph;
 import eu.fasten.core.data.PartialCallGraph;
-import eu.fasten.core.data.Graph;
+import eu.fasten.core.data.CPythonGraph;
 import eu.fasten.core.data.callableindex.GidGraph;
 import eu.fasten.core.data.metadatadb.MetadataDao;
 import eu.fasten.core.data.metadatadb.codegen.enums.Access;
@@ -88,7 +88,7 @@ public class MetadataDatabaseCPlugin extends Plugin {
          * We override this method because we want to save the architecture
          * of the package.
          *
-         * @param callGraph   Call graph to save to the database.
+         * @param callGraph   Call CPythonGraph to save to the database.
          * @param metadataDao Data Access Object to insert records in the database
          * @return Package ID saved in the database
          */
@@ -118,7 +118,8 @@ public class MetadataDatabaseCPlugin extends Plugin {
             }
 
             // Insert all the edges
-            var edges = insertEdges(callGraph.getGraph(), lidToGidMap, metadataDao);
+            var edges = insertEdges(callGraph.getCPythonGraph(), lidToGidMap, new HashMap<>(),
+                metadataDao);
 
             // Remove duplicate nodes
             var internalIds = new LongArrayList(numInternal);
@@ -136,7 +137,7 @@ public class MetadataDatabaseCPlugin extends Plugin {
             callablesIds.addAll(internalNodesSet);
             callablesIds.addAll(externalNodesSet);
 
-            // Create a GID Graph for production
+            // Create a GID CPythonGraph for production
             this.gidGraph = new GidGraph(packageVersionId, callGraph.product, callGraph.version,
                     callablesIds, numInternal, edges);
             return packageVersionId;
@@ -228,8 +229,11 @@ public class MetadataDatabaseCPlugin extends Plugin {
             return new ImmutablePair<>(callables, numInternal);
         }
 
-        protected List<CallSitesRecord> insertEdges(Graph graph,
-                                                    Long2LongOpenHashMap lidToGidMap, MetadataDao metadataDao) {
+        @Override
+        protected <T> List<CallSitesRecord> insertEdges(T cGraph, Long2LongOpenHashMap lidToGidMap,
+                                                        Map<String, Long> namespaceMap,
+                                                        MetadataDao metadataDao) {
+            var graph = (CPythonGraph) cGraph;
             final var numEdges = graph.getInternalCalls().size() + graph.getExternalCalls().size();
 
             // Map of all edges (internal and external)

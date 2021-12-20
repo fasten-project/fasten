@@ -17,7 +17,7 @@
 
     <name>core</name>
 
-    <description>Manages the FASTEN graph and metadata storage.</description>
+    <description>Manages the FASTEN CPythonGraph and metadata storage.</description>
 
     <dependencies>
         <dependency>

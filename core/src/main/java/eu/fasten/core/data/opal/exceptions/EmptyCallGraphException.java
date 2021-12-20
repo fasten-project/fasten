@@ -1,7 +1,7 @@
 package eu.fasten.core.data.opal.exceptions;
 
 /**
- * Exception that is thrown whenever any generated call graph is empty.
+ * Exception that is thrown whenever any generated call CPythonGraph is empty.
  */
 public class EmptyCallGraphException extends Exception {
     /**

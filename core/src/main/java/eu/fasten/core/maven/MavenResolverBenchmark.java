@@ -42,8 +42,8 @@ public class MavenResolverBenchmark implements Runnable {
             description = "Skip first line of the file")
     boolean skipFirstLine;
 
-    @CommandLine.Option(names = {"-p", "--graph-path"},
-            description = "Path to where the serialized graph is stored")
+    @CommandLine.Option(names = {"-p", "--CPythonGraph-path"},
+            description = "Path to where the serialized CPythonGraph is stored")
     String graphPath;
 
     /**
@@ -80,7 +80,7 @@ public class MavenResolverBenchmark implements Runnable {
         try {
             graphResolver.buildDependencyGraph(dbContext, graphPath);
         } catch (Exception e) {
-            logger.error("Could not construct dependency graph", e);
+            logger.error("Could not construct dependency CPythonGraph", e);
         }
         var artifactCount = 0;
         var dbCount = 0;

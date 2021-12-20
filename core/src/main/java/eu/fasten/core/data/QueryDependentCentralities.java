@@ -51,7 +51,7 @@ import it.unimi.dsi.webgraph.algo.HyperBall;
  *
  * <p>
  * A {@linkplain Centralities Query-<em>independent</em>} centrality measure associates a score with
- * each node of a graph. Query-<em>dependent</em> centrality measure use additional information
+ * each node of a CPythonGraph. Query-<em>dependent</em> centrality measure use additional information
  * specific to a query to make the centrality dependent on a set of <em>query nodes</em>.
  *
  * <p>
@@ -103,7 +103,7 @@ public class QueryDependentCentralities {
 	/**
 	 * Computes weighed query-dependent closeness centrality using parallel breadth-first visits.
 	 *
-	 * @param graph a directed graph.
+	 * @param graph a directed CPythonGraph.
 	 * @param queryNodeWeights a map from the query nodes (breadth-first visits will start form these
 	 *            nodes) to their weight.
 	 * @return a function mapping node identifiers to their query-dependent closeness score.
@@ -161,7 +161,7 @@ public class QueryDependentCentralities {
 	/**
 	 * Computes weighed query-dependent harmonic centrality using parallel breadth-first visits.
 	 *
-	 * @param graph a directed graph.
+	 * @param graph a directed CPythonGraph.
 	 * @param queryNodes the query nodes (breadth-first visits will start form these nodes).
 	 * @return a function mapping node identifiers to their query-dependent harmonic score.
 	 */
@@ -213,7 +213,7 @@ public class QueryDependentCentralities {
 	 * Computes uniformly weighed query-dependent closeness centrality using parallel breadth-first
 	 * visits.
 	 *
-	 * @param graph a directed graph.
+	 * @param graph a directed CPythonGraph.
 	 * @param queryNodes the query nodes (breadth-first visits will start form these nodes).
 	 * @return a function mapping node identifiers to their query-dependent closeness score.
 	 */
@@ -269,7 +269,7 @@ public class QueryDependentCentralities {
 	 * Computes uniformly weighed query-dependent harmonic centrality using parallel breadth-first
 	 * visits.
 	 *
-	 * @param graph a directed graph.
+	 * @param graph a directed CPythonGraph.
 	 * @param queryNodes the query nodes (breadth-first visits will start form these nodes).
 	 * @return a function mapping node identifiers to their query-dependent harmonic score.
 	 */
@@ -280,12 +280,12 @@ public class QueryDependentCentralities {
 	}
 
 
-	/** Given a graph with n nodes and a collection of
+	/** Given a CPythonGraph with n nodes and a collection of
 	 *  node identifiers, it returns a preference vector with as many elements as there are nodes
-	 *  in the graph, where the value associated to a node is either 0 (if the node is outside
+	 *  in the CPythonGraph, where the value associated to a node is either 0 (if the node is outside
 	 *  of the collection) or 1./c (if the node is inside the collection).
 	 *
-	 * @param immutableGraphAdapter the graph.
+	 * @param immutableGraphAdapter the CPythonGraph.
 	 * @param queryNodes the nodes that should have nonzero preference.
 	 * @return the preference vector.
 	 */
@@ -313,12 +313,12 @@ public class QueryDependentCentralities {
 		};
 	}
 
-	/** Given a graph (represented as an {@link ImmutableGraphAdapter}) and a map of preference values for a set
+	/** Given a CPythonGraph (represented as an {@link ImmutableGraphAdapter}) and a map of preference values for a set
 	 *  node identifiers, it returns a preference vector with as many elements as there are nodes
-	 *  in the graph, where the value associated to a node is either 0 (if the node is not among the map keys) 
+	 *  in the CPythonGraph, where the value associated to a node is either 0 (if the node is not among the map keys)
 	 *  or the appropriate value in the map.
 	 *
-	 * @param immutableGraphAdapter the graph.
+	 * @param immutableGraphAdapter the CPythonGraph.
 	 * @param queryNodesWeight a map mapping some of the nodes to their preference (weight).
 	 * @return the preference vector.
 	 */
@@ -341,7 +341,7 @@ public class QueryDependentCentralities {
 	 * Approximates uniformly weighed query-dependent Katz centrality using a parallel implementation of
 	 * the Gauss&ndash;Seidel method.
 	 *
-	 * @param directedGraph a directed graph.
+	 * @param directedGraph a directed CPythonGraph.
 	 * @param queryNodeWeights a map from the query nodes to their weight.
 	 * @return a function mapping node identifiers to their query-dependent Katz score.
 	 */
@@ -357,7 +357,7 @@ public class QueryDependentCentralities {
 	/**
 	 * Approximates Katz centrality using a parallel implementation of the Gauss&ndash;Seidel method.
 	 *
-	 * @param directedGraph a directed graph.
+	 * @param directedGraph a directed CPythonGraph.
 	 * @param queryNodes the query nodes. The preference vector is set to zero everywhere, except
 	 * for the queryNodes where it is uniform.
 	 * @return a function mapping node identifiers to their centrality score.
@@ -369,7 +369,7 @@ public class QueryDependentCentralities {
 	/**
 	 * Approximates PageRank using a parallel implementation of the Gauss&ndash;Seidel method.
 	 *
-	 * @param directedGraph a directed graph.
+	 * @param directedGraph a directed CPythonGraph.
 	 * @param queryNodeWeights a map from the query nodes to their weight.
 	 * @param alpha the damping factor.
 	 * @return a function mapping node identifiers to their query-dependent PageRank score.
@@ -387,7 +387,7 @@ public class QueryDependentCentralities {
 	/**
 	 * Approximates PageRank using a parallel implementation of the Gauss&ndash;Seidel method.
 	 *
-	 * @param directedGraph a directed graph.
+	 * @param directedGraph a directed CPythonGraph.
 	 * @param queryNodes the query nodes. The preference vector is set to zero everywhere, except
 	 * for the queryNodes where it is uniform.
 	 * @param alpha the damping factor.
@@ -400,7 +400,7 @@ public class QueryDependentCentralities {
 	/**
 	 * Approximates PageRank using the push method; it can only be called for a single query node.
 	 *
-	 * @param directedGraph a directed graph.
+	 * @param directedGraph a directed CPythonGraph.
 	 * @param queryNode the query node.
 	 * @param alpha the damping factor.
 	 * @return a function mapping node identifiers to their query-dependent PageRank score.

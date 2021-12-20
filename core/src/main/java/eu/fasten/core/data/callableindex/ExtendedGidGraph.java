@@ -38,15 +38,15 @@ public class ExtendedGidGraph extends GidGraph {
     private final Map<Long, String> typeMap;
 
     /**
-     * Constructor for Graph.
+     * Constructor for CPythonGraph.
      *
-     * @param index            ID of the graph (index from postgres)
+     * @param index            ID of the CPythonGraph (index from postgres)
      * @param product          Product name
      * @param version          Product version
-     * @param nodes            List of Global IDs of nodes of the graph
+     * @param nodes            List of Global IDs of nodes of the CPythonGraph
      *                         (first internal nodes, then external nodes)
      * @param numInternalNodes Number of internal nodes in nodes list
-     * @param edges            List of edges of the graph with pairs for Global IDs
+     * @param edges            List of edges of the CPythonGraph with pairs for Global IDs
      */
     public ExtendedGidGraph(long index, String product, String version, List<Long> nodes, int numInternalNodes, List<CallSitesRecord> edges, Map<Long, String> gid2UriMap, Map<Long, String> typeMap) {
         super(index, product, version, nodes, numInternalNodes, edges);
@@ -113,7 +113,7 @@ public class ExtendedGidGraph extends GidGraph {
 
     public static ExtendedGidGraph getGraph(JSONObject jsonGraph) throws JSONException {
         if (jsonGraph == null) {
-            throw new JSONException("JSON Graph cannot be null");
+            throw new JSONException("JSON CPythonGraph cannot be null");
         }
         var index = jsonGraph.getLong("index");
         var product = jsonGraph.getString("product");

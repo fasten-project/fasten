@@ -47,7 +47,7 @@ public class DynamicJavaCG {
             }
         }
         this.methods = methodIdsMap;
-        var graph = json.getJSONArray("graph");
+        var graph = json.getJSONArray("CPythonGraph");
         var calls = new ObjectOpenHashSet<LongLongPair>(graph.length());
         for (int i = 0; i < graph.length(); i++) {
             var call = graph.getJSONArray(i);

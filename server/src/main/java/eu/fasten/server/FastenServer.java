@@ -114,7 +114,7 @@ public class FastenServer implements Runnable {
 
     @Option(names = {"-dgp", "--dep_graph_path"},
         paramLabel = "dir",
-        description = "Path to serialized dependency graph")
+        description = "Path to serialized dependency CPythonGraph")
     String depGraphPath;
 
     @Option(names = {"-gd", "--graphdb_dir"},
@@ -314,9 +314,9 @@ public class FastenServer implements Runnable {
     private void loadDependencyGraphResolvers(List<DependencyGraphUser> plugins) {
         plugins.forEach(p -> {
             if (dbUrls == null || depGraphPath == null) {
-                throw new IllegalArgumentException("Couldn't load dependency graph. Make sure that you have "
+                throw new IllegalArgumentException("Couldn't load dependency CPythonGraph. Make sure that you have "
                         + "provided a valid DB URL, username, password, "
-                        + "and a path to the serialized dependency graph.");
+                        + "and a path to the serialized dependency CPythonGraph.");
             }
             DSLContext dbContext = getDSLContext(dbUrls.get("mvn"));
             p.loadGraphResolver(dbContext, depGraphPath);
@@ -344,14 +344,14 @@ public class FastenServer implements Runnable {
     /**
      * Setup RocksDB connection for GraphDB plugins.
      *
-     * @param graphDbPlugins list of Graph DB plugins
+     * @param graphDbPlugins list of CPythonGraph DB plugins
      */
     private void makeGraphDBConnection(List<CallableIndexConnector> graphDbPlugins) {
         graphDbPlugins.forEach((p) -> {
             if (ObjectUtils.allNotNull(graphDbDir)) {
                 try {
                     p.setRocksDao(RocksDBConnector.createRocksDBAccessObject(graphDbDir));
-                    logger.debug("Set Graph DB connection successfully for plug-in {}",
+                    logger.debug("Set CPythonGraph DB connection successfully for plug-in {}",
                         p.getClass().getSimpleName());
                 } catch (RuntimeException e) {
                     logger.error("Couldn't set GraphDB connection for plug-in {}",
@@ -367,14 +367,14 @@ public class FastenServer implements Runnable {
     /**
      * Setup RocksDB connection for GraphDB plugins.
      *
-     * @param graphDbPlugins list of Graph DB plugins
+     * @param graphDbPlugins list of CPythonGraph DB plugins
      */
     private void makeReadOnlyGraphDBConnection(List<CallableIndexReader> graphDbPlugins) {
         graphDbPlugins.forEach((p) -> {
             if (ObjectUtils.allNotNull(graphDbDir)) {
                 try {
                     p.setRocksDao(RocksDBConnector.createReadOnlyRocksDBAccessObject(graphDbDir));
-                    logger.debug("Set Graph DB connection successfully for plug-in {}",
+                    logger.debug("Set CPythonGraph DB connection successfully for plug-in {}",
                         p.getClass().getSimpleName());
                 } catch (RuntimeException e) {
                     logger.error("Couldn't set GraphDB connection for plug-in {}",

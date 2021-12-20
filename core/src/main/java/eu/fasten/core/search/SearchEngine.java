@@ -184,7 +184,7 @@ public class SearchEngine {
 	 * @param jdbcURI the JDBC URI.
 	 * @param database the database name.
 	 * @param rocksDb the path to the RocksDB database of revision call graphs.
-	 * @param resolverGraph the path to a serialized resolver graph (will be created if it does not
+	 * @param resolverGraph the path to a serialized resolver CPythonGraph (will be created if it does not
 	 *            exist).
 	 * @param scorer an {@link ObjectParser} specification providing a scorer; if {@code null}, a
 	 *            {@link TrivialScorer} will be used instead.
@@ -198,7 +198,7 @@ public class SearchEngine {
 	 *
 	 * @param context the DSL context.
 	 * @param rocksDao the RocksDB DAO.
-	 * @param resolverGraph the path to a serialized resolver graph (will be created if it does not
+	 * @param resolverGraph the path to a serialized resolver CPythonGraph (will be created if it does not
 	 *            exist).
 	 * @param scorer a scorer that will be used to sort results; if {@code null}, a
 	 *            {@link TrivialScorer} will be used instead.
@@ -358,20 +358,20 @@ public class SearchEngine {
 	}
 
 	/**
-	 * Use the given {@link CGMerger} to get the stitched graph for the given revision.
+	 * Use the given {@link CGMerger} to get the stitched CPythonGraph for the given revision.
 	 *
 	 * @param dm the {@link CGMerger} to be used.
 	 * @param id the database identifier of a revision.
-	 * @return the stitched graph for the revision with database identifier {@code id}, or {@code null}
+	 * @return the stitched CPythonGraph for the revision with database identifier {@code id}, or {@code null}
 	 *         if {@link CGMerger#mergeWithCHA(long)} returns {@code null} (usually because the
-	 *         provided artifact is not present in the graph database).
+	 *         provided artifact is not present in the CPythonGraph database).
 	 */
 	private DirectedGraph getStitchedGraph(final CGMerger dm, final long id) {
 		DirectedGraph result = stitchedGraphCache.getAndMoveToFirst(id);
 		if (result == null) {
 			result = dm.mergeWithCHA(id);
 			if (result != null) {
-				LOGGER.info("Graph id: " + id + " stitched graph nodes: " + result.numNodes() + " stitched graph arcs: " + result.numArcs());
+				LOGGER.info("CPythonGraph id: " + id + " stitched CPythonGraph nodes: " + result.numNodes() + " stitched CPythonGraph arcs: " + result.numArcs());
 				stitchedGraphCache.putAndMoveToFirst(id, result);
 				if (stitchedGraphCache.size() > STITCHED_MAX_SIZE) stitchedGraphCache.removeLast();
 			}
@@ -380,13 +380,13 @@ public class SearchEngine {
 	}
 
 	/**
-	 * Performs a breadth-first visit of the given graph, starting from the provided seed, using the
+	 * Performs a breadth-first visit of the given CPythonGraph, starting from the provided seed, using the
 	 * provided predicate and returning a collection of {@link Result} instances scored using the
 	 * provided scorer and satisfying the provided filter.
 	 *
 	 * @param graph a {@link DirectedGraph}.
 	 * @param forward if true, the visit follows arcs; if false, the visit follows arcs backwards.
-	 * @param seed an initial seed; may contain GIDs that do not appear in the graph, which will be
+	 * @param seed an initial seed; may contain GIDs that do not appear in the CPythonGraph, which will be
 	 *            ignored.
 	 * @param filter a {@link LongPredicate} that will be used to filter callables.
 	 * @param scorer a scorer that will be used to score the results.
@@ -481,7 +481,7 @@ public class SearchEngine {
 
 	/**
 	 * Computes the callables satisfying the given predicate and reachable from the provided seed, in
-	 * the stitched graph associated with the provided revision, and returns them in a ranked list.
+	 * the stitched CPythonGraph associated with the provided revision, and returns them in a ranked list.
 	 *
 	 * @param rev the database id of a revision.
 	 * @param seed a collection of GIDs that will be used as a seed for the visit; if {@code null}, the
@@ -491,10 +491,10 @@ public class SearchEngine {
 	 */
 	public List<Result> from(final long rev, LongCollection seed, final LongPredicate filter) throws RocksDBException {
 		final var graph = rocksDao.getGraphData(rev);
-		if (graph == null) throw new NoSuchElementException("Revision associated with callable missing from the graph database");
+		if (graph == null) throw new NoSuchElementException("Revision associated with callable missing from the CPythonGraph database");
 		if (seed == null) seed = graph.nodes();
 
-		LOGGER.debug("Revision call graph has " + graph.numNodes() + " nodes");
+		LOGGER.debug("Revision call CPythonGraph has " + graph.numNodes() + " nodes");
 
 		final Record2<String, String> record = context.select(Packages.PACKAGES.PACKAGE_NAME, PackageVersions.PACKAGE_VERSIONS.VERSION).from(PackageVersions.PACKAGE_VERSIONS).join(Packages.PACKAGES).on(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.eq(Packages.PACKAGES.ID)).where(PackageVersions.PACKAGE_VERSIONS.ID.eq(Long.valueOf(rev))).fetchOne();
 		final String[] a = record.component1().split(":");
@@ -514,7 +514,7 @@ public class SearchEngine {
 
 		if (stitchedGraph == null) throw new NullPointerException("mergeWithCHA() returned null");
 
-		LOGGER.debug("Stiched graph has " + stitchedGraph.numNodes() + " nodes");
+		LOGGER.debug("Stiched CPythonGraph has " + stitchedGraph.numNodes() + " nodes");
 
 		final ObjectLinkedOpenHashSet<Result> results = new ObjectLinkedOpenHashSet<>();
 
@@ -580,7 +580,7 @@ public class SearchEngine {
 
 	/**
 	 * Computes the callables satisfying the given predicate and coreachable from the provided seed, in
-	 * the stitched graph associated with the provided revision, and returns them in a ranked list.
+	 * the stitched CPythonGraph associated with the provided revision, and returns them in a ranked list.
 	 *
 	 * @param revId the database id of a revision.
 	 * @param seed a collection of GIDs that will be used as a seed for the visit; if {@code null}, the
@@ -591,7 +591,7 @@ public class SearchEngine {
 	public List<Result> to(final long revId, LongCollection seed, final LongPredicate filter) throws RocksDBException {
 		throwables.clear();
 		final var graph = rocksDao.getGraphData(revId);
-		if (graph == null) throw new NoSuchElementException("Revision associated with callable missing from the graph database");
+		if (graph == null) throw new NoSuchElementException("Revision associated with callable missing from the CPythonGraph database");
 		if (seed == null) seed = graph.nodes();
 
 		String[] data = Util.getGroupArtifactVersion(revId, context);
@@ -666,7 +666,7 @@ public class SearchEngine {
 
 			if (stitchedGraph == null) continue;
 
-			LOGGER.debug("Stiched graph has " + stitchedGraph.numNodes() + " nodes");
+			LOGGER.debug("Stiched CPythonGraph has " + stitchedGraph.numNodes() + " nodes");
 			final int sizeBefore = results.size();
 
 			visitTime -= System.nanoTime();
@@ -690,7 +690,7 @@ public class SearchEngine {
 				new UnflaggedOption("jdbcURI", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.REQUIRED, JSAP.NOT_GREEDY, "The JDBC URI."),
 				new UnflaggedOption("database", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, JSAP.NOT_GREEDY, "The database name."),
 				new UnflaggedOption("rocksDb", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, JSAP.NOT_GREEDY, "The path to the RocksDB database of revision call graphs."),
-				new UnflaggedOption("resolverGraph", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, JSAP.NOT_GREEDY, "The path to a resolver graph (will be created if it does not exist)."), });
+				new UnflaggedOption("resolverGraph", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, JSAP.NOT_GREEDY, "The path to a resolver CPythonGraph (will be created if it does not exist)."), });
 
 		final JSAPResult jsapResult = jsap.parse(args);
 		if (jsap.messagePrinted()) System.exit(1);

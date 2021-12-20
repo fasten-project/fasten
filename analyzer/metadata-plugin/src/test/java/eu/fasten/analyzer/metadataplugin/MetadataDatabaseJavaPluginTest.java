@@ -176,7 +176,7 @@ public class MetadataDatabaseJavaPluginTest {
         var description = "Metadata plugin. "
                 + "Consumes ExtendedRevisionCallgraph-formatted JSON objects from Kafka topic"
                 + " and populates metadata database with consumed data"
-                + " and writes graph of GIDs of callgraph to another Kafka topic.";
+                + " and writes CPythonGraph of GIDs of callgraph to another Kafka topic.";
         assertEquals(description, metadataDBExtension.description());
     }
 }

@@ -31,6 +31,11 @@ public class PartialPythonCallGraph extends PartialCallGraph {
     public static final String classHierarchyJSONKey = "modules";
 
     protected EnumMap<PythonScope, Map<String, PythonType>> classHierarchy;
+    /**
+     * Includes all the edges of the revision call CPythonGraph (internal, external,
+     * and resolved).
+     */
+    protected CPythonGraph CPythonGraph;
 
     /**
      * Creates {@link PartialPythonCallGraph} with the given data.
@@ -40,27 +45,28 @@ public class PartialPythonCallGraph extends PartialCallGraph {
      * @param version        the version.
      * @param timestamp      the timestamp (in seconds from UNIX epoch); optional: if not present,
      *                       it is set to -1.
-     * @param cgGenerator    The name of call graph generator that generated this call graph.
+     * @param cgGenerator    The name of call CPythonGraph generator that generated this call CPythonGraph.
      * @param classHierarchy class hierarchy of this revision including all classes of the revision
-     *                       <code> Map<{@link FastenURI}, {@link CallType}> </code>
-     * @param graph          the call graph (no control is done on the graph) {@link Graph}
+     * @param CPythonGraph          the call CPythonGraph (no control is done on the CPythonGraph) {@link CPythonGraph}
      */
     public PartialPythonCallGraph(final String forge, final String product, final String version,
                                   final long timestamp, final String cgGenerator,
                                   final EnumMap<PythonScope, Map<String, PythonType>>classHierarchy,
-                                  final Graph graph) {
-        super(forge, product, version, timestamp, cgGenerator, graph);
+                                  final CPythonGraph CPythonGraph) {
+        super(forge, product, version, timestamp, cgGenerator);
         this.classHierarchy = classHierarchy;
+        this.CPythonGraph = CPythonGraph;
     }
 
     /**
      * Creates {@link PartialCallGraph} for the given JSONObject.
      *
-     * @param json JSONObject of a revision call graph.
+     * @param json JSONObject of a revision call CPythonGraph.
      */
     public PartialPythonCallGraph(final JSONObject json) throws JSONException {
         super(json, PartialPythonCallGraph.class);
         this.classHierarchy = getCHAFromJSON(json.getJSONObject(classHierarchyJSONKey));
+        this.CPythonGraph = new CPythonGraph(json.getJSONObject("CPythonGraph"));
     }
 
     /**
@@ -133,6 +139,7 @@ public class PartialPythonCallGraph extends PartialCallGraph {
     public JSONObject toJSON() {
         final var result = super.toJSON();
         result.put(classHierarchyJSONKey, classHierarchyToJSON(classHierarchy));
+        result.put("CPythonGraph", CPythonGraph.toJSON());
         return result;
     }
     /**
@@ -159,5 +166,19 @@ public class PartialPythonCallGraph extends PartialCallGraph {
      */
     public String getRevisionName() {
         return this.product + "_" + this.version;
+    }
+
+    @Override
+    public CPythonGraph getCPythonGraph() { return this.CPythonGraph; }
+
+    /**
+     * Checks whether this {@link PartialCallGraph} is empty, e.g. has no calls.
+     *
+     * @return true if this {@link PartialCallGraph} is empty
+     */
+    public boolean isCallGraphEmpty() {
+        return this.CPythonGraph.getInternalCalls().isEmpty()
+            && this.CPythonGraph.getExternalCalls().isEmpty()
+            && this.CPythonGraph.getResolvedCalls().isEmpty();
     }
 }

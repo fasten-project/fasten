@@ -103,7 +103,7 @@ public class CGMerger {
      * Creates instance of callgraph merger.
      *
      * @param dependencySet all artifacts present in a resolution
-     * @param withExternals true if unresolved external calls should be kept in the generated graph, they will be
+     * @param withExternals true if unresolved external calls should be kept in the generated CPythonGraph, they will be
      *            assigned negative ids
      */
     public CGMerger(final List<PartialJavaCallGraph> dependencySet, boolean withExternals) {
@@ -222,7 +222,7 @@ public class CGMerger {
     }
 
     /**
-     * @return true if unresolved external calls should be kept in the generated graph
+     * @return true if unresolved external calls should be kept in the generated CPythonGraph
      */
     public boolean isWithExternals()
     {
@@ -235,7 +235,7 @@ public class CGMerger {
         try {
             graphArcs = rocksDao.getGraphMetadata(id, callGraphData);
         } catch (RocksDBException e) {
-            logger.error("Could not retrieve arcs (graph metadata) from graph database:", e);
+            logger.error("Could not retrieve arcs (CPythonGraph metadata) from CPythonGraph database:", e);
         }
         return mergeWithCHA(callGraphData, graphArcs);
     }
@@ -252,6 +252,29 @@ public class CGMerger {
         }
         logger.warn("This cg does not exist in the dependency set.");
         return new MergedDirectedGraph();
+    }
+
+    public BiMap<Long, String> getAllUrisFromDB(DirectedGraph dg){
+        Set<Long> gIDs = new HashSet<>();
+        for (Long node : dg.nodes()) {
+            if (node > 0) {
+                gIDs.add(node);
+            }
+        }
+        BiMap<Long, String> uris = HashBiMap.create();
+        dbContext
+            .select(Callables.CALLABLES.ID, Packages.PACKAGES.PACKAGE_NAME,
+                PackageVersions.PACKAGE_VERSIONS.VERSION,
+                Callables.CALLABLES.FASTEN_URI)
+            .from(Callables.CALLABLES, Modules.MODULES, PackageVersions.PACKAGE_VERSIONS, Packages.PACKAGES)
+            .where(Callables.CALLABLES.ID.in(gIDs))
+            .and(Modules.MODULES.ID.eq(Callables.CALLABLES.MODULE_ID))
+            .and(PackageVersions.PACKAGE_VERSIONS.ID.eq(Modules.MODULES.PACKAGE_VERSION_ID))
+            .and(Packages.PACKAGES.ID.eq(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID))
+            .fetch().forEach(record -> uris.put( record.component1(),
+            "fasten://mvn!" + record.component2() + "$" + record.component3() + record.component4()));
+
+        return uris;
     }
 
     /**
@@ -328,7 +351,7 @@ public class CGMerger {
         final var allMethods = ercg.mapOfAllMethods();
         final var allUris = ercg.mapOfFullURIStrings();
         final var typeMap = ercg.nodeIDtoTypeNameMap();
-        for (final var callsite : ercg.getGraph().getCallSites().entrySet()) {
+        for (final var callsite : ercg.getCPythonGraph().getCallSites().entrySet()) {
             final var source = callsite.getKey().firstInt();
             final var target = callsite.getKey().secondInt();
             final var signature = allMethods.get(source).getSignature();
@@ -376,17 +399,17 @@ public class CGMerger {
     }
 
     /**
-     * Merges a call graph with its dependencies using CHA algorithm.
+     * Merges a call CPythonGraph with its dependencies using CHA algorithm.
      *
      * @param callGraph DirectedGraph of the dependency to stitch
      * @param metadata     GraphMetadata of the dependency to stitch
-     * @return merged call graph
+     * @return merged call CPythonGraph
      */
     public DirectedGraph mergeWithCHA(final DirectedGraph callGraph, final GraphMetadata metadata) {
         final long totalTime = System.currentTimeMillis();
 
         if (callGraph == null) {
-            logger.error("Empty call graph data");
+            logger.error("Empty call CPythonGraph data");
             return null;
         }
 
@@ -395,7 +418,7 @@ public class CGMerger {
         if (metadata == null) {
             return null;
         }
-        logger.info("Merging graph with {} nodes and {} edges",
+        logger.info("Merging CPythonGraph with {} nodes and {} edges",
             callGraph.numNodes(), callGraph.numArcs());
         final Set<LongLongPair> edges = ConcurrentHashMap.newKeySet();
 
@@ -446,7 +469,7 @@ public class CGMerger {
                         // Allocate a global id to the external node
                         target = --this.externalGlobaIds;
 
-                        // Add the external node to the graph if not already there
+                        // Add the external node to the CPythonGraph if not already there
                         this.allUris.put(target, nodeURI);
                         result.addExternalNode(target);
                     }
@@ -460,7 +483,7 @@ public class CGMerger {
     /**
      * Create fully merged for the entire dependency set.
      *
-     * @return merged call graph
+     * @return merged call CPythonGraph
      */
     public DirectedGraph mergeAllDeps() {
         List<DirectedGraph> depGraphs = new ArrayList<>();
@@ -602,7 +625,7 @@ public class CGMerger {
                 result.put(typeUri, signaturesMap);
             }
         }
-        logger.info("For {} dependencies failed to retrieve {} graph data and {} metadata " +
+        logger.info("For {} dependencies failed to retrieve {} CPythonGraph data and {} metadata " +
             "from rocks db.", dependencySet.size(), noCGCounter, noMetadaCounter);
 
         logger.info("Created the type dictionary with {} types in {} seconds", result.size(),
@@ -800,7 +823,7 @@ public class CGMerger {
     /**
      * Add super classes and interfaces to the universal CHA.
      *
-     * @param result      universal CHA graph
+     * @param result      universal CHA CPythonGraph
      * @param sourceTypes source type
      * @param targetTypes list of target target types
      */
@@ -829,7 +852,7 @@ public class CGMerger {
      * Augment generated merged call graphs.
      *
      * @param depGraphs merged call graphs
-     * @return augmented graph
+     * @return augmented CPythonGraph
      */
     private DirectedGraph augmentGraphs(final List<DirectedGraph> depGraphs) {
         var result = new MergedDirectedGraph();
@@ -857,10 +880,10 @@ public class CGMerger {
     }
     
     /**
-     * Clone internal calls and internal arcs to the merged call graph.
+     * Clone internal calls and internal arcs to the merged call CPythonGraph.
      *
-     * @param result        resulting merged call graph
-     * @param callGraphData initial call graph
+     * @param result        resulting merged call CPythonGraph
+     * @param callGraphData initial call CPythonGraph
      */
     private void cloneNodesAndArcs(final MergedDirectedGraph result,
                                    final DirectedGraph callGraphData) {
@@ -919,17 +942,17 @@ public class CGMerger {
     }
 
     /**
-     * Retrieve a call graph from a graph database given a maven coordinate.
+     * Retrieve a call CPythonGraph from a CPythonGraph database given a maven coordinate.
      *
      * @param rocksDao rocks DAO
-     * @return call graph
+     * @return call CPythonGraph
      */
     private DirectedGraph fetchCallGraphData(final long artifactId, final RocksDao rocksDao) {
         DirectedGraph callGraphData = null;
         try {
             callGraphData = rocksDao.getGraphData(artifactId);
         } catch (RocksDBException e) {
-            logger.error("Could not retrieve callgraph data from the graph database:", e);
+            logger.error("Could not retrieve callgraph data from the CPythonGraph database:", e);
         }
         return callGraphData;
     }
@@ -970,7 +993,7 @@ public class CGMerger {
                 nodes.removeAll(cg.externalNodes());
                 callables.addAll(nodes);
             } catch (RocksDBException | NullPointerException e) {
-                logger.error("Couldn't retrieve a call graph with ID: {}", id);
+                logger.error("Couldn't retrieve a call CPythonGraph with ID: {}", id);
             }
         }
         return callables;

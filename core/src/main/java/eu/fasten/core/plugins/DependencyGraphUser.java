@@ -8,11 +8,11 @@ import org.jooq.DSLContext;
 public interface DependencyGraphUser {
 
     /**
-     * In order to use the dependency graph resolver, it must be loaded using database connection
-     * and a path to the serialized dependency graph.
+     * In order to use the dependency CPythonGraph resolver, it must be loaded using database connection
+     * and a path to the serialized dependency CPythonGraph.
      *
      * @param dbContext    Connection to the database
-     * @param depGraphPath Path to the serialized dependency graph
+     * @param depGraphPath Path to the serialized dependency CPythonGraph
      */
     void loadGraphResolver(DSLContext dbContext, String depGraphPath);
 

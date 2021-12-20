@@ -44,6 +44,7 @@ public class PartialJavaCallGraph extends PartialCallGraph {
 
     protected EnumMap<JavaScope, Map<String, JavaType>> classHierarchy;
 
+    protected JavaGraph callSites;
 
     /**
      * Creates {@link PartialJavaCallGraph} with the given data.
@@ -53,35 +54,34 @@ public class PartialJavaCallGraph extends PartialCallGraph {
      * @param version        the version.
      * @param timestamp      the timestamp (in seconds from UNIX epoch); optional: if not present,
      *                       it is set to -1.
-     * @param cgGenerator    The name of call graph generator that generated this call graph.
+     * @param cgGenerator    The name of call CPythonGraph generator that generated this call CPythonGraph.
      * @param classHierarchy class hierarchy of this revision including all classes of the revision
      *                       <code> Map<{@link FastenURI}, {@link JavaType}> </code>
-     * @param graph          the call graph (no control is done on the graph) {@link Graph}
+     * @param callSites          the call CPythonGraph (no control is done on the CPythonGraph) {@link CPythonGraph}
      */
     public PartialJavaCallGraph(final String forge, final String product, final String version,
                                 final long timestamp, final String cgGenerator,
                                 final EnumMap<JavaScope,Map<String, JavaType>> classHierarchy,
-                                final Graph graph) {
-        super(forge, product, version, timestamp, cgGenerator, graph);
+                                final JavaGraph callSites) {
+        super(forge, product, version, timestamp, cgGenerator);
         this.classHierarchy = classHierarchy;
+        this.callSites = callSites;
     }
 
 
     /**
      * Creates {@link PartialCallGraph} for the given JSONObject.
      *
-     * @param json JSONObject of a revision call graph.
+     * @param json JSONObject of a revision call CPythonGraph.
      */
     public PartialJavaCallGraph(final JSONObject json) throws JSONException {
         super(json, PartialJavaCallGraph.class);
-        this.graph = new JavaGraph(json.getJSONArray("call-sites"));
+        this.callSites = new JavaGraph(json.getJSONArray("call-sites"));
         this.classHierarchy = getCHAFromJSON(json.getJSONObject(classHierarchyJSONKey));
     }
 
-
-    public JavaGraph getGraph() {
-        return (JavaGraph) this.graph;
-    }
+    @Override
+    public JavaGraph getCPythonGraph() { return this.callSites; }
 
     /**
      * Creates a class hierarchy for the given JSONObject.
@@ -265,7 +265,7 @@ public class PartialJavaCallGraph extends PartialCallGraph {
             result.put("timestamp", timestamp);
         }
         result.put(classHierarchyJSONKey, classHierarchyToJSON(classHierarchy));
-        result.put("call-sites", graph.toJSON());
+        result.put("call-sites", callSites.toJSON());
 
         return result;
     }
@@ -288,7 +288,7 @@ public class PartialJavaCallGraph extends PartialCallGraph {
             that.classHierarchy != null) {
             return false;
         }
-        if (graph != null ? !graph.equals(that.graph) : that.graph != null) {
+        if (callSites != null ? !callSites.equals(that.callSites) : that.callSites != null) {
             return false;
         }
         if (forge != null ? !forge.equals(that.forge) : that.forge != null) {
@@ -314,7 +314,7 @@ public class PartialJavaCallGraph extends PartialCallGraph {
     @Override
     public int hashCode() {
         int result = classHierarchy != null ? classHierarchy.hashCode() : 0;
-        result = 31 * result + (graph != null ? graph.hashCode() : 0);
+        result = 31 * result + (callSites != null ? callSites.hashCode() : 0);
         result = 31 * result + (forge != null ? forge.hashCode() : 0);
         result = 31 * result + (product != null ? product.hashCode() : 0);
         result = 31 * result + (version != null ? version.hashCode() : 0);
@@ -330,7 +330,7 @@ public class PartialJavaCallGraph extends PartialCallGraph {
      * identifiers the local identifiers.
      *
      * @param erjcg an {@link PartialJavaCallGraph}.
-     * @return a directed graph based on the local identifiers of {@code erjcg}.
+     * @return a directed CPythonGraph based on the local identifiers of {@code erjcg}.
      */
     public static DirectedGraph toLocalDirectedGraph(final PartialJavaCallGraph erjcg) {
         MergedDirectedGraph dg = new MergedDirectedGraph();
@@ -344,4 +344,12 @@ public class PartialJavaCallGraph extends PartialCallGraph {
     return classHierarchy;
     }
 
+    /**
+     * Checks whether this {@link PartialCallGraph} is empty, e.g. has no calls.
+     *
+     * @return true if this {@link PartialCallGraph} is empty
+     */
+    public boolean isCallGraphEmpty() {
+        return callSites.getCallSites().isEmpty();
+    }
 }

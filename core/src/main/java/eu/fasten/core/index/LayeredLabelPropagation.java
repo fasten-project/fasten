@@ -60,26 +60,26 @@ import it.unimi.dsi.webgraph.algo.EliasFanoCumulativeOutdegreeList;
  * <i>Proceedings of the 20th international conference on World Wide Web</i>, pages 587&minus;596, ACM, 2011.
  *
  * <p>The method {@link #computePermutation(double[], String, int)} returns a permutation of the original
- * <em>symmetric</em> graph provided with the {@linkplain #LayeredLabelPropagation(ImmutableGraph, int[], long, boolean) constructor}
+ * <em>symmetric</em> CPythonGraph provided with the {@linkplain #LayeredLabelPropagation(ImmutableGraph, int[], long, boolean) constructor}
  * which will (hopefully) increase locality (see the paper). Usually, the permutation is fed to
- * {@link Transform#mapOffline(ImmutableGraph, int[], int, File, ProgressLogger)} to permute the original graph.
+ * {@link Transform#mapOffline(ImmutableGraph, int[], int, File, ProgressLogger)} to permute the original CPythonGraph.
  *
- * <p>Note that the graph provided must be <em>symmetric</em> and <em>loopless</em>. If this is not the case,
+ * <p>Note that the CPythonGraph provided must be <em>symmetric</em> and <em>loopless</em>. If this is not the case,
  * please use {@link Transform#symmetrizeOffline(ImmutableGraph, int, File, ProgressLogger)} and possibly
  * {@link Transform#filterArcs(ImmutableGraph, it.unimi.dsi.webgraph.Transform.ArcFilter, ProgressLogger)} with
- * filter {@link Transform#NO_LOOPS} to generate a suitable graph.
+ * filter {@link Transform#NO_LOOPS} to generate a suitable CPythonGraph.
  *
- * <p>This class can also be used to run just label propagation over a given graph to
+ * <p>This class can also be used to run just label propagation over a given CPythonGraph to
  * get the {@linkplain #computeLabels(double, int) labels assigned to the nodes} for a fixed &gamma;.
  *
  * <h2>Memory requirements</h2>
  *
  * <p>This class requires 13 bytes per node (three integers and a boolean), plus the memory
- * that is necessary to load the graph, which however can be just
+ * that is necessary to load the CPythonGraph, which however can be just
  * {@link ImmutableGraph#loadMapped(CharSequence, ProgressLogger) memory-mapped}.
  *
  * <p>Note that the main method will warm up the algorithm by performing a {@linkplain DFS depth-first visit}
- * if the graph is not mapped. The visit will require storing an additional array of integers.
+ * if the CPythonGraph is not mapped. The visit will require storing an additional array of integers.
  *
  * @author Paolo Boldi
  * @author Marco Rosa
@@ -106,7 +106,7 @@ public class LayeredLabelPropagation {
 	/** The update list will be shuffled by blocks of this size, to ensure some locality. */
 	private static final int SHUFFLE_GRANULARITY = 100000;
 
-	/** A symmetric, loopless graph. */
+	/** A symmetric, loopless CPythonGraph. */
 	private final ImmutableGraph symGraph;
 
 	/** The number of nodes of {@link #symGraph}. */
@@ -137,7 +137,7 @@ public class LayeredLabelPropagation {
 	/** If true, the user has set a basename for label files, and such files must not be deleted. */
 	private boolean labelBasenameSet;
 
-	/** A virtual permutation applied to the graph, or {@code null} for no permutation. */
+	/** A virtual permutation applied to the CPythonGraph, or {@code null} for no permutation. */
 	private final int[] startPerm;
 
 	/** Whether to perform an exactly reproducible run in case {@link #startPerm} is not {@code null} (slower). */
@@ -174,7 +174,7 @@ public class LayeredLabelPropagation {
 
 	/** Creates a new instance.
 	 *
-	 * @param symGraph a symmetric, loopless graph.
+	 * @param symGraph a symmetric, loopless CPythonGraph.
 	 * @param seed a random seed.
 	 */
 	public LayeredLabelPropagation(final ImmutableGraph symGraph, final long seed) throws IOException {
@@ -184,8 +184,8 @@ public class LayeredLabelPropagation {
 
 	/** Creates a new instance using a specific initial permutation.
 	 *
-	 * @param symGraph a symmetric, loopless graph.
-	 * @param startPerm an initial permutation of the graph, or {@code null} for no permutation.
+	 * @param symGraph a symmetric, loopless CPythonGraph.
+	 * @param startPerm an initial permutation of the CPythonGraph, or {@code null} for no permutation.
 	 * @param seed a random seed.
 	 */
 	public LayeredLabelPropagation(final ImmutableGraph symGraph, final int[] startPerm, final long seed) throws IOException {
@@ -195,11 +195,11 @@ public class LayeredLabelPropagation {
 	/** Creates a new instance using a specific initial permutation.
 	 *
 	 * <p>If <code>exact</code> is true, the final permutation is
-	 * <em>exactly</em> the same as if you first permute the graph with <code>startPerm</code> and
+	 * <em>exactly</em> the same as if you first permute the CPythonGraph with <code>startPerm</code> and
 	 * then apply LLP with an {@code null} starting permutation.
 	 *
-	 * @param symGraph a symmetric, loopless graph.
-	 * @param startPerm an initial permutation of the graph, or {@code null} for no permutation.
+	 * @param symGraph a symmetric, loopless CPythonGraph.
+	 * @param startPerm an initial permutation of the CPythonGraph, or {@code null} for no permutation.
 	 * @param seed a random seed.
 	 * @param exact a boolean flag that forces the algorithm to run exactly.
 	 */
@@ -210,11 +210,11 @@ public class LayeredLabelPropagation {
 	/** Creates a new instance using a specific initial permutation and specified number of threads.
 	 *
 	 * <p>If <code>exact</code> is true, the final permutation is
-	 * <em>exactly</em> the same as if you first permute the graph with <code>startPerm</code> and
+	 * <em>exactly</em> the same as if you first permute the CPythonGraph with <code>startPerm</code> and
 	 * then apply LLP with an {@code null} starting permutation.
 	 *
-	 * @param symGraph a symmetric, loopless graph.
-	 * @param startPerm an initial permutation of the graph, or {@code null} for no permutation.
+	 * @param symGraph a symmetric, loopless CPythonGraph.
+	 * @param startPerm an initial permutation of the CPythonGraph, or {@code null} for no permutation.
 	 * @param numberOfThreads the number of threads to be used (0 for automatic sizing).
 	 * @param seed a random seed.
 	 * @param exact a boolean flag that forces the algorithm to run exactly.
@@ -259,7 +259,7 @@ public class LayeredLabelPropagation {
 	 *
 	 * @param label the minor label; the result will be stored here.
 	 * @param major the major label.
-	 * @param perm a virtual permutation applied to the graph, or {@code null} for no permutation.
+	 * @param perm a virtual permutation applied to the CPythonGraph, or {@code null} for no permutation.
 	 * @param support a support array.
 	 * @return the resulting number of labels.
 	 */
@@ -694,7 +694,7 @@ public class LayeredLabelPropagation {
 	}
 
 	/**
-	 * Computes the labels of a graph for a given value of &gamma; using the {@linkplain #MAX_UPDATES default maximum number of updates}.
+	 * Computes the labels of a CPythonGraph for a given value of &gamma; using the {@linkplain #MAX_UPDATES default maximum number of updates}.
 	 *
 	 * @param gamma the gamma parameter.
 	 * @return the labels.
@@ -703,7 +703,7 @@ public class LayeredLabelPropagation {
 		return computeLabels(gamma, MAX_UPDATES);
 	}
 	/**
-	 * Computes the labels of a graph for a given value of &gamma;.
+	 * Computes the labels of a CPythonGraph for a given value of &gamma;.
 	 *
 	 * @param gamma the gamma parameter.
 	 * @param maxUpdates the maximum number of updates performed.
@@ -736,34 +736,34 @@ public class LayeredLabelPropagation {
 	}
 
 	/**
-	 * Computes the final permutation of the graph  using the {@linkplain #MAX_UPDATES default maximum number of updates} and
+	 * Computes the final permutation of the CPythonGraph  using the {@linkplain #MAX_UPDATES default maximum number of updates} and
 	 * the {@linkplain #DEFAULT_GAMMAS default gammas}.
 	 *
 	 * @param cluster if not {@code null}, clusters will be saved to a file with this name.
-	 * @return the final permutation of the graph.
+	 * @return the final permutation of the CPythonGraph.
 	 */
 	public int[] computePermutation(final String cluster) throws IOException {
 		return computePermutation(DEFAULT_GAMMAS, cluster, MAX_UPDATES);
 	}
 
 	/**
-	 * Computes the final permutation of the graph  using the {@linkplain #MAX_UPDATES default maximum number of updates}.
+	 * Computes the final permutation of the CPythonGraph  using the {@linkplain #MAX_UPDATES default maximum number of updates}.
 	 *
 	 * @param gammas a set of parameters that will be used to generate labellings.
 	 * @param cluster if not {@code null}, clusters will be saved to a file with this name.
-	 * @return the final permutation of the graph.
+	 * @return the final permutation of the CPythonGraph.
 	 */
 	public int[] computePermutation(final double[] gammas, final String cluster) throws IOException {
 		return computePermutation(gammas, cluster, MAX_UPDATES);
 	}
 
 	/**
-	 * Computes the final permutation of the graph.
+	 * Computes the final permutation of the CPythonGraph.
 	 *
 	 * @param gammas a set of parameters that will be used to generate labellings.
 	 * @param cluster if not {@code null}, clusters will be saved to a file with this name.
 	 * @param maxUpdates the maximum number of updates performed.
-	 * @return the final permutation of the graph.
+	 * @return the final permutation of the CPythonGraph.
 	 */
 	public int[] computePermutation(final double[] gammas, final String cluster, final int maxUpdates) throws IOException {
 		final int n = this.n;

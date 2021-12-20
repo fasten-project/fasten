@@ -73,7 +73,7 @@ public class MergerEfficiencyTests {
         long numEdges = result.numArcs();
 
         System.out.println("CPU time used for merging: " + df.format(secondsTaken) + " seconds." +
-                " Merged graph has " + numNodes + " nodes and " + numEdges + " edges.");
+                " Merged CPythonGraph has " + numNodes + " nodes and " + numEdges + " edges.");
 
         Assertions.assertTrue(
                 secondsTaken < 25, "CPU time used for merging should be less than 25 seconds, but was " + secondsTaken);
@@ -98,7 +98,7 @@ public class MergerEfficiencyTests {
             int numNodes = result.numNodes();
             long numEdges = result.numArcs();
             System.out.println("CPU time used for merging: " + df.format(secondsTaken) + " seconds." +
-                    " Merged graph has " + numNodes + " nodes and " + numEdges + " edges.");
+                    " Merged CPythonGraph has " + numNodes + " nodes and " + numEdges + " edges.");
         }
     }
 }

@@ -55,10 +55,10 @@ public class CallGraphAnalysisExample {
 	}
 
 	public static void main(final String args[]) throws JSAPException, IllegalArgumentException, SQLException, RocksDBException {
-		final SimpleJSAP jsap = new SimpleJSAP(CallGraphAnalysisExample.class.getName(), "Analyzes a revision call graph and print some statistics.", new Parameter[] {
+		final SimpleJSAP jsap = new SimpleJSAP(CallGraphAnalysisExample.class.getName(), "Analyzes a revision call CPythonGraph and print some statistics.", new Parameter[] {
 				new FlaggedOption("postgres", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.REQUIRED, 'p', "postgres", "The URI of the Postgres server."),
 				new FlaggedOption("db", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.REQUIRED, 'd', "db", "The Postgres database."),
-				new FlaggedOption("rocksdb", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.REQUIRED, 'r', "rocksdb", "The path to the RocksDB graph database."),
+				new FlaggedOption("rocksdb", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.REQUIRED, 'r', "rocksdb", "The path to the RocksDB CPythonGraph database."),
 				new UnflaggedOption("group", JSAP.STRING_PARSER, JSAP.NOT_REQUIRED, "The Maven group of the revision."),
 				new UnflaggedOption("product", JSAP.STRING_PARSER, JSAP.NOT_REQUIRED, "The product associated with the revision."),
 				new UnflaggedOption("version", JSAP.STRING_PARSER, JSAP.NOT_REQUIRED, "The version of the revision."), });
@@ -72,7 +72,7 @@ public class CallGraphAnalysisExample {
 
 		// Connect to the Postgres database (you'll need to set the password as a system variable)
 		final var context = PostgresConnector.getDSLContext(jsapResult.getString("postgres"), jsapResult.getString("db"), true);
-		// Connect to the graph database
+		// Connect to the CPythonGraph database
 		final var rocksDao = new eu.fasten.core.data.callableindex.RocksDao(jsapResult.getString("rocksdb"), true);
 
 		// Retrieve the ID of the requested revision
@@ -81,7 +81,7 @@ public class CallGraphAnalysisExample {
 		if (result == null) throw new IllegalArgumentException("The requested revision (group=" + group + ", product=" + product + ", version=" + version + ") is not in the Postgres database");
 		final long id = result.component1();
 
-		// Retrieve the associated revision call graph
+		// Retrieve the associated revision call CPythonGraph
 		final DirectedGraph graph = rocksDao.getGraphData(id);
 		if (graph == null) throw new IllegalArgumentException("The requested revision (group=" + group + ", product=" + product + ", version=" + version + ", id=" + id + ") is not in the RocksDB database");
 

@@ -212,10 +212,10 @@ public class RevisionCallGraph {
      */
     private final Map<FastenURI, Type> classHierarchy;
 
-    /** Includes all the edges of the revision call graph (internal & external). */
+    /** Includes all the edges of the revision call CPythonGraph (internal & external). */
     private final Graph graph;
 
-    /** Keeps the name of call graph generator that generated this revision call graph. */
+    /** Keeps the name of call CPythonGraph generator that generated this revision call CPythonGraph. */
     private final String cgGenerator;
 
     /**
@@ -225,11 +225,11 @@ public class RevisionCallGraph {
      * @param version        the version.
      * @param timestamp      the timestamp (in seconds from UNIX epoch); optional: if not present,
      *                       it is set to -1.
-     * @param cgGenerator    The name of call graph generator that generated this call graph.
+     * @param cgGenerator    The name of call CPythonGraph generator that generated this call CPythonGraph.
      * @param depset         the depset.
      * @param classHierarchy class hierarchy of this revision including all classes of the revision
      *                       <code> Map<{@link FastenURI}, {@link Type}> </code>
-     * @param graph          the call graph (no control is done on the graph) {@link Graph}
+     * @param graph          the call CPythonGraph (no control is done on the CPythonGraph) {@link Graph}
      *                       including internal and external calls of the revision.
      */
     public RevisionCallGraph(final String forge, final String product, final String version,
@@ -264,7 +264,7 @@ public class RevisionCallGraph {
 
     /**
      * Creates {@link RevisionCallGraph} for the given JSONObject.
-     * @param json JSONObject of a revision call graph.
+     * @param json JSONObject of a revision call CPythonGraph.
      */
     public RevisionCallGraph(final JSONObject json) throws JSONException {
         this.forge = json.getString("forge");
@@ -275,7 +275,7 @@ public class RevisionCallGraph {
         uri = FastenURI.create("fasten://" + forge + "!" + product + "$" + version);
         forgelessUri = FastenURI.create("fasten://" + product + "$" + version);
         this.cgGenerator = json.getString("generator");
-        this.graph = new Graph(json.getJSONObject("graph"));
+        this.graph = new Graph(json.getJSONObject("CPythonGraph"));
         this.classHierarchy = getCHAFromJSON(json.getJSONObject("cha"));
     }
 
@@ -327,7 +327,7 @@ public class RevisionCallGraph {
         }
         result.put("cha", toJSON(classHierarchy));
         result.put("depset", Dependency.toJSON(depset));
-        result.put("graph", graph.toJSON());
+        result.put("CPythonGraph", graph.toJSON());
 
         return result;
     }
@@ -349,7 +349,7 @@ public class RevisionCallGraph {
     }
 
     /**
-     * Sorts the internal calls of this revision call graph.
+     * Sorts the internal calls of this revision call CPythonGraph.
      * @implNote since we use {@link Set} in the process of computing the internal calls and
      *     sets doesn't keep the order it might be needed to sort the edges
      */
@@ -453,14 +453,14 @@ public class RevisionCallGraph {
     public static class Graph {
 
         /**
-         * It keeps all the internal calls of the call graph using the ids of source and target
+         * It keeps all the internal calls of the call CPythonGraph using the ids of source and target
          * method. First element of the int[] is the id of the source method and the second one is
          * the target's id. Ids are available in the class hierarchy.
          */
         private final List<List<Integer>> internalCalls;
 
         /**
-         * External calls of the graph and key value metadata about each call. The {@link Pair}
+         * External calls of the CPythonGraph and key value metadata about each call. The {@link Pair}
          * keeps the id of source method in the left element and the {@link FastenURI} of the target
          * method in the right element. The meta data per call is stored as a map that keys and
          * values are {@link String}. For example in case of java for each call it can keep
@@ -476,7 +476,7 @@ public class RevisionCallGraph {
 
         /**
          * Creates {@link Graph} for the given JSONObject.
-         * @param graph JSONObject of a graph including its internal calls and external calls.
+         * @param graph JSONObject of a CPythonGraph including its internal calls and external calls.
          */
         public Graph(final JSONObject graph) {
 

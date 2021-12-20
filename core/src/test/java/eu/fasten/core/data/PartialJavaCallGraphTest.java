@@ -41,7 +41,7 @@ class PartialJavaCallGraphTest {
     @BeforeAll
     static void setUp() throws IOException, URISyntaxException {
         var file = new File(Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
-                .getResource("extended-revision-call-graph/testRCG.json")).toURI().getPath());
+                .getResource("extended-revision-call-CPythonGraph/testRCG.json")).toURI().getPath());
 
         JSONTokener tokener = new JSONTokener(new FileReader(file));
 
@@ -51,7 +51,7 @@ class PartialJavaCallGraphTest {
     @Test
     void toJSON() throws FileNotFoundException, URISyntaxException {
         var file = new File(Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
-                .getResource("extended-revision-call-graph/testRCG.json")).toURI().getPath());
+                .getResource("extended-revision-call-CPythonGraph/testRCG.json")).toURI().getPath());
 
         JSONTokener tokener = new JSONTokener(new FileReader(file));
 
@@ -103,7 +103,7 @@ class PartialJavaCallGraphTest {
     @Test
     void isCallGraphEmptyEmptyInternal() throws IOException, URISyntaxException {
         var file = new File(Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
-                .getResource("extended-revision-call-graph/testRCGEmptyInternal.json")).toURI().getPath());
+                .getResource("extended-revision-call-CPythonGraph/testRCGEmptyInternal.json")).toURI().getPath());
 
         JSONTokener tokener = new JSONTokener(new FileReader(file));
 
@@ -115,7 +115,7 @@ class PartialJavaCallGraphTest {
     @Test
     void isCallGraphEmptyEmptyExternal() throws IOException, URISyntaxException {
         var file = new File(Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
-                .getResource("extended-revision-call-graph/testRCGEmptyExternal.json")).toURI().getPath());
+                .getResource("extended-revision-call-CPythonGraph/testRCGEmptyExternal.json")).toURI().getPath());
 
         JSONTokener tokener = new JSONTokener(new FileReader(file));
 
@@ -127,7 +127,7 @@ class PartialJavaCallGraphTest {
     @Test
     void isCallGraphEmptyEmptyResolved() throws IOException, URISyntaxException {
         var file = new File(Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
-                .getResource("extended-revision-call-graph/testRCGEmptyResolved.json")).toURI().getPath());
+                .getResource("extended-revision-call-CPythonGraph/testRCGEmptyResolved.json")).toURI().getPath());
 
         JSONTokener tokener = new JSONTokener(new FileReader(file));
 
@@ -139,7 +139,7 @@ class PartialJavaCallGraphTest {
     @Test
     void isCallGraphEmptyEmptyAll() throws IOException, URISyntaxException {
         var file = new File(Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
-                .getResource("extended-revision-call-graph/testRCGEmptyAll.json")).toURI().getPath());
+                .getResource("extended-revision-call-CPythonGraph/testRCGEmptyAll.json")).toURI().getPath());
 
         JSONTokener tokener = new JSONTokener(new FileReader(file));
 

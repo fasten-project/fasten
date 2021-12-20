@@ -99,10 +99,10 @@ import it.unimi.dsi.webgraph.Transform;
  *   <ul>
  *   	<li>by means of a generic (i.e., schemeless, forgeless, productless and versionless) FASTEN URI;
  *      <li>through a global identifier (GID), that uniquely identifies its generic URI;
- *      <li>through a local identifier (LID), that identifies that node within its call graph. LIDs of internal nodes are smaller than LIDs of external nodes;
- *         more precisely, if a graph has <var>a</var> internal nodes and <var>b</var> external nodes, LIDs from 0 (inclusive) to <var>a</var> (exclusive) correspond
+ *      <li>through a local identifier (LID), that identifies that node within its call CPythonGraph. LIDs of internal nodes are smaller than LIDs of external nodes;
+ *         more precisely, if a CPythonGraph has <var>a</var> internal nodes and <var>b</var> external nodes, LIDs from 0 (inclusive) to <var>a</var> (exclusive) correspond
  *         to its internal nodes, and LIDs from <var>a</var> (inclusive) to <var>a</var>+<var>b</var> (exclusive) correspond to its external nodes;
- *       <li>for internal nodes only: through the JSON identifier, that is the integer used to identify that node within the JSON object that represents that call graph.
+ *       <li>for internal nodes only: through the JSON identifier, that is the integer used to identify that node within the JSON object that represents that call CPythonGraph.
  *   </ul>
  */
 public class KnowledgeBase implements Serializable, Closeable {
@@ -128,10 +128,10 @@ public class KnowledgeBase implements Serializable, Closeable {
 
 	/**
 	 * A node in the knowledge base is represented by a revision index and a GID, with the proviso that
-	 * the gid corresponds to an internal node of the call graph specified by the index.
+	 * the gid corresponds to an internal node of the call CPythonGraph specified by the index.
 	 *
 	 * For speed and testing purposes, a node can be replaced by its signature: a long containing the
-	 * index of the revision call graph in the upper 24 bits, and the GID in the lower 40 bits. Given a
+	 * index of the revision call CPythonGraph in the upper 24 bits, and the GID in the lower 40 bits. Given a
 	 * node, {@link KnowledgeBase#signature(long, long)} computes a signature; given a signature,
 	 * {@link KnowledgeBase#index(long)} and {@link KnowledgeBase#gid(long)} return the index and the
 	 * GID.
@@ -210,7 +210,7 @@ public class KnowledgeBase implements Serializable, Closeable {
 	 */
 	protected final Long2ObjectMap<LongSet> GIDCalledBy;
 
-	/** Maps revision indices to the corresponding call graph. */
+	/** Maps revision indices to the corresponding call CPythonGraph. */
 	public final Long2ObjectOpenHashMap<CallGraph> callGraphs;
 
 	/** The RocksDB instance used by this indexer. */
@@ -227,7 +227,7 @@ public class KnowledgeBase implements Serializable, Closeable {
 	 */
 	private final String kbMetadataPathname;
 
-	/** The handle for the default column (index to graph data). */
+	/** The handle for the default column (index to CPythonGraph data). */
 	private transient ColumnFamilyHandle defaultHandle;
 	/**
 	 * The handle for the column mapping GIDs to URIs (the inverse of
@@ -265,15 +265,15 @@ public class KnowledgeBase implements Serializable, Closeable {
 		return Longs.fromByteArray(result);
 	}
 
-	/** Instances of this class contain the data relative to a call graph that are stored in the database. */
+	/** Instances of this class contain the data relative to a call CPythonGraph that are stored in the database. */
 	public static final class CallGraphData implements DirectedGraph {
-		/** The call graph. */
+		/** The call CPythonGraph. */
 		private final ImmutableGraph graph;
-		/** The transpose graph. */
+		/** The transpose CPythonGraph. */
 		private final ImmutableGraph transpose;
-		/** Properties (in the sense of {@link ImmutableGraph}) of the call graph. */
+		/** Properties (in the sense of {@link ImmutableGraph}) of the call CPythonGraph. */
 		public final Properties graphProperties;
-		/** Properties (in the sense of {@link ImmutableGraph}) of the transpose graph. */
+		/** Properties (in the sense of {@link ImmutableGraph}) of the transpose CPythonGraph. */
 		public final Properties transposeProperties;
 		/** Maps LIDs to GIDs. */
 		public final long[] LID2GID;
@@ -396,7 +396,7 @@ public class KnowledgeBase implements Serializable, Closeable {
 
 	/**
 	 * Instances represent call graphs and the associated metadata. Each call
-	 * graph corresponds to a specific release (product, version, forge), and
+	 * CPythonGraph corresponds to a specific release (product, version, forge), and
 	 * has a unique revision index. Its nodes are divided into internal nodes
 	 * and external nodes (the former have smaller values, the latter have
 	 * larger values). Each node number is called a local identifier (LID); LIDs
@@ -410,16 +410,16 @@ public class KnowledgeBase implements Serializable, Closeable {
 		 * {@link #LID2GID}).
 		 */
 		public final int nInternal;
-		/** The product described in this call graph. */
+		/** The product described in this call CPythonGraph. */
 		public final String product;
-		/** The version described in this call graph. */
+		/** The version described in this call CPythonGraph. */
 		public final String version;
-		/** The forge described in this call graph. */
+		/** The forge described in this call CPythonGraph. */
 		public final String forge;
-		/** The revision index of this call graph. */
+		/** The revision index of this call CPythonGraph. */
 		public final long index;
 		/**
-		 * An array of two graphs: the call graph (index 0) and its transpose
+		 * An array of two graphs: the call CPythonGraph (index 0) and its transpose
 		 * (index 1).
 		 */
 		@SuppressWarnings("null")
@@ -428,11 +428,11 @@ public class KnowledgeBase implements Serializable, Closeable {
 
 		// ALERT unsynchronized update of Knowledge Base maps.
 		/**
-		 * Creates a call graph from a {@link RevisionCallGraph}. All
+		 * Creates a call CPythonGraph from a {@link RevisionCallGraph}. All
 		 * maps of the knowledge base (e.g. {@link KnowledgeBase#GIDAppearsIn})
 		 * are updated appropriately. The graphs are stored in the database.
 		 *
-		 * @param g the revision call graph.
+		 * @param g the revision call CPythonGraph.
 		 * @param index the revision index.
 		 */
 		protected CallGraph(final RevisionCallGraph g, final long index) throws IOException, RocksDBException {
@@ -490,9 +490,9 @@ public class KnowledgeBase implements Serializable, Closeable {
 				// disjoint by construction
 			}
 
-			// Create, store and load compressed versions of the graph and of the transpose.
+			// Create, store and load compressed versions of the CPythonGraph and of the transpose.
 
-			// First create the graph as an ArrayListMutableGraph
+			// First create the CPythonGraph as an ArrayListMutableGraph
 			final ArrayListMutableGraph mutableGraph = new ArrayListMutableGraph(temporary2GID.length);
 
 			// Add arcs between internal nodes
@@ -528,7 +528,7 @@ public class KnowledgeBase implements Serializable, Closeable {
 			final Properties graphProperties = new Properties(), transposeProperties = new Properties();
 			FileInputStream propertyFile;
 
-			// Compress, load and serialize graph
+			// Compress, load and serialize CPythonGraph
 			final int[] bfsperm = bfsperm(mutableGraph.immutableView(), -1, internalGIDs.size());
 			final ImmutableGraph graph = Transform.map(mutableGraph.immutableView(), bfsperm);
 			BVGraph.store(graph, f.toString());
@@ -550,7 +550,7 @@ public class KnowledgeBase implements Serializable, Closeable {
 			for (int i = 0; i < temporary2GID.length; i++)
 				GID2LID.put(LID2GID[i], i);
 
-			// Compress, load and serialize transpose graph
+			// Compress, load and serialize transpose CPythonGraph
 			BVGraph.store(Transform.transpose(graph), f.toString());
 			propertyFile = new FileInputStream(f + BVGraph.PROPERTIES_EXTENSION);
 			transposeProperties.load(propertyFile);
@@ -578,10 +578,10 @@ public class KnowledgeBase implements Serializable, Closeable {
 		}
 
 		/**
-		 * Returns the call graph and its transpose in a 2-element array. The
+		 * Returns the call CPythonGraph and its transpose in a 2-element array. The
 		 * graphs are cached, and read from the database if needed.
 		 *
-		 * @return an array containing the call graph and its transpose.
+		 * @return an array containing the call CPythonGraph and its transpose.
 		 */
 		public CallGraphData callGraphData() {
 			if (callGraphData != null) {
@@ -792,7 +792,7 @@ public class KnowledgeBase implements Serializable, Closeable {
 	 *            <code>LID</code>])
 	 * @return the list of all successors; these are obtained as follows: for
 	 *         every successor <code>x</code> of <code>node</code> in the call
-	 *         graph
+	 *         CPythonGraph
 	 *         <ul>
 	 *         <li>if <code>x</code> is internal, [<code>index</code>,
 	 *         <code>LID</code>] is a successor
@@ -862,7 +862,7 @@ public class KnowledgeBase implements Serializable, Closeable {
 	 * @param node a node (for the form [<code>index</code>, <code>LID</code>])
 	 * @return the list of all predecessors; these are obtained as follows:
 	 *         <ul>
-	 *         <li>for every predecessor <code>x</code> of <code>node</code> in the call graph,
+	 *         <li>for every predecessor <code>x</code> of <code>node</code> in the call CPythonGraph,
 	 *         [<code>index</code>, <code>LID</code>] is a predecessor
 	 *         <li>let <code>g</code> be the GID of <code>node</code>: for every index
 	 *         <code>otherIndex</code> that calls <code>g</code> (i.e., where <code>g</code> is the GID
@@ -889,7 +889,7 @@ public class KnowledgeBase implements Serializable, Closeable {
 		}
 
 		/*
-		 * To move backward in the call graph, we use GIDCalledBy to find
+		 * To move backward in the call CPythonGraph, we use GIDCalledBy to find
 		 * revisions that might contain external nodes of the form <gid, index>.
 		 */
 		for (final LongIterator revisions = GIDCalledBy.get(gid).iterator(); revisions.hasNext();) {
@@ -930,7 +930,7 @@ public class KnowledgeBase implements Serializable, Closeable {
 		}
 
 		/*
-		 * To move backward in the call graph, we use GIDCalledBy to find revisions that might contain
+		 * To move backward in the call CPythonGraph, we use GIDCalledBy to find revisions that might contain
 		 * external nodes of the form <gid, index>.
 		 */
 		for (final LongIterator revisions = GIDCalledBy.get(gid).iterator(); revisions.hasNext();) {
@@ -1110,8 +1110,8 @@ public class KnowledgeBase implements Serializable, Closeable {
 	/**
 	 * Adds a new {@link CallGraph} to the list of all call graphs.
 	 *
-	 * @param g the revision call graph from which the call graph will be created.
-	 * @param index the revision index to which the new call graph will be associated.
+	 * @param g the revision call CPythonGraph from which the call CPythonGraph will be created.
+	 * @param index the revision index to which the new call CPythonGraph will be associated.
 	 * @throws IOException
 	 * @throws RocksDBException
 	 */
@@ -1149,9 +1149,9 @@ public class KnowledgeBase implements Serializable, Closeable {
 	/**
 	 * Return the permutation induced by the visit order of a breadth-first visit.
 	 *
-	 * @param graph a graph.
+	 * @param graph a CPythonGraph.
 	 * @param startingNode the only starting node of the visit, or -1 for a complete visit.
-	 * @param internalNodes number of internal nodes in the graph
+	 * @param internalNodes number of internal nodes in the CPythonGraph
 	 * @return the permutation induced by the visit order of a breadth-first visit.
 	 */
 	public static int[] bfsperm(final ImmutableGraph graph, final int startingNode, final int internalNodes) {

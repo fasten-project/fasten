@@ -40,23 +40,23 @@ import eu.fasten.core.data.opal.exceptions.OPALException;
 public class OPALCallGraphConstructor {
 
 	/**
-	 * Constructs a call graph given a single class/jar and an algorithm.
+	 * Constructs a call CPythonGraph given a single class/jar and an algorithm.
 	 *
 	 * @param au        analysis unit (class/jar) to be analyzed
-	 * @param algorithm algorithm for generating call graph
+	 * @param algorithm algorithm for generating call CPythonGraph
 	 */
 	public OPALCallGraph construct(final File au, CGAlgorithm algorithm) {
 		return construct(new File[] { au }, new File[0], algorithm);
 	}
 
 	/**
-	 * Constructs a call graph given an array of "project" classes/jars, "library"
+	 * Constructs a call CPythonGraph given an array of "project" classes/jars, "library"
 	 * classes/jars and an algorithm. The difference between pkgs and deps is only
 	 * relevant for OPAL, where several details get only preserved for pkgs.
 	 *
 	 * @param aus       array of analysis units (classes/jars) to be analyzed
 	 * @param deps      array of all classes/jars that are used for dependencies
-	 * @param algorithm algorithm for generating call graph
+	 * @param algorithm algorithm for generating call CPythonGraph
 	 */
 	public OPALCallGraph construct(File[] aus, File[] deps, CGAlgorithm algorithm) {
 		assertDependencies(aus, deps);

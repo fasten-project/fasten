@@ -160,7 +160,7 @@ public abstract class MetadataDBExtension implements KafkaPlugin, DBConnector {
                         logger.info("Saved the '" + revision + "' callgraph metadata "
                                 + "to the database with package version ID = " + id);
 
-                        // Set the output path for this call graph, so that it can be stored to disk if necessary.
+                        // Set the output path for this call CPythonGraph, so that it can be stored to disk if necessary.
                         setOutputPath(callgraph);
                     }
                 });
@@ -216,7 +216,7 @@ public abstract class MetadataDBExtension implements KafkaPlugin, DBConnector {
     /**
      * Saves a callgraph of new format to the database to appropriate tables.
      *
-     * @param callGraph   Call graph to save to the database.
+     * @param callGraph   Call CPythonGraph to save to the database.
      * @param metadataDao Data Access Object to insert records in the database
      * @return Package ID saved in the database
      */
@@ -254,7 +254,7 @@ public abstract class MetadataDBExtension implements KafkaPlugin, DBConnector {
         }
 
         // Insert all the edges
-        var edges = insertEdges(callGraph.getGraph(), lidToGidMap, namespaceMap, metadataDao);
+        var edges = insertEdges(callGraph.getCPythonGraph(), lidToGidMap, namespaceMap, metadataDao);
 
         // Remove duplicate nodes
         var internalIds = new LongArrayList(numInternal);
@@ -275,7 +275,7 @@ public abstract class MetadataDBExtension implements KafkaPlugin, DBConnector {
         var gid2uriMap = new HashMap<Long, String>(callablesIds.size());
         callables.forEach(c -> gid2uriMap.put(lidToGidMap.get(c.getId().longValue()), c.getFastenUri()));
 
-        // Create a GID Graph for production
+        // Create a GID CPythonGraph for production
         var typesMap = new HashMap<Long, String>(namespaceMap.size());
         namespaceMap.forEach((k, v) -> typesMap.put(v, k));
         this.gidGraph = new ExtendedGidGraph(packageVersionId, callGraph.product, callGraph.version,
@@ -295,10 +295,10 @@ public abstract class MetadataDBExtension implements KafkaPlugin, DBConnector {
         return new ImmutablePair<>(new ArrayList<>(), 0);
     }
 
-    protected List<CallSitesRecord> insertEdges(Graph graph, Long2LongOpenHashMap lidToGidMap,
-                                                Map<String, Long> namespaceMap, MetadataDao metadataDao) {
-        return new ArrayList<>();
-    }
+    protected abstract <T> List<CallSitesRecord> insertEdges(T graph,
+                                                           Long2LongOpenHashMap lidToGidMap,
+                                                Map<String, Long> namespaceMap,
+                                                             MetadataDao metadataDao);
 
     protected Timestamp getProperTimestamp(long timestamp) {
         if (timestamp == -1) {
@@ -344,7 +344,7 @@ public abstract class MetadataDBExtension implements KafkaPlugin, DBConnector {
         return "Metadata plugin. "
                 + "Consumes ExtendedRevisionCallgraph-formatted JSON objects from Kafka topic"
                 + " and populates metadata database with consumed data"
-                + " and writes graph of GIDs of callgraph to another Kafka topic.";
+                + " and writes CPythonGraph of GIDs of callgraph to another Kafka topic.";
     }
 
     @Override
