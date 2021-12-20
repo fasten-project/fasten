@@ -205,6 +205,7 @@ public class POMAnalyzerPlugin extends Plugin {
                         }
                     });
                 } catch (Exception expected) {
+                    logger.error("Database transaction failed due to {} and retried for {} times(s)", expected.getMessage(), transactionRestartCount);
                 }
                 transactionRestartCount++;
             } while (restartTransaction && !processedRecord
