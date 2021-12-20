@@ -40,6 +40,7 @@ public class DependencyManagement {
 
     @Override
     public boolean equals(Object o) {
+    	// TODO implement a proper hashCode method!
         if (this == o) {
             return true;
         }
