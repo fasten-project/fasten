@@ -17,9 +17,6 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.rocksdb.RocksDBException;
 
-import eu.fasten.core.data.RevisionCallGraph;
-import eu.fasten.core.legacy.Indexer;
-import eu.fasten.core.legacy.KnowledgeBase;
 import eu.fasten.core.legacy.KnowledgeBase.Node;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;

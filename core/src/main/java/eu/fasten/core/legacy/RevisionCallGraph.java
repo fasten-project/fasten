@@ -16,8 +16,9 @@
  * limitations under the License.
  */
 
-package eu.fasten.core.data;
+package eu.fasten.core.legacy;
 
+import eu.fasten.core.data.FastenURI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
