@@ -25,7 +25,9 @@ import org.json.JSONObject;
 
 public class DependencyData {
 
+	// Double check: these are entries in the dep. management section of a pom file 
     public final DependencyManagement dependencyManagement;
+    
     public final List<Dependency> dependencies;
 
     /**
@@ -43,6 +45,7 @@ public class DependencyData {
 
     @Override
     public boolean equals(Object o) {
+    	// TODO implement a proper hashCode method!
         if (this == o) {
             return true;
         }
