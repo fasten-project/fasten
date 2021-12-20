@@ -18,6 +18,7 @@
 
 package eu.fasten.analyzer.javacgopal.data;
 
+import eu.fasten.core.data.PartialJavaCallGraph;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -51,7 +52,6 @@ import eu.fasten.analyzer.javacgopal.data.analysis.OPALClassHierarchy;
 import eu.fasten.analyzer.javacgopal.data.analysis.OPALMethod;
 import eu.fasten.analyzer.javacgopal.data.analysis.OPALType;
 import eu.fasten.core.data.Constants;
-import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
 import eu.fasten.core.data.JavaGraph;
 import eu.fasten.core.data.opal.MavenArtifactDownloader;
 import eu.fasten.core.data.opal.MavenCoordinate;
@@ -107,7 +107,7 @@ public class OPALPartialCallGraphConstructor {
      * @param timestamp  timestamp of the revision release
      * @return RevisionCallGraph of the given coordinate.
      */
-    public static ExtendedRevisionJavaCallGraph createExtendedRevisionJavaCallGraph(
+    public static PartialJavaCallGraph createExtendedRevisionJavaCallGraph(
             final MavenCoordinate coordinate, 
             CGAlgorithm algorithm, final long timestamp, final String artifactRepo, CallPreservationStrategy callSiteOnly) {
 
@@ -118,7 +118,7 @@ public class OPALPartialCallGraphConstructor {
 
             final var partialCallGraph = new OPALPartialCallGraphConstructor().construct(opalCG, callSiteOnly);
 
-            return new ExtendedRevisionJavaCallGraph(Constants.mvnForge, coordinate.getProduct(),
+            return new PartialJavaCallGraph(Constants.mvnForge, coordinate.getProduct(),
                     coordinate.getVersionConstraint(), timestamp,
                     Constants.opalGenerator,
                     partialCallGraph.classHierarchy,

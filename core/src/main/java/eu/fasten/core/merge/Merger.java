@@ -19,7 +19,7 @@
 package eu.fasten.core.merge;
 
 import ch.qos.logback.classic.Level;
-import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
+import eu.fasten.core.data.PartialJavaCallGraph;
 import eu.fasten.core.data.JSONUtils;
 import eu.fasten.core.data.JavaScope;
 import eu.fasten.core.data.callableindex.RocksDao;
@@ -139,12 +139,12 @@ public class Merger implements Runnable {
                     break;
 
                 case "LOCAL":
-                    ExtendedRevisionJavaCallGraph artFile;
-                    var depFiles = new ArrayList<ExtendedRevisionJavaCallGraph>();
+                    PartialJavaCallGraph artFile;
+                    var depFiles = new ArrayList<PartialJavaCallGraph>();
 
                     try {
                         var tokener = new JSONTokener(new FileReader(artifact));
-                        artFile = new ExtendedRevisionJavaCallGraph(new JSONObject(tokener));
+                        artFile = new PartialJavaCallGraph(new JSONObject(tokener));
                     } catch (FileNotFoundException e) {
                         logger.error("Incorrect file path for the artifact", e);
                         return;
@@ -153,14 +153,14 @@ public class Merger implements Runnable {
                     for (var dep : dependencies) {
                         try {
                             var tokener = new JSONTokener(new FileReader(dep));
-                            depFiles.add(new ExtendedRevisionJavaCallGraph(new JSONObject(tokener)));
+                            depFiles.add(new PartialJavaCallGraph(new JSONObject(tokener)));
                         } catch (FileNotFoundException e) {
                             logger.error("Incorrect file path for a dependency");
                         }
                     }
                     depFiles.add(artFile);
                     var localMerger = new CGMerger(depFiles);
-                    var mergedERCG = new ExtendedRevisionJavaCallGraph(new JSONObject()); //localMerger.mergeWithCHA(artFile); TODO: Fix this
+                    var mergedERCG = new PartialJavaCallGraph(new JSONObject()); //localMerger.mergeWithCHA(artFile); TODO: Fix this
                     logger.info("Resolved {} nodes, {} calls in {} seconds",
                             mergedERCG.getClassHierarchy().get(JavaScope.resolvedTypes).size(),
                             mergedERCG.getGraph().getResolvedCalls().size(),

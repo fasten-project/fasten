@@ -22,7 +22,7 @@ import com.google.common.collect.BiMap;
 import com.google.common.collect.HashBiMap;
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.DirectedGraph;
-import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
+import eu.fasten.core.data.PartialJavaCallGraph;
 import eu.fasten.core.data.FastenJavaURI;
 import eu.fasten.core.data.FastenURI;
 import eu.fasten.core.data.JavaNode;
@@ -80,7 +80,7 @@ public class CGMerger {
     private Set<Long> dependencySet;
     private Map<Long, String> namespaceMap;
 
-    private List<Pair<DirectedGraph, ExtendedRevisionJavaCallGraph>> ercgDependencySet;
+    private List<Pair<DirectedGraph, PartialJavaCallGraph>> ercgDependencySet;
     private BiMap<Long, String> allUris;
 
     private Map<String, Map<String, String>> externalUris;
@@ -95,7 +95,7 @@ public class CGMerger {
      *
      * @param dependencySet all artifacts present in a resolution
      */
-    public CGMerger(final List<ExtendedRevisionJavaCallGraph> dependencySet) {
+    public CGMerger(final List<PartialJavaCallGraph> dependencySet) {
         this(dependencySet, false);
     }
 
@@ -106,7 +106,7 @@ public class CGMerger {
      * @param withExternals true if unresolved external calls should be kept in the generated graph, they will be
      *            assigned negative ids
      */
-    public CGMerger(final List<ExtendedRevisionJavaCallGraph> dependencySet, boolean withExternals) {
+    public CGMerger(final List<PartialJavaCallGraph> dependencySet, boolean withExternals) {
 
         final var UCH = createUniversalCHA(dependencySet);
         this.universalParents = UCH.getLeft();
@@ -120,11 +120,11 @@ public class CGMerger {
         this.typeDictionary = graphAndDict.getRight();
     }
 
-    private Pair<List<Pair<DirectedGraph, ExtendedRevisionJavaCallGraph>>, Map<String, Map<String,
+    private Pair<List<Pair<DirectedGraph, PartialJavaCallGraph>>, Map<String, Map<String,
             LongSet>>> getDirectedGraphsAndTypeDict(
-            final List<ExtendedRevisionJavaCallGraph> dependencySet) {
+            final List<PartialJavaCallGraph> dependencySet) {
 
-        List<Pair<DirectedGraph, ExtendedRevisionJavaCallGraph>> depSet = new ArrayList<>();
+        List<Pair<DirectedGraph, PartialJavaCallGraph>> depSet = new ArrayList<>();
         long offset = 0L;
         for (final var dep : dependencySet) {
             final var directedDep = ercgToDirectedGraph(dep, offset);
@@ -150,10 +150,10 @@ public class CGMerger {
         return ImmutablePair.of(depSet, typeDict);
     }
 
-    private DirectedGraph ercgToDirectedGraph(final ExtendedRevisionJavaCallGraph ercg, long offset) {
+    private DirectedGraph ercgToDirectedGraph(final PartialJavaCallGraph ercg, long offset) {
         final var result = new MergedDirectedGraph();
         final var uris = ercg.mapOfFullURIStrings();
-        final var directedMerge = ExtendedRevisionJavaCallGraph.toLocalDirectedGraph(ercg);
+        final var directedMerge = PartialJavaCallGraph.toLocalDirectedGraph(ercg);
 
         for (Long node : directedMerge.nodes()) {
             var uri = uris.get(node.intValue());
@@ -244,7 +244,7 @@ public class CGMerger {
         return mergeWithCHA(getPackageVersionId(artifact));
     }
 
-    public DirectedGraph mergeWithCHA(final ExtendedRevisionJavaCallGraph cg) {
+    public DirectedGraph mergeWithCHA(final PartialJavaCallGraph cg) {
         for (final var directedERCGPair : this.ercgDependencySet) {
             if (cg.productVersion.equals(directedERCGPair.getRight().productVersion)) {
                 return mergeWithCHA(directedERCGPair.getKey(), getERCGArcs(directedERCGPair.getRight()));
@@ -323,7 +323,7 @@ public class CGMerger {
     }
 
 
-    private GraphMetadata getERCGArcs(final ExtendedRevisionJavaCallGraph ercg) {
+    private GraphMetadata getERCGArcs(final PartialJavaCallGraph ercg) {
         final var map = new Long2ObjectOpenHashMap<GraphMetadata.NodeMetadata>();
         final var allMethods = ercg.mapOfAllMethods();
         final var allUris = ercg.mapOfFullURIStrings();
@@ -640,7 +640,7 @@ public class CGMerger {
      * @return universal CHA
      */
     private Pair<Map<String, List<String>>, Map<String, List<String>>> createUniversalCHA(
-            final List<ExtendedRevisionJavaCallGraph> dependencies) {
+            final List<PartialJavaCallGraph> dependencies) {
         final var allPackages = new ArrayList<>(dependencies);
 
         final var result = new DefaultDirectedGraph<String, DefaultEdge>(DefaultEdge.class);

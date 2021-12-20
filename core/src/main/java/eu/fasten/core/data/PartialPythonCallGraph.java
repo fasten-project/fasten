@@ -20,22 +20,20 @@ package eu.fasten.core.data;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.List;
-import java.util.ArrayList;
 import java.util.EnumMap;
 
 import org.json.JSONObject;
 import org.json.JSONException;
 
 //Map<PythonScope, Map<String, PythonType>>
-public class ExtendedRevisionPythonCallGraph extends ExtendedRevisionCallGraph {
+public class PartialPythonCallGraph extends PartialCallGraph {
 
     public static final String classHierarchyJSONKey = "modules";
 
     protected EnumMap<PythonScope, Map<String, PythonType>> classHierarchy;
 
     /**
-     * Creates {@link ExtendedRevisionPythonCallGraph} with the given data.
+     * Creates {@link PartialPythonCallGraph} with the given data.
      *
      * @param forge          the forge.
      * @param product        the product.
@@ -47,21 +45,21 @@ public class ExtendedRevisionPythonCallGraph extends ExtendedRevisionCallGraph {
      *                       <code> Map<{@link FastenURI}, {@link CallType}> </code>
      * @param graph          the call graph (no control is done on the graph) {@link Graph}
      */
-    public ExtendedRevisionPythonCallGraph(final String forge, final String product, final String version,
-                                     final long timestamp, final String cgGenerator,
-                                     final EnumMap<PythonScope, Map<String, PythonType>>classHierarchy,
-                                     final Graph graph) {
+    public PartialPythonCallGraph(final String forge, final String product, final String version,
+                                  final long timestamp, final String cgGenerator,
+                                  final EnumMap<PythonScope, Map<String, PythonType>>classHierarchy,
+                                  final Graph graph) {
         super(forge, product, version, timestamp, cgGenerator, graph);
         this.classHierarchy = classHierarchy;
     }
 
     /**
-     * Creates {@link ExtendedRevisionCallGraph} for the given JSONObject.
+     * Creates {@link PartialCallGraph} for the given JSONObject.
      *
      * @param json JSONObject of a revision call graph.
      */
-    public ExtendedRevisionPythonCallGraph(final JSONObject json) throws JSONException {
-        super(json, ExtendedRevisionPythonCallGraph.class);
+    public PartialPythonCallGraph(final JSONObject json) throws JSONException {
+        super(json, PartialPythonCallGraph.class);
         this.classHierarchy = getCHAFromJSON(json.getJSONObject(classHierarchyJSONKey));
     }
 

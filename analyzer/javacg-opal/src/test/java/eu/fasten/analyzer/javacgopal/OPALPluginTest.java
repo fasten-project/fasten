@@ -22,9 +22,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import eu.fasten.core.data.PartialJavaCallGraph;
 import eu.fasten.core.data.opal.exceptions.EmptyCallGraphException;
 import eu.fasten.core.data.opal.exceptions.MissingArtifactException;
-import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.jupiter.api.BeforeEach;
@@ -70,7 +70,7 @@ class OPALPluginTest {
         plugin.consume(coordinateJSON.toString());
 
         assertTrue(plugin.produce().isPresent());
-        assertFalse(new ExtendedRevisionJavaCallGraph(new JSONObject(plugin.produce().get()))
+        assertFalse(new PartialJavaCallGraph(new JSONObject(plugin.produce().get()))
                 .isCallGraphEmpty());
     }
 
@@ -87,7 +87,7 @@ class OPALPluginTest {
         plugin.consume(coordinateJSON.toString());
 
         assertTrue(plugin.produce().isPresent());
-        assertFalse(new ExtendedRevisionJavaCallGraph(new JSONObject(plugin.produce().get()))
+        assertFalse(new PartialJavaCallGraph(new JSONObject(plugin.produce().get()))
                 .isCallGraphEmpty());
     }
 
@@ -105,7 +105,7 @@ class OPALPluginTest {
         plugin.consume(coordinateJSON.toString());
 
         assertTrue(plugin.produce().isPresent());
-        assertFalse(new ExtendedRevisionJavaCallGraph(new JSONObject(plugin.produce().get()))
+        assertFalse(new PartialJavaCallGraph(new JSONObject(plugin.produce().get()))
                 .isCallGraphEmpty());
     }
 
@@ -151,7 +151,7 @@ class OPALPluginTest {
         plugin.consume(coordinateJSON1.toString());
 
         assertTrue(plugin.produce().isPresent());
-        assertFalse(new ExtendedRevisionJavaCallGraph(new JSONObject(plugin.produce().get()))
+        assertFalse(new PartialJavaCallGraph(new JSONObject(plugin.produce().get()))
                 .isCallGraphEmpty());
     }
 

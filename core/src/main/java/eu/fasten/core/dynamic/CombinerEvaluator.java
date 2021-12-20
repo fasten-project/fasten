@@ -18,7 +18,7 @@
 
 package eu.fasten.core.dynamic;
 
-import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
+import eu.fasten.core.data.PartialJavaCallGraph;
 import eu.fasten.core.data.MergedDirectedGraph;
 import eu.fasten.core.dynamic.data.DynamicJavaCG;
 import eu.fasten.core.data.HybridDirectedGraph;
@@ -77,10 +77,10 @@ public class CombinerEvaluator implements Runnable {
     @Override
     public void run() {
         logger.info("Reading static CGs");
-        var staticCGs = new ArrayList<ExtendedRevisionJavaCallGraph>(this.staticCgsPaths.size());
+        var staticCGs = new ArrayList<PartialJavaCallGraph>(this.staticCgsPaths.size());
         for (var path : this.staticCgsPaths) {
             try {
-                staticCGs.add(new ExtendedRevisionJavaCallGraph(new JSONObject(new JSONTokener(new FileReader(path)))));
+                staticCGs.add(new PartialJavaCallGraph(new JSONObject(new JSONTokener(new FileReader(path)))));
             } catch (FileNotFoundException e) {
                 logger.error("Could not read static CG file: {}", path, e);
                 return;

@@ -23,9 +23,9 @@ import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public abstract class ExtendedRevisionCallGraph {
+public abstract class PartialCallGraph {
 
-    private static final Logger logger = LoggerFactory.getLogger(ExtendedRevisionCallGraph.class);
+    private static final Logger logger = LoggerFactory.getLogger(PartialCallGraph.class);
 
 
     /**
@@ -75,7 +75,7 @@ public abstract class ExtendedRevisionCallGraph {
     protected String cgGenerator;
 
     /**
-     * Creates {@link ExtendedRevisionCallGraph} with the given data.
+     * Creates {@link PartialCallGraph} with the given data.
      *
      * @param forge          the forge.
      * @param product        the product.
@@ -85,9 +85,9 @@ public abstract class ExtendedRevisionCallGraph {
      * @param cgGenerator    The name of call graph generator that generated this call graph.
      * @param graph          the call graph (no control is done on the graph) {@link Graph}
      */
-    protected ExtendedRevisionCallGraph(final String forge, final String product, final String version,
-                                     final long timestamp, final String cgGenerator,
-                                     final Graph graph) {
+    protected PartialCallGraph(final String forge, final String product, final String version,
+                               final long timestamp, final String cgGenerator,
+                               final Graph graph) {
         this.forge = forge;
         this.product = product;
         this.version = version;
@@ -100,11 +100,11 @@ public abstract class ExtendedRevisionCallGraph {
     }
 
     /**
-     * Creates {@link ExtendedRevisionCallGraph} for the given JSONObject.
+     * Creates {@link PartialCallGraph} for the given JSONObject.
      *
      * @param json JSONObject of a revision call graph.
      */
-    protected ExtendedRevisionCallGraph(final JSONObject json, Class rcgClass) throws JSONException {
+    protected PartialCallGraph(final JSONObject json, Class rcgClass) throws JSONException {
         this.forge = json.getString("forge");
         this.product = json.getString("product");
         this.version = json.getString("version");
@@ -113,7 +113,7 @@ public abstract class ExtendedRevisionCallGraph {
         this.uri = FastenURI.create("fasten://" + forge + "!" + product + "$" + version);
         this.forgelessUri = FastenURI.create("fasten://" + product + "$" + version);
         this.cgGenerator = json.getString("generator");
-        if (!rcgClass.getName().equals(ExtendedRevisionJavaCallGraph.class.getName())) {
+        if (!rcgClass.getName().equals(PartialJavaCallGraph.class.getName())) {
             this.graph = new Graph(json.getJSONObject("graph"));
         }
     }
@@ -139,9 +139,9 @@ public abstract class ExtendedRevisionCallGraph {
     }
 
     /**
-     * Checks whether this {@link ExtendedRevisionCallGraph} is empty, e.g. has no calls.
+     * Checks whether this {@link PartialCallGraph} is empty, e.g. has no calls.
      *
-     * @return true if this {@link ExtendedRevisionCallGraph} is empty
+     * @return true if this {@link PartialCallGraph} is empty
      */
     public boolean isCallGraphEmpty() {
         if (this.graph instanceof JavaGraph) {
@@ -154,7 +154,7 @@ public abstract class ExtendedRevisionCallGraph {
     }
 
     /**
-     * Produces the JSON representation of this {@link ExtendedRevisionCallGraph}.
+     * Produces the JSON representation of this {@link PartialCallGraph}.
      *
      * @return the JSON representation.
      */

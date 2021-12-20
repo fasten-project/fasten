@@ -33,9 +33,9 @@ import org.json.JSONTokener;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-class ExtendedRevisionPythonCallGraphTest {
+class PartialPythonCallGraphTest {
 
-    private static ExtendedRevisionPythonCallGraph graph;
+    private static PartialPythonCallGraph graph;
 
     @BeforeAll
     static void setUp() throws IOException, URISyntaxException {
@@ -44,7 +44,7 @@ class ExtendedRevisionPythonCallGraphTest {
 
         JSONTokener tokener = new JSONTokener(new FileReader(file));
 
-        graph = new ExtendedRevisionPythonCallGraph(new JSONObject(tokener));
+        graph = new PartialPythonCallGraph(new JSONObject(tokener));
     }
 
     @Test
@@ -99,7 +99,7 @@ class ExtendedRevisionPythonCallGraphTest {
 
         JSONTokener tokener = new JSONTokener(new FileReader(file));
 
-        var cg = new ExtendedRevisionPythonCallGraph(new JSONObject(tokener));
+        var cg = new PartialPythonCallGraph(new JSONObject(tokener));
 
         assertFalse(cg.isCallGraphEmpty());
     }
@@ -111,7 +111,7 @@ class ExtendedRevisionPythonCallGraphTest {
 
         JSONTokener tokener = new JSONTokener(new FileReader(file));
 
-        var cg = new ExtendedRevisionPythonCallGraph(new JSONObject(tokener));
+        var cg = new PartialPythonCallGraph(new JSONObject(tokener));
 
         assertFalse(cg.isCallGraphEmpty());
     }
@@ -123,7 +123,7 @@ class ExtendedRevisionPythonCallGraphTest {
 
         JSONTokener tokener = new JSONTokener(new FileReader(file));
 
-        var cg = new ExtendedRevisionPythonCallGraph(new JSONObject(tokener));
+        var cg = new PartialPythonCallGraph(new JSONObject(tokener));
 
         assertTrue(cg.isCallGraphEmpty());
     }

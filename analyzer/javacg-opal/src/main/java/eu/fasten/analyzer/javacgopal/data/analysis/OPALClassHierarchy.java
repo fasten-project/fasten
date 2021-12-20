@@ -234,10 +234,10 @@ public class OPALClassHierarchy {
     }
 
     /**
-     * Append a sub-graph to already existing ExtendedRevisionJavaCallGraph.
+     * Append a sub-graph to already existing PartialJavaCallGraph.
      *  @param source      source method
      * @param targets     list of targets
-     * @param resultGraph already existing ExtendedRevisionJavaCallGraph
+     * @param resultGraph already existing PartialJavaCallGraph
      * @param callSiteOnly
      */
     public void appendGraph(final Object source,
@@ -250,12 +250,12 @@ public class OPALClassHierarchy {
     }
 
     /**
-     * Given a source method and a list of targets return a sub-graph of ExtendedRevisionJavaCallGraph.
+     * Given a source method and a list of targets return a sub-graph of PartialJavaCallGraph.
      *
      * @param source  source method
      * @param targets list of targets
      * @param callSiteOnly
-     * @return ExtendedRevisionJavaCallGraph sub-graph
+     * @return PartialJavaCallGraph sub-graph
      */
     public JavaGraph getSubGraph(final Object source,
                              final Iterator<Tuple2<Object, Iterator<DeclaredMethod>>> targets,

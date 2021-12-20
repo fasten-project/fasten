@@ -18,7 +18,7 @@
 
 package eu.fasten.core.merge;
 
-import it.unimi.dsi.fastutil.longs.LongLongPair;
+import eu.fasten.core.data.PartialJavaCallGraph;
 import java.io.File;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
@@ -34,14 +34,11 @@ import java.util.stream.Collectors;
 import org.json.JSONObject;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
-
-import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
 
 public class MergerEfficiencyTests {
 
-    private static List<ExtendedRevisionJavaCallGraph> depSet;
+    private static List<PartialJavaCallGraph> depSet;
 
     @BeforeAll
     static void setUp() throws IOException, URISyntaxException {
@@ -50,9 +47,9 @@ public class MergerEfficiencyTests {
         depSet = Files.list(inputPath).
                 filter(path -> path.toString().endsWith(".json")).
                 map(path -> {
-                        ExtendedRevisionJavaCallGraph rcg = null;
+                        PartialJavaCallGraph rcg = null;
                     try {
-                        rcg = new ExtendedRevisionJavaCallGraph(new JSONObject(Files.readString(path)));
+                        rcg = new PartialJavaCallGraph(new JSONObject(Files.readString(path)));
                         System.out.println("Read " + path);
                     } catch (IOException e) {
                         e.printStackTrace();

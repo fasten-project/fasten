@@ -38,7 +38,7 @@ import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
  *
  * @implNote each method in the revision has a unique id in this CHA.
  */
-public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph {
+public class PartialJavaCallGraph extends PartialCallGraph {
 
     public static final String classHierarchyJSONKey = "cha";
 
@@ -46,7 +46,7 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph {
 
 
     /**
-     * Creates {@link ExtendedRevisionJavaCallGraph} with the given data.
+     * Creates {@link PartialJavaCallGraph} with the given data.
      *
      * @param forge          the forge.
      * @param product        the product.
@@ -58,22 +58,22 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph {
      *                       <code> Map<{@link FastenURI}, {@link JavaType}> </code>
      * @param graph          the call graph (no control is done on the graph) {@link Graph}
      */
-    public ExtendedRevisionJavaCallGraph(final String forge, final String product, final String version,
-                                         final long timestamp, final String cgGenerator,
-                                         final EnumMap<JavaScope,Map<String, JavaType>> classHierarchy,
-                                         final Graph graph) {
+    public PartialJavaCallGraph(final String forge, final String product, final String version,
+                                final long timestamp, final String cgGenerator,
+                                final EnumMap<JavaScope,Map<String, JavaType>> classHierarchy,
+                                final Graph graph) {
         super(forge, product, version, timestamp, cgGenerator, graph);
         this.classHierarchy = classHierarchy;
     }
 
 
     /**
-     * Creates {@link ExtendedRevisionCallGraph} for the given JSONObject.
+     * Creates {@link PartialCallGraph} for the given JSONObject.
      *
      * @param json JSONObject of a revision call graph.
      */
-    public ExtendedRevisionJavaCallGraph(final JSONObject json) throws JSONException {
-        super(json, ExtendedRevisionJavaCallGraph.class);
+    public PartialJavaCallGraph(final JSONObject json) throws JSONException {
+        super(json, PartialJavaCallGraph.class);
         this.graph = new JavaGraph(json.getJSONArray("call-sites"));
         this.classHierarchy = getCHAFromJSON(json.getJSONObject(classHierarchyJSONKey));
     }
@@ -279,7 +279,7 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph {
             return false;
         }
 
-        ExtendedRevisionJavaCallGraph that = (ExtendedRevisionJavaCallGraph) o;
+        PartialJavaCallGraph that = (PartialJavaCallGraph) o;
 
         if (timestamp != that.timestamp) {
             return false;
@@ -326,13 +326,13 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph {
     }
 
     /**
-     * Converts an {@link ExtendedRevisionJavaCallGraph} into a {@link DirectedGraph} using as global
+     * Converts an {@link PartialJavaCallGraph} into a {@link DirectedGraph} using as global
      * identifiers the local identifiers.
      *
-     * @param erjcg an {@link ExtendedRevisionJavaCallGraph}.
+     * @param erjcg an {@link PartialJavaCallGraph}.
      * @return a directed graph based on the local identifiers of {@code erjcg}.
      */
-    public static DirectedGraph toLocalDirectedGraph(final ExtendedRevisionJavaCallGraph erjcg) {
+    public static DirectedGraph toLocalDirectedGraph(final PartialJavaCallGraph erjcg) {
         MergedDirectedGraph dg = new MergedDirectedGraph();
         erjcg.getClassHierarchy().get(JavaScope.internalTypes).forEach((key, value) -> value.getMethods().keySet().forEach(dg::addInternalNode));
         erjcg.getClassHierarchy().get(JavaScope.resolvedTypes).forEach((key, value) -> value.getMethods().keySet().forEach(dg::addInternalNode));

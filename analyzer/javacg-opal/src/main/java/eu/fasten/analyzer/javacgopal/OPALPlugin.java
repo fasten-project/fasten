@@ -21,6 +21,7 @@ package eu.fasten.analyzer.javacgopal;
 import static eu.fasten.analyzer.javacgopal.data.CGAlgorithm.CHA;
 import static eu.fasten.analyzer.javacgopal.data.CallPreservationStrategy.ONLY_STATIC_CALLSITES;
 
+import eu.fasten.core.data.PartialJavaCallGraph;
 import java.io.File;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -36,7 +37,6 @@ import org.slf4j.LoggerFactory;
 
 import eu.fasten.analyzer.javacgopal.data.OPALPartialCallGraphConstructor;
 import eu.fasten.core.data.Constants;
-import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
 import eu.fasten.core.data.JSONUtils;
 import eu.fasten.core.data.opal.MavenCoordinate;
 import eu.fasten.core.data.opal.exceptions.EmptyCallGraphException;
@@ -57,7 +57,7 @@ public class OPALPlugin extends Plugin {
 
         private List<String> consumeTopics = new LinkedList<>(Collections.singletonList("fasten.POMAnalyzer.out"));
         private Exception pluginError;
-        private ExtendedRevisionJavaCallGraph graph;
+        private PartialJavaCallGraph graph;
         private String outputPath;
 
         @Override

@@ -59,18 +59,19 @@ public class MetadataDatabasePythonPlugin extends Plugin {
             return MetadataDBPythonExtension.dslContext;
         }
 
-        protected Map<String, Long> getNamespaceMap(ExtendedRevisionCallGraph graph, MetadataDao metadataDao) {
-            ExtendedRevisionPythonCallGraph pyGraph = (ExtendedRevisionPythonCallGraph) graph;
+        protected Map<String, Long> getNamespaceMap(PartialCallGraph graph, MetadataDao metadataDao) {
+            PartialPythonCallGraph pyGraph = (PartialPythonCallGraph) graph;
             var namespaces = new HashSet<String>();
             namespaces.addAll(pyGraph.getClassHierarchy().get(PythonScope.internal).keySet());
             namespaces.addAll(pyGraph.getClassHierarchy().get(PythonScope.external).keySet());
             return metadataDao.insertNamespaces(namespaces);
         }
 
-        public Pair<ArrayList<CallablesRecord>, Integer> insertDataExtractCallables(ExtendedRevisionCallGraph callgraph,
-                                                                                    MetadataDao metadataDao, long packageVersionId,
-                                                                                    Map<String, Long> namespaceMap) {
-            ExtendedRevisionPythonCallGraph pythonCallGraph = (ExtendedRevisionPythonCallGraph) callgraph;
+        public Pair<ArrayList<CallablesRecord>, Integer> insertDataExtractCallables(
+            PartialCallGraph callgraph,
+            MetadataDao metadataDao, long packageVersionId,
+            Map<String, Long> namespaceMap) {
+            PartialPythonCallGraph pythonCallGraph = (PartialPythonCallGraph) callgraph;
 
             var callables = new ArrayList<CallablesRecord>();
             var cha = pythonCallGraph.getClassHierarchy();

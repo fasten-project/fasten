@@ -21,8 +21,8 @@ package eu.fasten.analyzer.metadataplugin;
 import eu.fasten.core.data.CNode;
 import eu.fasten.core.data.CScope;
 import eu.fasten.core.data.Constants;
-import eu.fasten.core.data.ExtendedRevisionCCallGraph;
-import eu.fasten.core.data.ExtendedRevisionCallGraph;
+import eu.fasten.core.data.PartialCCallGraph;
+import eu.fasten.core.data.PartialCallGraph;
 import eu.fasten.core.data.Graph;
 import eu.fasten.core.data.callableindex.GidGraph;
 import eu.fasten.core.data.metadatadb.MetadataDao;
@@ -71,8 +71,8 @@ public class MetadataDatabaseCPlugin extends Plugin {
         private static final String globalNamespace = "C";
         private static final String moduleNamespaceAddition = "_module";
 
-        protected Map<String, Long> getNamespaceMap(ExtendedRevisionCallGraph graph, MetadataDao metadataDao) {
-            ExtendedRevisionCCallGraph cGraph = (ExtendedRevisionCCallGraph) graph;
+        protected Map<String, Long> getNamespaceMap(PartialCallGraph graph, MetadataDao metadataDao) {
+            PartialCCallGraph cGraph = (PartialCCallGraph) graph;
             var namespaces = new HashSet<String>();
             namespaces.add(globalNamespace);
             cGraph.getClassHierarchy().get(CScope.externalProduct).values().forEach(v -> v.values().forEach(m -> namespaces.add(m.getFile() + moduleNamespaceAddition)));
@@ -92,8 +92,8 @@ public class MetadataDatabaseCPlugin extends Plugin {
          * @param metadataDao Data Access Object to insert records in the database
          * @return Package ID saved in the database
          */
-        protected long saveToDatabase(ExtendedRevisionCallGraph callGraph, MetadataDao metadataDao) {
-            ExtendedRevisionCCallGraph CCallGraph = (ExtendedRevisionCCallGraph) callGraph;
+        protected long saveToDatabase(PartialCallGraph callGraph, MetadataDao metadataDao) {
+            PartialCCallGraph CCallGraph = (PartialCCallGraph) callGraph;
             // Insert package record
             final long packageId = metadataDao.insertPackage(CCallGraph.product, CCallGraph.forge);
 
@@ -210,9 +210,10 @@ public class MetadataDatabaseCPlugin extends Plugin {
             return callables;
         }
 
-        public Pair<ArrayList<CallablesRecord>, Integer> insertDataExtractCallables(ExtendedRevisionCallGraph callgraph, MetadataDao metadataDao,
-                                                                                    long packageVersionId, Map<String, Long> namespaceMap) {
-            ExtendedRevisionCCallGraph CCallGraph = (ExtendedRevisionCCallGraph) callgraph;
+        public Pair<ArrayList<CallablesRecord>, Integer> insertDataExtractCallables(
+            PartialCallGraph callgraph, MetadataDao metadataDao,
+            long packageVersionId, Map<String, Long> namespaceMap) {
+            PartialCCallGraph CCallGraph = (PartialCCallGraph) callgraph;
             var callables = new ArrayList<CallablesRecord>();
             var cha = CCallGraph.getClassHierarchy();
 
