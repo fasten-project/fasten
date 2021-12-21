@@ -40,6 +40,9 @@ public class LazyIngestionProvider {
     public static void ingestArtifactIfNecessary(String packageName, String version, String artifactRepo, Long date) throws IllegalArgumentException, IOException {
         var groupId = packageName.split(Constants.mvnCoordinateSeparator)[0];
         var artifactId = packageName.split(Constants.mvnCoordinateSeparator)[1];
+        if(artifactRepo == null || artifactRepo.isEmpty()) {
+        	artifactRepo = MavenUtilities.MAVEN_CENTRAL_REPO;
+        }
         if (!MavenUtilities.mavenArtifactExists(groupId, artifactId, version, artifactRepo)) {
             throw new IllegalArgumentException("Maven artifact '" + packageName + ":" + version
                     + "' could not be found in the repository of '"
@@ -51,13 +54,13 @@ public class LazyIngestionProvider {
             jsonRecord.put("groupId", groupId);
             jsonRecord.put("artifactId", artifactId);
             jsonRecord.put("version", version);
-            if (artifactRepo != null && !artifactRepo.isEmpty()) {
-                jsonRecord.put("artifactRepository", artifactRepo);
-            }
+            jsonRecord.put("artifactRepository", artifactRepo);
             if (date != null && date > 0) {
+            	// TODO why is the date necessary?
                 jsonRecord.put("date", date);
             }
-            KnowledgeBaseConnector.kbDao.insertIngestedArtifact(packageName, version, new Timestamp(System.currentTimeMillis()));
+            Timestamp curTime = new Timestamp(System.currentTimeMillis());
+			KnowledgeBaseConnector.kbDao.insertIngestedArtifact(packageName, version, curTime);
             if (KnowledgeBaseConnector.kafkaProducer != null && KnowledgeBaseConnector.ingestTopic != null) {
                 KafkaWriter.sendToKafka(KnowledgeBaseConnector.kafkaProducer, KnowledgeBaseConnector.ingestTopic, jsonRecord.toString());
             }
