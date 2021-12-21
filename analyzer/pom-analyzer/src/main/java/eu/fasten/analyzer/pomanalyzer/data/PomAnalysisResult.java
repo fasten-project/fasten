@@ -15,6 +15,7 @@
  */
 package eu.fasten.analyzer.pomanalyzer.data;
 
+import eu.fasten.core.data.Constants;
 import eu.fasten.core.maven.data.DependencyData;
 
 public class PomAnalysisResult {
@@ -29,11 +30,12 @@ public class PomAnalysisResult {
 	public String parentCoordinate = null;
 
 	public DependencyData dependencyData = null;
+	public String forge = Constants.mvnForge;
 
 	public String repoUrl = null;
 	public String commitTag = null;
 	public String sourcesUrl = null;
 	public String artifactRepository = null;
-	
+
 	// TODO hashCode & equals
 }
