@@ -19,23 +19,31 @@ import java.io.File;
 
 public class ResolutionResult {
 
-	public final String coordinate;
-	public final String source;
-	public final File file;
+	// TODO differentiate between package type and pom
+	public String coordinate;
+	public String artifactRepository;
+	public File filePkg;
+	public File filePom;
 
 	public ResolutionResult(String coordinate, String source, File file) {
 		this.coordinate = coordinate;
-		this.source = source;
-		this.file = file;
+		this.artifactRepository = source;
+		this.filePkg = file;
+		this.filePom = pomify(file);
+	}
+
+	private static File pomify(File pkg) {
+		// TODO implement me
+		return pkg;
 	}
 
 	// TODO How to make this work under Windows?
 	public String getPomUrl() {
-		String f = file.toString();
+		String f = filePkg.toString();
 		String marker = "/.m2/repository/";
 		int idx = f.indexOf(marker);
 		int idxOfExt = f.lastIndexOf('.');
-		return source + f.substring(idx + marker.length() - 1, idxOfExt) + ".pom";
+		return artifactRepository + f.substring(idx + marker.length() - 1, idxOfExt) + ".pom";
 	}
 
 	@Override
@@ -43,8 +51,8 @@ public class ResolutionResult {
 		final int prime = 31;
 		int result = 1;
 		result = prime * result + ((coordinate == null) ? 0 : coordinate.hashCode());
-		result = prime * result + ((file == null) ? 0 : file.hashCode());
-		result = prime * result + ((source == null) ? 0 : source.hashCode());
+		result = prime * result + ((filePkg == null) ? 0 : filePkg.hashCode());
+		result = prime * result + ((artifactRepository == null) ? 0 : artifactRepository.hashCode());
 		return result;
 	}
 
@@ -62,15 +70,15 @@ public class ResolutionResult {
 				return false;
 		} else if (!coordinate.equals(other.coordinate))
 			return false;
-		if (file == null) {
-			if (other.file != null)
+		if (filePkg == null) {
+			if (other.filePkg != null)
 				return false;
-		} else if (!file.equals(other.file))
+		} else if (!filePkg.equals(other.filePkg))
 			return false;
-		if (source == null) {
-			if (other.source != null)
+		if (artifactRepository == null) {
+			if (other.artifactRepository != null)
 				return false;
-		} else if (!source.equals(other.source))
+		} else if (!artifactRepository.equals(other.artifactRepository))
 			return false;
 		return true;
 	}

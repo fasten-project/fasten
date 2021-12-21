@@ -154,14 +154,6 @@ public class MetadataDao {
 
     /**
      * Inserts a record in 'package_versions' table in the database.
-     *
-     * @param packageId    ID of the package (references 'packages.id')
-     * @param cgGenerator  Tool used to generate this callgraph
-     * @param version      Version of the package
-     * @param architecture Architecture of the package
-     * @param createdAt    Timestamp when the package version was created
-     * @param metadata     Metadata of the package version
-     * @return ID of the new record
      */
     public long insertPackageVersion(long packageId, String cgGenerator, String version, Long artifactRepositoryId,
                                      String architecture, Timestamp createdAt, JSONObject metadata) {
