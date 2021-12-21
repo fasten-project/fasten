@@ -18,11 +18,14 @@ package eu.fasten.core.vulchains;
 
 import eu.fasten.core.data.FastenURI;
 import eu.fasten.core.data.vulnerability.Vulnerability;
-import java.util.LinkedList;
-import java.util.List;
+import org.json.JSONArray;
+import org.json.JSONObject;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+
+import java.util.LinkedList;
+import java.util.List;
 
 public class VulnerableCallChainTest {
 
@@ -62,13 +65,17 @@ public class VulnerableCallChainTest {
 
     @Test
     void testToString() {
-        Assertions.assertTrue(sut.toString().contains("chain=[]\n" +
-            "  vulnerabilities=[]\n" +
-            "]"));
-        Assertions.assertTrue(sut1.toString().contains("chain={fasten://mvn!g:a$1.0.0/x/C.m()" +
-            "%2Fjava.lang%2FVoidType}\n" +
-            "  vulnerabilities={{\"id\":\"1234\",\"purls\":[],\"first_patched_purls\":[],\"references\":[],\"patch_links\":[],\"exploits\":[],\"patches\":[]}}\n" +
-            "]"));
+        var sutJson = new JSONObject(sut.toString());
+        Assertions.assertTrue(sutJson.has("chain"));
+        Assertions.assertEquals(0, sutJson.getJSONArray("chain").length());
+        Assertions.assertTrue(sutJson.has("vulnerabilities"));
+        Assertions.assertEquals(0, sutJson.getJSONArray("vulnerabilities").length());
 
+        var sut1Json = new JSONObject(sut1.toString());
+        Assertions.assertTrue(sut1Json.has("chain"));
+        var chain = new JSONArray();
+        chain.put("fasten://mvn!g:a$1.0.0/x/C.m()%2Fjava.lang%2FVoidType");
+        Assertions.assertEquals(chain.toString(), sut1Json.getJSONArray("chain").toString());
+        Assertions.assertTrue(sut1Json.has("vulnerabilities"));
     }
 }

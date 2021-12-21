@@ -20,17 +20,6 @@ import com.google.common.collect.Sets;
 import com.google.common.reflect.TypeToken;
 import eu.fasten.core.data.FastenURI;
 import eu.fasten.core.data.vulnerability.Vulnerability;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.lang.reflect.Type;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.Collections;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -38,6 +27,18 @@ import org.junit.jupiter.api.io.TempDir;
 import org.skyscreamer.jsonassert.JSONAssert;
 import org.skyscreamer.jsonassert.JSONCompareMode;
 import org.testcontainers.shaded.org.apache.commons.io.FileUtils;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.lang.reflect.Type;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 
 
 class VulnerableCallChainRepositoryTest {
@@ -124,7 +125,7 @@ class VulnerableCallChainRepositoryTest {
             "   }\n";
 
         fullVulString = "[\n" + firstVulString +",\n" + secondVulString + "]";
-        packageFile = new File(tempDir.getAbsoluteFile() + "/g:a:1.0.0.json");
+        packageFile = Path.of(tempDir.getAbsoluteFile().toString(), "g-a-1.0.0.json").toFile();
         FileUtils.write(packageFile, fullVulString, StandardCharsets.UTF_8);
         Type setType = new TypeToken<HashSet<VulnerableCallChain>>(){}.getType();
         firstVulFromString = VulnerableCallChainJsonUtils
@@ -154,7 +155,7 @@ class VulnerableCallChainRepositoryTest {
         vulnerableCallChainRepository.store("g:a", "1.0.0", vulFromObject);
         String actual;
         try {
-            actual = Files.readString(Paths.get(tempDir.getAbsolutePath()+"/g:a:1.0.0.json"));
+            actual = Files.readString(Path.of(tempDir.getAbsoluteFile().toString(), "g-a-1.0.0.json"));
         } catch (IOException e) {
             throw new RuntimeException(e);
         }

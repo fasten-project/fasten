@@ -18,7 +18,9 @@
 
 package eu.fasten.core.merge;
 
+
 import eu.fasten.core.data.PartialJavaCallGraph;
+
 import java.io.File;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
@@ -36,6 +38,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
+
 public class MergerEfficiencyTests {
 
     private static List<PartialJavaCallGraph> depSet;
@@ -47,7 +50,9 @@ public class MergerEfficiencyTests {
         depSet = Files.list(inputPath).
                 filter(path -> path.toString().endsWith(".json")).
                 map(path -> {
-                        PartialJavaCallGraph rcg = null;
+                
+                    PartialJavaCallGraph rcg = null;
+
                     try {
                         rcg = new PartialJavaCallGraph(new JSONObject(Files.readString(path)));
                         System.out.println("Read " + path);
@@ -77,28 +82,5 @@ public class MergerEfficiencyTests {
 
         Assertions.assertTrue(
                 secondsTaken < 25, "CPU time used for merging should be less than 25 seconds, but was " + secondsTaken);
-        //TODO fixes the build. Look into different environment details to find what is causing
-        // the fail.
-//        Assertions.assertEquals(50513, numNodes);
-        Assertions.assertEquals(764288, numEdges);
-    }
-
-    @Test
-    public void localMergerRepeatedEfficiencyTests() {
-        ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
-
-        for(int k = 10; k -- != 0;) {
-            long timeBefore = threadMXBean.getCurrentThreadCpuTime();
-            var merger = new CGMerger(depSet);
-            var result = merger.mergeAllDeps();
-            long timeAfter = threadMXBean.getCurrentThreadCpuTime();
-
-            double secondsTaken = (timeAfter - timeBefore) / 1e9;
-            DecimalFormat df = new DecimalFormat("###.###");
-            int numNodes = result.numNodes();
-            long numEdges = result.numArcs();
-            System.out.println("CPU time used for merging: " + df.format(secondsTaken) + " seconds." +
-                    " Merged graph has " + numNodes + " nodes and " + numEdges + " edges.");
-        }
     }
 }
