@@ -25,6 +25,7 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.zip.ZipEntry;
@@ -33,6 +34,8 @@ import java.util.zip.ZipOutputStream;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.ArtifactProperties;
 import org.eclipse.aether.graph.DependencyNode;
+import org.eclipse.aether.repository.ArtifactRepository;
+import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.resolution.ArtifactResult;
 import org.jboss.shrinkwrap.resolver.api.maven.MavenArtifactInfo;
 import org.jboss.shrinkwrap.resolver.api.maven.MavenResolvedArtifact;
@@ -42,6 +45,8 @@ import org.jboss.shrinkwrap.resolver.impl.maven.util.IOUtil;
 import org.jboss.shrinkwrap.resolver.impl.maven.util.Validate;
 import org.jboss.shrinkwrap.resolver.spi.format.FormatProcessor;
 import org.jboss.shrinkwrap.resolver.spi.format.FormatProcessors;
+
+import eu.fasten.analyzer.pomanalyzer.data.ResolutionResult;
 
 /**
  * Immutable implementation of {@link MavenResolvedArtifact}.
@@ -67,6 +72,11 @@ public class MavenResolvedArtifactImpl extends MavenArtifactInfoImpl implements 
         this.file = artifactToFile(artifact);
     }
 
+    
+    // <new> (1/3)
+    public static Set<ResolutionResult> artifactRepositories = null;
+    // </new>
+    
     /**
      * Creates MavenResolvedArtifact based on ArtifactResult.
      *
@@ -77,6 +87,15 @@ public class MavenResolvedArtifactImpl extends MavenArtifactInfoImpl implements 
         final Artifact artifact = artifactResult.getArtifact();
         final DependencyNode root = artifactResult.getRequest().getDependencyNode();
 
+        // <new> (2/3)
+        if(artifactRepositories != null) {
+        	String coordinate = artifact.toString();
+        	String url = getUrl(artifactResult.getRepository());
+        	File file = artifact.getFile();
+			artifactRepositories.add(new ResolutionResult(coordinate, url, file));
+        }
+        // </new>
+        
         // SHRINKRES-143 lets ignore invalid scope
         ScopeType scopeType = ScopeType.RUNTIME;
         try {
@@ -92,6 +111,16 @@ public class MavenResolvedArtifactImpl extends MavenArtifactInfoImpl implements 
         return new MavenResolvedArtifactImpl(artifact, scopeType, children, optional);
     }
 
+    // <new> (3/3)
+    private static String getUrl(ArtifactRepository repository) {
+		if(repository instanceof RemoteRepository) {
+			return ((RemoteRepository)repository).getUrl();
+		} else {
+			return String.format("n/a (%s)", repository.getClass().getSimpleName());
+		}
+	}
+    // </new>
+    
     @Override
     public <RETURNTYPE> RETURNTYPE as(Class<RETURNTYPE> returnType) {
         if (returnType == null) {
