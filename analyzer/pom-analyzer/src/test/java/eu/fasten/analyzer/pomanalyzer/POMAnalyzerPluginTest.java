@@ -27,6 +27,7 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 
+import eu.fasten.analyzer.pomanalyzer.data.PomAnalysisResult;
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.metadatadb.MetadataDao;
 import eu.fasten.core.maven.data.DependencyData;
@@ -92,7 +93,7 @@ public class POMAnalyzerPluginTest {
 	public void saveToDatabaseTest() {
 		var metadataDao = Mockito.mock(MetadataDao.class);
 
-		var pad = new PomAnalyzerData();
+		var pad = new PomAnalysisResult();
 
 		pad.repoUrl = "http://github.com/junit-team/junit/tree/master";
 		pad.sourcesUrl = "https://repo.maven.apache.org/maven2/junit/junit/4.12/junit-4.12-sources.jar";
