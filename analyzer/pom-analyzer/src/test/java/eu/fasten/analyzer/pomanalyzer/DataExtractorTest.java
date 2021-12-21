@@ -16,8 +16,9 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.pomanalyzer.pom;
+package eu.fasten.analyzer.pomanalyzer;
 
+import eu.fasten.analyzer.pomanalyzer.DataExtractor;
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.maven.data.Dependency;
 import eu.fasten.core.maven.data.DependencyData;
