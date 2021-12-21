@@ -15,14 +15,13 @@
  */
 package eu.fasten.analyzer.pomanalyzer;
 
-import eu.fasten.analyzer.pomanalyzer.pom.DataExtractor;
-import eu.fasten.core.data.Constants;
-import eu.fasten.core.data.metadatadb.MetadataDao;
-import eu.fasten.core.maven.data.Dependency;
-import eu.fasten.core.maven.data.DependencyData;
-import eu.fasten.core.maven.utils.MavenUtilities;
-import eu.fasten.core.plugins.DBConnector;
-import eu.fasten.core.plugins.KafkaPlugin;
+import java.io.File;
+import java.sql.Timestamp;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.regex.Pattern;
+
 import org.jooq.DSLContext;
 import org.jooq.exception.DataAccessException;
 import org.jooq.impl.DSL;
@@ -35,14 +34,12 @@ import org.pf4j.PluginWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.sql.Timestamp;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.regex.Pattern;
+import eu.fasten.core.data.Constants;
+import eu.fasten.core.data.metadatadb.MetadataDao;
+import eu.fasten.core.data.opal.MavenCoordinate;
+import eu.fasten.core.maven.utils.MavenUtilities;
+import eu.fasten.core.plugins.AbstractKafkaPlugin;
+import eu.fasten.core.plugins.DBConnector;
 
 
 public class POMAnalyzerPlugin extends Plugin {
@@ -52,63 +49,122 @@ public class POMAnalyzerPlugin extends Plugin {
     }
 
     @Extension
-    public static class POMAnalyzer implements KafkaPlugin, DBConnector {
-
-        private List<String> consumeTopics = new LinkedList<>(Collections.singletonList("fasten.mvn.pkg"));
+    public static class POMAnalyzer extends AbstractKafkaPlugin implements DBConnector {
+        
         private final Logger logger = LoggerFactory.getLogger(POMAnalyzer.class.getName());
-        private Exception pluginError = null;
         private static DSLContext dslContext;
-        private String artifact = null;
-        private String group = null;
-        private String version = null;
-        private long date = -1L;
-        private String repoUrl = null;
-        private DependencyData dependencyData = null;
-        private String commitTag = null;
-        private String sourcesUrl = null;
-        private String packagingType = null;
-        private String projectName = null;
-        private String parentCoordinate = null;
         private boolean restartTransaction = false;
         private boolean processedRecord = false;
-        private String artifactRepository = null;
 
-        // This set contains transitive dependencies of a package version to be processed by the plugin
-        private LinkedList<String> workingSet = new LinkedList<>();
-
-        @Override
-        public Optional<List<String>> consumeTopic() {
-            return Optional.of(consumeTopics);
-        }
-
-        @Override
-        public void setTopics(List<String> consumeTopics) {
-            this.consumeTopics = consumeTopics;
-        }
+        private LinkedList<MavenCoordinate> workingSet = new LinkedList<>();
+        private List<PomAnalyzerData> results = new LinkedList<>();
+        
 
         @Override
         public void setDBConnection(Map<String, DSLContext> dslContexts) {
             POMAnalyzer.dslContext = dslContexts.get(Constants.mvnForge);
         }
+        
 
+
+//        private void handleWorkingSet(KafkaRecordKind kafkaRecordKind) {
+//            if (plugin.getWorkingSet().isPresent()) {
+//                while (!plugin.getWorkingSet().get().isEmpty()) {
+//                    // The plug-in might spend a lot of time in processing its working set,
+//                    // therefore, we need to keep the Kafka consumers alive
+//                    sendHeartBeat(connNorm);
+//                    if (!prioTopics.isEmpty()) {
+//                        sendHeartBeat(connPrio);
+//                    }
+//
+//                    var record = plugin.getWorkingSet().get().pop();
+//                    logger.info("Read working set message from " + kafkaRecordKind.toString() + " topic");
+//                    processRecord(new ConsumerRecord<>(plugin.name() + "_working_set", 0, 0,
+//                            "", record), System.currentTimeMillis() / 1000L, kafkaRecordKind);
+//                    logger.info("Successfully processed working set message from " + kafkaRecordKind.toString() + " topic");
+//                }
+//            }
+//        }
+        
+        
+        public void consumeNew(String record) {
+            var jsonRecord = new JSONObject(record);
+            var payload = new JSONObject();
+            if (jsonRecord.has("payload")) {
+                 payload = jsonRecord.getJSONObject("payload");
+             } else {
+                 payload = jsonRecord;
+             }
+             try {
+            	 var group = payload.getString("groupId").replaceAll("[\\n\\t ]", "");
+                 var artifact = payload.getString("artifactId").replaceAll("[\\n\\t ]", "");
+                 var version = payload.getString("version").replaceAll("[\\n\\t ]", "");
+                 MavenCoordinate coord = new MavenCoordinate(group, artifact, version, null);
+                 
+
+                 
+                 // TODO this is incomplete handling, as it 
+                 var artifactRepository = payload.optString("artifactRepository", MavenUtilities.MAVEN_CENTRAL_REPO);
+                 var repos = MavenUtilities.getRepos();
+                 if (!artifactRepository.equals(MavenUtilities.MAVEN_CENTRAL_REPO)) {
+                     repos.addFirst(artifactRepository);
+                 }
+
+                 
+                 List<MavenCoordinate> deps = resolveDependencySet(coord);
+                 
+                 work(coord);
+                 for(MavenCoordinate mc : deps) {
+                	 work(mc);
+                 }
+                 
+                 MavenUtilities.getRepos().remove(artifactRepository);
+                 
+             } catch (JSONException e) {
+                 logger.error("Malformed input: " + payload.toString(), e);
+                 this.pluginError = e;
+                 return;
+             }
+        	
+        	
+        }
+        
+        private List<MavenCoordinate> resolveDependencySet(MavenCoordinate coord) {
+        	// TODO use shrinkwrap
+        	return null;
+        }
+
+		private void work(MavenCoordinate coord) {
+        	// ...
+        }
+        
+        
         @Override
         public void consume(String record) {
+        	
+        	
+        	
+//        	 convert record to MavenCoord
+//        	 use shrinkwrap to resolve dependency set as List<MavenCoordinate>
+//        	 foreach (coord : depset + requested artuifact) {
+//        		 work (coord)
+//        	 }
+        	 
+        	 workingSet.add(new MavenCoordinate("g", "a", "v", "p"));
+        	    
+        	
+        	
+        	
+        	
+        	
             pluginError = null;
-            artifact = null;
-            group = null;
-            version = null;
-            date = -1L;
-            repoUrl = null;
-            dependencyData = null;
-            commitTag = null;
-            sourcesUrl = null;
-            packagingType = null;
-            projectName = null;
-            parentCoordinate = null;
-            artifactRepository = null;
+            
+            var data = new PomAnalyzerData();
+            results.add(data);
+            
             this.processedRecord = false;
             this.restartTransaction = false;
-            logger.info("Consumed: " + record);
+            logger.info("Consuming: " + record);
             var jsonRecord = new JSONObject(record);
             var payload = new JSONObject();
             if (jsonRecord.has("payload")) {
@@ -117,74 +173,76 @@ public class POMAnalyzerPlugin extends Plugin {
                 payload = jsonRecord;
             }
             try {
-                artifact = payload.getString("artifactId").replaceAll("[\\n\\t ]", "");
-                group = payload.getString("groupId").replaceAll("[\\n\\t ]", "");
-                version = payload.getString("version").replaceAll("[\\n\\t ]", "");
-                date = payload.optLong("date", -1L);
-                artifactRepository = payload.optString("artifactRepository", MavenUtilities.MAVEN_CENTRAL_REPO);
+                data.artifact = payload.getString("artifactId").replaceAll("[\\n\\t ]", "");
+                data.group = payload.getString("groupId").replaceAll("[\\n\\t ]", "");
+                data.version = payload.getString("version").replaceAll("[\\n\\t ]", "");
+               data.date = payload.optLong("date", -1L);
+                data.artifactRepository = payload.optString("artifactRepository", MavenUtilities.MAVEN_CENTRAL_REPO);
             } catch (JSONException e) {
                 logger.error("Malformed input: " + payload.toString(), e);
                 this.pluginError = e;
                 return;
             }
             var repos = MavenUtilities.getRepos();
-            if (!artifactRepository.equals(MavenUtilities.MAVEN_CENTRAL_REPO)) {
-                repos.addFirst(artifactRepository);
+            if (!data.artifactRepository.equals(MavenUtilities.MAVEN_CENTRAL_REPO)) {
+                repos.addFirst(data.artifactRepository);
             }
             var pomUrl = payload.optString("pomUrl", null);
-            final var product = group + Constants.mvnCoordinateSeparator + artifact
-                    + Constants.mvnCoordinateSeparator + version;
+            
+            
+            
+            
+            
+            
+            final var product = data.group + Constants.mvnCoordinateSeparator + data.artifact
+                    + Constants.mvnCoordinateSeparator + data.version;
             var dataExtractor = new DataExtractor(repos);
             try {
                 if (pomUrl != null) {
                     var mavenCoordinate = dataExtractor.getMavenCoordinate(pomUrl);
                     logger.info("Extracted Maven coordinate: " + mavenCoordinate);
                     if (mavenCoordinate != null && !mavenCoordinate.contains("${")) {
-                        group = mavenCoordinate.split(Constants.mvnCoordinateSeparator)[0];
-                        artifact = mavenCoordinate.split(Constants.mvnCoordinateSeparator)[1];
-                        version = mavenCoordinate.split(Constants.mvnCoordinateSeparator)[2];
+                        String[] parts = mavenCoordinate.split(Constants.mvnCoordinateSeparator);
+						data.group = parts[0];
+                        data.artifact = parts[1];
+                        data.version = parts[2];
                     }
                 }
-                if (date == -1) {
-                    var releaseDate = dataExtractor.extractReleaseDate(group, artifact, version, artifactRepository);
-                    if (releaseDate != null) {
-                        date = releaseDate;
-                    }
+                if (data.date == -1) {
+                    data.date = dataExtractor.extractReleaseDate(data.group, data.artifact, data.version, data.artifactRepository);
                 }
-                repoUrl = dataExtractor.extractRepoUrl(group, artifact, version);
-                logger.info("Extracted repository URL " + repoUrl + " from " + product);
-                dependencyData = dataExtractor.extractDependencyData(group, artifact, version);
+                data.repoUrl = dataExtractor.extractRepoUrl(data.group, data.artifact, data.version);
+                logger.info("Extracted repository URL " + data.repoUrl + " from " + product);
+                data.dependencyData = dataExtractor.extractDependencyData(data.group, data.artifact, data.version);
                 logger.info("Extracted dependency information from " + product);
-                commitTag = dataExtractor.extractCommitTag(group, artifact, version);
+                data.commitTag = dataExtractor.extractCommitTag(data.group, data.artifact, data.version);
                 logger.info("Extracted commit tag from " + product);
-                sourcesUrl = dataExtractor.generateMavenSourcesLink(group, artifact, version);
+                data.sourcesUrl = dataExtractor.generateMavenSourcesLink(data.group, data.artifact, data.version);
                 logger.info("Generated link to Maven sources for " + product);
-                packagingType = dataExtractor.extractPackagingType(group, artifact, version);
+                data.packagingType = dataExtractor.extractPackagingType(data.group, data.artifact, data.version);
                 logger.info("Extracted packaging type from " + product);
-                projectName = dataExtractor.extractProjectName(group, artifact, version);
+                data.projectName = dataExtractor.extractProjectName(data.group, data.artifact, data.version);
                 logger.info("Extracted project name from " + product);
-                parentCoordinate = dataExtractor.extractParentCoordinate(group, artifact, version);
+                data.parentCoordinate = dataExtractor.extractParentCoordinate(data.group, data.artifact, data.version);
                 logger.info("Extracted parent coordinate from " + product);
             } catch (RuntimeException e) {
                 logger.error("Error extracting data for " + product, e);
                 this.pluginError = e;
-                MavenUtilities.getRepos().remove(artifactRepository);
+                MavenUtilities.getRepos().remove(data.artifactRepository);
                 return;
             }
             int transactionRestartCount = 0;
             do {
                 try {
                     var metadataDao = new MetadataDao(dslContext);
-                    addDependenciesToWorkingSet(metadataDao);
+                    addDependenciesToWorkingSet(data, metadataDao);
 
                     dslContext.transaction(transaction -> {
                         metadataDao.setContext(DSL.using(transaction));
                         long id;
                         try {
                         	
-                        	id = saveToDatabase(group + Constants.mvnCoordinateSeparator + artifact,
-                                    version, repoUrl, commitTag, sourcesUrl, packagingType, date,
-                                    projectName, parentCoordinate, dependencyData, artifactRepository, metadataDao);
+                        	id = saveToDatabase(data, metadataDao);
                         } catch (RuntimeException e) {
                             logger.error("Error saving data to the database: '" + product + "'", e);
                             processedRecord = false;
@@ -210,56 +268,39 @@ public class POMAnalyzerPlugin extends Plugin {
                 transactionRestartCount++;
             } while (restartTransaction && !processedRecord
                     && transactionRestartCount < Constants.transactionRestartLimit);
-            MavenUtilities.getRepos().remove(artifactRepository);
+            
+            MavenUtilities.getRepos().remove(data.artifactRepository);
         }
 
-        /**
-         * Saves information extracted from POM into Metadata Database.
-         *
-         * @param product          groupId.artifactId
-         * @param version          Version of the artifact
-         * @param repoUrl          URL of the repository of the product
-         * @param commitTag        Commit tag of the version of the artifact in the repository
-         * @param sourcesUrl       Link to Maven sources Jar file
-         * @param packagingType    Packaging type of the artifact
-         * @param timestamp        Timestamp of the package
-         * @param projectName      Project name to which artifact belongs
-         * @param parentCoordinate Coordinate of the parent POM
-         * @param dependencyData   Dependency information from POM
-         * @param metadataDao      Metadata Database Access Object
-         * @return ID of the package version in the database
-         */
-        public long saveToDatabase(String product, String version, String repoUrl, String commitTag,
-                                   String sourcesUrl, String packagingType, long timestamp,
-                                   String projectName, String parentCoordinate,
-                                   DependencyData dependencyData, String artifactRepository, MetadataDao metadataDao) {
+        public long saveToDatabase(PomAnalyzerData d, MetadataDao metadataDao) {
+        	String product = d.group + Constants.mvnCoordinateSeparator + d.artifact; 
             final var packageId = metadataDao.insertPackage(product, Constants.mvnForge,
-                    projectName, repoUrl, null);
+                    d.projectName, d.repoUrl, null);
             var packageVersionMetadata = new JSONObject();
             packageVersionMetadata.put("dependencyManagement",
-                    (dependencyData.dependencyManagement != null)
-                            ? dependencyData.dependencyManagement.toJSON() : null);
+                    (d.dependencyData.dependencyManagement != null)
+                            ? d.dependencyData.dependencyManagement.toJSON() : null);
             packageVersionMetadata.put("dependencies",
-                    (dependencyData.dependencies != null)
-                            ? new JSONArray(dependencyData.dependencies) : null);
-            packageVersionMetadata.put("commitTag", (commitTag != null) ? commitTag : "");
-            packageVersionMetadata.put("sourcesUrl", (sourcesUrl != null) ? sourcesUrl : "");
-            packageVersionMetadata.put("packagingType", (packagingType != null)
-                    ? packagingType : "");
-            packageVersionMetadata.put("parentCoordinate", (parentCoordinate != null)
-                    ? parentCoordinate : "");
+                    (d.dependencyData.dependencies != null)
+                            ? new JSONArray(d.dependencyData.dependencies) : null);
+            packageVersionMetadata.put("commitTag", (d.commitTag != null) ? d.commitTag : "");
+            packageVersionMetadata.put("sourcesUrl", (d.sourcesUrl != null) ? d.sourcesUrl : "");
+            packageVersionMetadata.put("packagingType", (d.packagingType != null)
+                    ? d.packagingType : "");
+            packageVersionMetadata.put("parentCoordinate", (d.parentCoordinate != null)
+                    ? d.parentCoordinate : "");
             Long artifactRepoId;
-            if (artifactRepository == null) {
+            if (d.artifactRepository == null) {
                 artifactRepoId = null;
-            } else if (artifactRepository.equals(MavenUtilities.MAVEN_CENTRAL_REPO)) {
+            } else if (d.artifactRepository.equals(MavenUtilities.MAVEN_CENTRAL_REPO)) {
                 artifactRepoId = -1L;
             } else {
-                artifactRepoId = metadataDao.insertArtifactRepository(artifactRepository);
+                artifactRepoId = metadataDao.insertArtifactRepository(d.artifactRepository);
             }
             final var packageVersionId = metadataDao.insertPackageVersion(packageId,
-                    Constants.opalGenerator, version, artifactRepoId, null, this.getProperTimestamp(timestamp),
+                    Constants.opalGenerator, d.version, artifactRepoId, null, this.getProperTimestamp(d.date),
                     packageVersionMetadata);
-            for (var dep : dependencyData.dependencies) {
+            for (var dep : d.dependencyData.dependencies) {
                 var depProduct = dep.groupId + Constants.mvnCoordinateSeparator + dep.artifactId;
                 final var depId = metadataDao.insertPackage(depProduct, Constants.mvnForge);
                 metadataDao.insertDependency(packageVersionId, depId,
@@ -268,9 +309,9 @@ public class POMAnalyzerPlugin extends Plugin {
             return packageVersionId;
         }
 
-        private void addDependenciesToWorkingSet(MetadataDao metadataDao) {
+        private void addDependenciesToWorkingSet(PomAnalyzerData data, MetadataDao metadataDao) {
         	
-        	for (var dep : dependencyData.dependencies) {
+        	for (var dep : data.dependencyData.dependencies) {
         		var depProduct = dep.groupId + Constants.mvnCoordinateSeparator + dep.artifactId;
         		
 	            var depVersions = dep.getVersion().split(Pattern.quote(","));
@@ -278,12 +319,10 @@ public class POMAnalyzerPlugin extends Plugin {
 	                if (MavenUtilities.mavenArtifactExists(dep.groupId, dep.artifactId, v, null) &&
 	                        (metadataDao.getPackageVersion(depProduct, v) == null ||
 	                                !metadataDao.isArtifactIngested(depProduct, v))) {
-	                    var depPkgVersion = new JSONObject();
-	                    depPkgVersion.put("artifactId", dep.artifactId);
-	                    depPkgVersion.put("groupId", dep.groupId);
-	                    depPkgVersion.put("version", v);
-	                    this.workingSet.add(depPkgVersion.toString());
-	                    logger.info("Added dependency {}:{} to the working set for further processing", depProduct, v);
+	                    
+	                	var coordinate = new MavenCoordinate(dep.groupId, dep.artifactId, v, null);
+						this.workingSet.add(coordinate);
+	                    logger.info("Added dependency {} to the working set for further processing", coordinate);
 	                } else {
 	                    logger.warn("Dependency {}:{} already exists in KB or doesn't exist on Maven Central", depProduct, v);
 	                }
@@ -304,72 +343,44 @@ public class POMAnalyzerPlugin extends Plugin {
         }
 
         @Override
-        public Optional<String> produce() {
+        public List<SingleRecord> produceMultiple() {
+        	var res = new LinkedList<SingleRecord>();
+        	for(var data : results) {
+        		res.add(serialize(data));
+        	}
+        	return res;
+        }
+        
+        private static SingleRecord serialize(PomAnalyzerData d) {
             var json = new JSONObject();
-            json.put("artifactId", artifact);
-            json.put("groupId", group);
-            json.put("version", version);
-            json.put("date", date);
-            json.put("repoUrl", (repoUrl != null) ? repoUrl : "");
-            json.put("commitTag", (commitTag != null) ? commitTag : "");
-            json.put("sourcesUrl", sourcesUrl);
-            json.put("packagingType", packagingType);
-            json.put("projectName", (projectName != null) ? projectName : "");
-            json.put("parentCoordinate", (parentCoordinate != null) ? parentCoordinate : "");
-            json.put("dependencyData", dependencyData.toJSON());
+            json.put("artifactId", d.artifact);
+            json.put("groupId", d.group);
+            json.put("version", d.version);
+            json.put("packagingType", d.packagingType);
+
+            json.put("date", d.date);
+            json.put("repoUrl", (d.repoUrl != null) ? d.repoUrl : "");
+            json.put("commitTag", (d.commitTag != null) ? d.commitTag : "");
+            json.put("sourcesUrl", d.sourcesUrl);
+            json.put("projectName", (d.projectName != null) ? d.projectName : "");
+            json.put("parentCoordinate", (d.parentCoordinate != null) ? d.parentCoordinate : "");
+            json.put("dependencyData", d.dependencyData.toJSON());
             json.put("forge", Constants.mvnForge);
-            json.put("artifactRepository", artifactRepository);
-            return Optional.of(json.toString());
+            json.put("artifactRepository", d.artifactRepository);
+            
+            // TODO add sha or md5 hash
+            
+            var res = new SingleRecord();
+            res.payload = json.toString();
+            res.outputPath = getOutputPath(d);
+            
+            return res;
         }
 
-        @Override
-        public String getOutputPath() {
-            return File.separator + artifact.charAt(0) + File.separator
-                    + artifact + File.separator + artifact + "_" + group + "_" + version + ".json";
-        }
-
-        @Override
-        public String name() {
-            return "POM Analyzer plugin";
-        }
-
-        @Override
-        public String description() {
-            return "POM Analyzer plugin. Consumes Maven coordinate from Kafka topic, "
-                    + "downloads pom.xml of that coordinate and analyzes it "
-                    + "extracting relevant information such as dependency information "
-                    + "and repository URL, then inserts that data into Metadata Database "
-                    + "and produces it to Kafka topic.";
-        }
-
-        @Override
-        public String version() {
-            return "0.1.2";
-        }
-
-        @Override
-        public void start() {
-
-        }
-
-        @Override
-        public void stop() {
-
-        }
-
-        @Override
-        public Exception getPluginError() {
-            return this.pluginError;
-        }
-
-        @Override
-        public void freeResource() {
-
-        }
-
-        @Override
-        public Optional<LinkedList<String>> getWorkingSet() {
-            return Optional.of(this.workingSet);
-        }
+        private static String getOutputPath(PomAnalyzerData d) {
+        	// TODO use group
+        	return File.separator + d.artifact.charAt(0) + File.separator
+                    + d.artifact + File.separator + d.artifact + "_" + d.group + "_" + d.version + ".json";
+		}
     }
 }

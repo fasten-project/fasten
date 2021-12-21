@@ -78,6 +78,8 @@ public class Main implements Runnable {
             defaultValue = "postgres")
     String dbUser;
 
+	private POMAnalyzerPlugin.POMAnalyzer pomAnalyzer;
+
     public static void main(String[] args) {
         final int exitCode = new CommandLine(new Main()).execute(args);
         System.exit(exitCode);
@@ -85,15 +87,11 @@ public class Main implements Runnable {
 
     @Override
     public void run() {
-        var pomAnalyzer = new POMAnalyzerPlugin.POMAnalyzer();
-        try {
-            pomAnalyzer.setDBConnection(new HashMap<>(Map.of(Constants.mvnForge,
-                    PostgresConnector.getDSLContext(dbUrl, dbUser, true))));
-        } catch (SQLException e) {
-            System.err.println("Error connecting to the database:");
-            e.printStackTrace(System.err);
-            return;
-        }
+        pomAnalyzer = new POMAnalyzerPlugin.POMAnalyzer();
+        setDatabaseConnection();
+        
+        // TODO why do we have so many different ways of invoking the plugin?
+        
         if (artifact != null && group != null && version != null) {
             var mvnCoordinate = new JSONObject();
             mvnCoordinate.put("artifactId", artifact);
@@ -161,4 +159,13 @@ public class Main implements Runnable {
                     + "to JSON file that contains that Maven coordinate as payload.");
         }
     }
+
+	private void setDatabaseConnection() {
+		try {
+            pomAnalyzer.setDBConnection(new HashMap<>(Map.of(Constants.mvnForge,
+                    PostgresConnector.getDSLContext(dbUrl, dbUser, true))));
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+	}
 }
