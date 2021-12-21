@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package eu.fasten.analyzer.pomanalyzer;
+package eu.fasten.analyzer.pomanalyzer.data;
 
 import eu.fasten.core.maven.data.DependencyData;
 
-public class PomAnalyzerData {
+public class PomAnalysisResult {
 	public String artifact = null;
 	public String group = null;
 	public String version = null;
@@ -34,4 +34,6 @@ public class PomAnalyzerData {
 	public String commitTag = null;
 	public String sourcesUrl = null;
 	public String artifactRepository = null;
+	
+	// TODO hashCode & equals
 }
