@@ -30,7 +30,6 @@ import org.mockito.Mockito;
 import eu.fasten.analyzer.pomanalyzer.data.PomAnalysisResult;
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.metadatadb.MetadataDao;
-import eu.fasten.core.maven.data.DependencyData;
 
 public class POMAnalyzerPluginTest {
 
@@ -65,7 +64,7 @@ public class POMAnalyzerPluginTest {
 		var sourcesUrl = "https://repo.maven.apache.org/maven2/junit/junit/4.12/junit-4.12-sources.jar";
 		var packagingType = "jar";
 		var projectName = "JUnit";
-		var dependencyData = DependencyData.fromJSON(new JSONObject("{\n" + "   \"dependencyManagement\":{\n"
+		var dependencyData = new JSONObject("{\n" + "   \"dependencyManagement\":{\n"
 				+ "      \"dependencies\":[\n" + "\n" + "      ]\n" + "   },\n" + "   \"dependencies\":[\n"
 				+ "      {\n" + "         \"versionConstraints\":[\n" + "            {\n"
 				+ "               \"isUpperHardRequirement\":false,\n"
@@ -74,7 +73,7 @@ public class POMAnalyzerPluginTest {
 				+ "         \"groupId\":\"org.hamcrest\",\n" + "         \"scope\":\"\",\n"
 				+ "         \"classifier\":\"\",\n" + "         \"artifactId\":\"hamcrest-core\",\n"
 				+ "         \"exclusions\":[\n" + "\n" + "         ],\n" + "         \"optional\":false,\n"
-				+ "         \"type\":\"\"\n" + "      }\n" + "   ]\n" + "}"));
+				+ "         \"type\":\"\"\n" + "      }\n" + "   ]\n" + "}");
 		pomAnalyzer.consume(record);
 		var output = pomAnalyzer.produce();
 		assertTrue(output.isPresent());
@@ -86,7 +85,7 @@ public class POMAnalyzerPluginTest {
 		assertEquals(sourcesUrl, json.getString("sourcesUrl"));
 		assertEquals(packagingType, json.getString("packagingType"));
 		assertEquals(projectName, json.getString("projectName"));
-		assertEquals(dependencyData, DependencyData.fromJSON(json.getJSONObject("dependencyData")));
+		assertEquals(dependencyData, json.getJSONObject("dependencyData"));
 	}
 
 	@Test
@@ -99,7 +98,7 @@ public class POMAnalyzerPluginTest {
 		pad.sourcesUrl = "https://repo.maven.apache.org/maven2/junit/junit/4.12/junit-4.12-sources.jar";
 		pad.packagingType = "jar";
 		pad.projectName = "JUnit";
-		pad.dependencyData = DependencyData.fromJSON(new JSONObject("{\n" + "   \"dependencyManagement\":{\n"
+		var depData = new JSONObject("{\n" + "   \"dependencyManagement\":{\n"
 				+ "      \"dependencies\":[\n" + "\n" + "      ]\n" + "   },\n" + "   \"dependencies\":[\n"
 				+ "      {\n" + "         \"versionConstraints\":[\n" + "            {\n"
 				+ "               \"isUpperHardRequirement\":false,\n"
@@ -108,7 +107,7 @@ public class POMAnalyzerPluginTest {
 				+ "         \"groupId\":\"org.hamcrest\",\n" + "         \"scope\":\"\",\n"
 				+ "         \"classifier\":\"\",\n" + "         \"artifactId\":\"hamcrest-core\",\n"
 				+ "         \"exclusions\":[\n" + "\n" + "         ],\n" + "         \"optional\":false,\n"
-				+ "         \"type\":\"\"\n" + "      }\n" + "   ]\n" + "}"));
+				+ "         \"type\":\"\"\n" + "      }\n" + "   ]\n" + "}");
 		pad.commitTag = "f8a34a";
 		pad.artifactRepository = "maven central";
 		final var packageId = 1L;
@@ -119,7 +118,7 @@ public class POMAnalyzerPluginTest {
 		Mockito.when(metadataDao.insertArtifactRepository(pad.artifactRepository)).thenReturn(artifactRepoId);
 		final var packageVersionId = 0L;
 		var packageVersionMetadata = new JSONObject();
-		packageVersionMetadata.put("dependencyManagement", pad.dependencyData.dependencyManagement.toJSON());
+		//packageVersionMetadata.put("dependencyManagement", pad.dependencyManagement.toJSON());
 		packageVersionMetadata.put("commitTag", pad.commitTag);
 		packageVersionMetadata.put("sourcesUrl", pad.sourcesUrl);
 		packageVersionMetadata.put("packagingType", pad.packagingType);

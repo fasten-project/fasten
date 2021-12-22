@@ -72,10 +72,9 @@ public class DBStorage {
 
 		var pvMeta = new JSONObject();
 		pvMeta.put("dependencyManagement",
-				(r.dependencyData.dependencyManagement != null) ? r.dependencyData.dependencyManagement.toJSON()
-						: null);
+				(r.dependencyManagement != null) ? new JSONArray(r.dependencyManagement) : null);
 		pvMeta.put("dependencies",
-				(r.dependencyData.dependencies != null) ? new JSONArray(r.dependencyData.dependencies) : null);
+				(r.dependencies != null) ? new JSONArray(r.dependencies) : null);
 		pvMeta.put("commitTag", (r.commitTag != null) ? r.commitTag : "");
 		pvMeta.put("sourcesUrl", (r.sourcesUrl != null) ? r.sourcesUrl : "");
 		pvMeta.put("packagingType", (r.packagingType != null) ? r.packagingType : "");
@@ -88,9 +87,9 @@ public class DBStorage {
 
 		// TODO: Why is the opalGenerator required here??
 		final var packageVersionId = metadataDao.insertPackageVersion(packageId, Constants.opalGenerator, r.version,
-				artifactRepoId, null, getProperTimestamp(r.date), pvMeta);
+				artifactRepoId, null, getProperTimestamp(r.releaseDate), pvMeta);
 
-		for (var dep : r.dependencyData.dependencies) {
+		for (var dep : r.dependencies) {
 			var depProduct = dep.groupId + Constants.mvnCoordinateSeparator + dep.artifactId;
 			final var depId = metadataDao.insertPackage(depProduct, Constants.mvnForge);
 			metadataDao.insertDependency(packageVersionId, depId, dep.getVersionConstraints(), null, null, null,

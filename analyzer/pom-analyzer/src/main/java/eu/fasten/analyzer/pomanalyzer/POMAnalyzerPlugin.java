@@ -119,22 +119,26 @@ public class POMAnalyzerPlugin extends Plugin {
 		}
 
 		private static SingleRecord serialize(PomAnalysisResult d) {
-			// TODO replace with GSON call
 			var json = new JSONObject();
+
+			json.put("forge", Constants.mvnForge);
+			json.put("artifactRepository", d.artifactRepository);
+
 			json.put("artifactId", d.artifact);
 			json.put("groupId", d.group);
 			json.put("version", d.version);
 			json.put("packagingType", d.packagingType);
 
-			json.put("date", d.date);
+			json.put("parentCoordinate", (d.parentCoordinate != null) ? d.parentCoordinate : "");
+
+			json.put("dependencies", new JSONArray(d.dependencies).toString());
+			json.put("dependencyManagement", new JSONArray(d.dependencyManagement).toString());
+
+			json.put("date", d.releaseDate);
 			json.put("repoUrl", (d.repoUrl != null) ? d.repoUrl : "");
 			json.put("commitTag", (d.commitTag != null) ? d.commitTag : "");
 			json.put("sourcesUrl", d.sourcesUrl);
 			json.put("projectName", (d.projectName != null) ? d.projectName : "");
-			json.put("parentCoordinate", (d.parentCoordinate != null) ? d.parentCoordinate : "");
-			json.put("dependencyData", d.dependencyData.toJSON());
-			json.put("forge", Constants.mvnForge);
-			json.put("artifactRepository", d.artifactRepository);
 
 			var res = new SingleRecord();
 			res.payload = json.toString();
