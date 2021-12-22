@@ -15,71 +15,58 @@
  */
 package eu.fasten.analyzer.pomanalyzer.data;
 
+import static org.apache.commons.lang3.builder.ToStringStyle.MULTI_LINE_STYLE;
+
 import java.io.File;
+
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
+import org.apache.commons.lang3.builder.ToStringBuilder;
 
 public class ResolutionResult {
 
-	// TODO differentiate between package type and pom
-	public String coordinate;
+	public String coordinate; // gid:aid:packageType:version
 	public String artifactRepository;
-	public File filePkg;
-	public File filePom;
+	public File localPomFile;
 
-	public ResolutionResult(String coordinate, String source, File file) {
+	public ResolutionResult(String coordinate, String artifactRepository, File localPkg) {
 		this.coordinate = coordinate;
-		this.artifactRepository = source;
-		this.filePkg = file;
-		this.filePom = pomify(file);
+		this.artifactRepository = artifactRepository;
+		// pkg can be .pom, .jar, .war, ... all of them have a corresponding .pom
+		this.localPomFile = changeExtension(localPkg, ".pom");
 	}
 
-	private static File pomify(File pkg) {
-		// TODO implement me
-		return pkg;
-	}
-
-	// TODO How to make this work under Windows?
 	public String getPomUrl() {
-		String f = filePkg.toString();
-		String marker = "/.m2/repository/";
+		String f = localPomFile.toString();
+		String marker = File.separator + ".m2" + File.separator + "repository" + File.separator;
 		int idx = f.indexOf(marker);
-		int idxOfExt = f.lastIndexOf('.');
-		return artifactRepository + f.substring(idx + marker.length() - 1, idxOfExt) + ".pom";
+		return artifactRepository + f.substring(idx + marker.length() - 1);
 	}
 
-	@Override
-	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + ((coordinate == null) ? 0 : coordinate.hashCode());
-		result = prime * result + ((filePkg == null) ? 0 : filePkg.hashCode());
-		result = prime * result + ((artifactRepository == null) ? 0 : artifactRepository.hashCode());
-		return result;
+	public File getLocalPackageFile() {
+		var packaging = coordinate.split(":")[2];
+		return changeExtension(localPomFile, '.' + packaging);
 	}
 
 	@Override
 	public boolean equals(Object obj) {
-		if (this == obj)
-			return true;
-		if (obj == null)
-			return false;
-		if (getClass() != obj.getClass())
-			return false;
-		ResolutionResult other = (ResolutionResult) obj;
-		if (coordinate == null) {
-			if (other.coordinate != null)
-				return false;
-		} else if (!coordinate.equals(other.coordinate))
-			return false;
-		if (filePkg == null) {
-			if (other.filePkg != null)
-				return false;
-		} else if (!filePkg.equals(other.filePkg))
-			return false;
-		if (artifactRepository == null) {
-			if (other.artifactRepository != null)
-				return false;
-		} else if (!artifactRepository.equals(other.artifactRepository))
-			return false;
-		return true;
+		return EqualsBuilder.reflectionEquals(this, obj);
+	}
+
+	@Override
+	public int hashCode() {
+		return HashCodeBuilder.reflectionHashCode(this);
+	}
+
+	@Override
+	public String toString() {
+		return ToStringBuilder.reflectionToString(this, MULTI_LINE_STYLE);
+	}
+
+	private static File changeExtension(File f, String extInclDot) {
+		String path = f.getAbsolutePath();
+		int idxOfExt = path.lastIndexOf('.');
+		String newPath = path.substring(0, idxOfExt) + extInclDot;
+		return new File(newPath);
 	}
 }
