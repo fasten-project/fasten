@@ -31,11 +31,19 @@ import eu.fasten.analyzer.pomanalyzer.data.ResolutionResult;
 
 public class Resolver {
 
-	// default implementation assumes nothing exists in DB yet
-	private Predicate<String> funDbExists = s -> false;
+	// Attention: Be aware that the test suite for this class is disabled by default
+	// to avoid unnecessary downloads on every build. Make sure to re-enable the
+	// tests and run them locally for every change in this class.
 
-	public void setExistenceCheck(Predicate<String> funDbExists) {
-		this.funDbExists = funDbExists;
+	// default implementation assumes nothing is skipped
+	private Predicate<String> funShouldSkip = s -> false;
+
+	/**
+	 * Registers a Predicate that can prevent the processing of coordinates.
+	 * Coordinates are provided in the form gid:aid:packaging:version
+	 */
+	public void setExistenceCheck(Predicate<String> funShouldSkip) {
+		this.funShouldSkip = funShouldSkip;
 	}
 
 	public Set<ResolutionResult> resolveDependenciesFromPom(File pom) {
@@ -44,23 +52,23 @@ public class Resolver {
 		// two iterations: 0) resolving and (potential) deletion 1) get artifactRepos
 		range(0, 2).forEach(i -> {
 			resolvePom(pom).forEach(res -> {
-				// ignore known dependencies
-				if (coordToResult.containsKey(res.coordinate) || funDbExists.test(res.coordinate)) {
+				// ignore known dependencies or those that should be skipped (e.g., exist in DB)
+				if (coordToResult.containsKey(res.coordinate) || funShouldSkip.test(res.coordinate)) {
 					return;
 				}
 
-				// store artifactRepositories, if found
+				// remember identified artifactRepository
 				if (res.artifactRepository.startsWith("http")) {
 					coordToResult.put(res.coordinate, res);
 					return;
 				}
 
-				// locally existing pkgs must be deleted and re-downloaded (which automatically
-				// happens in the second iteration) or the local version is used from which the
-				// artifact repository cannot be inferred anymore
+				// if a package is interesting, but has already been downloaded before (i.e., it
+				// exists in the local .m2 folder, it must be deleted and re-downloaded (which
+				// automatically happens in the second iteration). Otherwise, it is impossible
+				// to infer its artifact.
 				if (i == 0) {
 					File f = res.getLocalPackageFile();
-					System.out.println(f);
 					if (f.exists() && f.isFile()) {
 						f.delete();
 					}
@@ -76,14 +84,19 @@ public class Resolver {
 
 	private static Set<ResolutionResult> resolvePom(File f) {
 		var res = new HashSet<ResolutionResult>();
-		MavenResolvedArtifactImpl.artifactRepositories = res;
-		Maven.resolver() //
-				.loadPomFromFile(f) //
-				.importCompileAndRuntimeDependencies() //
-				.resolve() //
-				.withTransitivity() //
-				.asResolvedArtifact();
-		MavenResolvedArtifactImpl.artifactRepositories = null;
-		return res;
+		try {
+			MavenResolvedArtifactImpl.artifactRepositories = res;
+			Maven.resolver() //
+					.loadPomFromFile(f) //
+					.importCompileAndRuntimeDependencies() //
+					.resolve() //
+					.withTransitivity() //
+					.asResolvedArtifact();
+			MavenResolvedArtifactImpl.artifactRepositories = null;
+			return res;
+		} catch (IllegalArgumentException e) {
+			// no dependencies are declared, so no resolution required
+			return res;
+		}
 	}
 }
