@@ -15,15 +15,27 @@
  */
 package eu.fasten.analyzer.pomanalyzer;
 
+import static eu.fasten.core.utils.Asserts.assertNotNull;
+import static java.io.File.createTempFile;
+import static org.apache.commons.io.FileUtils.copyURLToFile;
+
 import java.io.File;
+import java.io.IOException;
+import java.net.URL;
 
 import eu.fasten.analyzer.pomanalyzer.data.ResolutionResult;
 
 public class Downloader {
 
 	public File downloadPomToTemp(ResolutionResult artifact) {
-		// TODO Auto-generated method stub
-		return null;
+		assertNotNull(artifact);
+		try {
+			var source = new URL(artifact.getPomUrl());
+			File target = createTempFile("pom-analyzer.", ".pom");
+			copyURLToFile(source, target);
+			return target;
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
 	}
-
 }
