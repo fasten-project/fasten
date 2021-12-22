@@ -43,9 +43,9 @@ public class POMAnalyzerPlugin extends Plugin {
 	public static class POMAnalyzer extends AbstractKafkaPlugin implements DBConnector {
 
 		private final Downloader downloader = new Downloader();
-		private final DependencyResolver resolver = new DependencyResolver();
 		private final PomExtractor extractor = new PomExtractor();
 		private final DBStorage store = new DBStorage();
+		private Resolver resolver = new Resolver();
 
 		private List<PomAnalysisResult> results = null;
 
@@ -53,22 +53,25 @@ public class POMAnalyzerPlugin extends Plugin {
 		public void setDBConnection(Map<String, DSLContext> dslContexts) {
 			var myContext = dslContexts.get(Constants.mvnForge);
 			store.setDslContext(myContext);
+
+			// TODO still default, replace with actual check
+			resolver.setExistenceCheck(s -> false);
 		}
 
-		private void beforeCosume() {
+		private void beforeConsume() {
 			pluginError = null;
 			results = new LinkedList<>();
 		}
 
 		@Override
 		public void consume(String record) {
-			beforeCosume();
+			beforeConsume();
 
 			var artifact = parseInput(record);
-			artifact.filePom = downloader.downloadPomToTemp(artifact);
+			artifact.localPomFile = downloader.downloadPomToTemp(artifact);
 
 			process(artifact);
-			var deps = resolver.resolveDependenciesFromPom(artifact.filePom);
+			var deps = resolver.resolveDependenciesFromPom(artifact.localPomFile);
 			deps.forEach(dep -> {
 				process(dep);
 			});
@@ -85,7 +88,7 @@ public class POMAnalyzerPlugin extends Plugin {
 				var groupId = json.getString("groupId").replaceAll("[\\n\\t ]", "");
 				var artifactId = json.getString("artifactId").replaceAll("[\\n\\t ]", "");
 				var version = json.getString("version").replaceAll("[\\n\\t ]", "");
-				var coord = asMavenCoordinate(groupId, artifactId, version, "?");
+				var coord = asMavenCoordinate(groupId, artifactId, version);
 
 				var artifactRepository = json.getString("artifactRepository").replaceAll("[\\n\\t ]", "");
 				return new ResolutionResult(coord, artifactRepository, null);
@@ -95,13 +98,13 @@ public class POMAnalyzerPlugin extends Plugin {
 			}
 		}
 
-		private static String asMavenCoordinate(String groupId, String artifactId, String version,
-				String packagingType) {
-			return String.format("%s:%s:%s:%s", groupId, artifactId, version, packagingType);
+		private static String asMavenCoordinate(String groupId, String artifactId, String version) {
+			// packing type is unknown
+			return String.format("%s:%s:?:%s", groupId, artifactId, version);
 		}
 
 		private void process(ResolutionResult artifact) {
-			var result = extractor.process(artifact);
+			var result = extractor.process(artifact.localPomFile, artifact.artifactRepository);
 			results.add(result);
 		}
 
@@ -141,7 +144,8 @@ public class POMAnalyzerPlugin extends Plugin {
 		}
 
 		private static String getOutputPath(PomAnalysisResult d) {
-			return File.separator + d.group.charAt(0) + File.separator + d.group + File.separator + d.artifact + File.separator + d.version + ".json";
+			return File.separator + d.group.charAt(0) + File.separator + d.group + File.separator + d.artifact
+					+ File.separator + d.version + ".json";
 		}
 	}
 }
