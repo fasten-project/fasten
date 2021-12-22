@@ -15,27 +15,32 @@
  */
 package eu.fasten.analyzer.pomanalyzer.data;
 
+import java.util.Set;
+
 import eu.fasten.core.data.Constants;
-import eu.fasten.core.maven.data.DependencyData;
+import eu.fasten.core.maven.data.Dependency;
 
 public class PomAnalysisResult {
+	
+	public String forge = Constants.mvnForge;
+
 	public String artifact = null;
 	public String group = null;
-	public String version = null;
 	public String packagingType = null;
+	public String version = null;
 
-	public String projectName = null;
-	// TODO: rename this to proper name like "releaseDate"
-	public long date = -1L;
 	public String parentCoordinate = null;
 
-	public DependencyData dependencyData = null;
-	public String forge = Constants.mvnForge;
+	public String projectName = null;
+	public long releaseDate = -1L;
+
+    public Set<Dependency> dependencies;
+    public Set<Dependency> dependencyManagement;
 
 	public String repoUrl = null;
 	public String commitTag = null;
 	public String sourcesUrl = null;
 	public String artifactRepository = null;
 
-	// TODO hashCode & equals
+	
 }

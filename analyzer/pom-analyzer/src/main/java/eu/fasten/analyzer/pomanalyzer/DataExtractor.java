@@ -15,28 +15,10 @@
  */
 package eu.fasten.analyzer.pomanalyzer;
 
-import eu.fasten.core.data.Constants;
-import eu.fasten.core.maven.data.Dependency;
-import eu.fasten.core.maven.data.DependencyData;
-import eu.fasten.core.maven.data.DependencyManagement;
-import eu.fasten.core.maven.utils.MavenUtilities;
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.ImmutablePair;
-import org.apache.commons.lang3.tuple.Pair;
-import org.dom4j.DocumentException;
-import org.dom4j.Element;
-import org.dom4j.Node;
-import org.dom4j.io.SAXReader;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import static eu.fasten.core.data.Constants.mvnCoordinateSeparator;
 
-import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
-import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URL;
@@ -48,39 +30,32 @@ import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashMap;
+import java.util.HashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.Set;
+
+import org.apache.commons.lang3.tuple.ImmutablePair;
+import org.apache.commons.lang3.tuple.Pair;
+import org.dom4j.DocumentException;
+import org.dom4j.Element;
+import org.dom4j.Node;
+import org.dom4j.io.SAXReader;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import eu.fasten.core.data.Constants;
+import eu.fasten.core.maven.data.Dependency;
+import eu.fasten.core.maven.utils.MavenUtilities;
 
 public class DataExtractor {
 
     private static final Logger logger = LoggerFactory.getLogger(DataExtractor.class);
     private String mavenCoordinate = null;
-    private String pomContents = null;
-    private Pair<String, Pair<Map<String, String>, List<DependencyManagement>>> resolutionMetadata = null;
-
-    /**
-     * Utility function that reads the contents of a file to a String.
-     */
-    private static Optional<String> fileToString(final File f) {
-        logger.trace("Loading file as string: " + f.toString());
-        try {
-            final var fr = new BufferedReader(new FileReader(f));
-            final StringBuilder result = new StringBuilder();
-            String line;
-            while ((line = fr.readLine()) != null) {
-                result.append(line);
-            }
-            fr.close();
-            return Optional.of(result.toString());
-        } catch (IOException e) {
-            logger.error("Cannot read from file: " + f.toString(), e);
-            return Optional.empty();
-        }
-    }
+    private Pair<String, Pair<Void, List<Set<Dependency>>>> resolutionMetadata = null;
 
     /**
      * Extracts Maven coordinate from the POM file.
@@ -92,7 +67,6 @@ public class DataExtractor {
         StringBuilder coordinate = new StringBuilder();
         try {
             var pom = getPomRootElement(pomUrl);
-            var properties = extractDependencyResolutionMetadata(pom).getLeft();
             var groupNode = pom.selectSingleNode("./*[local-name()='groupId']");
             var artifactNode = pom.selectSingleNode("./*[local-name()='artifactId']");
             var versionNode = pom.selectSingleNode("./*[local-name()='version']");
@@ -107,11 +81,11 @@ public class DataExtractor {
                     versionNode = parentVersion;
                 }
                 if (groupNode != null && versionNode != null) {
-                    coordinate.append(replacePropertyReferences(groupNode.getText(), properties, pom));
+                    coordinate.append(groupNode.getText());
                     coordinate.append(Constants.mvnCoordinateSeparator);
-                    coordinate.append(replacePropertyReferences(artifactNode.getText(), properties, pom));
+                    coordinate.append(artifactNode.getText());
                     coordinate.append(Constants.mvnCoordinateSeparator);
-                    coordinate.append(replacePropertyReferences(versionNode.getText(), properties, pom));
+                    coordinate.append(versionNode.getText());
                     return coordinate.toString();
                 }
             }
@@ -206,7 +180,7 @@ public class DataExtractor {
             var properties = this.resolutionMetadata.getRight().getLeft();
             var packagingNode = pom.selectSingleNode("./*[local-name()='packaging']");
             if (packagingNode != null) {
-                packaging = replacePropertyReferences(packagingNode.getText(), properties, pom);
+                packaging = packagingNode.getText();
             }
         } catch (DocumentException e) {
             logger.error("Error parsing POM file for: "
@@ -232,7 +206,7 @@ public class DataExtractor {
             var properties = this.resolutionMetadata.getRight().getLeft();
             var nameNode = pom.selectSingleNode("./*[local-name()='name']");
             if (nameNode != null) {
-                name = replacePropertyReferences(nameNode.getText(), properties, pom);
+                name = nameNode.getText();
             }
         } catch (DocumentException e) {
             logger.error("Error parsing POM file for: "
@@ -255,7 +229,6 @@ public class DataExtractor {
         try {
             var pom = getPomRootElement(groupId, artifactId, version);
             updateResolutionMetadata(groupId, artifactId, version, pom);
-            var properties = this.resolutionMetadata.getRight().getLeft();
             var parentNode = pom.selectSingleNode("./*[local-name()='parent']");
             if (parentNode != null) {
                 var parentGroupNode = parentNode
@@ -266,12 +239,9 @@ public class DataExtractor {
                         .selectSingleNode("./*[local-name()='version']");
                 if (parentGroupNode != null && parentArtifactNode != null
                         && parentVersionNode != null) {
-                    var parentGroup = replacePropertyReferences(parentGroupNode.getText(),
-                            properties, pom);
-                    var parentArtifact = replacePropertyReferences(parentArtifactNode.getText(),
-                            properties, pom);
-                    var parentVersion = replacePropertyReferences(parentVersionNode.getText(),
-                            properties, pom);
+                    var parentGroup = parentGroupNode.getText();
+                    var parentArtifact = parentArtifactNode.getText();
+                    var parentVersion = parentVersionNode.getText();
                     parent = parentGroup + Constants.mvnCoordinateSeparator + parentArtifact
                             + Constants.mvnCoordinateSeparator + parentVersion;
                 }
@@ -282,91 +252,6 @@ public class DataExtractor {
                     + Constants.mvnCoordinateSeparator + version);
         }
         return parent;
-    }
-
-    /**
-     * Replaces all property references with their actual values.
-     *
-     * @param ref        String that can contain property references
-     * @param properties Properties extracted from the artifact
-     * @param pom        POM root element for accessing DOM tree
-     * @return String that has all property references substituted with their values
-     */
-    public String replacePropertyReferences(String ref, Map<String, String> properties, Element pom) {
-        var propertyIndexes = getPropertyReferencesIndexes(ref);
-        if (propertyIndexes == null) {
-            return ref;
-        }
-        var refBuilder = new StringBuilder();
-        var i = 0;
-        for (var property : propertyIndexes) {
-            var found = false;
-            refBuilder.append(ref, i, property[0]);
-            var refValue = ref.substring(property[0] + 2, property[1]);
-            if (properties.containsKey(refValue)) {
-                refValue = properties.get(refValue);
-                found = true;
-            } else {
-                var path = refValue.replaceFirst("project\\.", "");
-                var pathParts = path.split("\\.");
-                Node node = pom;
-                for (var nodeName : pathParts) {
-                    if (node == null) {
-                        break;
-                    }
-                    node = node.selectSingleNode("./*[local-name()='" + nodeName + "']");
-                }
-                if (node != null) {
-                    refValue = node.getText();
-                    found = true;
-                } else if (path.equals("groupId") || path.equals("version")) {
-                    path = "parent." + path;
-                    pathParts = path.split("\\.");
-                    node = pom;
-                    for (var nodeName : pathParts) {
-                        if (node == null) {
-                            break;
-                        }
-                        node = node.selectSingleNode("./*[local-name()='" + nodeName + "']");
-                    }
-                    if (node != null) {
-                        refValue = node.getText();
-                        found = true;
-                    }
-                }
-            }
-            if (!found) {
-                refValue = "${" + refValue + "}";
-            }
-            refBuilder.append(refValue);
-            i = property[1] + 1;
-        }
-        if (i < ref.length()) {
-            refBuilder.append(ref, i, ref.length());
-        }
-        return refBuilder.toString();
-    }
-
-    private int[][] getPropertyReferencesIndexes(String ref) {
-        if (!ref.contains("${")) {
-            return null;
-        }
-        var numProperties = StringUtils.countMatches(ref, "${");
-        var indexes = new int[numProperties][2];
-        int count = 0;
-        int i = 0;
-        while (count < numProperties && i < ref.length()) {
-            while (!ref.startsWith("${", i) && i < ref.length()) {
-                i++;
-            }
-            indexes[count][0] = i;
-            while (!ref.startsWith("}", i) && i < ref.length()) {
-                i++;
-            }
-            indexes[count][1] = i;
-            count++;
-        }
-        return indexes;
     }
 
     /**
@@ -391,7 +276,6 @@ public class DataExtractor {
             if (repoUrl != null) {
                 updateResolutionMetadata(groupId, artifactId, version, pom);
                 var properties = this.resolutionMetadata.getRight().getLeft();
-                repoUrl = replacePropertyReferences(repoUrl, properties, pom);
             }
         } catch (DocumentException e) {
             logger.error("Error parsing POM file for: "
@@ -449,8 +333,6 @@ public class DataExtractor {
             }
             if (commitTag != null) {
                 updateResolutionMetadata(groupId, artifactId, version, pom);
-                var properties = this.resolutionMetadata.getRight().getLeft();
-                commitTag = replacePropertyReferences(commitTag, properties, pom);
             }
         } catch (DocumentException e) {
             logger.error("Error parsing POM file for: "
@@ -469,186 +351,101 @@ public class DataExtractor {
      * @param version    version of the coordinate
      * @return Extracted dependency information as DependencyData
      */
-    public DependencyData extractDependencyData(String groupId, String artifactId, String version) {
-        DependencyData dependencyData = new DependencyData(
-                new DependencyManagement(new ArrayList<>()), new ArrayList<>());
-        try {
+    public Pair<Set<Dependency>, Set<Dependency>> extractDependencyData(String groupId, String artifactId, String version) {
+        var dependencies = new HashSet<Dependency>();
+        var dependencyManagement = new HashSet<Dependency>();
+    	
+    	try {
             var pom = getPomRootElement(groupId, artifactId, version);
             updateResolutionMetadata(groupId, artifactId, version, pom);
-            var versionResolutionData = this.resolutionMetadata.getRight();
-            var properties = versionResolutionData.getLeft();
-            var parentDependencyManagements = versionResolutionData.getRight();
-            for (int i = 0; i < parentDependencyManagements.size(); i++) {
-                var depManagement = parentDependencyManagements.get(i);
-                var resolvedDependencies = resolveDependencies(depManagement.dependencies,
-                        properties, new ArrayList<>(), pom);
-                parentDependencyManagements.set(i, new DependencyManagement(resolvedDependencies));
-            }
             var dependencyManagementNode = pom.selectSingleNode("./*[local-name()='dependencyManagement']");
-            DependencyManagement dependencyManagement;
             if (dependencyManagementNode != null) {
                 var dependenciesNode = dependencyManagementNode
                         .selectSingleNode("./*[local-name()='dependencies']");
-                var dependencies = extractDependencies(dependenciesNode);
-                dependencies = this.resolveDependencies(dependencies, properties,
-                        parentDependencyManagements, pom);
-                dependencyManagement = new DependencyManagement(dependencies);
-            } else {
-                dependencyManagement = new DependencyManagement(new ArrayList<>());
+                dependencyManagement.addAll(extractDependencies(dependenciesNode));
             }
             var dependenciesNode = pom.selectSingleNode("./*[local-name()='dependencies']");
-            var dependencies = extractDependencies(dependenciesNode);
-            dependencies = this.resolveDependencies(dependencies, properties,
-                    parentDependencyManagements, pom);
-            dependencyData = new DependencyData(dependencyManagement, dependencies);
+            dependencies.addAll(extractDependencies(dependenciesNode));
         } catch (DocumentException e) {
             logger.error("Error parsing POM file for: "
                     + groupId + Constants.mvnCoordinateSeparator + artifactId
                     + Constants.mvnCoordinateSeparator + version);
         }
-        return dependencyData;
+        return ImmutablePair.of(dependencies, dependencyManagement);
     }
 
-    private List<Dependency> resolveDependencies(List<Dependency> dependencies,
-                                                 Map<String, String> properties,
-                                                 List<DependencyManagement> depManagements,
-                                                 Element pom) {
-        var resolvedDependencies = new ArrayList<Dependency>();
-        for (var dependency : dependencies) {
-            if (dependency.versionConstraints.get(0).lowerBound.equals("*")) {
-                var resolved = false;
-                for (var depManagement : depManagements) {
-                    for (var parentDep : depManagement.dependencies) {
-                        if (parentDep.artifactId.equals(dependency.artifactId)
-                                && parentDep.groupId.equals(dependency.groupId)) {
-                            resolvedDependencies.add(new Dependency(
-                                    dependency.groupId,
-                                    dependency.artifactId,
-                                    parentDep.versionConstraints,
-                                    dependency.exclusions,
-                                    dependency.scope,
-                                    dependency.optional,
-                                    dependency.type,
-                                    dependency.classifier
-                            ));
-                            resolved = true;
-                        }
-                    }
-                }
-                if (!resolved) {
-                    resolvedDependencies.add(new Dependency(
-                            dependency.groupId,
-                            dependency.artifactId,
-                            replacePropertyReferences("${project.version}", properties, pom),
-                            dependency.exclusions,
-                            dependency.scope,
-                            dependency.optional,
-                            dependency.type,
-                            dependency.classifier
-                    ));
-                }
-            } else if (dependency.versionConstraints.get(0).lowerBound.startsWith("$")) {
-                var property = dependency.versionConstraints.get(0).lowerBound;
-                var version = "";
-                var value = replacePropertyReferences(property, properties, pom);
-                if (!value.equals(property)) {
-                    version = value;
-                }
-                resolvedDependencies.add(new Dependency(
-                        dependency.groupId,
-                        dependency.artifactId,
-                        version,
-                        dependency.exclusions,
-                        dependency.scope,
-                        dependency.optional,
-                        dependency.type,
-                        dependency.classifier
-                ));
-            } else {
-                resolvedDependencies.add(dependency);
-            }
-        }
-        for (int i = 0; i < resolvedDependencies.size(); i++) {
-            var dep = resolvedDependencies.get(i);
-            var resolvedArtifact = dep.artifactId;
-            if (dep.artifactId.contains("$")) {
-                resolvedArtifact = replacePropertyReferences(dep.artifactId, properties, pom);
-            }
-            var resolvedGroup = dep.groupId;
-            if (dep.groupId.contains("$")) {
-                resolvedGroup = replacePropertyReferences(dep.groupId, properties, pom);
-            }
-            var resolvedExclusions = dep.exclusions;
-            for (int j = 0; j < resolvedExclusions.size(); j++) {
-                var exclusion = dep.exclusions.get(j);
-                var resolvedExclusionGroup = exclusion.groupId;
-                if (exclusion.groupId.contains("$")) {
-                    resolvedExclusionGroup = replacePropertyReferences(
-                            exclusion.groupId, properties, pom);
-                }
-                var resolvedExclusionArtifact = exclusion.artifactId;
-                if (exclusion.artifactId.contains("$")) {
-                    resolvedExclusionArtifact = replacePropertyReferences(
-                            exclusion.artifactId, properties, pom);
-                }
-                resolvedExclusions.set(j,
-                        new Dependency.Exclusion(resolvedExclusionGroup, resolvedExclusionArtifact)
-                );
-            }
-            var resolvedScope = dep.scope;
-            if (dep.scope.contains("$")) {
-                resolvedScope = replacePropertyReferences(dep.scope, properties, pom);
-            }
-            var resolvedType = dep.type;
-            if (dep.type.contains("$")) {
-                resolvedType = replacePropertyReferences(dep.type, properties, pom);
-            }
-            var resolvedClassifier = dep.classifier;
-            if (dep.classifier.contains("$")) {
-                resolvedClassifier = replacePropertyReferences(dep.classifier, properties, pom);
-            }
-            resolvedDependencies.set(i, new Dependency(
-                    resolvedGroup,
-                    resolvedArtifact,
-                    dep.versionConstraints,
-                    resolvedExclusions,
-                    resolvedScope,
-                    dep.optional,
-                    resolvedType,
-                    resolvedClassifier
-            ));
-        }
-        return resolvedDependencies;
-    }
+//    private List<Dependency> resolveDependencies(List<Dependency> dependencies,
+//                                                 Map<String, String> properties,
+//                                                 List<Set<Dependency>> depManagements,
+//                                                 Element pom) {
+//        var resolvedDependencies = new ArrayList<Dependency>();
+//        for (var dependency : dependencies) {
+//            if (dependency.versionConstraints.get(0).lowerBound.equals("*")) {
+//                var resolved = false;
+//                for (var dmDeps : depManagements) {
+//                    for (var parentDep : dmDeps) {
+//                        if (parentDep.artifactId.equals(dependency.artifactId)
+//                                && parentDep.groupId.equals(dependency.groupId)) {
+//                            resolvedDependencies.add(new Dependency(
+//                                    dependency.groupId,
+//                                    dependency.artifactId,
+//                                    parentDep.versionConstraints,
+//                                    dependency.exclusions,
+//                                    dependency.scope,
+//                                    dependency.optional,
+//                                    dependency.type,
+//                                    dependency.classifier
+//                            ));
+//                            resolved = true;
+//                        }
+//                    }
+//                }
+//                if (!resolved) {
+//                    resolvedDependencies.add(new Dependency(
+//                            dependency.groupId,
+//                            dependency.artifactId,
+//                            dependency.getVersion(),
+//                            dependency.exclusions,
+//                            dependency.scope,
+//                            dependency.optional,
+//                            dependency.type,
+//                            dependency.classifier
+//                    ));
+//                }
+//            } else {
+//                resolvedDependencies.add(dependency);
+//            }
+//        }
+//        for (int i = 0; i < resolvedDependencies.size(); i++) {
+//            var dep = resolvedDependencies.get(i);
+//            var resolvedArtifact = dep.artifactId;
+//            var resolvedGroup = dep.groupId;
+//            var resolvedExclusions = dep.exclusions;
+//            for (int j = 0; j < resolvedExclusions.size(); j++) {
+//                var exclusion = dep.exclusions.get(j);
+//                var resolvedExclusionGroup = exclusion.groupId;
+//                var resolvedExclusionArtifact = exclusion.artifactId;
+//                resolvedExclusions.set(j,
+//                        new Dependency.Exclusion(resolvedExclusionGroup, resolvedExclusionArtifact)
+//                );
+//            }
+//            var resolvedScope = dep.scope;
+//            resolvedDependencies.set(i, new Dependency(
+//                    resolvedGroup,
+//                    resolvedArtifact,
+//                    dep.versionConstraints,
+//                    resolvedExclusions,
+//                    resolvedScope,
+//                    dep.optional,
+//                    resolvedType,
+//                    resolvedClassifier
+//            ));
+//        }
+//        return resolvedDependencies;
+//    }
 
-    private Pair<Map<String, String>, List<DependencyManagement>> extractDependencyResolutionMetadata(Node pomRoot) {
-        Map<String, String> properties = new HashMap<>();
-        var dependencyManagements = new ArrayList<DependencyManagement>();
-        var profilesRoot = pomRoot.selectSingleNode("./*[local-name() ='profiles']");
-        if (profilesRoot != null) {
-            for (final var profile : profilesRoot.selectNodes("*")) {
-                var activationNode = profile.selectSingleNode("./*[local-name() ='activation']");
-                if (activationNode != null) {
-                    var activeByDefault = activationNode
-                            .selectSingleNode("./*[local-name() ='activeByDefault']");
-                    if (activeByDefault != null && activeByDefault.getText().equals("true")) {
-                        var propertiesRoot = profile
-                                .selectSingleNode("./*[local-name() ='properties']");
-                        if (propertiesRoot != null) {
-                            for (final var property : propertiesRoot.selectNodes("*")) {
-                                properties.put(property.getName(), property.getStringValue());
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        var propertiesRoot = pomRoot.selectSingleNode("./*[local-name() ='properties']");
-        if (propertiesRoot != null) {
-            for (final var property : propertiesRoot.selectNodes("*")) {
-                properties.put(property.getName(), property.getStringValue());
-            }
-        }
+    private Pair<Void, List<Set<Dependency>>> extractDependencyResolutionMetadata(Node pomRoot) {
+        var dependencyManagements = new LinkedList<Set<Dependency>>();
         var parentNode = pomRoot.selectSingleNode("./*[local-name() ='parent']");
         if (parentNode != null) {
             var parentGroup = parentNode
@@ -662,20 +459,16 @@ public class DataExtractor {
                         Optional.of("asd")//this.downloadPom(parentGroup, parentArtifact, parentVersion)
                                 .orElseThrow(FileNotFoundException::new).getBytes())).getRootElement();
                 var parentMetadata = this.extractDependencyResolutionMetadata(parentPom);
-                var parentProperties = parentMetadata.getLeft();
-                for (var entry : parentProperties.entrySet()) {
-                    properties.put(entry.getKey(), entry.getValue());
-                }
                 var dependencyManagementNode = parentPom
                         .selectSingleNode("./*[local-name()='dependencyManagement']");
-                DependencyManagement dependencyManagement;
+                Set<Dependency> dependencyManagement;
                 if (dependencyManagementNode != null) {
                     var dependenciesNode = dependencyManagementNode
                             .selectSingleNode("./*[local-name()='dependencies']");
                     var dependencies = extractDependencies(dependenciesNode);
-                    dependencyManagement = new DependencyManagement(dependencies);
+                    dependencyManagement = dependencies;
                 } else {
-                    dependencyManagement = new DependencyManagement(new ArrayList<>());
+                    dependencyManagement = new HashSet<>();
                 }
                 dependencyManagements.add(dependencyManagement);
                 dependencyManagements.addAll(parentMetadata.getRight());
@@ -689,11 +482,11 @@ public class DataExtractor {
                         + Constants.mvnCoordinateSeparator + parentVersion);
             }
         }
-        return new ImmutablePair<>(properties, dependencyManagements);
+        return new ImmutablePair<Void, List<Set<Dependency>>>(null, dependencyManagements);
     }
 
-    private List<Dependency> extractDependencies(Node dependenciesNode) {
-        ArrayList<Dependency> dependencies = new ArrayList<>();
+    private Set<Dependency> extractDependencies(Node dependenciesNode) {
+        var dependencies = new HashSet<Dependency>();
         if (dependenciesNode != null) {
             for (var dependencyNode : dependenciesNode
                     .selectNodes("./*[local-name()='dependency']")) {

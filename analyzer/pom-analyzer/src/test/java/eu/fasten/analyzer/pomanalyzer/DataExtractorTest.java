@@ -15,26 +15,17 @@
  */
 package eu.fasten.analyzer.pomanalyzer;
 
-import eu.fasten.analyzer.pomanalyzer.DataExtractor;
-import eu.fasten.core.data.Constants;
-import eu.fasten.core.maven.data.Dependency;
-import eu.fasten.core.maven.data.DependencyData;
-import eu.fasten.core.maven.data.DependencyManagement;
-import eu.fasten.core.maven.utils.MavenUtilities;
-import org.dom4j.DocumentException;
-import org.dom4j.io.SAXReader;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+
+import java.io.IOException;
+
 import org.json.JSONObject;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.io.ByteArrayInputStream;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import eu.fasten.core.data.Constants;
+import eu.fasten.core.maven.utils.MavenUtilities;
 
 public class DataExtractorTest {
 
@@ -83,7 +74,7 @@ public class DataExtractorTest {
 
     @Test
     public void extractDependencyDataTest() throws IOException {
-        var expected = DependencyData.fromJSON(new JSONObject("{\n" +
+        var expected = new JSONObject("{\n" +
                 "   \"dependencyManagement\":{\n" +
                 "      \"dependencies\":[\n" +
                 "\n" +
@@ -110,14 +101,14 @@ public class DataExtractorTest {
                 "         \"type\":\"\"\n" +
                 "      }\n" +
                 "   ]\n" +
-                "}"));
+                "}");
         var actual = dataExtractor.extractDependencyData("junit", "junit", "4.12");
         assertEquals(expected, actual);
     }
 
     @Test
     public void extractDependencyDataWithParentPropertiesTest() throws IOException {
-        var expected = DependencyData.fromJSON(new JSONObject("{\n" +
+        var expected = new JSONObject("{\n" +
                 "   \"dependencyManagement\":{\n" +
                 "      \"dependencies\":[\n" +
                 "\n" +
@@ -258,7 +249,7 @@ public class DataExtractorTest {
                 "         \"type\":\"\"\n" +
                 "      }\n" +
                 "   ]\n" +
-                "}"));
+                "}");
         var actual = dataExtractor.extractDependencyData("org.mobicents.ha.javax.sip", "restcomm-jain-sip-ha-hazelcast-backend", "1.6.6");
         assertEquals(expected, actual);
     }
@@ -279,7 +270,7 @@ public class DataExtractorTest {
 
     @Test
     public void extractAllDataTest() throws IOException {
-        var expectedDependencyData = DependencyData.fromJSON(new JSONObject("{\n" +
+        var expectedDependencyData = new JSONObject("{\n" +
                 "   \"dependencyManagement\":{\n" +
                 "      \"dependencies\":[\n" +
                 "\n" +
@@ -306,7 +297,7 @@ public class DataExtractorTest {
                 "         \"type\":\"\"\n" +
                 "      }\n" +
                 "   ]\n" +
-                "}"));
+                "}");
         var actualDependencyData = dataExtractor.extractDependencyData("junit", "junit", "4.12");
         var expectedRepoUrl = "http://github.com/junit-team/junit/tree/master";
         var actualRepoUrl = dataExtractor.extractRepoUrl("junit", "junit", "4.12");
@@ -354,53 +345,6 @@ public class DataExtractorTest {
     public void noProjectNameTest() throws IOException {
         var result = dataExtractor.extractProjectName("com.alicp.jetcache", "jetcache-redis-lettuce", "2.5.13");
         assertNull(result);
-    }
-
-    @Test
-    public void replaceDomTreeReferenceTest() throws DocumentException {
-        var name = "fasten";
-        var xml = "<project xmlns=\"http://maven.apache.org/POM/4.0.0\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">" +
-                "<name>" + name + "</name>" +
-                "</project>";
-        var value = dataExtractor.replacePropertyReferences("${project.name}", new HashMap<>(), new SAXReader().read(new ByteArrayInputStream(xml.getBytes())).getRootElement());
-        assertEquals(name, value);
-    }
-
-    @Test
-    public void replaceSubStringReferenceTest() throws DocumentException {
-        var xml = "<project xmlns=\"http://maven.apache.org/POM/4.0.0\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">" + "</project>";
-        var map = new HashMap<String, String>();
-        map.put("name", "FASTEN");
-        var value = dataExtractor.replacePropertyReferences("Welcome to ${name} Project!", map, new SAXReader().read(new ByteArrayInputStream(xml.getBytes())).getRootElement());
-        assertEquals("Welcome to FASTEN Project!", value);
-    }
-
-    @Test
-    public void replaceMultipleSubStringReferenceTest() throws DocumentException {
-        var xml = "<project xmlns=\"http://maven.apache.org/POM/4.0.0\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">" + "</project>";
-        var map = new HashMap<String, String>();
-        map.put("i", "1");
-        map.put("j", "2");
-        var value = dataExtractor.replacePropertyReferences("a${i}b${j}c", map, new SAXReader().read(new ByteArrayInputStream(xml.getBytes())).getRootElement());
-        assertEquals("a1b2c", value);
-    }
-
-    @Test
-    public void noReferenceTest() throws DocumentException {
-        var xml = "<project xmlns=\"http://maven.apache.org/POM/4.0.0\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">" + "</project>";
-        var map = new HashMap<String, String>();
-        var str = "hello world";
-        var value = dataExtractor.replacePropertyReferences(str, map, new SAXReader().read(new ByteArrayInputStream(xml.getBytes())).getRootElement());
-        assertEquals(str, value);
-    }
-
-    @Test
-    public void noReferenceValueTest() throws DocumentException {
-        var xml = "<project xmlns=\"http://maven.apache.org/POM/4.0.0\" xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xsi:schemaLocation=\"http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd\">" + "</project>";
-        var map = new HashMap<String, String>();
-        var str = "hello ${world}";
-        var value = dataExtractor.replacePropertyReferences(str, map, new SAXReader().read(new ByteArrayInputStream(xml.getBytes())).getRootElement());
-        assertEquals(str, value);
     }
 
     @Test
