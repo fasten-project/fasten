@@ -94,10 +94,5 @@ public class DummyPlugin extends Plugin {
         public void freeResource() {
 
         }
-
-        @Override
-        public Optional<LinkedList<String>> getWorkingSet() {
-            return Optional.of(this.workingSet);
-        }
     }
 }
