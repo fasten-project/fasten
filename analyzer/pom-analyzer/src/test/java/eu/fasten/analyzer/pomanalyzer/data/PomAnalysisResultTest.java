@@ -15,18 +15,14 @@
  */
 package eu.fasten.analyzer.pomanalyzer.data;
 
-import eu.fasten.core.maven.utils.MavenUtilities;
+import static org.junit.jupiter.api.Assertions.fail;
 
-public class InputCoord {
+import org.junit.jupiter.api.Test;
 
-	public String groupId;
-	public String artifactId;
-	public String version;
-	public String artifactRepository;
+public class PomAnalysisResultTest {
 
-	public String getPomUrl() {
-		return MavenUtilities.getPomUrl(groupId, artifactId, version, artifactRepository);
+	@Test
+	public void todo() {
+		fail();
 	}
-	
-	// TODO hashCode & equals
 }
