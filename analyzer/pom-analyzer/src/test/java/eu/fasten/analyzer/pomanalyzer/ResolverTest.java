@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -33,7 +34,10 @@ import org.junit.jupiter.api.Test;
 import eu.fasten.analyzer.pomanalyzer.data.ResolutionResult;
 import eu.fasten.core.utils.TestUtils;
 
-@Disabled(value = "Downloads Maven packages, should not be run on every CI job.")
+// The artifact source resolution breaks caching mechanisms by deleting packages from the
+// local .m2 folder. This exact functionality is tested here, so the test suite will download
+// dependencies over-and-over again on every build. Enable this test only for local tests.
+@Disabled
 public class ResolverTest {
 
 	@Test
@@ -53,9 +57,8 @@ public class ResolverTest {
 
 	@Test
 	public void resolveDirectDependencies() {
-		Set<ResolutionResult> actual = resolveTestPom("ResolverTest/basic.pom");
-
-		Set<ResolutionResult> expected = new HashSet<>();
+		var actual = resolveTestPom("basic.pom");
+		var expected = new HashSet<ResolutionResult>();
 		expected.add(JSR305);
 		expected.add(COMMONS_LANG3);
 		expected.add(REMLA);
@@ -72,9 +75,8 @@ public class ResolverTest {
 	@Test
 	public void ignoresExistingPackages() {
 		db.add(COMMONS_LANG3.coordinate);
-		Set<ResolutionResult> actual = resolveTestPom("ResolverTest/basic.pom");
-
-		Set<ResolutionResult> expected = new HashSet<>();
+		var actual = resolveTestPom("basic.pom");
+		var expected = new HashSet<ResolutionResult>();
 		expected.add(JSR305);
 		expected.add(REMLA);
 
@@ -83,9 +85,8 @@ public class ResolverTest {
 
 	@Test
 	public void resolveTransitiveDependencies() {
-		Set<ResolutionResult> actual = resolveTestPom("ResolverTest/transitive.pom");
-
-		Set<ResolutionResult> expected = new HashSet<>();
+		var actual = resolveTestPom("transitive.pom");
+		var expected = new HashSet<ResolutionResult>();
 		expected.add(COMMONS_TEXT);
 		expected.add(COMMONS_LANG3);
 
@@ -93,9 +94,16 @@ public class ResolverTest {
 	}
 
 	@Test
+	public void noDependencies() {
+		var actual = resolveTestPom("no-dependencies.pom");
+		var expected = new HashSet<ResolutionResult>();
+		assertEquals(expected, actual);
+	}
+
+	@Test
 	public void unresolvableDependencies() {
 		assertThrows(NoResolvedResultException.class, () -> {
-			resolveTestPom("ResolverTest/unresolvable.pom");
+			resolveTestPom("unresolvable.pom");
 		});
 	}
 
@@ -119,8 +127,9 @@ public class ResolverTest {
 			"https://gitlab.com/api/v4/projects/26117144/packages/maven", //
 			new File("/remla/mylib/0.0.5/mylib-0.0.5.pom"));
 
-	private Set<ResolutionResult> resolveTestPom(String f) {
-		File pom = TestUtils.getTestResource(f);
+	private Set<ResolutionResult> resolveTestPom(String pathToPom) {
+		var fullPath = Path.of(ResolverTest.class.getSimpleName(), pathToPom);
+		File pom = TestUtils.getTestResource(fullPath.toString());
 		Set<ResolutionResult> actual = sut.resolveDependenciesFromPom(pom);
 		actual.forEach(rr -> {
 			rr.localPomFile = stripLocalBasePath(rr.localPomFile);
