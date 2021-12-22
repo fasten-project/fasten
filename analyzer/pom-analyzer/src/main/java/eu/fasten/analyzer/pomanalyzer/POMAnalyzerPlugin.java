@@ -19,7 +19,9 @@ import java.io.File;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
+import org.apache.maven.model.Model;
 import org.jooq.DSLContext;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -43,6 +45,7 @@ public class POMAnalyzerPlugin extends Plugin {
 	public static class POMAnalyzer extends AbstractKafkaPlugin implements DBConnector {
 
 		private final Downloader downloader = new Downloader();
+		private final EffectiveModelBuilder modelBuilder = new EffectiveModelBuilder();
 		private final PomExtractor extractor = new PomExtractor();
 		private final DBStorage store = new DBStorage();
 		private Resolver resolver = new Resolver();
@@ -67,22 +70,20 @@ public class POMAnalyzerPlugin extends Plugin {
 		public void consume(String record) {
 			beforeConsume();
 
-			var artifact = parseInput(record);
+			var artifact = bootstrapFirstResolutionResultFromInput(record);
 			artifact.localPomFile = downloader.downloadPomToTemp(artifact);
 
 			process(artifact);
-			var deps = resolver.resolveDependenciesFromPom(artifact.localPomFile);
-			deps.forEach(dep -> {
-				process(dep);
-			});
 		}
 
-		private static ResolutionResult parseInput(String record) {
+		private static ResolutionResult bootstrapFirstResolutionResultFromInput(String record) {
 			try {
 				var json = new JSONObject(record);
+
+				// TODO remove this if-block if message does not occur in the log
 				if (json.has("payload")) {
-					throw new RuntimeException(
-							"This seems to be a relict of the past. If the error is raised, fix the PomAnalyzerplugin.consume method.");
+					String msg = "This seems to be a relict of the past. If the error is raised, fix the PomAnalyzerplugin.consume method.";
+					throw new RuntimeException(msg);
 				}
 
 				var groupId = json.getString("groupId").replaceAll("[\\n\\t ]", "");
@@ -104,8 +105,34 @@ public class POMAnalyzerPlugin extends Plugin {
 		}
 
 		private void process(ResolutionResult artifact) {
-			var result = extractor.process(artifact.localPomFile, artifact.artifactRepository);
+
+			// resolve dependencies to
+			// 1) have dependencies
+			// 2) identify artifact sources
+			// 3) make sure all dependencies exist in local .m2 folder
+			var deps = resolver.resolveDependenciesFromPom(artifact.localPomFile);
+
+			// merge pom with all its parents and resolve properties
+			Model m = modelBuilder.buildEffectiveModel(artifact.localPomFile);
+
+			// extract contents of pom file
+			var result = extractor.process(m);
+
+			// remember source repository for artifact
+			result.artifactRepository = artifact.artifactRepository;
+
+			// remember concrete resolution result
+			result.resolvedCompileAndRuntimeDependencies = deps.stream() //
+					.map(r -> r.coordinate) //
+					.collect(Collectors.toSet());
+
 			results.add(result);
+			store.save(result);
+
+			// resolution can be different for dependencies, so process them independently
+			deps.forEach(dep -> {
+				process(dep);
+			});
 		}
 
 		@Override
@@ -114,34 +141,13 @@ public class POMAnalyzerPlugin extends Plugin {
 			for (var data : results) {
 				res.add(serialize(data));
 			}
-			store.saveAll(results);
 			return res;
 		}
 
-		private static SingleRecord serialize(PomAnalysisResult d) {
-			var json = new JSONObject();
-
-			json.put("forge", Constants.mvnForge);
-			json.put("artifactRepository", d.artifactRepository);
-
-			json.put("artifactId", d.artifact);
-			json.put("groupId", d.group);
-			json.put("version", d.version);
-			json.put("packagingType", d.packagingType);
-
-			json.put("parentCoordinate", (d.parentCoordinate != null) ? d.parentCoordinate : "");
-
-			json.put("dependencies", new JSONArray(d.dependencies).toString());
-			json.put("dependencyManagement", new JSONArray(d.dependencyManagement).toString());
-
-			json.put("date", d.releaseDate);
-			json.put("repoUrl", (d.repoUrl != null) ? d.repoUrl : "");
-			json.put("commitTag", (d.commitTag != null) ? d.commitTag : "");
-			json.put("sourcesUrl", d.sourcesUrl);
-			json.put("projectName", (d.projectName != null) ? d.projectName : "");
+		public static SingleRecord serialize(PomAnalysisResult d) {
 
 			var res = new SingleRecord();
-			res.payload = json.toString();
+			res.payload = DBStorage.toJson(d).toString();
 			res.outputPath = getOutputPath(d);
 
 			return res;

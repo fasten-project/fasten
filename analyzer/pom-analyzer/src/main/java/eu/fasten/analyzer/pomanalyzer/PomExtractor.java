@@ -27,20 +27,16 @@ import eu.fasten.analyzer.pomanalyzer.data.PomAnalysisResult;
 
 public class PomExtractor {
 
-	public PomAnalysisResult process(File localPomFile, String artifactRepository) {
+	public PomAnalysisResult process(Model model) {
 
-		var model = parsePom(localPomFile);
 		model.getVersion();
 		model.getArtifactId();
 		model.getPackaging();
+		String tag = model.getScm().getTag();
 		// TODO continue
 
 		var data = new PomAnalysisResult();
 
-		data.artifactRepository = artifactRepository;
-
-		// see
-		// https://riptutorial.com/maven/example/30104/reading-a-pom-xml-at-runtime-using-maven-model-plugin
 
 //		data.artifact = payload.getString("artifactId").replaceAll("[\\n\\t ]", "");
 //		data.group = payload.getString("groupId").replaceAll("[\\n\\t ]", "");
