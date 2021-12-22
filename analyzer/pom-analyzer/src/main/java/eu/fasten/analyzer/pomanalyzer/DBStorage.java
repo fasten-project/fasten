@@ -70,15 +70,15 @@ public class DBStorage {
 		String product = r.group + Constants.mvnCoordinateSeparator + r.artifact;
 		final var packageId = metadataDao.insertPackage(product, Constants.mvnForge, r.projectName, r.repoUrl, null);
 
-		var pvMeta = new JSONObject();
-		pvMeta.put("dependencyManagement",
-				(r.dependencyManagement != null) ? new JSONArray(r.dependencyManagement) : null);
-		pvMeta.put("dependencies",
-				(r.dependencies != null) ? new JSONArray(r.dependencies) : null);
-		pvMeta.put("commitTag", (r.commitTag != null) ? r.commitTag : "");
-		pvMeta.put("sourcesUrl", (r.sourcesUrl != null) ? r.sourcesUrl : "");
-		pvMeta.put("packagingType", (r.packagingType != null) ? r.packagingType : "");
-		pvMeta.put("parentCoordinate", (r.parentCoordinate != null) ? r.parentCoordinate : "");
+		var pvMeta = toJson(r);
+//		pvMeta.put("dependencyManagement",
+//				(r.dependencyManagement != null) ? new JSONArray(r.dependencyManagement) : null);
+//		pvMeta.put("dependencies",
+//				(r.dependencies != null) ? new JSONArray(r.dependencies) : null);
+//		pvMeta.put("commitTag", (r.commitTag != null) ? r.commitTag : "");
+//		pvMeta.put("sourcesUrl", (r.sourcesUrl != null) ? r.sourcesUrl : "");
+//		pvMeta.put("packagingType", (r.packagingType != null) ? r.packagingType : "");
+//		pvMeta.put("parentCoordinate", (r.parentCoordinate != null) ? r.parentCoordinate : "");
 
 		assertNotNull(r.artifactRepository);
 
@@ -107,5 +107,44 @@ public class DBStorage {
 				return new Timestamp(timestamp);
 			}
 		}
+	}
+
+	public static JSONObject toJson(PomAnalysisResult d) {
+		var json = new JSONObject();
+
+		assertNotNull(d.forge);
+		assertNotNull(d.artifactRepository);
+		assertNotNull(d.group);
+		assertNotNull(d.artifact);
+		assertNotNull(d.version);
+		assertNotNull(d.packagingType);
+		assertNotNull(d.dependencies);
+		assertNotNull(d.dependencyManagement);
+		assertNotNull(d.sourcesUrl);
+		// TODO add remaining asserts
+
+		json.put("forge", d.forge);
+		json.put("artifactRepository", d.artifactRepository);
+
+		json.put("groupId", d.group);
+		json.put("artifactId", d.artifact);
+		json.put("version", d.version);
+		json.put("packagingType", d.packagingType);
+
+		json.put("parentCoordinate", (d.parentCoordinate != null) ? d.parentCoordinate : "");
+
+		json.put("dependencies", new JSONArray(d.dependencies).toString());
+		json.put("dependencyManagement", new JSONArray(d.dependencyManagement).toString());
+
+		json.put("resolvedCompileAndRuntimeDependencies",
+				new JSONArray(d.resolvedCompileAndRuntimeDependencies).toString());
+
+		json.put("date", d.releaseDate);
+		json.put("repoUrl", (d.repoUrl != null) ? d.repoUrl : "");
+		json.put("commitTag", (d.commitTag != null) ? d.commitTag : "");
+		json.put("sourcesUrl", d.sourcesUrl);
+		json.put("projectName", (d.projectName != null) ? d.projectName : "");
+
+		return json;
 	}
 }
