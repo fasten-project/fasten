@@ -58,14 +58,9 @@ import java.util.Optional;
 public class DataExtractor {
 
     private static final Logger logger = LoggerFactory.getLogger(DataExtractor.class);
-    private final List<String> mavenRepos;
     private String mavenCoordinate = null;
     private String pomContents = null;
     private Pair<String, Pair<Map<String, String>, List<DependencyManagement>>> resolutionMetadata = null;
-
-    public DataExtractor(List<String> mavenRepos) {
-        this.mavenRepos = mavenRepos;
-    }
 
     /**
      * Utility function that reads the contents of a file to a String.
@@ -170,7 +165,7 @@ public class DataExtractor {
      * @return Link to Maven sources jar file
      */
     public String generateMavenSourcesLink(String groupId, String artifactId, String version) {
-        for (var repo : this.mavenRepos) {
+        for (var repo : (Iterable)null) {
             var url = repo + groupId.replace('.', '/') + "/" + artifactId + "/"
                     + version + "/" + artifactId + "-" + version + "-sources.jar";
             try {
@@ -411,16 +406,16 @@ public class DataExtractor {
         String requestedCoord = groupId + Constants.mvnCoordinateSeparator + artifactId + Constants.mvnCoordinateSeparator + version;
         boolean isCurrentCoord = requestedCoord.equals(this.mavenCoordinate);
 
-        String content = isCurrentCoord ?
-                this.pomContents :
-                this.downloadPom(groupId, artifactId, version).orElseThrow(() -> new NoSuchElementException("could not find pom file for " + requestedCoord));
-
+//        String content = isCurrentCoord ?
+//                this.pomContents :
+//                this.downloadPom(groupId, artifactId, version).orElseThrow(() -> new NoSuchElementException("could not find pom file for " + requestedCoord));
+        String content = "";
         var pomByteStream = new ByteArrayInputStream(content.getBytes());
         return new SAXReader().read(pomByteStream).getRootElement();
     }
 
     private Element getPomRootElement(String pomUrl) throws IOException, DocumentException {
-        var pomByteStream = new ByteArrayInputStream(this.downloadPom(pomUrl).orElseThrow(FileNotFoundException::new).getBytes());
+    	ByteArrayInputStream pomByteStream = null;//new ByteArrayInputStream(this.downloadPom(pomUrl).orElseThrow(FileNotFoundException::new).getBytes());
         return new SAXReader().read(pomByteStream).getRootElement();
     }
 
@@ -664,7 +659,7 @@ public class DataExtractor {
                     .selectSingleNode("./*[local-name() ='version']").getText();
             try {
                 var parentPom = new SAXReader().read(new ByteArrayInputStream(
-                        this.downloadPom(parentGroup, parentArtifact, parentVersion)
+                        Optional.of("asd")//this.downloadPom(parentGroup, parentArtifact, parentVersion)
                                 .orElseThrow(FileNotFoundException::new).getBytes())).getRootElement();
                 var parentMetadata = this.extractDependencyResolutionMetadata(parentPom);
                 var parentProperties = parentMetadata.getLeft();
@@ -756,30 +751,5 @@ public class DataExtractor {
             }
         }
         return dependencies;
-    }
-
-    private Optional<String> downloadPom(String groupId, String artifactId, String version) {
-        var pom = MavenUtilities.downloadPom(groupId, artifactId, version, this.mavenRepos);
-
-        if (pom.isPresent()) {
-            this.mavenCoordinate = groupId + Constants.mvnCoordinateSeparator + artifactId
-                    + Constants.mvnCoordinateSeparator + version;
-            this.pomContents = pom.flatMap(DataExtractor::fileToString).get();
-            if (!pom.get().delete()) {
-                logger.warn("Could not delete the POM file " + pom.toString());
-            }
-            return Optional.of(this.pomContents);
-        }
-
-        return Optional.empty();
-    }
-
-    private Optional<String> downloadPom(String pomUrl) {
-        var pomFile = MavenUtilities.downloadPomFile(pomUrl);
-        var pomFileContent = pomFile.flatMap(DataExtractor::fileToString);
-        if (pomFile.isPresent() && !pomFile.get().delete()) {
-            logger.warn("Could not delete the POM file " + pomFile.toString());
-        }
-        return pomFileContent;
     }
 }
