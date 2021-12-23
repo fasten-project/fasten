@@ -17,6 +17,7 @@ package eu.fasten.core.maven.data;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.util.List;
 import java.util.function.Consumer;
 
 import org.junit.jupiter.api.Test;
@@ -76,8 +77,18 @@ public class VersionConstraintTest {
 				vc("1.1", false, "", false));
 	}
 
+	@Test
+	public void equality() {
+		for (var spec : new String[] { "1.0", "[1.0]", "(,1.0]", "[1.2,1.3]", "[1.0,2.0)", "[1.5,)" }) {
+			var a = new VersionConstraint(spec);
+			var b = new VersionConstraint(spec);
+			assertEquals(a, b);
+			assertEquals(a.hashCode(), b.hashCode());
+		}
+	}
+
 	private static void validate(String spec, Consumer<VersionConstraint>... validators) {
-		var vcs = VersionConstraint.resolveMultipleVersionConstraints(spec);
+		var vcs = List.copyOf(VersionConstraint.resolveMultipleVersionConstraints(spec));
 		assertEquals(validators.length, vcs.size());
 		for (var i = 0; i < vcs.size(); i++) {
 			validators[i].accept(vcs.get(i));

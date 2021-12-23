@@ -18,12 +18,13 @@ package eu.fasten.core.maven.data;
 import static eu.fasten.core.utils.Asserts.assertContains;
 import static eu.fasten.core.utils.Asserts.assertNotNullOrEmpty;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringStyle;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
@@ -36,8 +37,8 @@ import eu.fasten.core.data.Constants;
 public class Dependency extends MavenProduct {
 	public static final Dependency empty = new Dependency("", "", "");
 
-	public final List<VersionConstraint> versionConstraints;
-	public final List<Exclusion> exclusions;
+	public final Set<VersionConstraint> versionConstraints;
+	public final Set<Exclusion> exclusions;
 	public final String scope;
 	public final boolean optional;
 	public final String type;
@@ -62,8 +63,8 @@ public class Dependency extends MavenProduct {
 	 * @param type               Type of the dependency
 	 * @param classifier         Classifier for dependency
 	 */
-	public Dependency(final String groupId, final String artifactId, final List<VersionConstraint> versionConstraints,
-			final List<Exclusion> exclusions, final String scope, final boolean optional, final String type,
+	public Dependency(final String groupId, final String artifactId, final Set<VersionConstraint> versionConstraints,
+			final Set<Exclusion> exclusions, final String scope, final boolean optional, final String type,
 			final String classifier) {
 		super(groupId, artifactId);
 		this.versionConstraints = versionConstraints;
@@ -81,14 +82,14 @@ public class Dependency extends MavenProduct {
 	}
 
 	public Dependency(final String groupId, final String artifactId, final String version,
-			final List<Exclusion> exclusions, final String scope, final boolean optional, final String type,
+			final Set<Exclusion> exclusions, final String scope, final boolean optional, final String type,
 			final String classifier) {
 		this(groupId, artifactId, VersionConstraint.resolveMultipleVersionConstraints(version), exclusions, scope,
 				optional, type, classifier);
 	}
 
 	public Dependency(final String groupId, final String artifactId, final String version) {
-		this(groupId, artifactId, version, new ArrayList<>(), "compile", false, "jar", "");
+		this(groupId, artifactId, version, new HashSet<>(), "compile", false, "jar", "");
 	}
 
 	public MavenProduct product() {
@@ -102,9 +103,10 @@ public class Dependency extends MavenProduct {
 	 */
 	public String[] getVersionConstraints() {
 		var constraints = new String[this.versionConstraints.size()];
-		for (int i = 0; i < versionConstraints.size(); i++) {
-			constraints[i] = versionConstraints.get(i).toString();
-		}
+		var i = new int[] { 0 };
+		versionConstraints.forEach(vc -> {
+			constraints[i[0]++] = vc.spec;
+		});
 		return constraints;
 	}
 
@@ -204,13 +206,13 @@ public class Dependency extends MavenProduct {
 	public static Dependency fromJSON(JSONObject json) {
 		var artifactId = json.getString("artifactId");
 		var groupId = json.getString("groupId");
-		var versionConstraints = new ArrayList<VersionConstraint>();
+		var versionConstraints = new HashSet<VersionConstraint>();
 		if (json.has("versionConstraints")) {
 			json.getJSONArray("versionConstraints").forEach(s -> {
 				versionConstraints.add(new VersionConstraint((String) s));
 			});
 		}
-		var exclusions = new ArrayList<Exclusion>();
+		var exclusions = new HashSet<Exclusion>();
 		if (json.has("exclusions")) {
 			var exclusionsJson = json.getJSONArray("exclusions");
 			for (var i = 0; i < exclusionsJson.length(); i++) {
@@ -237,7 +239,6 @@ public class Dependency extends MavenProduct {
 
 	@Override
 	public String toString() {
-		return ToStringBuilder.reflectionToString(this);
+		return ToStringBuilder.reflectionToString(this, ToStringStyle.MULTI_LINE_STYLE);
 	}
-
 }

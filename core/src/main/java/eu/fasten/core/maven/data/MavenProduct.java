@@ -18,50 +18,47 @@
 
 package eu.fasten.core.maven.data;
 
-
-import eu.fasten.core.data.Constants;
-
-import java.util.Objects;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
+import org.apache.commons.lang3.builder.ToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringStyle;
 
 /**
  * A versionless Maven artifact
  */
 public class MavenProduct {
 
-    public long id;
-    public String groupId;
-    public String artifactId;
+	public long id;
+	public String groupId;
+	public String artifactId;
 
-    public MavenProduct(){}
+	public MavenProduct() {
+	}
 
-    public MavenProduct(final String groupId, final String artifactId) {
-        this.id = 0;
-        this.groupId = groupId;
-        this.artifactId = artifactId;
-    }
+	public MavenProduct(final String groupId, final String artifactId) {
+		this.id = 0;
+		this.groupId = groupId;
+		this.artifactId = artifactId;
+	}
 
-    public MavenProduct(long id, String groupId, String artifactId) {
-        this.id = id;
-        this.groupId = groupId;
-        this.artifactId = artifactId;
-    }
+	public MavenProduct(long id, String groupId, String artifactId) {
+		this.id = id;
+		this.groupId = groupId;
+		this.artifactId = artifactId;
+	}
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        MavenProduct that = (MavenProduct) o;
-        return groupId.equals(that.groupId) &&
-                artifactId.equals(that.artifactId);
-    }
+	@Override
+	public boolean equals(Object obj) {
+		return EqualsBuilder.reflectionEquals(this, obj);
+	}
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(groupId, artifactId);
-    }
+	@Override
+	public int hashCode() {
+		return HashCodeBuilder.reflectionHashCode(this);
+	}
 
-    @Override
-    public String toString() {
-        return String.format("%s%s%s", groupId, Constants.mvnCoordinateSeparator, artifactId);
-    }
+	@Override
+	public String toString() {
+		return ToStringBuilder.reflectionToString(this, ToStringStyle.MULTI_LINE_STYLE);
+	}
 }

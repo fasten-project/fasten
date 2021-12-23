@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
@@ -110,7 +111,7 @@ public class DependencyGraphBuilder {
     }
 
     public List<Revision> findMatchingRevisions(List<Revision> revisions,
-                                                List<VersionConstraint> constraints) {
+                                                Set<VersionConstraint> constraints) {
         if (revisions == null) {
             return Collections.emptyList();
         }
