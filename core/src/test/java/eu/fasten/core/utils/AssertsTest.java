@@ -32,4 +32,16 @@ public class AssertsTest {
 	public void assertNotNull_ok() {
 		Asserts.assertNotNull("");
 	}
+
+	@Test
+	public void assertContains_fail() {
+		assertThrows(IllegalStateException.class, () -> {
+			Asserts.assertContains(new String[] { "a", "b", "c" }, "x");
+		});
+	}
+
+	@Test
+	public void assertContains_ok() {
+		Asserts.assertContains(new String[] { "a", "b", "c" }, "a");
+	}
 }

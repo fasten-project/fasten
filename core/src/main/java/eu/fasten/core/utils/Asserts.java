@@ -19,8 +19,22 @@ public class Asserts {
 
 	public static void assertNotNull(Object o) {
 		if (o == null) {
-			throw new IllegalStateException("should not be null");
+			throw $("should not be null");
 		}
+	}
+
+	public static <T> void assertContains(T[] ts, T e) {
+		for (T a : ts) {
+			if (e.equals(a)) {
+				return;
+			}
+		}
+		throw $("Expected element not contained in array");
+	}
+
+	private static IllegalStateException $(String msg, Object... args) {
+		String s = String.format(msg, args);
+		return new IllegalStateException(s);
 	}
 
 	// TODO add more assertions as we go
