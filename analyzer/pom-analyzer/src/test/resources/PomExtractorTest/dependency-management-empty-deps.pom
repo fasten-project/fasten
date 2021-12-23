@@ -6,12 +6,9 @@
 	<groupId>test</groupId>
 	<artifactId>PomAnalyzerTest</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-
-	<scm>
-		<connection>scmcon</connection>
-		<developerConnection>scmdevcon</developerConnection>
-		<tag>scmtag</tag>
-		<url>scmurl</url>
-	</scm>
-
+	
+	<dependencyManagement>
+		<dependencies></dependencies>
+	</dependencyManagement>
+	
 </project>

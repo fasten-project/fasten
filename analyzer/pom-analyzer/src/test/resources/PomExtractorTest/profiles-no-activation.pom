@@ -1,0 +1,65 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+
+	<groupId>test</groupId>
+	<artifactId>PomAnalyzerTest</artifactId>
+	<version>0.0.1-SNAPSHOT</version>
+
+	<profiles>
+
+		<profile>
+			<id>p1</id>
+			<dependencies>
+				<dependency>
+					<groupId>g1</groupId>
+					<artifactId>a1</artifactId>
+					<version>1</version>
+				</dependency>
+			</dependencies>
+		</profile>
+
+		<profile>
+			<id>p2</id>
+			<activation>
+			</activation>
+			<dependencies>
+				<dependency>
+					<groupId>g2</groupId>
+					<artifactId>a2</artifactId>
+					<version>2</version>
+				</dependency>
+			</dependencies>
+		</profile>
+
+		<profile>
+			<id>p3</id>
+			<activation>
+				<activeByDefault></activeByDefault>
+			</activation>
+			<dependencies>
+				<dependency>
+					<groupId>g3</groupId>
+					<artifactId>a3</artifactId>
+					<version>3</version>
+				</dependency>
+			</dependencies>
+		</profile>
+
+		<profile>
+			<id>p4</id>
+			<activation>
+				<activeByDefault>false</activeByDefault>
+			</activation>
+			<dependencies>
+				<dependency>
+					<groupId>g4</groupId>
+					<artifactId>a4</artifactId>
+					<version>4</version>
+				</dependency>
+			</dependencies>
+		</profile>
+	</profiles>
+
+</project>
