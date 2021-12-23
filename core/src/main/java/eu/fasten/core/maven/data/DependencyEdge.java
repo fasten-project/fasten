@@ -18,79 +18,51 @@
 
 package eu.fasten.core.maven.data;
 
+import static org.apache.commons.lang3.builder.ToStringStyle.MULTI_LINE_STYLE;
+
 import java.io.Serializable;
 import java.util.List;
-import java.util.Objects;
+
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
+import org.apache.commons.lang3.builder.ToStringBuilder;
 
 public class DependencyEdge implements Serializable {
 
-    public Revision source;
-    public Revision target;
-    public String scope;
-    public boolean optional;
-    public List<Dependency.Exclusion> exclusions;
-    public String type;
+	private static final long serialVersionUID = 702120993924942965L;
 
-    public DependencyEdge() {
-    }
+	public Revision source;
+	public Revision target;
+	public String scope;
+	public boolean optional;
+	public List<Exclusion> exclusions;
+	public String type;
 
-    public DependencyEdge(Revision source, Revision target, String scope, boolean optional,
-                          List<Dependency.Exclusion> exclusions, String type) {
-        this.source = source;
-        this.target = target;
-        this.scope = scope;
-        this.optional = optional;
-        this.exclusions = exclusions;
-        this.type = type;
-    }
+	public DependencyEdge() {
+	}
 
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        DependencyEdge that = (DependencyEdge) o;
-        if (optional != that.optional) {
-            return false;
-        }
-        if (!Objects.equals(source, that.source)) {
-            return false;
-        }
-        if (!Objects.equals(target, that.target)) {
-            return false;
-        }
-        if (!Objects.equals(scope, that.scope)) {
-            return false;
-        }
-        if (!Objects.equals(type, that.type)) {
-            return false;
-        }
-        return Objects.equals(exclusions, that.exclusions);
-    }
+	public DependencyEdge(Revision source, Revision target, String scope, boolean optional, List<Exclusion> exclusions,
+			String type) {
+		this.source = source;
+		this.target = target;
+		this.scope = scope;
+		this.optional = optional;
+		this.exclusions = exclusions;
+		this.type = type;
+	}
 
-    @Override
-    public int hashCode() {
-        int result = source != null ? source.hashCode() : 0;
-        result = 31 * result + (target != null ? target.hashCode() : 0);
-        result = 31 * result + (scope != null ? scope.hashCode() : 0);
-        result = 31 * result + (type != null ? type.hashCode() : 0);
-        result = 31 * result + (optional ? 1 : 0);
-        result = 31 * result + (exclusions != null ? exclusions.hashCode() : 0);
-        return result;
-    }
+	@Override
+	public boolean equals(Object obj) {
+		return EqualsBuilder.reflectionEquals(this, obj);
+	}
 
-    @Override
-    public String toString() {
-        return "DependencyEdge{" +
-                "source=" + source +
-                ", target=" + target +
-                ", scope='" + scope + '\'' +
-                ", optional=" + optional +
-                ", exclusions=" + exclusions +
-                ", type='" + type + '\'' +
-                '}';
-    }
+	@Override
+	public int hashCode() {
+		return HashCodeBuilder.reflectionHashCode(this);
+	}
+
+	@Override
+	public String toString() {
+		return ToStringBuilder.reflectionToString(this, MULTI_LINE_STYLE);
+	}
 }
