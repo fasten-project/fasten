@@ -15,7 +15,14 @@
  */
 package eu.fasten.analyzer.pomanalyzer.data;
 
+import static org.apache.commons.lang3.builder.ToStringStyle.MULTI_LINE_STYLE;
+
+import java.util.HashSet;
 import java.util.Set;
+
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
+import org.apache.commons.lang3.builder.ToStringBuilder;
 
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.maven.data.Dependency;
@@ -28,25 +35,36 @@ public class PomAnalysisResult {
 	public String groupId = null;
 	public String packagingType = null;
 	public String version = null;
-	
+
 	// g:a:packaging:version
 	public String parentCoordinate = null;
 
 	public long releaseDate = -1L;
 	public String projectName = null;
 
-	public Set<Dependency> dependencies;
-	public Set<Dependency> dependencyManagement;
-	
+	public final Set<Dependency> dependencies = new HashSet<>();
+	public final Set<Dependency> dependencyManagement = new HashSet<>();
+
 	// set(g:a:packaging:version)
-	public Set<String> resolvedCompileAndRuntimeDependencies;
+	public final Set<String> resolvedCompileAndRuntimeDependencies = new HashSet<>();
 
 	public String repoUrl = null;
 	public String commitTag = null;
 	public String sourcesUrl = null;
 	public String artifactRepository = null;
 
-	// TODO tests
-	
-	// TODO hashCode + equals
+	@Override
+	public boolean equals(Object obj) {
+		return EqualsBuilder.reflectionEquals(this, obj);
+	}
+
+	@Override
+	public int hashCode() {
+		return HashCodeBuilder.reflectionHashCode(this);
+	}
+
+	@Override
+	public String toString() {
+		return ToStringBuilder.reflectionToString(this, MULTI_LINE_STYLE);
+	}
 }

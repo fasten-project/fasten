@@ -123,9 +123,9 @@ public class POMAnalyzerPlugin extends Plugin {
 			result.artifactRepository = artifact.artifactRepository;
 
 			// remember concrete resolution result
-			result.resolvedCompileAndRuntimeDependencies = deps.stream() //
+			result.resolvedCompileAndRuntimeDependencies.addAll(deps.stream() //
 					.map(r -> r.coordinate) //
-					.collect(Collectors.toSet());
+					.collect(Collectors.toSet()));
 
 			results.add(result);
 			store.save(result);
