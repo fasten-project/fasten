@@ -44,4 +44,23 @@ public class AssertsTest {
 	public void assertContains_ok() {
 		Asserts.assertContains(new String[] { "a", "b", "c" }, "a");
 	}
+
+	@Test
+	public void assertNotNullOrEmpty_failNull() {
+		assertThrows(IllegalStateException.class, () -> {
+			Asserts.assertNotNullOrEmpty(null);
+		});
+	}
+
+	@Test
+	public void assertNotNullOrEmpty_failEmpty() {
+		assertThrows(IllegalStateException.class, () -> {
+			Asserts.assertNotNullOrEmpty("");
+		});
+	}
+
+	@Test
+	public void assertNotNullOrEmpty_ok() {
+		Asserts.assertNotNullOrEmpty("...");
+	}
 }

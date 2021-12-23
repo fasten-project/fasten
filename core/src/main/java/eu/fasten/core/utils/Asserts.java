@@ -19,7 +19,7 @@ public class Asserts {
 
 	public static void assertNotNull(Object o) {
 		if (o == null) {
-			throw $("should not be null");
+			throw $("Should not be null.");
 		}
 	}
 
@@ -29,13 +29,19 @@ public class Asserts {
 				return;
 			}
 		}
-		throw $("Expected element not contained in array");
+		throw $("Expected element '%s' not contained in array.", e);
 	}
+
+	public static void assertNotNullOrEmpty(String s) {
+		if (s == null || s.isEmpty()) {
+			throw $("String is null or empty.");
+		}
+	}
+
+	// TODO add more assertions as we go
 
 	private static IllegalStateException $(String msg, Object... args) {
 		String s = String.format(msg, args);
 		return new IllegalStateException(s);
 	}
-
-	// TODO add more assertions as we go
 }
