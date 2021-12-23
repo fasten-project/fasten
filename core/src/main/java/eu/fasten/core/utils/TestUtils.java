@@ -20,15 +20,17 @@ package eu.fasten.core.utils;
 import java.io.File;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Objects;
+import java.net.URL;
 
 public class TestUtils {
-    public static File getTestResource(String name) {
+    public static File getTestResource(String path) {
         File file = null;
-        var url = Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
-                .getResource(name));
+        URL resource = Thread.currentThread().getContextClassLoader().getResource(path);
+		if(resource == null) {
+			throw new IllegalArgumentException("test resource not found: " + path);
+		}
         try {
-            file = new File(new URI(url.toString()).getPath());
+            file = new File(new URI(resource.toString()).getPath());
         } catch (URISyntaxException e) {
             e.printStackTrace();
         }
