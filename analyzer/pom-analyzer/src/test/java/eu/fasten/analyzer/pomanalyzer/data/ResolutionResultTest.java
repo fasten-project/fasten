@@ -17,11 +17,13 @@ package eu.fasten.analyzer.pomanalyzer.data;
 
 import static org.junit.jupiter.api.Assertions.fail;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 public class ResolutionResultTest {
 
 	@Test
+	@Disabled
 	public void todo() {
 		fail();
 	}

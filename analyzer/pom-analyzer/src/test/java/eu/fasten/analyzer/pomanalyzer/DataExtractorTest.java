@@ -22,11 +22,13 @@ import java.io.IOException;
 
 import org.json.JSONObject;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.maven.utils.MavenUtilities;
 
+@Disabled
 public class DataExtractorTest {
 
     private DataExtractor dataExtractor;

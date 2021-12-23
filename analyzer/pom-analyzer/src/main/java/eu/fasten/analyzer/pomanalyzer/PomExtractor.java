@@ -15,28 +15,61 @@
  */
 package eu.fasten.analyzer.pomanalyzer;
 
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
+import static java.lang.String.format;
+
+import java.util.HashSet;
+import java.util.function.Consumer;
 
 import org.apache.maven.model.Model;
-import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
-import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
 
 import eu.fasten.analyzer.pomanalyzer.data.PomAnalysisResult;
+import eu.fasten.core.maven.data.Dependency;
+import eu.fasten.core.maven.data.Exclusion;
 
 public class PomExtractor {
 
 	public PomAnalysisResult process(Model model) {
+		var r = new PomAnalysisResult();
 
-		model.getVersion();
-		model.getArtifactId();
-		model.getPackaging();
-		String tag = model.getScm().getTag();
+		r.version = model.getVersion();
+		r.artifactId = model.getArtifactId();
+		r.groupId = model.getGroupId();
+		r.packagingType = model.getPackaging();
+
+		r.projectName = model.getName();
+
+		ifNotNull(model.getParent(), p -> {
+			var g = $(p.getGroupId(), "?");
+			var a = $(p.getArtifactId(), "?");
+			var v = $(p.getVersion(), "?");
+			r.parentCoordinate = format("%s:%s:pom:%s", g, a, v);
+		});
+
+		ifNotNull(model.getDependencies(), deps -> {
+			deps.forEach(dep -> {
+				var g = $(dep.getGroupId(), "?");
+				var a = $(dep.getArtifactId(), "?");
+				var v = $(dep.getVersion(), "?");
+				var p = $(dep.getType(), "jar");
+				var s = $(dep.getScope(), "compile");
+				var o = bool(dep.getOptional(), false);
+				var c = $(dep.getClassifier(), "");
+
+				var exclusions = new HashSet<Exclusion>();
+				ifNotNull(dep.getExclusions(), excls -> {
+					excls.forEach(excl -> {
+						var eg = $(excl.getGroupId(), "?");
+						var ea = $(excl.getArtifactId(), "?");
+						exclusions.add(new Exclusion(eg, ea));
+					});
+				});
+
+				var d = new Dependency(g, a, v, exclusions, s, o, p, c);
+				r.dependencies.add(d);
+			});
+		});
+
 		// TODO continue
-
-		var data = new PomAnalysisResult();
-
 
 //		data.artifact = payload.getString("artifactId").replaceAll("[\\n\\t ]", "");
 //		data.group = payload.getString("groupId").replaceAll("[\\n\\t ]", "");
@@ -59,17 +92,23 @@ public class PomExtractor {
 //		data.projectName = dataExtractor.extractProjectName(data.group, data.artifact, data.version);
 //		data.parentCoordinate = dataExtractor.extractParentCoordinate(data.group, data.artifact, data.version);
 
-		return data;
-
+		return r;
 	}
 
-	private Model parsePom(File localPomFile) {
-		try {
-			MavenXpp3Reader reader = new MavenXpp3Reader();
-			Model model = reader.read(new FileReader(localPomFile));
-			return model;
-		} catch (IOException | XmlPullParserException e) {
-			throw new RuntimeException(e);
+	private static boolean bool(String s, boolean defaultValue) {
+		if (s == null) {
+			return defaultValue;
+		}
+		return "true".equals(s.trim());
+	}
+
+	private static <T> T $(T obj, T defaultValue) {
+		return obj != null ? obj : defaultValue;
+	}
+
+	private static <T> void ifNotNull(T obj, Consumer<T> consumer) {
+		if (obj != null) {
+			consumer.accept(obj);
 		}
 	}
 }
