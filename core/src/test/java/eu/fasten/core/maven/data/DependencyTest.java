@@ -18,7 +18,7 @@ package eu.fasten.core.maven.data;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-import java.util.ArrayList;
+import java.util.HashSet;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
@@ -37,20 +37,36 @@ public class DependencyTest {
 	public void equalsTest() {
 		Assertions.assertEquals( //
 				new Dependency("junit", "junit", "4.12"), //
-				new Dependency("junit", "junit", "4.12", new ArrayList<>(), "compile", false, "jar", ""));
+				new Dependency("junit", "junit", "4.12", new HashSet<>(), "compile", false, "jar", ""));
 	}
 
 	@Test
 	public void cannotUseInvalidScope() {
 		assertThrows(IllegalStateException.class, () -> {
-			new Dependency("junit", "junit", "4.12", new ArrayList<>(), "", false, "jar", "");
+			new Dependency("junit", "junit", "4.12", new HashSet<>(), "", false, "jar", "");
 		});
 	}
 
 	@Test
 	public void cannotUseEmptyPackagingType() {
 		assertThrows(IllegalStateException.class, () -> {
-			new Dependency("junit", "junit", "4.12", new ArrayList<>(), "", false, "", "");
+			new Dependency("junit", "junit", "4.12", new HashSet<>(), "", false, "", "");
 		});
+	}
+	
+	@Test
+	public void equality() {
+		var a = someDep();
+		var b = someDep();
+		assertEquals(a, b);
+		assertEquals(a.hashCode(), b.hashCode());
+	}
+
+	private Dependency someDep() {
+		var vcs = new HashSet<VersionConstraint>();
+		vcs.add(new VersionConstraint("(,1.0]"));
+		vcs.add(new VersionConstraint("[1.2)"));
+		var excls = new HashSet<Exclusion>();
+		return new Dependency("g", "a", vcs, excls, "compile", true, "jar", "c");
 	}
 }

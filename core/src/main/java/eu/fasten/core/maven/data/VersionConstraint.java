@@ -15,8 +15,8 @@
  */
 package eu.fasten.core.maven.data;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.builder.EqualsBuilder;
@@ -83,15 +83,15 @@ public class VersionConstraint {
 	 * @param spec String specification of version constraints
 	 * @return List of Version Constraints
 	 */
-	public static List<VersionConstraint> resolveMultipleVersionConstraints(String spec) {
+	public static Set<VersionConstraint> resolveMultipleVersionConstraints(String spec) {
 		if (spec == null) {
-			return List.of(new VersionConstraint("*"));
+			return Set.of(new VersionConstraint("*"));
 		}
 		if (spec.startsWith("$")) {
-			return List.of(new VersionConstraint(spec));
+			return Set.of(new VersionConstraint(spec));
 		}
 		final var versionRangesCount = (StringUtils.countMatches(spec, ",") + 1) / 2;
-		var versionConstraints = new ArrayList<VersionConstraint>(versionRangesCount);
+		var versionConstraints = new LinkedHashSet<VersionConstraint>(versionRangesCount);
 		int count = 0;
 		for (int i = 0; i < spec.length(); i++) {
 			if (spec.charAt(i) == ',') {

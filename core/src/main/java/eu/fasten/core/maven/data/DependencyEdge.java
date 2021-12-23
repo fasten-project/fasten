@@ -21,7 +21,7 @@ package eu.fasten.core.maven.data;
 import static org.apache.commons.lang3.builder.ToStringStyle.MULTI_LINE_STYLE;
 
 import java.io.Serializable;
-import java.util.List;
+import java.util.Set;
 
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
@@ -35,13 +35,13 @@ public class DependencyEdge implements Serializable {
 	public Revision target;
 	public String scope;
 	public boolean optional;
-	public List<Exclusion> exclusions;
+	public Set<Exclusion> exclusions;
 	public String type;
 
 	public DependencyEdge() {
 	}
 
-	public DependencyEdge(Revision source, Revision target, String scope, boolean optional, List<Exclusion> exclusions,
+	public DependencyEdge(Revision source, Revision target, String scope, boolean optional, Set<Exclusion> exclusions,
 			String type) {
 		this.source = source;
 		this.target = target;

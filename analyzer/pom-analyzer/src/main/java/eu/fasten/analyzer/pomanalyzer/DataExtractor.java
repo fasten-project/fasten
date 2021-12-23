@@ -28,13 +28,11 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
-import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -49,6 +47,7 @@ import org.slf4j.LoggerFactory;
 
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.maven.data.Dependency;
+import eu.fasten.core.maven.data.Exclusion;
 import eu.fasten.core.maven.utils.MavenUtilities;
 
 public class DataExtractor {
@@ -498,7 +497,7 @@ public class DataExtractor {
                         .selectSingleNode("./*[local-name()='version']");
                 var exclusionsNode = dependencyNode
                         .selectSingleNode("./*[local-name()='exclusions']");
-                var exclusions = new ArrayList<Dependency.Exclusion>();
+                var exclusions = new HashSet<Exclusion>();
                 if (exclusionsNode != null) {
                     for (var exclusionNode : exclusionsNode
                             .selectNodes("./*[local-name()='exclusion']")) {
@@ -507,7 +506,7 @@ public class DataExtractor {
                         var exclusionGroupNode = exclusionNode
                                 .selectSingleNode("./*[local-name()='groupId']");
                         if (exclusionArtifactNode != null && exclusionGroupNode != null) {
-                            exclusions.add(new Dependency.Exclusion(
+                            exclusions.add(new Exclusion(
                                     exclusionGroupNode.getText(),
                                     exclusionArtifactNode.getText()
                             ));

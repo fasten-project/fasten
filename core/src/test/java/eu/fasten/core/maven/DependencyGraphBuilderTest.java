@@ -22,11 +22,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.sql.Timestamp;
 import java.util.List;
+import java.util.Set;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import eu.fasten.core.maven.data.Dependency;
 import eu.fasten.core.maven.data.Revision;
 import eu.fasten.core.maven.data.VersionConstraint;
 
@@ -46,7 +46,7 @@ public class DependencyGraphBuilderTest {
                 new Revision("a", "a", "2.0", new Timestamp(2)),
                 new Revision("a", "a", "3.0", new Timestamp(3))
         );
-        var constraints = List.of(
+        var constraints = Set.of(
                 new VersionConstraint("(1.0,3.0]")
         );
         var expected = List.of(
@@ -56,7 +56,7 @@ public class DependencyGraphBuilderTest {
         var actual = graphBuilder.findMatchingRevisions(revisions, constraints);
         assertEquals(expected, actual);
 
-        constraints = List.of(
+        constraints = Set.of(
                 new VersionConstraint("[2.0,3.0]")
         );
         actual = graphBuilder.findMatchingRevisions(revisions, constraints);
@@ -70,7 +70,7 @@ public class DependencyGraphBuilderTest {
                 new Revision("a", "a", "2.0", new Timestamp(2)),
                 new Revision("a", "a", "3.0", new Timestamp(3))
         );
-        var constraints = List.of(
+        var constraints = Set.of(
                 new VersionConstraint("[1.0,2.0)"),
                 new VersionConstraint("(2.0,3.0]")
         );
@@ -89,12 +89,12 @@ public class DependencyGraphBuilderTest {
                 new Revision("a", "a", "2.0", new Timestamp(2)),
                 new Revision("a", "a", "3.0", new Timestamp(3))
         );
-        var constraints = List.of(new VersionConstraint("1.0"));
+        var constraints = Set.of(new VersionConstraint("1.0"));
         var expected = List.of(new Revision("a", "a", "1.0", new Timestamp(1)));
         var actual = graphBuilder.findMatchingRevisions(revisions, constraints);
         assertEquals(expected, actual);
 
-        constraints = List.of(new VersionConstraint("[1.0]"));
+        constraints = Set.of(new VersionConstraint("[1.0]"));
         actual = graphBuilder.findMatchingRevisions(revisions, constraints);
         assertEquals(expected, actual);
     }
@@ -106,7 +106,7 @@ public class DependencyGraphBuilderTest {
                 new Revision("a", "a", "2.0", new Timestamp(2)),
                 new Revision("a", "a", "3.0", new Timestamp(3))
         );
-        var constraints = List.of(new VersionConstraint("(,2.0]"));
+        var constraints = Set.of(new VersionConstraint("(,2.0]"));
         var expected = List.of(
                 new Revision("a", "a", "1.0", new Timestamp(1)),
                 new Revision("a", "a", "2.0", new Timestamp(2))
@@ -114,7 +114,7 @@ public class DependencyGraphBuilderTest {
         var actual = graphBuilder.findMatchingRevisions(revisions, constraints);
         assertEquals(expected, actual);
 
-        constraints = List.of(new VersionConstraint("[2.0,]"));
+        constraints = Set.of(new VersionConstraint("[2.0,]"));
         expected = List.of(
                 new Revision("a", "a", "2.0", new Timestamp(2)),
                 new Revision("a", "a", "3.0", new Timestamp(3))
@@ -131,7 +131,7 @@ public class DependencyGraphBuilderTest {
                 new Revision("a", "a", "3.0", new Timestamp(3)),
                 new Revision("a", "a", "4.0", new Timestamp(4))
         );
-        var constraints = List.of(
+        var constraints = Set.of(
                 new VersionConstraint("(,1.0]"),
                 new VersionConstraint("[3.0,)")
         );
@@ -143,7 +143,7 @@ public class DependencyGraphBuilderTest {
         var actual = graphBuilder.findMatchingRevisions(revisions, constraints);
         assertEquals(expected, actual);
 
-        constraints = List.of(
+        constraints = Set.of(
                 new VersionConstraint("(,2.0)"),
                 new VersionConstraint("(2.0,)")
         );
