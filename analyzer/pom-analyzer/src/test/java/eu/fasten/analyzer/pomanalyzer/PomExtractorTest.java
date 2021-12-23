@@ -126,12 +126,101 @@ public class PomExtractorTest {
 	}
 
 	@Test
-	@Disabled
+	public void dependencyManagementEmpty() {
+		var actual = extract("dependency-management-empty.pom");
+		var expected = getMinimal();
+		assertEquals(expected, actual);
+	}
+
+	@Test
+	public void dependencyManagementEmptyDependencies() {
+		var actual = extract("dependency-management-empty-deps.pom");
+		var expected = getMinimal();
+		assertEquals(expected, actual);
+	}
+
+	@Test
 	public void dependencyManagement() {
-//		var actual = extract("dependency-management.pom");
-//		var expected = getMinimal();
-//		assertEquals(expected, actual);
-		fail();
+		var actual = extract("dependency-management.pom");
+		var expected = getMinimal();
+		expected.dependencyManagement.add(dep("g1:a1:1"));
+		assertEquals(expected, actual);
+	}
+
+	@Test
+	public void profileEmpty() {
+		var actual = extract("profiles-empty.pom");
+		var expected = getMinimal();
+		assertEquals(expected, actual);
+	}
+
+	@Test
+	public void profileDefaultActivated() {
+		// check that all information is copied over for activated profiles
+		var actual = extract("profiles-default-activation.pom");
+		var expected = getMinimal();
+		expected.dependencies.add(dep("g1:a1:1"));
+		expected.dependencyManagement.add(dep("g2:a2:2"));
+		assertEquals(expected, actual);
+	}
+
+	@Test
+	public void profileNoActivation() {
+		// make sure that no info is copied from unactivated profiles
+		var actual = extract("profiles-no-activation.pom");
+		var expected = getMinimal();
+		assertEquals(expected, actual);
+	}
+
+	@Test
+	public void scm() {
+		var actual = extract("scm.pom");
+		var expected = getMinimal();
+		expected.repoUrl = "scmcon";
+		expected.commitTag = "scmtag";
+		assertEquals(expected, actual);
+	}
+
+	@Test
+	public void scmEmpty() {
+		var actual = extract("scm-empty.pom");
+		var expected = getMinimal();
+		assertEquals(expected, actual);
+	}
+
+	@Test
+	public void scmNoConnection() {
+		var actual = extract("scm-no-connection.pom");
+		var expected = getMinimal();
+		expected.repoUrl = "scmdevcon";
+		expected.commitTag = "scmtag";
+		assertEquals(expected, actual);
+	}
+
+	@Test
+	public void scmNoDevConnection() {
+		var actual = extract("scm-no-dev-connection.pom");
+		var expected = getMinimal();
+		expected.repoUrl = "scmurl";
+		expected.commitTag = "scmtag";
+		assertEquals(expected, actual);
+	}
+
+	@Test
+	public void scmNoTag() {
+		var actual = extract("scm-no-tag.pom");
+		var expected = getMinimal();
+		expected.repoUrl = "scmcon";
+		expected.commitTag = "HEAD"; // default value
+		assertEquals(expected, actual);
+	}
+
+	@Test
+	public void scmNoUrl() {
+		// without any url, the tag is irrelevant
+		var actual = extract("scm-no-url.pom");
+		var expected = getMinimal();
+		assertEquals(expected, actual);
 	}
 
 	@Test
@@ -161,8 +250,13 @@ public class PomExtractorTest {
 		}
 	}
 
-	private static Dependency dep(String gav, String scope, boolean optional, String classifier) {
+	private static Dependency dep(String gav) {
 		String[] parts = gav.split(":");
+		return new Dependency(parts[0], parts[1], parts[2], new HashSet<>(), "compile", false, "jar", "");
+	}
+
+	private static Dependency dep(String gapv, String scope, boolean optional, String classifier) {
+		String[] parts = gapv.split(":");
 		return new Dependency(parts[0], parts[1], parts[3], new HashSet<>(), scope, optional, parts[2], classifier);
 	}
 

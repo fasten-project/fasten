@@ -8,7 +8,6 @@
 	<version>0.0.1-SNAPSHOT</version>
 
 	<scm>
-		<connection>scmcon</connection>
 		<developerConnection>scmdevcon</developerConnection>
 		<tag>scmtag</tag>
 		<url>scmurl</url>

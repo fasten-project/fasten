@@ -18,9 +18,13 @@ package eu.fasten.analyzer.pomanalyzer;
 import static java.lang.String.format;
 
 import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.function.Consumer;
 
 import org.apache.maven.model.Model;
+import org.apache.maven.model.ModelBase;
+import org.apache.maven.model.Profile;
 
 import eu.fasten.analyzer.pomanalyzer.data.PomAnalysisResult;
 import eu.fasten.core.maven.data.Dependency;
@@ -45,54 +49,78 @@ public class PomExtractor {
 			r.parentCoordinate = format("%s:%s:pom:%s", g, a, v);
 		});
 
-		ifNotNull(model.getDependencies(), deps -> {
-			deps.forEach(dep -> {
-				var g = $(dep.getGroupId(), "?");
-				var a = $(dep.getArtifactId(), "?");
-				var v = $(dep.getVersion(), "?");
-				var p = $(dep.getType(), "jar");
-				var s = $(dep.getScope(), "compile");
-				var o = bool(dep.getOptional(), false);
-				var c = $(dep.getClassifier(), "");
+		process(model, r);
 
-				var exclusions = new HashSet<Exclusion>();
-				ifNotNull(dep.getExclusions(), excls -> {
-					excls.forEach(excl -> {
-						var eg = $(excl.getGroupId(), "?");
-						var ea = $(excl.getArtifactId(), "?");
-						exclusions.add(new Exclusion(eg, ea));
-					});
-				});
-
-				var d = new Dependency(g, a, v, exclusions, s, o, p, c);
-				r.dependencies.add(d);
+		ifNotNull(model.getProfiles(), ps -> {
+			ps.forEach(p -> {
+				if (isActiveByDefault(p)) {
+					process(p, r);
+				}
 			});
 		});
 
-		// TODO continue
+		ifNotNull(model.getScm(), scm -> {
 
-//		data.artifact = payload.getString("artifactId").replaceAll("[\\n\\t ]", "");
-//		data.group = payload.getString("groupId").replaceAll("[\\n\\t ]", "");
-//		data.packagingType = dataExtractor.extractPackagingType(data.group, data.artifact, data.version);
-//		data.version = payload.getString("version").replaceAll("[\\n\\t ]", "");
-//
-//		var pomUrl = "TODO";
-//		var mavenCoordinate = dataExtractor.getMavenCoordinate(pomUrl);
-//		if (mavenCoordinate != null && !mavenCoordinate.contains("${")) {
-//			String[] parts = mavenCoordinate.split(Constants.mvnCoordinateSeparator);
-//			data.group = parts[0];
-//			data.artifact = parts[1];
-//			data.version = parts[2];
-//		}
-//		data.date = dataExtractor.extractReleaseDate(data.group, data.artifact, data.version, data.artifactRepository);
-//		data.repoUrl = dataExtractor.extractRepoUrl(data.group, data.artifact, data.version);
-//		data.dependencyData = dataExtractor.extractDependencyData(data.group, data.artifact, data.version);
-//		data.commitTag = dataExtractor.extractCommitTag(data.group, data.artifact, data.version);
-//		data.sourcesUrl = dataExtractor.generateMavenSourcesLink(data.group, data.artifact, data.version);
-//		data.projectName = dataExtractor.extractProjectName(data.group, data.artifact, data.version);
-//		data.parentCoordinate = dataExtractor.extractParentCoordinate(data.group, data.artifact, data.version);
+			var repo = $(scm.getConnection(), "");
+			if (isNullOrEmpty(repo)) {
+				repo = $(scm.getDeveloperConnection(), "");
+				if (isNullOrEmpty(repo)) {
+					repo = $(scm.getUrl(), "");
+				}
+			}
+			if (!isNullOrEmpty(repo)) {
+				r.repoUrl = repo;
+
+				var tag = $(scm.getTag(), "");
+				if (!isNullOrEmpty(tag)) {
+					r.commitTag = tag;
+				}
+			}
+		});
 
 		return r;
+	}
+
+	public PomAnalysisResult process(ModelBase model, PomAnalysisResult r) {
+
+		ifNotNull(model.getDependencies(), deps -> process(deps, r.dependencies));
+		ifNotNull(model.getDependencyManagement(), dm -> {
+			ifNotNull(dm.getDependencies(), deps -> process(deps, r.dependencyManagement));
+		});
+
+		return r;
+	}
+
+	private void process(List<org.apache.maven.model.Dependency> depsIn, Set<Dependency> depsOut) {
+		depsIn.forEach(dep -> {
+			var g = $(dep.getGroupId(), "?");
+			var a = $(dep.getArtifactId(), "?");
+			var v = $(dep.getVersion(), "?");
+			var p = $(dep.getType(), "jar");
+			var s = $(dep.getScope(), "compile");
+			var o = bool(dep.getOptional(), false);
+			var c = $(dep.getClassifier(), "");
+
+			var exclusions = new HashSet<Exclusion>();
+			ifNotNull(dep.getExclusions(), excls -> {
+				excls.forEach(excl -> {
+					var eg = $(excl.getGroupId(), "?");
+					var ea = $(excl.getArtifactId(), "?");
+					exclusions.add(new Exclusion(eg, ea));
+				});
+			});
+
+			var d = new Dependency(g, a, v, exclusions, s, o, p, c);
+			depsOut.add(d);
+		});
+	}
+
+	private static boolean isActiveByDefault(Profile p) {
+		var act = p.getActivation();
+		if (act != null) {
+			return act.isActiveByDefault();
+		}
+		return false;
 	}
 
 	private static boolean bool(String s, boolean defaultValue) {
@@ -110,5 +138,9 @@ public class PomExtractor {
 		if (obj != null) {
 			consumer.accept(obj);
 		}
+	}
+
+	private static boolean isNullOrEmpty(String s) {
+		return s == null || s.isEmpty();
 	}
 }

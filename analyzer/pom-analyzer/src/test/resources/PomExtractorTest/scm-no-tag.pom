@@ -10,7 +10,6 @@
 	<scm>
 		<connection>scmcon</connection>
 		<developerConnection>scmdevcon</developerConnection>
-		<tag>scmtag</tag>
 		<url>scmurl</url>
 	</scm>
 
