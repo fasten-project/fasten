@@ -18,23 +18,6 @@
 
 package eu.fasten.core.maven;
 
-import eu.fasten.core.data.Constants;
-import eu.fasten.core.data.metadatadb.codegen.tables.Dependencies;
-import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
-import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
-import eu.fasten.core.dbconnectors.PostgresConnector;
-import eu.fasten.core.maven.data.Dependency;
-import eu.fasten.core.maven.data.Revision;
-import eu.fasten.core.maven.data.DependencyEdge;
-import eu.fasten.core.maven.utils.DependencyGraphUtilities;
-import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
-import org.jgrapht.Graph;
-import org.jgrapht.graph.DefaultDirectedGraph;
-import org.jooq.DSLContext;
-import org.json.JSONObject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.AbstractMap;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -43,6 +26,25 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Collectors;
+
+import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
+import org.jgrapht.Graph;
+import org.jgrapht.graph.DefaultDirectedGraph;
+import org.jooq.DSLContext;
+import org.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import eu.fasten.core.data.Constants;
+import eu.fasten.core.data.metadatadb.codegen.tables.Dependencies;
+import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
+import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
+import eu.fasten.core.dbconnectors.PostgresConnector;
+import eu.fasten.core.maven.data.Dependency;
+import eu.fasten.core.maven.data.DependencyEdge;
+import eu.fasten.core.maven.data.Revision;
+import eu.fasten.core.maven.data.VersionConstraint;
+import eu.fasten.core.maven.utils.DependencyGraphUtilities;
 
 public class DependencyGraphBuilder {
 
@@ -108,7 +110,7 @@ public class DependencyGraphBuilder {
     }
 
     public List<Revision> findMatchingRevisions(List<Revision> revisions,
-                                                List<Dependency.VersionConstraint> constraints) {
+                                                List<VersionConstraint> constraints) {
         if (revisions == null) {
             return Collections.emptyList();
         }
@@ -131,7 +133,7 @@ public class DependencyGraphBuilder {
         }).collect(Collectors.toList());
     }
 
-    private boolean checkVersionLowerBound(Dependency.VersionConstraint constraint, DefaultArtifactVersion version) {
+    private boolean checkVersionLowerBound(VersionConstraint constraint, DefaultArtifactVersion version) {
         if (constraint.lowerBound.isEmpty()) {
             return true;
         }
@@ -142,7 +144,7 @@ public class DependencyGraphBuilder {
         }
     }
 
-    private boolean checkVersionUpperBound(Dependency.VersionConstraint constraint, DefaultArtifactVersion version) {
+    private boolean checkVersionUpperBound(VersionConstraint constraint, DefaultArtifactVersion version) {
         if (constraint.upperBound.isEmpty()) {
             return true;
         }
