@@ -67,7 +67,7 @@ public class DBStorage {
 	}
 
 	public void insertIntoDB(PomAnalysisResult r) {
-		String product = r.group + Constants.mvnCoordinateSeparator + r.artifact;
+		String product = r.groupId + Constants.mvnCoordinateSeparator + r.artifactId;
 		final var packageId = metadataDao.insertPackage(product, Constants.mvnForge, r.projectName, r.repoUrl, null);
 
 		var pvMeta = toJson(r);
@@ -114,8 +114,8 @@ public class DBStorage {
 
 		assertNotNull(d.forge);
 		assertNotNull(d.artifactRepository);
-		assertNotNull(d.group);
-		assertNotNull(d.artifact);
+		assertNotNull(d.groupId);
+		assertNotNull(d.artifactId);
 		assertNotNull(d.version);
 		assertNotNull(d.packagingType);
 		assertNotNull(d.dependencies);
@@ -126,8 +126,8 @@ public class DBStorage {
 		json.put("forge", d.forge);
 		json.put("artifactRepository", d.artifactRepository);
 
-		json.put("groupId", d.group);
-		json.put("artifactId", d.artifact);
+		json.put("groupId", d.groupId);
+		json.put("artifactId", d.artifactId);
 		json.put("version", d.version);
 		json.put("packagingType", d.packagingType);
 

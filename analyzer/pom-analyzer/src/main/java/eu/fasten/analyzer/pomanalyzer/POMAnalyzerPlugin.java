@@ -16,6 +16,7 @@
 package eu.fasten.analyzer.pomanalyzer;
 
 import java.io.File;
+import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -144,18 +145,24 @@ public class POMAnalyzerPlugin extends Plugin {
 			return res;
 		}
 
-		public static SingleRecord serialize(PomAnalysisResult d) {
+		private static SingleRecord serialize(PomAnalysisResult d) {
 
 			var res = new SingleRecord();
 			res.payload = DBStorage.toJson(d).toString();
-			res.outputPath = getOutputPath(d);
+			res.outputPath = getRelativeOutputPath(d);
 
 			return res;
 		}
 
-		private static String getOutputPath(PomAnalysisResult d) {
-			return File.separator + d.group.charAt(0) + File.separator + d.group + File.separator + d.artifact
-					+ File.separator + d.version + ".json";
+		private static String getRelativeOutputPath(PomAnalysisResult d) {
+			final var sb = new StringBuilder();
+			Arrays.stream(d.groupId.split("\\.")).forEach(p -> {
+				sb.append(p).append(File.separator);
+			});
+			sb.append(d.artifactId).append(File.separator);
+			sb.append(d.version).append(File.separator);
+			sb.append(d.artifactId).append('-').append(d.version).append(".pomanalyzer.json");
+			return sb.toString();
 		}
 	}
 }

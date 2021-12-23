@@ -24,20 +24,21 @@ public class PomAnalysisResult {
 
 	public String forge = Constants.mvnForge;
 
-	public String artifact = null;
-	public String group = null;
+	public String artifactId = null;
+	public String groupId = null;
 	public String packagingType = null;
 	public String version = null;
-
+	
+	// g:a:packaging:version
 	public String parentCoordinate = null;
 
-	public String projectName = null;
 	public long releaseDate = -1L;
+	public String projectName = null;
 
 	public Set<Dependency> dependencies;
 	public Set<Dependency> dependencyManagement;
 	
-	// g:a:packaging:version
+	// set(g:a:packaging:version)
 	public Set<String> resolvedCompileAndRuntimeDependencies;
 
 	public String repoUrl = null;
