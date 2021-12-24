@@ -34,7 +34,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 import eu.fasten.analyzer.pomanalyzer.data.ResolutionResult;
 
-public class DownloaderTest {
+public class MavenRepositoryUtilsTest {
 
 	private static final String ARTIFACT_REPO = "http://localhost:1234";
 	private static final String SOME_COORD = "gid:aid:jar:0.1.2";
@@ -43,13 +43,13 @@ public class DownloaderTest {
 	@TempDir
 	private File dirTemp;
 	private HttpServer httpd;
-	private Downloader sut;
+	private MavenRepositoryUtils sut;
 
 	@BeforeEach
 	public void setup() throws IOException {
 		httpd = new HttpServer(1234, dirTemp.getAbsolutePath());
 		httpd.start();
-		sut = new Downloader();
+		sut = new MavenRepositoryUtils();
 	}
 
 	@AfterEach

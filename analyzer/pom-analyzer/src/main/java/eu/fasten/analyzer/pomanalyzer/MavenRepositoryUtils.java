@@ -25,7 +25,7 @@ import java.net.URL;
 
 import eu.fasten.analyzer.pomanalyzer.data.ResolutionResult;
 
-public class Downloader {
+public class MavenRepositoryUtils {
 
 	public File downloadPomToTemp(ResolutionResult artifact) {
 		assertNotNull(artifact);
