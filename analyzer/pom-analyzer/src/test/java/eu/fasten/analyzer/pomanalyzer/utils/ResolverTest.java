@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package eu.fasten.analyzer.pomanalyzer;
+package eu.fasten.analyzer.pomanalyzer.utils;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -32,6 +32,7 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import eu.fasten.analyzer.pomanalyzer.data.ResolutionResult;
+import eu.fasten.analyzer.pomanalyzer.utils.Resolver;
 import eu.fasten.core.utils.TestUtils;
 
 // The artifact source resolution breaks caching mechanisms by deleting packages from the
