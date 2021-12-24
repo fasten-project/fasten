@@ -23,7 +23,11 @@ import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
+import eu.fasten.analyzer.pomanalyzer.utils.MavenRepositoryUtils;
+
 public class ResolutionResult {
+
+	public static final File LOCAL_M2_REPO = MavenRepositoryUtils.getPathOfLocalRepository();
 
 	public String coordinate; // gid:aid:packageType:version
 	public String artifactRepository;
@@ -32,15 +36,23 @@ public class ResolutionResult {
 	public ResolutionResult(String coordinate, String artifactRepository, File localPkg) {
 		this.coordinate = coordinate;
 		this.artifactRepository = artifactRepository;
+		if (!artifactRepository.endsWith(File.separator)) {
+			this.artifactRepository += File.separator;
+		}
 		// pkg can be .pom, .jar, .war, ... all of them have a corresponding .pom
 		this.localPomFile = changeExtension(localPkg, ".pom");
 	}
 
 	public String getPomUrl() {
+		// TODO check whether this works for windows
 		String f = localPomFile.toString();
-		String marker = File.separator + ".m2" + File.separator + "repository" + File.separator;
-		int idx = f.indexOf(marker);
-		return artifactRepository + f.substring(idx + marker.length() - 1);
+		String pathM2 = LOCAL_M2_REPO.getAbsolutePath();
+		if (!f.startsWith(pathM2)) {
+			var msg = "instead of local .m2 folder, file is contained in '%s'";
+			throw new IllegalStateException(String.format(msg, f));
+		}
+		// also remove path separator (+1)
+		return artifactRepository + f.substring(pathM2.length() + 1);
 	}
 
 	public File getLocalPackageFile() {

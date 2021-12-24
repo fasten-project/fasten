@@ -10,5 +10,5 @@
 	</parent>
 
 	<groupId>test</groupId>
-	<artifactId>PomAnalyzerTest</artifactId>
+	<artifactId>EffectiveModelBuilderTest</artifactId>
 </project>

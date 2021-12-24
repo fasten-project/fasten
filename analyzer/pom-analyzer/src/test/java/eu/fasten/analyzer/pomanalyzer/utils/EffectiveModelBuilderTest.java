@@ -16,6 +16,7 @@
 package eu.fasten.analyzer.pomanalyzer.utils;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.File;
@@ -25,13 +26,27 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.apache.maven.model.Model;
+import org.jboss.shrinkwrap.resolver.api.InvalidConfigurationFileException;
+import org.jboss.shrinkwrap.resolver.api.NoResolvedResultException;
 import org.junit.jupiter.api.Test;
 
-import eu.fasten.analyzer.pomanalyzer.utils.EffectiveModelBuilder;
-import eu.fasten.analyzer.pomanalyzer.utils.Resolver;
 import eu.fasten.core.utils.TestUtils;
 
 public class EffectiveModelBuilderTest {
+
+	@Test
+	public void invalidSyntax() {
+		assertThrows(InvalidConfigurationFileException.class, () -> {
+			buildEffectiveModel("invalid-syntax.pom");
+		});
+	}
+
+	@Test
+	public void invalidNonExistingDep() {
+		assertThrows(NoResolvedResultException.class, () -> {
+			buildEffectiveModel("invalid-non-existing-dep.pom");
+		});
+	}
 
 	@Test
 	public void basic() {

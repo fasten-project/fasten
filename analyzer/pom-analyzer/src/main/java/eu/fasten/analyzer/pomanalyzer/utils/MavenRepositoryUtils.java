@@ -32,6 +32,10 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
+import org.apache.maven.settings.Settings;
+import org.jboss.shrinkwrap.resolver.impl.maven.SettingsManager;
+
+import eu.fasten.analyzer.pomanalyzer.data.PomAnalysisResult;
 import eu.fasten.analyzer.pomanalyzer.data.ResolutionResult;
 import eu.fasten.core.maven.utils.MavenUtilities;
 
@@ -48,49 +52,73 @@ public class MavenRepositoryUtils {
 			throw new RuntimeException(e);
 		}
 	}
-	
-	 public long extractReleaseDate(String groupId, String artifactId, String version, String artifactRepo) {
-	        URLConnection connection;
-	        try {
-	            connection = new URL(MavenUtilities.getPomUrl(groupId, artifactId, version, artifactRepo)).openConnection();
-	        } catch (IOException e) {
-	            return -1;
-	        }
-	        var lastModified = connection.getHeaderField("Last-Modified");
-	        if (lastModified == null) {
-	            return -1;
-	        }
-	        Date releaseDate;
-	        try {
-	            releaseDate = new SimpleDateFormat("E, d MMM yyyy HH:mm:ss Z", Locale.ENGLISH).parse(lastModified);
-	        } catch (ParseException e) {
-	            return -1;
-	        }
-	        return releaseDate.getTime();
-	    }
 
-	    public String generateMavenSourcesLink(String groupId, String artifactId, String version) {
-	        for (var repo : (Iterable)null) {
-	            var url = repo + groupId.replace('.', '/') + "/" + artifactId + "/"
-	                    + version + "/" + artifactId + "-" + version + "-sources.jar";
-	            try {
-	                int status = sendGetRequest(url);
-	                if (status == 200) {
-	                    return url;
-	                } else if (status != 404) {
-	                    break;
-	                }
-	            } catch (IOException | InterruptedException e) {
-	                break;
-	            }
-	        }
-	        return "";
-	    }
+	public String getSourceUrlIfExisting(PomAnalysisResult result) {
+		// TODO Auto-generated method stub
+		return null;
+	}
 
-	    private int sendGetRequest(String url) throws IOException, InterruptedException {
-	        var httpClient = HttpClient.newBuilder().version(HttpClient.Version.HTTP_2).build();
-	        var request = HttpRequest.newBuilder().GET().uri(URI.create(url)).build();
-	        var response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
-	        return response.statusCode();
-	    }
+	public long getReleaseDate(PomAnalysisResult result) {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	public static File getPathOfLocalRepository() {
+		// By default, this is set to ~/.m2/repository/, but that can be re-configured
+		// or even provided as a parameter. As such, we are reusing an existing library
+		// to find the right folder.
+		Settings settings = new SettingsManager() {
+			@Override
+			public Settings getSettings() {
+				return super.getSettings();
+			}
+		}.getSettings();
+		String localRepository = settings.getLocalRepository();
+		return new File(localRepository);
+	}
+
+	private long extractReleaseDate(String groupId, String artifactId, String version, String artifactRepo) {
+		URLConnection connection;
+		try {
+			connection = new URL(MavenUtilities.getPomUrl(groupId, artifactId, version, artifactRepo)).openConnection();
+		} catch (IOException e) {
+			return -1;
+		}
+		var lastModified = connection.getHeaderField("Last-Modified");
+		if (lastModified == null) {
+			return -1;
+		}
+		Date releaseDate;
+		try {
+			releaseDate = new SimpleDateFormat("E, d MMM yyyy HH:mm:ss Z", Locale.ENGLISH).parse(lastModified);
+		} catch (ParseException e) {
+			return -1;
+		}
+		return releaseDate.getTime();
+	}
+
+	private String generateMavenSourcesLink(String groupId, String artifactId, String version) {
+		for (var repo : (Iterable) null) {
+			var url = repo + groupId.replace('.', '/') + "/" + artifactId + "/" + version + "/" + artifactId + "-"
+					+ version + "-sources.jar";
+			try {
+				int status = sendGetRequest(url);
+				if (status == 200) {
+					return url;
+				} else if (status != 404) {
+					break;
+				}
+			} catch (IOException | InterruptedException e) {
+				break;
+			}
+		}
+		return "";
+	}
+
+	private int sendGetRequest(String url) throws IOException, InterruptedException {
+		var httpClient = HttpClient.newBuilder().version(HttpClient.Version.HTTP_2).build();
+		var request = HttpRequest.newBuilder().GET().uri(URI.create(url)).build();
+		var response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+		return response.statusCode();
+	}
 }

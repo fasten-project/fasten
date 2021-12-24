@@ -32,7 +32,6 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import eu.fasten.analyzer.pomanalyzer.data.PomAnalysisResult;
-import eu.fasten.analyzer.pomanalyzer.utils.PomExtractor;
 import eu.fasten.core.maven.data.Dependency;
 import eu.fasten.core.maven.data.Exclusion;
 import eu.fasten.core.maven.data.VersionConstraint;
@@ -41,7 +40,7 @@ import eu.fasten.core.utils.TestUtils;
 public class PomExtractorTest {
 
 	// see https://maven.apache.org/pom.html
-
+	
 	@Test
 	public void minimal() {
 		var actual = extract("minimal.pom");

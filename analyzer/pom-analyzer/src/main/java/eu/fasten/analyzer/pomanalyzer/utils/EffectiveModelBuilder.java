@@ -20,15 +20,14 @@ import java.io.File;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.building.DefaultModelBuilderFactory;
 import org.apache.maven.model.building.DefaultModelBuildingRequest;
+import org.apache.maven.model.building.ModelBuildingException;
 import org.apache.maven.model.building.ModelBuildingRequest;
-import org.apache.maven.settings.Settings;
-import org.jboss.shrinkwrap.resolver.impl.maven.SettingsManager;
 
 import fr.inria.spirals.repairnator.process.maven.RepositoryModelResolver;
 
 public class EffectiveModelBuilder {
 
-	public static final File LOCAL_M2 = getPathOfLocalRepository();
+	public static final File LOCAL_M2 = MavenRepositoryUtils.getPathOfLocalRepository();
 
 	public Model buildEffectiveModel(File pom) {
 
@@ -45,22 +44,8 @@ public class EffectiveModelBuilder {
 			var buildingResult = builder.build(req);
 			var model = buildingResult.getEffectiveModel();
 			return model;
-		} catch (Exception e) {
+		} catch (ModelBuildingException e) {
 			throw new RuntimeException(e);
 		}
-	}
-
-	private static File getPathOfLocalRepository() {
-		// By default, this is set to ~/.m2/repository/, but that can be re-configured
-		// or even provided as a parameter. As such, we are reusing an existing library
-		// to find the right folder.
-		Settings settings = new SettingsManager() {
-			@Override
-			public Settings getSettings() {
-				return super.getSettings();
-			}
-		}.getSettings();
-		String localRepository = settings.getLocalRepository();
-		return new File(localRepository);
 	}
 }

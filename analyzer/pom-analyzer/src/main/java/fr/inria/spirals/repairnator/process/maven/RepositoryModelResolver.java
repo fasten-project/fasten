@@ -52,6 +52,7 @@ import okhttp3.Response;
  * https://github.com/rickardoberg/neomvn/
  */
 
+@SuppressWarnings("deprecation")
 public class RepositoryModelResolver implements ModelResolver {
     private static final String MAVEN_CENTRAL_URL = "https://repo1.maven.org/maven2";
     private static final String MAVEN_CENTRAL_URL_MIRROR_1 = "http://repo.maven.apache.org/maven2";
@@ -126,7 +127,7 @@ public class RepositoryModelResolver implements ModelResolver {
         }
     }
 
-    @Override
+	@Override
     public ModelSource resolveModel(String groupId, String artifactId, String versionId)
             throws UnresolvableModelException {
         File pom = getLocalFile(groupId, artifactId, versionId);
