@@ -19,7 +19,6 @@ import static eu.fasten.core.maven.utils.MavenUtilities.MAVEN_CENTRAL_REPO;
 import static eu.fasten.core.utils.Asserts.assertNotNull;
 
 import java.sql.Timestamp;
-import java.util.List;
 
 import org.jooq.DSLContext;
 import org.jooq.exception.DataAccessException;
@@ -43,12 +42,6 @@ public class DatabaseUtils {
 		this.metadataDao = new MetadataDao(context);
 	}
 
-	public void saveAll(List<PomAnalysisResult> results) {
-		for (var sr : results) {
-			save(sr);
-		}
-	}
-
 	public void save(PomAnalysisResult result) {
 		processedRecord = false;
 		int numTries = 0;
@@ -64,6 +57,11 @@ public class DatabaseUtils {
 				}
 			});
 		}
+	}
+	
+	public boolean doesPackageExistInDb(String gapv) {
+		// gid:aid:packaging:version
+		return false;
 	}
 
 	public void insertIntoDB(PomAnalysisResult r) {

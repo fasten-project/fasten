@@ -33,7 +33,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import eu.fasten.analyzer.pomanalyzer.data.ResolutionResult;
-import eu.fasten.analyzer.pomanalyzer.utils.MavenRepositoryUtils;
 
 public class MavenRepositoryUtilsTest {
 
@@ -88,6 +87,14 @@ public class MavenRepositoryUtilsTest {
 			sut.downloadPomToTemp(a);
 		});
 		assertTrue(e.getCause() instanceof FileNotFoundException);
+	}
+
+	@Test
+	public void localM2FolderExists() {
+		File f = MavenRepositoryUtils.getPathOfLocalRepository();
+		assertTrue(f.isAbsolute());
+		assertTrue(f.exists());
+		assertTrue(f.isDirectory());
 	}
 
 	private String downloadAndRead(ResolutionResult a) {

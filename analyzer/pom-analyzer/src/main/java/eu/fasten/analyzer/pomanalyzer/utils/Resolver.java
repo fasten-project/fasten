@@ -66,7 +66,7 @@ public class Resolver {
 				// if a package is interesting, but has already been downloaded before (i.e., it
 				// exists in the local .m2 folder, it must be deleted and re-downloaded (which
 				// automatically happens in the second iteration). Otherwise, it is impossible
-				// to infer its artifact.
+				// to infer its source artifact repository.
 				if (i == 0) {
 					File f = res.getLocalPackageFile();
 					if (f.exists() && f.isFile()) {

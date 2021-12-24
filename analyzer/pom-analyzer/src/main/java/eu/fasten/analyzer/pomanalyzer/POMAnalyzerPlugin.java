@@ -53,7 +53,7 @@ public class POMAnalyzerPlugin extends Plugin {
 		private final MavenRepositoryUtils downloader = new MavenRepositoryUtils();
 		private final EffectiveModelBuilder modelBuilder = new EffectiveModelBuilder();
 		private final PomExtractor extractor = new PomExtractor();
-		private final DatabaseUtils store = new DatabaseUtils();
+		private final DatabaseUtils db = new DatabaseUtils();
 		private Resolver resolver = new Resolver();
 
 		private List<PomAnalysisResult> results = null;
@@ -61,10 +61,8 @@ public class POMAnalyzerPlugin extends Plugin {
 		@Override
 		public void setDBConnection(Map<String, DSLContext> dslContexts) {
 			var myContext = dslContexts.get(Constants.mvnForge);
-			store.setDslContext(myContext);
-
-			// TODO still default, replace with actual check
-			resolver.setExistenceCheck(s -> false);
+			db.setDslContext(myContext);
+			resolver.setExistenceCheck(db::doesPackageExistInDb);
 		}
 
 		private void beforeConsume() {
@@ -126,6 +124,9 @@ public class POMAnalyzerPlugin extends Plugin {
 
 			// remember source repository for artifact
 			result.artifactRepository = artifact.artifactRepository;
+			
+			result.sourcesUrl = downloader.getSourceUrlIfExisting(result);
+			result.releaseDate = downloader.getReleaseDate(result);
 
 			// remember concrete resolution result
 			result.resolvedCompileAndRuntimeDependencies.addAll(deps.stream() //
@@ -133,7 +134,7 @@ public class POMAnalyzerPlugin extends Plugin {
 					.collect(Collectors.toSet()));
 
 			results.add(result);
-			store.save(result);
+			db.save(result);
 
 			// resolution can be different for dependencies, so process them independently
 			deps.forEach(dep -> {

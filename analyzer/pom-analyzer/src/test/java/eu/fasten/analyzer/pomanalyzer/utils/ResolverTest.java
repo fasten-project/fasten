@@ -32,7 +32,6 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import eu.fasten.analyzer.pomanalyzer.data.ResolutionResult;
-import eu.fasten.analyzer.pomanalyzer.utils.Resolver;
 import eu.fasten.core.utils.TestUtils;
 
 // The artifact source resolution breaks caching mechanisms by deleting packages from the

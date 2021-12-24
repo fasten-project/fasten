@@ -7,15 +7,11 @@
 	<artifactId>EffectiveModelBuilderTest</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	
-	<properties>
-		<myversion>3.12.0</myversion>
-	</properties>
-	
 	<dependencies>
 		<dependency>
-			<groupId>org.apache.commons</groupId>
-			<artifactId>commons-lang3</artifactId>
-			<version>${myversion}</version>
+			<groupId>non.existing</groupId>
+			<artifactId>artifact</artifactId>
+			<version>1.2.3</version>
 		</dependency>
 	</dependencies>
 </project>
