@@ -344,7 +344,7 @@ public class CGandStitchingTest {
             new MavenArtifactDownloader(coord).downloadArtifact("jar");
         final var opalCG = new OPALCallGraphConstructor().construct(dep1, RTA);
         final var cg = new OPALPartialCallGraphConstructor().construct(opalCG, ONLY_STATIC_CALLSITES);
-        return new PartialJavaCallGraph("", coord.getProduct(), coord.getVersionConstraint(), -1, cg.nodeCount "", cg.classHierarchy, cg.graph);
+        return new PartialJavaCallGraph("", coord.getProduct(), coord.getVersionConstraint(), -1, cg.nodeCount, "", cg.classHierarchy, cg.graph);
     }
 
 }
