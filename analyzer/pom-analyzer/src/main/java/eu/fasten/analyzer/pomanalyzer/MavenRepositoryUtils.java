@@ -21,9 +21,19 @@ import static org.apache.commons.io.FileUtils.copyURLToFile;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
 import java.net.URL;
+import java.net.URLConnection;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.Locale;
 
 import eu.fasten.analyzer.pomanalyzer.data.ResolutionResult;
+import eu.fasten.core.maven.utils.MavenUtilities;
 
 public class MavenRepositoryUtils {
 
@@ -38,4 +48,49 @@ public class MavenRepositoryUtils {
 			throw new RuntimeException(e);
 		}
 	}
+	
+	 public long extractReleaseDate(String groupId, String artifactId, String version, String artifactRepo) {
+	        URLConnection connection;
+	        try {
+	            connection = new URL(MavenUtilities.getPomUrl(groupId, artifactId, version, artifactRepo)).openConnection();
+	        } catch (IOException e) {
+	            return -1;
+	        }
+	        var lastModified = connection.getHeaderField("Last-Modified");
+	        if (lastModified == null) {
+	            return -1;
+	        }
+	        Date releaseDate;
+	        try {
+	            releaseDate = new SimpleDateFormat("E, d MMM yyyy HH:mm:ss Z", Locale.ENGLISH).parse(lastModified);
+	        } catch (ParseException e) {
+	            return -1;
+	        }
+	        return releaseDate.getTime();
+	    }
+
+	    public String generateMavenSourcesLink(String groupId, String artifactId, String version) {
+	        for (var repo : (Iterable)null) {
+	            var url = repo + groupId.replace('.', '/') + "/" + artifactId + "/"
+	                    + version + "/" + artifactId + "-" + version + "-sources.jar";
+	            try {
+	                int status = sendGetRequest(url);
+	                if (status == 200) {
+	                    return url;
+	                } else if (status != 404) {
+	                    break;
+	                }
+	            } catch (IOException | InterruptedException e) {
+	                break;
+	            }
+	        }
+	        return "";
+	    }
+
+	    private int sendGetRequest(String url) throws IOException, InterruptedException {
+	        var httpClient = HttpClient.newBuilder().version(HttpClient.Version.HTTP_2).build();
+	        var request = HttpRequest.newBuilder().GET().uri(URI.create(url)).build();
+	        var response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+	        return response.statusCode();
+	    }
 }
