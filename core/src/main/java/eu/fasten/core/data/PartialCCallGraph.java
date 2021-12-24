@@ -53,13 +53,14 @@ public class PartialCCallGraph extends PartialCallGraph {
      * @param version        the version.
      * @param timestamp      the timestamp (in seconds from UNIX epoch); optional: if not present,
      *                       it is set to -1.
+     * @param nodeCount      number of nodes
      * @param cgGenerator    The name of call graph generator that generated this call graph.
      * @param graph          the call graph (no control is done on the graph) {@link CPythonGraph}
      */
     public PartialCCallGraph(final String forge, final String product, final String version,
-                             final long timestamp, final String cgGenerator,
+                             final long timestamp, int nodeCount, final String cgGenerator,
                              final CPythonGraph graph) {
-        super(forge, product, version, timestamp, cgGenerator);
+        super(forge, product, version, timestamp, nodeCount, cgGenerator);
         this.graph = graph;
     }
 
@@ -75,15 +76,16 @@ public class PartialCCallGraph extends PartialCallGraph {
      * @param version        the version.
      * @param timestamp      the timestamp (in seconds from UNIX epoch); optional: if not present,
      *                       it is set to -1.
+     * @param nodeCount      number of nodes    
      * @param cgGenerator    The name of call graph generator that generated this call graph.
      * @param classHierarchy class hierarchy of this revision including all classes of the revision
      * @param graph          the call graph (no control is done on the graph) {@link CPythonGraph}
      */
     public PartialCCallGraph(final String forge, final String product, final String version,
-                             final long timestamp, final String cgGenerator,
+                             final long timestamp, int nodeCount, final String cgGenerator,
                              final EnumMap<CScope, Map<String, Map<Integer, CNode>>>classHierarchy,
                              final CPythonGraph graph) {
-        super(forge, product, version, timestamp, cgGenerator);
+        super(forge, product, version, timestamp, nodeCount, cgGenerator);
         this.classHierarchy = classHierarchy;
         this.graph = graph;
     }
@@ -97,16 +99,17 @@ public class PartialCCallGraph extends PartialCallGraph {
      * @param version        the version.
      * @param timestamp      the timestamp (in seconds from UNIX epoch); optional: if not present,
      *                       it is set to -1.
+     * @param nodeCount      number of nodes
      * @param cgGenerator    The name of call graph generator that generated this call graph.
      * @param classHierarchy class hierarchy of this revision including all classes of the revision
      * @param graph          the call graph (no control is done on the graph) {@link CPythonGraph}
      * @param architecture   the architecture.
      */
     public PartialCCallGraph(final String forge, final String product, final String version,
-                             final long timestamp, final String cgGenerator,
+                             final long timestamp, int nodeCount, final String cgGenerator,
                              final EnumMap<CScope, Map<String, Map<Integer, CNode>>>classHierarchy,
                              final CPythonGraph graph, final String architecture) {
-        super(forge, product, version, timestamp, cgGenerator);
+        super(forge, product, version, timestamp, nodeCount, cgGenerator);
         this.architecture = architecture;
         this.classHierarchy = classHierarchy;
         this.graph = graph;

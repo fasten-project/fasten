@@ -47,6 +47,11 @@ class PartialPythonCallGraphTest {
         graph = new PartialPythonCallGraph(new JSONObject(tokener));
     }
 
+   @Test
+    void getNodeCount() {
+        assertEquals(5, graph.getNodeCount());
+    }
+        
     @Test
     void toJSON() throws FileNotFoundException, URISyntaxException {
         var file = new File(Objects.requireNonNull(Thread.currentThread().getContextClassLoader()

@@ -120,7 +120,7 @@ public class OPALPartialCallGraphConstructor {
 
             return new PartialJavaCallGraph(Constants.mvnForge, coordinate.getProduct(),
                     coordinate.getVersionConstraint(), timestamp,
-                    Constants.opalGenerator,
+                    partialCallGraph.nodeCount, Constants.opalGenerator,
                     partialCallGraph.classHierarchy,
                     partialCallGraph.graph);
         } finally {

@@ -55,7 +55,7 @@ public class MergerEfficiencyTests {
 
                     try {
                         rcg = new PartialJavaCallGraph(new JSONObject(Files.readString(path)));
-                        System.out.println("Read " + path);
+                        System.out.println("Read " + path + " (" + rcg.getNodeCount() + " nodes).");
                     } catch (IOException e) {
                         e.printStackTrace();
                     }

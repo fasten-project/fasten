@@ -245,7 +245,7 @@ public class Main implements Runnable {
 		if (artifact instanceof File) {
 			logger.info("Generating graph for {}", ((File) artifact).getAbsolutePath());
 			final var cg = new OPALPartialCallGraphConstructor().construct(new OPALCallGraphConstructor().construct((File) artifact, algorithm), CallPreservationStrategy.ONLY_STATIC_CALLSITES);
-			revisionCallGraph = new PartialJavaCallGraph("", cleanUpFileName((File) artifact), "", 0, "", cg.classHierarchy, cg.graph);
+			revisionCallGraph = new PartialJavaCallGraph("", cleanUpFileName((File) artifact), "", 0, cg.nodeCount, "", cg.classHierarchy, cg.graph);
 		} else {
 			revisionCallGraph = OPALPartialCallGraphConstructor.createExtendedRevisionJavaCallGraph((MavenCoordinate) artifact,
 					algorithm, Long.parseLong(this.commands.computations.timestamp),
