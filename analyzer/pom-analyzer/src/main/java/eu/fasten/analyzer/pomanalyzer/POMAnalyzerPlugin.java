@@ -45,7 +45,7 @@ public class POMAnalyzerPlugin extends Plugin {
 	@Extension
 	public static class POMAnalyzer extends AbstractKafkaPlugin implements DBConnector {
 
-		private final Downloader downloader = new Downloader();
+		private final MavenRepositoryUtils downloader = new MavenRepositoryUtils();
 		private final EffectiveModelBuilder modelBuilder = new EffectiveModelBuilder();
 		private final PomExtractor extractor = new PomExtractor();
 		private final DBStorage store = new DBStorage();
