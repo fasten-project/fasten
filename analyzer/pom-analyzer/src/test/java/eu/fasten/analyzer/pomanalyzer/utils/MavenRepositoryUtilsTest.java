@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package eu.fasten.analyzer.pomanalyzer;
+package eu.fasten.analyzer.pomanalyzer.utils;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.commons.io.FileUtils.readFileToString;
@@ -33,6 +33,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import eu.fasten.analyzer.pomanalyzer.data.ResolutionResult;
+import eu.fasten.analyzer.pomanalyzer.utils.MavenRepositoryUtils;
 
 public class MavenRepositoryUtilsTest {
 

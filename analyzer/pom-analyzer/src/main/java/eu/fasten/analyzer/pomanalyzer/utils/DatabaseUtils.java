@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package eu.fasten.analyzer.pomanalyzer;
+package eu.fasten.analyzer.pomanalyzer.utils;
 
 import static eu.fasten.core.maven.utils.MavenUtilities.MAVEN_CENTRAL_REPO;
 import static eu.fasten.core.utils.Asserts.assertNotNull;
@@ -31,7 +31,7 @@ import eu.fasten.analyzer.pomanalyzer.data.PomAnalysisResult;
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.metadatadb.MetadataDao;
 
-public class DBStorage {
+public class DatabaseUtils {
 
 	private DSLContext context;
 	private MetadataDao metadataDao;

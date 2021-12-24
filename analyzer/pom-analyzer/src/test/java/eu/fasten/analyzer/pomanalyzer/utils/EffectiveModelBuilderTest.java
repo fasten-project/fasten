@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package eu.fasten.analyzer.pomanalyzer;
+package eu.fasten.analyzer.pomanalyzer.utils;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -27,6 +27,8 @@ import java.util.stream.Collectors;
 import org.apache.maven.model.Model;
 import org.junit.jupiter.api.Test;
 
+import eu.fasten.analyzer.pomanalyzer.utils.EffectiveModelBuilder;
+import eu.fasten.analyzer.pomanalyzer.utils.Resolver;
 import eu.fasten.core.utils.TestUtils;
 
 public class EffectiveModelBuilderTest {

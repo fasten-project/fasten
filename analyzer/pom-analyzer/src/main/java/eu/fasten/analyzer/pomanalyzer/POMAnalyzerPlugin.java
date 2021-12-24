@@ -32,6 +32,11 @@ import org.pf4j.PluginWrapper;
 
 import eu.fasten.analyzer.pomanalyzer.data.PomAnalysisResult;
 import eu.fasten.analyzer.pomanalyzer.data.ResolutionResult;
+import eu.fasten.analyzer.pomanalyzer.utils.DatabaseUtils;
+import eu.fasten.analyzer.pomanalyzer.utils.EffectiveModelBuilder;
+import eu.fasten.analyzer.pomanalyzer.utils.MavenRepositoryUtils;
+import eu.fasten.analyzer.pomanalyzer.utils.PomExtractor;
+import eu.fasten.analyzer.pomanalyzer.utils.Resolver;
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.plugins.AbstractKafkaPlugin;
 import eu.fasten.core.plugins.DBConnector;
@@ -48,7 +53,7 @@ public class POMAnalyzerPlugin extends Plugin {
 		private final MavenRepositoryUtils downloader = new MavenRepositoryUtils();
 		private final EffectiveModelBuilder modelBuilder = new EffectiveModelBuilder();
 		private final PomExtractor extractor = new PomExtractor();
-		private final DBStorage store = new DBStorage();
+		private final DatabaseUtils store = new DatabaseUtils();
 		private Resolver resolver = new Resolver();
 
 		private List<PomAnalysisResult> results = null;
@@ -148,7 +153,7 @@ public class POMAnalyzerPlugin extends Plugin {
 		private static SingleRecord serialize(PomAnalysisResult d) {
 
 			var res = new SingleRecord();
-			res.payload = DBStorage.toJson(d).toString();
+			res.payload = DatabaseUtils.toJson(d).toString();
 			res.outputPath = getRelativeOutputPath(d);
 
 			return res;

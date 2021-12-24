@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package eu.fasten.analyzer.pomanalyzer;
+package eu.fasten.analyzer.pomanalyzer.utils;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -32,6 +32,7 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import eu.fasten.analyzer.pomanalyzer.data.PomAnalysisResult;
+import eu.fasten.analyzer.pomanalyzer.utils.PomExtractor;
 import eu.fasten.core.maven.data.Dependency;
 import eu.fasten.core.maven.data.Exclusion;
 import eu.fasten.core.maven.data.VersionConstraint;
