@@ -64,6 +64,9 @@ public abstract class AbstractKafkaPlugin implements KafkaPlugin {
 		}
 		return Optional.of(consumeTopics);
 	}
+	
+	@Override
+	public abstract void consume(String record, ProcessingLane l);
 
 	@Override
 	public void setTopics(List<String> consumeTopics) {
@@ -71,7 +74,10 @@ public abstract class AbstractKafkaPlugin implements KafkaPlugin {
 	}
 
 	@Override
-	public abstract void consume(String record);
+	public void consume(String record) {
+		throw new RuntimeException(
+				"Not implemented. Override 'consume(String, KafkaRecordKind)'.");
+	}
 
 	@Override
 	public Optional<String> produce() {

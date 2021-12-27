@@ -72,7 +72,7 @@ public interface KafkaPlugin extends FastenPlugin {
      *  this methods give the option to produce multiple outputs for a single input.
      *  If not defined by the plugin, it will wrap the previous logic for a single record.
      */
-    default List<SingleRecord> produceMultiple() {
+    default List<SingleRecord> produceMultiple(ProcessingLane lane) {
     	var l = new LinkedList<SingleRecord>();
     	var rec = produce();
     	
