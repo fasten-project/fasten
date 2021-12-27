@@ -27,20 +27,25 @@ import eu.fasten.analyzer.pomanalyzer.utils.MavenRepositoryUtils;
 
 public class ResolutionResult {
 
-	public final File localM2Repository; 
+	public final File localM2Repository;
 
 	public String coordinate; // gid:aid:packageType:version
 	public String artifactRepository;
 	public File localPomFile;
-	
-	public ResolutionResult(String coordinate, String artifactRepository, File localPkg) {
+
+	public ResolutionResult(String coordinate, String artifactRepository) {
 		this.localM2Repository = getLocalM2Repository();
 		this.coordinate = coordinate;
 		this.artifactRepository = artifactRepository;
 		if (!artifactRepository.endsWith(File.separator)) {
 			this.artifactRepository += File.separator;
 		}
-		// pkg can be .pom, .jar, .war, ... all of them have a corresponding .pom
+		this.localPomFile = deriveLocalPomPath(localM2Repository, coordinate);
+	}
+
+	public ResolutionResult(String coordinate, String artifactRepository, File localPkg) {
+		this(coordinate, artifactRepository);
+		// pkg can be .pom, .jar, .war, ... but all of them have a corresponding .pom
 		this.localPomFile = changeExtension(localPkg, ".pom");
 	}
 
@@ -78,6 +83,16 @@ public class ResolutionResult {
 	@Override
 	public String toString() {
 		return ToStringBuilder.reflectionToString(this, MULTI_LINE_STYLE);
+	}
+
+	private static File deriveLocalPomPath(File pathM2, String coordinate) {
+		var parts = coordinate.split(":");
+		var g = parts[0];
+		var a = parts[1];
+		var v = parts[3];
+		var path = pathM2.getAbsolutePath() + File.separatorChar + g.replace('.', File.separatorChar)
+				+ File.separatorChar + a + File.separatorChar + v + File.separatorChar + a + "-" + v + ".pom";
+		return new File(path);
 	}
 
 	private static File changeExtension(File f, String extInclDot) {

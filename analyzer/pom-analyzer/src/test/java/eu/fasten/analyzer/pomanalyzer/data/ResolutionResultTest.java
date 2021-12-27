@@ -42,7 +42,7 @@ public class ResolutionResultTest {
 		assertEquals(inM2("...", "xyz.pom"), sut.localPomFile);
 		assertEquals(inM2("...", "xyz.jar"), sut.getLocalPackageFile());
 	}
-	
+
 	@Test
 	public void localM2RepositoryCanBeReplaced() {
 		var sut = new ResolutionResult("g:a:jar:1", "http://somewhere/", inTmp("...", "xyz.jar")) {
@@ -53,6 +53,16 @@ public class ResolutionResultTest {
 		};
 		assertEquals(inTmp(), sut.localM2Repository);
 		assertEquals("http://somewhere/.../xyz.pom", sut.getPomUrl());
+	}
+
+	@Test
+	public void canBeInitializedWithoutLocalFile() {
+		var gapv = "g.g2:a:?:1";
+		var repo = "http://somewhere/";
+		var sut = new ResolutionResult(gapv, repo);
+
+		assertEquals(inM2("g", "g2", "a", "1", "a-1.pom"), sut.localPomFile);
+		assertEquals("http://somewhere/g/g2/a/1/a-1.pom", sut.getPomUrl());
 	}
 
 	@Test
