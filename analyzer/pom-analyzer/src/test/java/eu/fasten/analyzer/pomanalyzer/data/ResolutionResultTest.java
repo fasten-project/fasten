@@ -15,6 +15,7 @@
  */
 package eu.fasten.analyzer.pomanalyzer.data;
 
+import static eu.fasten.analyzer.pomanalyzer.utils.MavenRepositoryUtils.getPathOfLocalRepository;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -37,8 +38,21 @@ public class ResolutionResultTest {
 
 		assertEquals(gapv, sut.coordinate);
 		assertEquals(repo, sut.artifactRepository);
+		assertEquals(getPathOfLocalRepository(), sut.localM2Repository);
 		assertEquals(inM2("...", "xyz.pom"), sut.localPomFile);
 		assertEquals(inM2("...", "xyz.jar"), sut.getLocalPackageFile());
+	}
+	
+	@Test
+	public void localM2RepositoryCanBeReplaced() {
+		var sut = new ResolutionResult("g:a:jar:1", "http://somewhere/", inTmp("...", "xyz.jar")) {
+			@Override
+			protected File getLocalM2Repository() {
+				return inTmp();
+			}
+		};
+		assertEquals(inTmp(), sut.localM2Repository);
+		assertEquals("http://somewhere/.../xyz.pom", sut.getPomUrl());
 	}
 
 	@Test

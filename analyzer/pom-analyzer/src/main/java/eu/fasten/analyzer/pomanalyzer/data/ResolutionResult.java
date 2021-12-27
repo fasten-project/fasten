@@ -27,13 +27,14 @@ import eu.fasten.analyzer.pomanalyzer.utils.MavenRepositoryUtils;
 
 public class ResolutionResult {
 
-	public static final File LOCAL_M2_REPO = MavenRepositoryUtils.getPathOfLocalRepository();
+	public final File localM2Repository; 
 
 	public String coordinate; // gid:aid:packageType:version
 	public String artifactRepository;
 	public File localPomFile;
-
+	
 	public ResolutionResult(String coordinate, String artifactRepository, File localPkg) {
+		this.localM2Repository = getLocalM2Repository();
 		this.coordinate = coordinate;
 		this.artifactRepository = artifactRepository;
 		if (!artifactRepository.endsWith(File.separator)) {
@@ -43,10 +44,14 @@ public class ResolutionResult {
 		this.localPomFile = changeExtension(localPkg, ".pom");
 	}
 
+	protected File getLocalM2Repository() {
+		return MavenRepositoryUtils.getPathOfLocalRepository();
+	}
+
 	public String getPomUrl() {
 		// TODO check whether this works for windows
 		String f = localPomFile.toString();
-		String pathM2 = LOCAL_M2_REPO.getAbsolutePath();
+		String pathM2 = localM2Repository.getAbsolutePath();
 		if (!f.startsWith(pathM2)) {
 			var msg = "instead of local .m2 folder, file is contained in '%s'";
 			throw new IllegalStateException(String.format(msg, f));

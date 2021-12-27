@@ -25,6 +25,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.Path;
 
 import org.javastack.httpd.HttpServer;
 import org.junit.jupiter.api.AfterEach;
@@ -42,6 +43,8 @@ public class MavenRepositoryUtilsTest {
 
 	@TempDir
 	private File dirTemp;
+	@TempDir
+	private File dirM2;
 	private HttpServer httpd;
 	private MavenRepositoryUtils sut;
 
@@ -61,8 +64,8 @@ public class MavenRepositoryUtilsTest {
 	public void downloadPoms() {
 		webContent("some/coord.pom", SOME_CONTENT);
 
-		var f = new File(".../.m2/repository/some/coord.pom");
-		var a = new ResolutionResult(SOME_COORD, ARTIFACT_REPO, f);
+		var f = inM2("some", "coord.pom");
+		var a = newResolutionResult(SOME_COORD, ARTIFACT_REPO, f);
 
 		String actual = downloadAndRead(a);
 		assertEquals(SOME_CONTENT, actual);
@@ -72,8 +75,8 @@ public class MavenRepositoryUtilsTest {
 	public void downloadPomsForJars() {
 		webContent("some/coord.pom", SOME_CONTENT);
 
-		var f = new File(".../.m2/repository/some/coord.jar");
-		var a = new ResolutionResult(SOME_COORD, ARTIFACT_REPO, f);
+		var f = inM2("some", "coord.jar");
+		var a = newResolutionResult(SOME_COORD, ARTIFACT_REPO, f);
 
 		String actual = downloadAndRead(a);
 		assertEquals(SOME_CONTENT, actual);
@@ -82,11 +85,24 @@ public class MavenRepositoryUtilsTest {
 	@Test
 	public void nonExistingPom() {
 		var e = assertThrows(RuntimeException.class, () -> {
-			var f = new File(".../.m2/repository/some/coord.pom");
-			var a = new ResolutionResult(SOME_COORD, ARTIFACT_REPO, f);
+			var f = inM2("some", "coord.pom");
+			var a = newResolutionResult(SOME_COORD, ARTIFACT_REPO, f);
 			sut.downloadPomToTemp(a);
 		});
 		assertTrue(e.getCause() instanceof FileNotFoundException);
+	}
+
+	private File inM2(String... path) {
+		return Path.of(dirM2.getAbsolutePath(), path).toFile();
+	}
+
+	private ResolutionResult newResolutionResult(String someCoord, String artifactRepo, File f) {
+		return new ResolutionResult(someCoord, artifactRepo, f) {
+			@Override
+			protected File getLocalM2Repository() {
+				return dirM2;
+			}
+		};
 	}
 
 	@Test
