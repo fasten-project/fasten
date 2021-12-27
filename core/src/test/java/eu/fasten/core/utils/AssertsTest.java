@@ -46,6 +46,11 @@ public class AssertsTest {
 	}
 
 	@Test
+	public void assertContains_okForNull() {
+		Asserts.assertContains(new String[] { "a", null }, null);
+	}
+
+	@Test
 	public void assertNotNullOrEmpty_failNull() {
 		assertThrows(IllegalStateException.class, () -> {
 			Asserts.assertNotNullOrEmpty(null);
