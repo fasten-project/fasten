@@ -52,6 +52,7 @@ import org.slf4j.LoggerFactory;
 
 import eu.fasten.core.exceptions.UnrecoverableError;
 import eu.fasten.core.plugins.KafkaPlugin;
+import eu.fasten.core.plugins.KafkaPlugin.ProcessingLane;
 import eu.fasten.core.plugins.KafkaPlugin.SingleRecord;
 import eu.fasten.server.plugins.FastenServerPlugin;
 
@@ -68,8 +69,6 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
     private List<String> normTopics;
     private List<String> prioTopics;
     private final String outputTopic;
-
-    private enum KafkaRecordKind {NORMAL, PRIORITY}
 
     private final int skipOffsets;
 
@@ -163,8 +162,8 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
                 	if (plugin.consumeTopic().isPresent()) {
 	                	handleConsuming();
 	                } else {
-	                    doCommitSync(KafkaRecordKind.NORMAL);
-	                    handleProducing(null, System.currentTimeMillis() / 1000L, KafkaRecordKind.NORMAL);
+	                    doCommitSync(ProcessingLane.NORMAL);
+	                    handleProducing(null, System.currentTimeMillis() / 1000L, ProcessingLane.NORMAL);
 	                }
 	            } catch (WakeupException e) {
 	                if (isConnectionsClosed.get()) {
@@ -219,12 +218,12 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
             ConsumerRecords<String, String> prioRecords = connPrio.poll(this.pollTimeout);
             for (var r : prioRecords) {
                 logger.info("Read priority message offset " + r.offset() + " from partition " + r.partition() + ".");
-                processRecord(r, System.currentTimeMillis() / 1000L, KafkaRecordKind.PRIORITY);
+                processRecord(r, System.currentTimeMillis() / 1000L, ProcessingLane.PRIORITY);
                 hasConsumedPriorityRecord = true;
                 logger.info("Successfully processed priority message offset " + r.offset() + " from partition " + r.partition() + ".");
                 // TODO: Keep a list of processed priority messages like normal ones
             }
-            doCommitSync(KafkaRecordKind.PRIORITY);
+            doCommitSync(ProcessingLane.PRIORITY);
         }
 
         if (!normTopics.isEmpty() && !hasConsumedPriorityRecord) {
@@ -237,14 +236,14 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
             // Although we loop through all records, by default we only poll 1 record.
             for (var r : records) {
                 logger.info("Read normal message offset " + r.offset() + " from partition " + r.partition() + ".");
-                processRecord(r, consumeTimestamp, KafkaRecordKind.NORMAL);
+                processRecord(r, consumeTimestamp, ProcessingLane.NORMAL);
                 logger.info("Successfully processed normal message offset " + r.offset() + " from partition " + r.partition() + ".");
                 messagesProcessed.add(new ImmutablePair<>(r.offset(), r.partition()));
             }
 
             // Commit only after _all_ records are processed.
             // For most plugins, this loop will only process 1 record (since max.poll.records is 1).
-            doCommitSync(KafkaRecordKind.NORMAL);
+            doCommitSync(ProcessingLane.NORMAL);
 
             // More logging.
             String allOffsets = messagesProcessed.stream().map((x) -> x.left).map(Object::toString)
@@ -281,7 +280,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
      * <p>
      * This strategy provides at-least-once semantics.
      */
-    public void processRecord(ConsumerRecord<String, String> record, Long consumeTimestamp, KafkaRecordKind kafkaRecordKind) {
+    public void processRecord(ConsumerRecord<String, String> record, Long consumeTimestamp, ProcessingLane kafkaRecordKind) {
 
         try {
             if (localStorage != null) { // If local storage is enabled.
@@ -308,7 +307,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
                 if (consumeTimeoutEnabled) {
                     consumeWithTimeout(record.value(), consumeTimeout, exitOnTimeout);
                 } else {
-                    plugin.consume(record.value());
+                    plugin.consume(record.value(), kafkaRecordKind);
                 }
             }
         } catch (UnrecoverableError e) {
@@ -329,9 +328,9 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
      *
      * @param input input message [can be null]
      */
-    public void handleProducing(String input, long consumeTimestamp, KafkaRecordKind kafkaRecordKind) {
+    public void handleProducing(String input, long consumeTimestamp, ProcessingLane kafkaRecordKind) {
         String outputTopicName;
-        if (kafkaRecordKind == KafkaRecordKind.PRIORITY) {
+        if (kafkaRecordKind == ProcessingLane.PRIORITY) {
             outputTopicName = String.format("fasten.%s.priority.out", outputTopic);
         } else {
             outputTopicName = String.format("fasten.%s.out", outputTopic);
@@ -465,9 +464,9 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
      * This is a synchronous commits and will block until either the commit succeeds
      * or an unrecoverable error is encountered.
      */
-    private void doCommitSync(KafkaRecordKind kafkaRecordKind) {
+    private void doCommitSync(ProcessingLane kafkaRecordKind) {
         try {
-            if (kafkaRecordKind == KafkaRecordKind.PRIORITY) {
+            if (kafkaRecordKind == ProcessingLane.PRIORITY) {
                 connPrio.commitSync();
             } else {
                 connNorm.commitSync();
