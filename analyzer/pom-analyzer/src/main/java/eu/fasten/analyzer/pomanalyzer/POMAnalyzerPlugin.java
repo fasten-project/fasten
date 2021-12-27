@@ -99,7 +99,7 @@ public class POMAnalyzerPlugin extends Plugin {
 				if (json.has("artifactRepository")) {
 					artifactRepository = json.getString("artifactRepository").replaceAll("[\\n\\t ]", "");
 				}
-				return new ResolutionResult(coord, artifactRepository, null);
+				return new ResolutionResult(coord, artifactRepository);
 
 			} catch (JSONException e) {
 				throw new RuntimeException(e);
