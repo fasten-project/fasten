@@ -20,7 +20,6 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 import org.apache.maven.model.Model;
 import org.jooq.DSLContext;
@@ -38,6 +37,7 @@ import eu.fasten.analyzer.pomanalyzer.utils.MavenRepositoryUtils;
 import eu.fasten.analyzer.pomanalyzer.utils.PomExtractor;
 import eu.fasten.analyzer.pomanalyzer.utils.Resolver;
 import eu.fasten.core.data.Constants;
+import eu.fasten.core.maven.utils.MavenUtilities;
 import eu.fasten.core.plugins.AbstractKafkaPlugin;
 import eu.fasten.core.plugins.DBConnector;
 
@@ -95,7 +95,10 @@ public class POMAnalyzerPlugin extends Plugin {
 				var version = json.getString("version").replaceAll("[\\n\\t ]", "");
 				var coord = asMavenCoordinate(groupId, artifactId, version);
 
-				var artifactRepository = json.getString("artifactRepository").replaceAll("[\\n\\t ]", "");
+				String artifactRepository = MavenUtilities.MAVEN_CENTRAL_REPO;
+				if (json.has("artifactRepository")) {
+					artifactRepository = json.getString("artifactRepository").replaceAll("[\\n\\t ]", "");
+				}
 				return new ResolutionResult(coord, artifactRepository, null);
 
 			} catch (JSONException e) {
@@ -144,7 +147,7 @@ public class POMAnalyzerPlugin extends Plugin {
 				res.add(serialize(data));
 			}
 			for (var data : results) {
-				if(lane == ProcessingLane.PRIORITY) {
+				if (lane == ProcessingLane.PRIORITY) {
 					db.ingestPackage(data);
 				}
 			}
