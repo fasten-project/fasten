@@ -1,14 +1,13 @@
 package eu.fasten.server.plugins.kafka;
 
-import eu.fasten.core.plugins.KafkaPlugin;
-import org.apache.commons.lang3.reflect.FieldUtils;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
-import org.apache.kafka.clients.consumer.ConsumerRecords;
-import org.apache.kafka.clients.consumer.KafkaConsumer;
-import org.apache.kafka.clients.producer.KafkaProducer;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
+import java.io.File;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -18,16 +17,21 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import org.apache.commons.lang3.reflect.FieldUtils;
+import org.apache.kafka.clients.consumer.ConsumerRecord;
+import org.apache.kafka.clients.consumer.ConsumerRecords;
+import org.apache.kafka.clients.consumer.KafkaConsumer;
+import org.apache.kafka.clients.producer.KafkaProducer;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+
+import eu.fasten.core.plugins.KafkaPlugin;
+import eu.fasten.core.plugins.KafkaPlugin.ProcessingLane;
 
 public class KafkaPluginConsumeBehaviourTest {
 
-    DummyPlugin dummyPlugin;
+	DummyPlugin dummyPlugin;
 
     @BeforeEach
     public void setUp() {
@@ -64,7 +68,7 @@ public class KafkaPluginConsumeBehaviourTest {
 
         kafkaPlugin.handleConsuming();
 
-        verify(dummyPlugin).consume("{key: 'Im a record!'}");
+        verify(dummyPlugin).consume("{key: 'Im a record!'}", ProcessingLane.PRIORITY);
     }
 
     @Test
@@ -74,18 +78,18 @@ public class KafkaPluginConsumeBehaviourTest {
 
         kafkaPlugin.handleConsuming();
 
-        verify(dummyPlugin).consume("{key: 'Im a record!'}");
+        verify(dummyPlugin).consume("{key: 'Im a record!'}", ProcessingLane.PRIORITY);
     }
 
     @Test
-    public void testAlreadyInLocalStorage() throws Exception {
+    public void testAlreadyInLocalStorage(@TempDir File tempDir) throws Exception {
         setEnv("POD_INSTANCE_ID", "test_pod");
 
-        LocalStorage localStorage = new LocalStorage("src/test/resources");
+        LocalStorage localStorage = new LocalStorage(tempDir.getAbsolutePath());
         localStorage.clear(List.of(1));
         localStorage.store("{key: 'Im a record!'}", 0);
 
-        FastenKafkaPlugin kafkaPlugin = spy(new FastenKafkaPlugin(false, new Properties(), new Properties(), new Properties(), dummyPlugin, 0, null, null, "", true, 5, false, true, "src/test/resources"));
+        FastenKafkaPlugin kafkaPlugin = spy(new FastenKafkaPlugin(false, new Properties(), new Properties(), new Properties(), dummyPlugin, 0, null, null, "", true, 5, false, true, tempDir.getAbsolutePath()));
         setupMocks(kafkaPlugin);
 
         kafkaPlugin.handleConsuming();
@@ -95,27 +99,27 @@ public class KafkaPluginConsumeBehaviourTest {
     }
 
     @Test
-    public void testLocalStorage() throws Exception {
+    public void testLocalStorage(@TempDir File tempDir) throws Exception {
         setEnv("POD_INSTANCE_ID", "test_pod");
 
-        LocalStorage localStorage = new LocalStorage("src/test/resources");
+        LocalStorage localStorage = new LocalStorage(tempDir.getAbsolutePath());
         localStorage.clear(List.of(0));
 
-        FastenKafkaPlugin kafkaPlugin = spy(new FastenKafkaPlugin(false, new Properties(), new Properties(), new Properties(), dummyPlugin, 0, null, null, "", false, 5, false, true, "src/test/resources"));
+        FastenKafkaPlugin kafkaPlugin = spy(new FastenKafkaPlugin(false, new Properties(), new Properties(), new Properties(), dummyPlugin, 0, null, null, "", false, 5, false, true, tempDir.getAbsolutePath()));
         setupMocks(kafkaPlugin);
 
         kafkaPlugin.handleConsuming();
-        verify(dummyPlugin).consume("{key: 'Im a record!'}");
+        verify(dummyPlugin).consume("{key: 'Im a record!'}", ProcessingLane.PRIORITY);
     }
 
     @Test
-    public void testLocalStorageTimeoutWithTimeout() throws Exception {
+    public void testLocalStorageTimeoutWithTimeout(@TempDir File tempDir) throws Exception {
         setEnv("POD_INSTANCE_ID", "test_pod");
 
-        LocalStorage localStorage = new LocalStorage("src/test/resources");
+        LocalStorage localStorage = new LocalStorage(tempDir.getAbsolutePath());
         localStorage.clear(List.of(1));
 
-        FastenKafkaPlugin kafkaPlugin = spy(new FastenKafkaPlugin(false, new Properties(), new Properties(), new Properties(), dummyPlugin, 0, null, null, "", true, 5, false, true, "src/test/resources"));
+        FastenKafkaPlugin kafkaPlugin = spy(new FastenKafkaPlugin(false, new Properties(), new Properties(), new Properties(), dummyPlugin, 0, null, null, "", true, 5, false, true, tempDir.getAbsolutePath()));
         setupMocks(kafkaPlugin);
 
         kafkaPlugin.handleConsuming();
