@@ -50,7 +50,7 @@ public class POMAnalyzerPlugin extends Plugin {
 	@Extension
 	public static class POMAnalyzer extends AbstractKafkaPlugin implements DBConnector {
 
-		private final MavenRepositoryUtils downloader = new MavenRepositoryUtils();
+		private final MavenRepositoryUtils repo = new MavenRepositoryUtils();
 		private final EffectiveModelBuilder modelBuilder = new EffectiveModelBuilder();
 		private final PomExtractor extractor = new PomExtractor();
 		private final DatabaseUtils db = new DatabaseUtils();
@@ -75,7 +75,7 @@ public class POMAnalyzerPlugin extends Plugin {
 			beforeConsume();
 
 			var artifact = bootstrapFirstResolutionResultFromInput(record);
-			artifact.localPomFile = downloader.downloadPomToTemp(artifact);
+			artifact.localPomFile = repo.downloadPomToTemp(artifact);
 
 			process(artifact);
 		}
@@ -124,9 +124,9 @@ public class POMAnalyzerPlugin extends Plugin {
 
 			// remember source repository for artifact
 			result.artifactRepository = artifact.artifactRepository;
-			
-			result.sourcesUrl = downloader.getSourceUrlIfExisting(result);
-			result.releaseDate = downloader.getReleaseDate(result);
+
+			result.sourcesUrl = repo.getSourceUrlIfExisting(result);
+			result.releaseDate = repo.getReleaseDate(result);
 
 			// remember concrete resolution result
 			result.resolvedCompileAndRuntimeDependencies.addAll(deps.stream() //
