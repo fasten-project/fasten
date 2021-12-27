@@ -62,7 +62,7 @@ public class POMAnalyzerPlugin extends Plugin {
 		public void setDBConnection(Map<String, DSLContext> dslContexts) {
 			var myContext = dslContexts.get(Constants.mvnForge);
 			db.setDslContext(myContext);
-			resolver.setExistenceCheck(db::doesPackageExistInDb);
+			resolver.setExistenceCheck(db::hasPackageBeenIngested);
 		}
 
 		private void beforeConsume() {
@@ -142,6 +142,11 @@ public class POMAnalyzerPlugin extends Plugin {
 			var res = new LinkedList<SingleRecord>();
 			for (var data : results) {
 				res.add(serialize(data));
+			}
+			for (var data : results) {
+				if(lane == ProcessingLane.PRIORITY) {
+					db.ingestPackage(data);
+				}
 			}
 			return res;
 		}
