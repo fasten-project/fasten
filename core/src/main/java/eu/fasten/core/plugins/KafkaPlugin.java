@@ -23,7 +23,9 @@ import java.util.List;
 import java.util.Optional;
 
 public interface KafkaPlugin extends FastenPlugin {
-    
+	
+	public enum ProcessingLane {NORMAL, PRIORITY}
+	   
     public class SingleRecord {
     	public String outputPath;
     	public String payload;
@@ -52,7 +54,11 @@ public interface KafkaPlugin extends FastenPlugin {
      * @param record a record to process
      */
     void consume(String record);
-
+    
+    default void consume(String record, ProcessingLane l) {
+    	consume(record);
+    }
+    
     /**
      * Return an optional results of the computation. The result is appended to
      * the payload of standard output message. If Optional.empty() is returned,
