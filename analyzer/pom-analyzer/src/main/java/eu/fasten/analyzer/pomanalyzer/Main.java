@@ -17,6 +17,8 @@ package eu.fasten.analyzer.pomanalyzer;
 
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.dbconnectors.PostgresConnector;
+import eu.fasten.core.plugins.KafkaPlugin.ProcessingLane;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
@@ -142,7 +144,7 @@ public class Main implements Runnable {
                 mvnCoordinate.put("version", coordinate[2]);
                 var record = new JSONObject();
                 record.put("payload", mvnCoordinate);
-                pomAnalyzer.consume(record.toString());
+                pomAnalyzer.consume(record.toString(), ProcessingLane.NORMAL);
                 pomAnalyzer.produce().ifPresent(System.out::println);
                 if (pomAnalyzer.getPluginError() != null) {
                     System.err.println(pomAnalyzer.getPluginError().getMessage());

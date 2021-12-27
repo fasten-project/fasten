@@ -280,7 +280,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
      * <p>
      * This strategy provides at-least-once semantics.
      */
-    public void processRecord(ConsumerRecord<String, String> record, Long consumeTimestamp, ProcessingLane kafkaRecordKind) {
+    public void processRecord(ConsumerRecord<String, String> record, Long consumeTimestamp, ProcessingLane lane) {
 
         try {
             if (localStorage != null) { // If local storage is enabled.
@@ -299,7 +299,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
                         if (consumeTimeoutEnabled) {
                             consumeWithTimeout(record.value(), consumeTimeout, exitOnTimeout);
                         } else {
-                            plugin.consume(record.value());
+                            plugin.consume(record.value(), lane);
                         }
                     }
                 }
@@ -307,7 +307,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
                 if (consumeTimeoutEnabled) {
                     consumeWithTimeout(record.value(), consumeTimeout, exitOnTimeout);
                 } else {
-                    plugin.consume(record.value(), kafkaRecordKind);
+                    plugin.consume(record.value(), lane);
                 }
             }
         } catch (UnrecoverableError e) {
@@ -320,7 +320,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
         }
 
         // We always produce, it does not matter if local storage is enabled or not.
-        handleProducing(record.value(), consumeTimestamp, kafkaRecordKind);
+        handleProducing(record.value(), consumeTimestamp, lane);
     }
 
     /**
@@ -340,7 +340,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
                 throw plugin.getPluginError();
             }
 
-            var results = plugin.produceMultiple();
+            var results = plugin.produceMultiple(kafkaRecordKind);
             
             for(var res : results) {
             	String payload = res.payload;

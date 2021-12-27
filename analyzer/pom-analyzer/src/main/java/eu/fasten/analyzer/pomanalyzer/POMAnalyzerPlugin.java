@@ -71,13 +71,13 @@ public class POMAnalyzerPlugin extends Plugin {
 		}
 
 		@Override
-		public void consume(String record) {
+		public void consume(String record, ProcessingLane lane) {
 			beforeConsume();
 
 			var artifact = bootstrapFirstResolutionResultFromInput(record);
 			artifact.localPomFile = repo.downloadPomToTemp(artifact);
 
-			process(artifact);
+			process(artifact, lane);
 		}
 
 		private static ResolutionResult bootstrapFirstResolutionResultFromInput(String record) {
@@ -108,7 +108,7 @@ public class POMAnalyzerPlugin extends Plugin {
 			return String.format("%s:%s:?:%s", groupId, artifactId, version);
 		}
 
-		private void process(ResolutionResult artifact) {
+		private void process(ResolutionResult artifact, ProcessingLane lane) {
 
 			// resolve dependencies to
 			// 1) have dependencies
@@ -133,12 +133,12 @@ public class POMAnalyzerPlugin extends Plugin {
 
 			// resolution can be different for dependencies, so process them independently
 			deps.forEach(dep -> {
-				process(dep);
+				process(dep, lane);
 			});
 		}
 
 		@Override
-		public List<SingleRecord> produceMultiple() {
+		public List<SingleRecord> produceMultiple(ProcessingLane lane) {
 			var res = new LinkedList<SingleRecord>();
 			for (var data : results) {
 				res.add(serialize(data));
