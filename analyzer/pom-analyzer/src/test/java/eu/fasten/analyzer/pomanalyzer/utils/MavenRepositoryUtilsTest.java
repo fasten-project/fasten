@@ -19,6 +19,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.apache.commons.io.FileUtils.readFileToString;
 import static org.apache.commons.io.FileUtils.writeStringToFile;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -26,6 +27,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Date;
 
 import org.javastack.httpd.HttpServer;
 import org.junit.jupiter.api.AfterEach;
@@ -33,6 +35,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import eu.fasten.analyzer.pomanalyzer.data.PomAnalysisResult;
 import eu.fasten.analyzer.pomanalyzer.data.ResolutionResult;
 
 public class MavenRepositoryUtilsTest {
@@ -42,7 +45,7 @@ public class MavenRepositoryUtilsTest {
 	private static final String SOME_CONTENT = "<some content>";
 
 	@TempDir
-	private File dirTemp;
+	private File dirHttpd;
 	@TempDir
 	private File dirM2;
 	private HttpServer httpd;
@@ -50,7 +53,7 @@ public class MavenRepositoryUtilsTest {
 
 	@BeforeEach
 	public void setup() throws IOException {
-		httpd = new HttpServer(1234, dirTemp.getAbsolutePath());
+		httpd = new HttpServer(1234, dirHttpd.getAbsolutePath());
 		httpd.start();
 		sut = new MavenRepositoryUtils();
 	}
@@ -62,7 +65,7 @@ public class MavenRepositoryUtilsTest {
 
 	@Test
 	public void downloadPoms() {
-		webContent("some/coord.pom", SOME_CONTENT);
+		webContent(SOME_CONTENT, "some", "coord.pom");
 
 		var f = inM2("some", "coord.pom");
 		var a = newResolutionResult(SOME_COORD, ARTIFACT_REPO, f);
@@ -73,7 +76,7 @@ public class MavenRepositoryUtilsTest {
 
 	@Test
 	public void downloadPomsForJars() {
-		webContent("some/coord.pom", SOME_CONTENT);
+		webContent(SOME_CONTENT, "some", "coord.pom");
 
 		var f = inM2("some", "coord.jar");
 		var a = newResolutionResult(SOME_COORD, ARTIFACT_REPO, f);
@@ -113,6 +116,124 @@ public class MavenRepositoryUtilsTest {
 		assertTrue(f.isDirectory());
 	}
 
+	@Test
+	public void getSourcesUrlExists() {
+		var par = minimalPomAnalysisResult();
+		webContent(SOME_CONTENT, "g", "a", "1.2.3", "a-1.2.3-sources.jar");
+		String expected = ARTIFACT_REPO + "/g/a/1.2.3/a-1.2.3-sources.jar";
+		String actual = sut.getSourceUrlIfExisting(par);
+		assertEquals(expected, actual);
+	}
+
+	@Test
+	public void getSourcesUrlExistsWithComplexGroup() {
+		var par = minimalPomAnalysisResult();
+		par.groupId = "g.h.i";
+		webContent(SOME_CONTENT, "g", "h", "i", "a", "1.2.3", "a-1.2.3-sources.jar");
+		String expected = ARTIFACT_REPO + "/g/h/i/a/1.2.3/a-1.2.3-sources.jar";
+		String actual = sut.getSourceUrlIfExisting(par);
+		assertEquals(expected, actual);
+	}
+
+	@Test
+	public void getSourcesUrlExistsOtherPackaging() {
+		var par = minimalPomAnalysisResult();
+		par.packagingType = "war";
+		webContent(SOME_CONTENT, "g", "a", "1.2.3", "a-1.2.3-sources.war");
+		String expected = ARTIFACT_REPO + "/g/a/1.2.3/a-1.2.3-sources.war";
+		String actual = sut.getSourceUrlIfExisting(par);
+		assertEquals(expected, actual);
+	}
+
+	@Test
+	public void getSourcesUrlDoesNotExist() {
+		var par = minimalPomAnalysisResult();
+		assertNull(sut.getSourceUrlIfExisting(par));
+	}
+
+	@Test
+	public void getSourcesUrlNoGroup() {
+		for (var invalid : new String[] { null, "", "?" }) {
+			assertThrows(IllegalArgumentException.class, () -> {
+				var par = minimalPomAnalysisResult();
+				par.groupId = invalid;
+				sut.getSourceUrlIfExisting(par);
+			});
+		}
+	}
+
+	@Test
+	public void getSourcesUrlNoArtifact() {
+		for (var invalid : new String[] { null, "", "?" }) {
+			assertThrows(IllegalArgumentException.class, () -> {
+				var par = minimalPomAnalysisResult();
+				par.artifactId = invalid;
+				sut.getSourceUrlIfExisting(par);
+			});
+		}
+	}
+
+	@Test
+	public void getSourcesUrlNoPackaging() {
+		for (var invalid : new String[] { null, "", "?" }) {
+			assertThrows(IllegalArgumentException.class, () -> {
+				var par = minimalPomAnalysisResult();
+				par.packagingType = invalid;
+				sut.getSourceUrlIfExisting(par);
+			});
+		}
+	}
+
+	@Test
+	public void getSourcesUrlNoVersion() {
+		for (var invalid : new String[] { null, "", "?" }) {
+			assertThrows(IllegalArgumentException.class, () -> {
+				var par = minimalPomAnalysisResult();
+				par.version = invalid;
+				sut.getSourceUrlIfExisting(par);
+			});
+		}
+	}
+
+	@Test
+	public void getSourcesUrlNoArtifactRepo() {
+		for (var invalid : new String[] { null, "", "?" }) {
+			assertThrows(IllegalArgumentException.class, () -> {
+				var par = minimalPomAnalysisResult();
+				par.artifactRepository = invalid;
+				sut.getSourceUrlIfExisting(par);
+			});
+		}
+	}
+
+	@Test
+	public void getReleaseDate() {
+		var par = minimalPomAnalysisResult();
+		webContent(SOME_CONTENT, "g", "a", "1.2.3", "a-1.2.3.jar");
+		var actual = sut.getReleaseDate(par);
+		var expected = new Date().getTime();
+		var diff = expected - actual;
+		assertTrue(diff < 10 * 1000, String.format("difference must be <10s, was %dms", diff));
+	}
+
+	@Test
+	public void getReleaseDateNonExisting() {
+		var par = minimalPomAnalysisResult();
+		var actual = sut.getReleaseDate(par);
+		var expected = -1;
+		assertEquals(expected, actual);
+	}
+
+	private static PomAnalysisResult minimalPomAnalysisResult() {
+		var par = new PomAnalysisResult();
+		par.artifactRepository = ARTIFACT_REPO;
+		par.groupId = "g";
+		par.artifactId = "a";
+		par.packagingType = "jar";
+		par.version = "1.2.3";
+		return par;
+	}
+
 	private String downloadAndRead(ResolutionResult a) {
 		try {
 			File out = sut.downloadPomToTemp(a);
@@ -124,9 +245,9 @@ public class MavenRepositoryUtilsTest {
 		}
 	}
 
-	private void webContent(String path, String content) {
+	private void webContent(String content, String... path) {
 		try {
-			File f = new File(dirTemp, path);
+			File f = Path.of(dirHttpd.getAbsolutePath(), path).toFile();
 			writeStringToFile(f, content, UTF_8);
 		} catch (IOException e) {
 			throw new RuntimeException(e);
