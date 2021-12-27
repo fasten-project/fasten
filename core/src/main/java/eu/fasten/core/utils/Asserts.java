@@ -25,8 +25,14 @@ public class Asserts {
 
 	public static <T> void assertContains(T[] ts, T e) {
 		for (T a : ts) {
-			if (e.equals(a)) {
-				return;
+			if (a == null) {
+				if (e == null) {
+					return;
+				}
+			} else {
+				if (a.equals(e)) {
+					return;
+				}
 			}
 		}
 		throw $("Expected element '%s' not contained in array.", e);
