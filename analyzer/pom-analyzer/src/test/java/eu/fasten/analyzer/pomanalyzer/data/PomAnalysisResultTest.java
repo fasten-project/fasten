@@ -208,10 +208,6 @@ public class PomAnalysisResultTest {
 		var sut = new PomAnalysisResult();
 		var actual = sut.toString();
 
-		System.out.println(sut);
-		System.out.println(sut.hashCode());
-		System.out.println(System.identityHashCode(sut));
-
 		assertTrue(actual.contains(PomAnalysisResult.class.getSimpleName()));
 		assertTrue(actual.contains("\n"));
 		assertTrue(actual.split("\n")[0].contains("@"));
