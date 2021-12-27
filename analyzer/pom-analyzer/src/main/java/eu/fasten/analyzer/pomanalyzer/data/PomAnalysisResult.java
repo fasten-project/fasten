@@ -45,9 +45,6 @@ public class PomAnalysisResult {
 	public final Set<Dependency> dependencies = new HashSet<>();
 	public final Set<Dependency> dependencyManagement = new HashSet<>();
 
-	// set(g:a:packaging:version)
-	public final Set<String> resolvedCompileAndRuntimeDependencies = new HashSet<>();
-
 	public String repoUrl = null;
 	public String commitTag = null;
 	public String sourcesUrl = null;

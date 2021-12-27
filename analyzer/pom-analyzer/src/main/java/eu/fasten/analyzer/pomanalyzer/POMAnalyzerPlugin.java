@@ -128,11 +128,6 @@ public class POMAnalyzerPlugin extends Plugin {
 			result.sourcesUrl = repo.getSourceUrlIfExisting(result);
 			result.releaseDate = repo.getReleaseDate(result);
 
-			// remember concrete resolution result
-			result.resolvedCompileAndRuntimeDependencies.addAll(deps.stream() //
-					.map(r -> r.coordinate) //
-					.collect(Collectors.toSet()));
-
 			results.add(result);
 			db.save(result);
 

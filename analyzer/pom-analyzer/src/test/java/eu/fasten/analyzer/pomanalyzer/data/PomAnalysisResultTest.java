@@ -43,7 +43,6 @@ public class PomAnalysisResultTest {
 		assertNull(sut.projectName);
 		assertEquals(-1L, sut.releaseDate);
 		assertNull(sut.repoUrl);
-		assertNotNull(sut.resolvedCompileAndRuntimeDependencies);
 		assertNull(sut.sourcesUrl);
 		assertNull(sut.version);
 	}
@@ -185,16 +184,6 @@ public class PomAnalysisResultTest {
 	}
 
 	@Test
-	public void equalityDiffResolvedDeps() {
-		var a = new PomAnalysisResult();
-		var b = new PomAnalysisResult();
-		b.resolvedCompileAndRuntimeDependencies.add("i");
-
-		assertNotEquals(a, b);
-		assertNotEquals(a.hashCode(), b.hashCode());
-	}
-
-	@Test
 	public void equalityDiffSourcesUrl() {
 		var a = new PomAnalysisResult();
 		var b = new PomAnalysisResult();
@@ -222,7 +211,7 @@ public class PomAnalysisResultTest {
 		System.out.println(sut);
 		System.out.println(sut.hashCode());
 		System.out.println(System.identityHashCode(sut));
-		
+
 		assertTrue(actual.contains(PomAnalysisResult.class.getSimpleName()));
 		assertTrue(actual.contains("\n"));
 		assertTrue(actual.split("\n")[0].contains("@"));
@@ -243,7 +232,6 @@ public class PomAnalysisResultTest {
 		r.projectName = "j";
 		r.releaseDate = 123;
 		r.repoUrl = "k";
-		r.resolvedCompileAndRuntimeDependencies.add("l");
 		r.sourcesUrl = "m";
 		r.version = "n";
 		return r;
