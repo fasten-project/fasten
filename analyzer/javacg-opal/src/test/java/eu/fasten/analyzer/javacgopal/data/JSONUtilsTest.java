@@ -15,6 +15,7 @@ import org.jooq.tools.csv.CSVReader;
 import org.json.JSONObject;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.skyscreamer.jsonassert.JSONAssert;
 import org.skyscreamer.jsonassert.JSONCompareMode;
@@ -63,6 +64,7 @@ class JSONUtilsTest {
             readDataCSV(Objects.requireNonNull(getTestResource("121Coordinates.csv")));
     }
 
+    @Disabled
     @Test
     void toJSONString() throws IOException {
 
@@ -84,6 +86,7 @@ class JSONUtilsTest {
             JSONCompareMode.STRICT);
     }
 
+    @Disabled
     @Test
     void mergedGraphTest() throws IOException {
 
@@ -93,6 +96,7 @@ class JSONUtilsTest {
 
     }
 
+    @Disabled
     @Test
     void batchOfCGsTest() throws IOException {
         final var coordsSize = (coords.size() * batchVolume)/100;

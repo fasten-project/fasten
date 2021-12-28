@@ -28,6 +28,7 @@ import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.util.Collections;
@@ -138,6 +139,7 @@ class OPALPluginTest {
         assertEquals(EmptyCallGraphException.class, plugin.getPluginError().getClass());
     }
 
+    @Disabled
     @Test
     public void testShouldNotFaceClassReadingError() throws JSONException {
 
