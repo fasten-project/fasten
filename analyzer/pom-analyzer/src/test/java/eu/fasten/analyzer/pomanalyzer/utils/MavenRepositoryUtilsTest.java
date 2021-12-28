@@ -29,8 +29,11 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Date;
 
+import org.apache.commons.io.FileUtils;
 import org.javastack.httpd.HttpServer;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -45,22 +48,33 @@ public class MavenRepositoryUtilsTest {
 	private static final String SOME_CONTENT = "<some content>";
 
 	@TempDir
-	private File dirHttpd;
+	private static File dirHttpd;
+	private static HttpServer httpd;
+
 	@TempDir
 	private File dirM2;
-	private HttpServer httpd;
 	private MavenRepositoryUtils sut;
-
-	@BeforeEach
-	public void setup() throws IOException {
+	
+	@BeforeAll
+	public static void setupAll() throws IOException {
 		httpd = new HttpServer(1234, dirHttpd.getAbsolutePath());
 		httpd.start();
-		sut = new MavenRepositoryUtils();
 	}
 
+	@AfterAll
+	public static void teardownAll() {
+		httpd.stop();
+	}
+	
+	@BeforeEach
+	public void setup() {
+		sut = new MavenRepositoryUtils();
+	}
+	
 	@AfterEach
 	public void teardown() {
-		httpd.stop();
+		FileUtils.deleteQuietly(dirHttpd);
+		dirHttpd.mkdir();
 	}
 
 	@Test
