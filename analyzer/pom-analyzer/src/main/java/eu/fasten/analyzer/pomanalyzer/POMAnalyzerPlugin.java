@@ -28,6 +28,8 @@ import org.json.JSONObject;
 import org.pf4j.Extension;
 import org.pf4j.Plugin;
 import org.pf4j.PluginWrapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import eu.fasten.analyzer.pomanalyzer.data.PomAnalysisResult;
 import eu.fasten.analyzer.pomanalyzer.data.ResolutionResult;
@@ -49,6 +51,8 @@ public class POMAnalyzerPlugin extends Plugin {
 
 	@Extension
 	public static class POMAnalyzer extends AbstractKafkaPlugin implements DBConnector {
+
+		private final Logger log = LoggerFactory.getLogger(toString());
 
 		private final MavenRepositoryUtils repo = new MavenRepositoryUtils();
 		private final EffectiveModelBuilder modelBuilder = new EffectiveModelBuilder();
@@ -72,6 +76,7 @@ public class POMAnalyzerPlugin extends Plugin {
 
 		@Override
 		public void consume(String record, ProcessingLane lane) {
+			log.info("Consuming next record ...");
 			beforeConsume();
 
 			var artifact = bootstrapFirstResolutionResultFromInput(record);
@@ -112,6 +117,7 @@ public class POMAnalyzerPlugin extends Plugin {
 		}
 
 		private void process(ResolutionResult artifact, ProcessingLane lane) {
+			log.info("Processing {} ...", artifact.coordinate);
 
 			// resolve dependencies to
 			// 1) have dependencies
