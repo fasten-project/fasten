@@ -15,18 +15,18 @@
  */
 package eu.fasten.analyzer.pomanalyzer.data;
 
+import eu.fasten.analyzer.pomanalyzer.utils.MavenRepositoryUtils;
+import org.junit.jupiter.api.Test;
+
+import java.io.File;
+import java.net.MalformedURLException;
+import java.nio.file.Path;
+
 import static eu.fasten.analyzer.pomanalyzer.utils.MavenRepositoryUtils.getPathOfLocalRepository;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import java.io.File;
-import java.nio.file.Path;
-
-import org.junit.jupiter.api.Test;
-
-import eu.fasten.analyzer.pomanalyzer.utils.MavenRepositoryUtils;
 
 public class ResolutionResultTest {
 
@@ -44,7 +44,7 @@ public class ResolutionResultTest {
 	}
 
 	@Test
-	public void localM2RepositoryCanBeReplaced() {
+	public void localM2RepositoryCanBeReplaced() throws MalformedURLException {
 		var sut = new ResolutionResult("g:a:jar:1", "http://somewhere/", inTmp("...", "xyz.jar")) {
 			@Override
 			protected File getLocalM2Repository() {
@@ -56,7 +56,7 @@ public class ResolutionResultTest {
 	}
 
 	@Test
-	public void canBeInitializedWithoutLocalFile() {
+	public void canBeInitializedWithoutLocalFile() throws MalformedURLException {
 		var gapv = "g.g2:a:?:1";
 		var repo = "http://somewhere/";
 		var sut = new ResolutionResult(gapv, repo);
@@ -66,15 +66,7 @@ public class ResolutionResultTest {
 	}
 
 	@Test
-	public void initAddsMissingSlashForRepo() {
-		var in = "http://somewhere";
-		var out = "http://somewhere/";
-		var sut = new ResolutionResult("g:a:jar:1", in, inM2("...", "xyz.jar"));
-		assertEquals(out, sut.artifactRepository);
-	}
-
-	@Test
-	public void canGeneratePomUrl() {
+	public void canGeneratePomUrl() throws MalformedURLException {
 		var sut = new ResolutionResult("g:a:jar:1", "http://somewhere/", inM2("...", "xyz.jar"));
 		assertEquals("http://somewhere/.../xyz.pom", sut.getPomUrl());
 	}
