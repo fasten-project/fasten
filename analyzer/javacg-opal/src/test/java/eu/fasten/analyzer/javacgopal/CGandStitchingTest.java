@@ -46,6 +46,7 @@ import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import com.github.javaparser.utils.Log;
@@ -331,6 +332,7 @@ public class CGandStitchingTest {
             "/merge.missingEdge/Child.hashCode()/java.lang/IntegerType"));
     }
 
+    @Disabled
     @Test
     public void shouldNotGetIllegalArgumentExceptionWhileMerging() {
 
