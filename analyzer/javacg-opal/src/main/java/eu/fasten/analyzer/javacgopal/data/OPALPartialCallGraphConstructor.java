@@ -260,20 +260,19 @@ public class OPALPartialCallGraphConstructor {
 
     private Stmt<DUVar<ValueInformation>>[] getStmts(Function1<Method, AITACode<TACMethodParameter, ValueInformation>> tac,
                                                      Method definedSource) {
-        Stmt<DUVar<ValueInformation>>[] stmts = null;
-        if (definedSource != null) {
-            AITACode<TACMethodParameter, ValueInformation> sourceTac = null;
-            try {
-                sourceTac = tac.apply(definedSource);
-
-            }catch (NoSuchElementException e){
-            	// TODO investigate this warning, as it happens frequently in practice!
-                logger.warn("couldn't find the stmt");
-            }
-            if (sourceTac != null) {
-                stmts = sourceTac.stmts();
-            }
+        if (definedSource == null) {
+            return null;
         }
-        return stmts;
+        AITACode<TACMethodParameter, ValueInformation> sourceTac;
+        try {
+            sourceTac = tac.apply(definedSource);
+        } catch (NoSuchElementException e){
+            // TODO this happens frequently in practice, investigate why!
+            return null;
+        }
+        if (sourceTac == null) {
+            return null;
+        }
+        return sourceTac.stmts();
     }
 }
