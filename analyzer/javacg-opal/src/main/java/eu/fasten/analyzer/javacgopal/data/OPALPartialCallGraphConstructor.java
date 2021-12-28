@@ -254,11 +254,7 @@ public class OPALPartialCallGraphConstructor {
                 cha.appendGraph(sourceDeclaration, cg.calleesOf(sourceDeclaration), getStmts(tac,
                     null), pcg.graph, incompeletes, visitedPCs, callSiteOnly);
             }
-            if (!incompeletes.isEmpty()) {
-                logger.warn("There is an incomplete call site " +
-                    "that OPAL did not take care of. source: " + sourceDeclaration + "PCs: "+ incompeletes);
 
-            }
         }
     }
 
