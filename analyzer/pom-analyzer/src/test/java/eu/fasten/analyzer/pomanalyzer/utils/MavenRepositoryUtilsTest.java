@@ -43,7 +43,7 @@ import eu.fasten.analyzer.pomanalyzer.data.ResolutionResult;
 
 public class MavenRepositoryUtilsTest {
 
-	private static final String ARTIFACT_REPO = "http://localhost:1234";
+	private static final String ARTIFACT_REPO = "http://127.0.0.1:1234";
 	private static final String SOME_COORD = "gid:aid:jar:0.1.2";
 	private static final String SOME_CONTENT = "<some content>";
 
