@@ -60,7 +60,7 @@ public class EffectiveModelBuilderTest {
 	}
 
 	@Test
-	public void inheritedDepedency() {
+	public void inheritedDependency() {
 		var model = buildEffectiveModel("inherited-dependency.pom");
 
 		var actual = model.getDependencies().stream() //

@@ -15,15 +15,16 @@
  */
 package eu.fasten.analyzer.pomanalyzer.data;
 
-import static org.apache.commons.lang3.builder.ToStringStyle.MULTI_LINE_STYLE;
-
-import java.io.File;
-
+import eu.fasten.analyzer.pomanalyzer.utils.MavenRepositoryUtils;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
-import eu.fasten.analyzer.pomanalyzer.utils.MavenRepositoryUtils;
+import java.io.File;
+import java.net.MalformedURLException;
+import java.net.URL;
+
+import static org.apache.commons.lang3.builder.ToStringStyle.MULTI_LINE_STYLE;
 
 public class ResolutionResult {
 
@@ -37,9 +38,6 @@ public class ResolutionResult {
 		this.localM2Repository = getLocalM2Repository();
 		this.coordinate = coordinate;
 		this.artifactRepository = artifactRepository;
-		if (!artifactRepository.endsWith(File.separator)) {
-			this.artifactRepository += File.separator;
-		}
 		this.localPomFile = deriveLocalPomPath(localM2Repository, coordinate);
 	}
 
@@ -53,16 +51,17 @@ public class ResolutionResult {
 		return MavenRepositoryUtils.getPathOfLocalRepository();
 	}
 
-	public String getPomUrl() {
-		// TODO check whether this works for windows
-		String f = localPomFile.toString();
-		String pathM2 = localM2Repository.getAbsolutePath();
+	public String getPomUrl() throws MalformedURLException {
+		String f = localPomFile.toURI().toString();
+		String pathM2 = localM2Repository.toURI().toString();
 		if (!f.startsWith(pathM2)) {
 			var msg = "instead of local .m2 folder, file is contained in '%s'";
 			throw new IllegalStateException(String.format(msg, f));
 		}
-		// also remove path separator (+1)
-		return artifactRepository + f.substring(pathM2.length() + 1);
+		var repoUrl = new URL(artifactRepository);
+		var path = "/" + f.substring(pathM2.length());
+		var pomUrl = new URL(repoUrl.getProtocol(), repoUrl.getHost(), repoUrl.getPort(), path);
+		return pomUrl.toString();
 	}
 
 	public File getLocalPackageFile() {
