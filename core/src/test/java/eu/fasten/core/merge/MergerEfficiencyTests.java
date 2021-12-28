@@ -22,6 +22,7 @@ import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
 import org.json.JSONObject;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.io.File;
@@ -58,6 +59,7 @@ public class MergerEfficiencyTests {
                 }).collect(Collectors.toList());
     }
 
+    @Disabled
     @Test
     public void localMergerEfficiencyTest() {
         ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
