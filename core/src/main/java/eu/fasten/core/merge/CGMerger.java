@@ -423,8 +423,7 @@ public class CGMerger {
         if (metadata == null) {
             return null;
         }
-        logger.info("Merging graph with {} nodes and {} edges",
-            callGraph.numNodes(), callGraph.numArcs());
+
         final Set<LongLongPair> edges = ConcurrentHashMap.newKeySet();
 
         metadata.gid2NodeMetadata.long2ObjectEntrySet().parallelStream().forEach(entry -> {
@@ -450,10 +449,6 @@ public class CGMerger {
             addEdge(result, edge.firstLong(), edge.secondLong());
         }
 
-        logger.info("Merged call graphs in {} seconds, num node: {}, num edges: {}",
-            new DecimalFormat("#0.000").format(
-                (System.currentTimeMillis() - totalTime) / 1000d), result.numNodes(),
-            result.numArcs());
         return result;
     }
 
@@ -870,7 +865,7 @@ public class CGMerger {
                 result.addEdge(longLongPair.firstLong(), longLongPair.secondLong());
             }
         }
-        logger.info("Number of Augmented nodes: {}", numNode);
+        logger.info("Number of Augmented nodes: {} edges: {}", numNode, result.numArcs());
 
         return result;
     }
