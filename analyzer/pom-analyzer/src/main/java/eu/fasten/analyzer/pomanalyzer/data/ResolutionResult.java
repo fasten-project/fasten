@@ -51,17 +51,21 @@ public class ResolutionResult {
 		return MavenRepositoryUtils.getPathOfLocalRepository();
 	}
 
-	public String getPomUrl() throws MalformedURLException {
+	public String getPomUrl() {
 		String f = localPomFile.toURI().toString();
 		String pathM2 = localM2Repository.toURI().toString();
 		if (!f.startsWith(pathM2)) {
 			var msg = "instead of local .m2 folder, file is contained in '%s'";
 			throw new IllegalStateException(String.format(msg, f));
 		}
-		var repoUrl = new URL(artifactRepository);
-		var path = "/" + f.substring(pathM2.length());
-		var pomUrl = new URL(repoUrl.getProtocol(), repoUrl.getHost(), repoUrl.getPort(), path);
-		return pomUrl.toString();
+		try {
+			var repoUrl = new URL(artifactRepository);
+			var path = "/" + f.substring(pathM2.length());
+			var pomUrl = new URL(repoUrl.getProtocol(), repoUrl.getHost(), repoUrl.getPort(), path);
+			return pomUrl.toString();
+		} catch (MalformedURLException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	public File getLocalPackageFile() {
