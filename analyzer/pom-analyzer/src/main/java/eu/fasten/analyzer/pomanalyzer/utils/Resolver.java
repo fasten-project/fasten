@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import org.jboss.shrinkwrap.resolver.api.maven.Maven;
 import org.jboss.shrinkwrap.resolver.impl.maven.MavenResolvedArtifactImpl;
@@ -83,7 +84,7 @@ public class Resolver {
 	}
 
 	private static Set<ResolutionResult> resolvePom(File f) {
-		var res = new HashSet<ResolutionResult>();
+		var res = new HashSet<String[]>();
 		try {
 			MavenResolvedArtifactImpl.artifactRepositories = res;
 			Maven.resolver() //
@@ -93,10 +94,16 @@ public class Resolver {
 					.withTransitivity() //
 					.asResolvedArtifact();
 			MavenResolvedArtifactImpl.artifactRepositories = null;
-			return res;
+			return toResolutionResult(res);
 		} catch (IllegalArgumentException e) {
 			// no dependencies are declared, so no resolution required
-			return res;
+			return new HashSet<>();
 		}
+	}
+
+	private static Set<ResolutionResult> toResolutionResult(Set<String[]> res) {
+		return res.stream() //
+				.map(a -> new ResolutionResult(a[0], a[1], new File(a[2]))) //
+				.collect(Collectors.toSet());
 	}
 }
