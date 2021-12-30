@@ -52,15 +52,29 @@ public class POMAnalyzerPlugin extends Plugin {
 	@Extension
 	public static class POMAnalyzer extends AbstractKafkaPlugin implements DBConnector {
 
-		private final Logger log = LoggerFactory.getLogger(toString());
+		private static final Logger LOG = LoggerFactory.getLogger(POMAnalyzer.class);
 
-		private final MavenRepositoryUtils repo = new MavenRepositoryUtils();
-		private final EffectiveModelBuilder modelBuilder = new EffectiveModelBuilder();
-		private final PomExtractor extractor = new PomExtractor();
-		private final DatabaseUtils db = new DatabaseUtils();
-		private Resolver resolver = new Resolver();
+		private final MavenRepositoryUtils repo;
+		private final EffectiveModelBuilder modelBuilder;
+		private final PomExtractor extractor;
+		private final DatabaseUtils db;
+		private Resolver resolver;
 
 		private List<PomAnalysisResult> results = null;
+
+		public POMAnalyzer() {
+			this(new MavenRepositoryUtils(), new EffectiveModelBuilder(), new PomExtractor(), new DatabaseUtils(),
+					new Resolver());
+		}
+
+		public POMAnalyzer(MavenRepositoryUtils repo, EffectiveModelBuilder modelBuilder, PomExtractor extractor,
+				DatabaseUtils db, Resolver resolver) {
+			this.repo = repo;
+			this.modelBuilder = modelBuilder;
+			this.extractor = extractor;
+			this.db = db;
+			this.resolver = resolver;
+		}
 
 		@Override
 		public void setDBConnection(Map<String, DSLContext> dslContexts) {
@@ -76,12 +90,13 @@ public class POMAnalyzerPlugin extends Plugin {
 
 		@Override
 		public void consume(String record, ProcessingLane lane) {
-			log.info("Consuming next record ...");
+			LOG.info("Consuming next record ...");
 			beforeConsume();
 
 			var artifact = bootstrapFirstResolutionResultFromInput(record);
-			artifact.localPomFile = repo.downloadPomToTemp(artifact);
-
+			if (!artifact.localPomFile.exists()) {
+				artifact.localPomFile = repo.downloadPomToTemp(artifact);
+			}
 			process(artifact, lane);
 		}
 
@@ -117,7 +132,7 @@ public class POMAnalyzerPlugin extends Plugin {
 		}
 
 		private void process(ResolutionResult artifact, ProcessingLane lane) {
-			log.info("Processing {} ...", artifact.coordinate);
+			LOG.info("Processing {} ...", artifact.coordinate);
 
 			// resolve dependencies to
 			// 1) have dependencies
