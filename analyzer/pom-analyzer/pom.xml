@@ -43,23 +43,6 @@
 			<scope>provided</scope>
 		</dependency>
 		<dependency>
-			<groupId>org.jboss.shrinkwrap.resolver</groupId>
-			<artifactId>shrinkwrap-resolver-depchain</artifactId>
-			<version>3.1.4</version>
-			<type>pom</type>
-			<exclusions>
-				<exclusion>
-					<groupId>org.jboss.shrinkwrap.resolver</groupId>
-					<artifactId>shrinkwrap-resolver-impl-maven</artifactId>
-				</exclusion>
-			</exclusions>
-		</dependency>
-		<dependency>
-			<groupId>org.jboss.shrinkwrap.resolver</groupId>
-			<artifactId>shrinkwrap-resolver-impl-maven-patched</artifactId>
-			<version>3.1.4</version>
-		</dependency>
-		<dependency>
 			<groupId>org.apache.maven</groupId>
 			<artifactId>maven-model</artifactId>
 			<version>3.8.4</version>
@@ -165,11 +148,4 @@
 			</plugin>
 		</plugins>
 	</reporting>
-
-	<repositories>
-		<repository>
-			<id>github-shrinkwrap-resolver-patched</id>
-			<url>https://github.com/fasten-project/shrinkwrap-resolver-patched/raw/repository</url>
-		</repository>
-	</repositories>
 </project>
