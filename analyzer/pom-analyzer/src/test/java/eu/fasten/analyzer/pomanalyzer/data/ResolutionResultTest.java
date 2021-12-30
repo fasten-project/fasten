@@ -15,18 +15,20 @@
  */
 package eu.fasten.analyzer.pomanalyzer.data;
 
-import eu.fasten.analyzer.pomanalyzer.utils.MavenRepositoryUtils;
-import org.junit.jupiter.api.Test;
+import static eu.fasten.analyzer.pomanalyzer.utils.MavenRepositoryUtils.getPathOfLocalRepository;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.File;
 import java.net.MalformedURLException;
 import java.nio.file.Path;
 
-import static eu.fasten.analyzer.pomanalyzer.utils.MavenRepositoryUtils.getPathOfLocalRepository;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Test;
+
+import eu.fasten.analyzer.pomanalyzer.utils.MavenRepositoryUtils;
 
 public class ResolutionResultTest {
 
@@ -69,6 +71,27 @@ public class ResolutionResultTest {
 	public void canGeneratePomUrl() throws MalformedURLException {
 		var sut = new ResolutionResult("g:a:jar:1", "http://somewhere/sub/", inM2("...", "xyz.jar"));
 		assertEquals("http://somewhere/sub/.../xyz.pom", sut.getPomUrl());
+	}
+
+	@Test
+	public void canGeneratePomUrlWithoutDoubleSlashes() throws MalformedURLException {
+
+		for (var m2 : new String[] { "/.m2", "/.m2/" }) {
+			for (var repo : new String[] { "http://a", "http://b/", "http://c/d", "http://c/e" }) {
+				var sut = new ResolutionResult("g1.g2:a:jar:1", repo) {
+					@Override
+					protected File getLocalM2Repository() {
+						return new File(m2);
+					}
+				};
+
+				String actual = sut.getPomUrl();
+				assertTrue(actual.startsWith("http://"));
+				actual = actual.substring("http://".length());
+				assertFalse(actual.contains("//"));
+				assertTrue(actual.endsWith("/g1/g2/a/1/a-1.pom"));
+			}
+		}
 	}
 
 	@Test
