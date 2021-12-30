@@ -67,13 +67,13 @@ public class ResolutionResultTest {
 
 	@Test
 	public void canGeneratePomUrl() throws MalformedURLException {
-		var sut = new ResolutionResult("g:a:jar:1", "http://somewhere/", inM2("...", "xyz.jar"));
-		assertEquals("http://somewhere/.../xyz.pom", sut.getPomUrl());
+		var sut = new ResolutionResult("g:a:jar:1", "http://somewhere/sub/", inM2("...", "xyz.jar"));
+		assertEquals("http://somewhere/sub/.../xyz.pom", sut.getPomUrl());
 	}
 
 	@Test
 	public void failsWhenPomIsNotInM2Folder() {
-		var sut = new ResolutionResult("g:a:jar:1", "http://somewhere/", inTmp("...", "xyz.jar"));
+		var sut = new ResolutionResult("g:a:jar:1", "http://somewhere/sub/", inTmp("...", "xyz.jar"));
 		assertThrows(IllegalStateException.class, () -> {
 			sut.getPomUrl();
 		});

@@ -60,7 +60,8 @@ public class ResolutionResult {
 		}
 		try {
 			var repoUrl = new URL(artifactRepository);
-			var path = "/" + f.substring(pathM2.length());
+			var path = repoUrl.getPath() + "/" + f.substring(pathM2.length());
+			path = path.replace("//", "/");
 			var pomUrl = new URL(repoUrl.getProtocol(), repoUrl.getHost(), repoUrl.getPort(), path);
 			return pomUrl.toString();
 		} catch (MalformedURLException e) {
