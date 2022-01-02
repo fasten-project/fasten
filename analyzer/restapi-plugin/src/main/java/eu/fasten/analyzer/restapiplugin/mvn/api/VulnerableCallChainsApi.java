@@ -26,7 +26,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/{forge}/packages/{pkg}/{pkg_ver}/vulnerability-call-chains")
+@RequestMapping("/{forge}/packages/{pkg}/{pkg_ver}/vulnerable-call-chains")
 public class VulnerableCallChainsApi {
 
     private final VulnerableCallChainsApiService service;
