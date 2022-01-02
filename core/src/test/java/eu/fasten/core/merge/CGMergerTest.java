@@ -45,6 +45,7 @@ import org.jooq.tools.jdbc.MockResult;
 import org.json.JSONObject;
 import org.json.JSONTokener;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.rocksdb.RocksDBException;
@@ -161,6 +162,7 @@ public class CGMergerTest {
         importer = new PartialJavaCallGraph(new JSONObject(tokener));
     }
 
+    @Disabled
     @Test
     public void mergeWithCHATest() throws RocksDBException {
         var connection = new MockConnection(new MockProvider());
@@ -365,6 +367,7 @@ public class CGMergerTest {
         return result;
     }
 
+    @Disabled
     @Test
     public void souldNotGetIllegalArgumentExceptionWhileMerging() throws IOException, URISyntaxException {
         final var dir =

@@ -33,6 +33,7 @@ import java.util.List;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.opalj.br.BaseType;
@@ -450,6 +451,7 @@ class OPALTypeTest {
 		return method;
 	}
 
+	@Disabled
 	@Test
 	void extractSuperClassesCorrect() {
 		var superClass = Mockito.mock(ObjectType.class);
@@ -483,6 +485,7 @@ class OPALTypeTest {
 		assertNull(OPALType.extractSuperClasses(classHierarchy, currentType));
 	}
 
+	@Disabled
 	@Test
 	void extractSuperClassesNullSuperClasses() {
 		var currentType = Mockito.mock(ObjectType.class);
@@ -515,6 +518,7 @@ class OPALTypeTest {
 		assertEquals(superInterface, OPALType.extractSuperInterfaces(classHierarchy, currentType).get(0));
 	}
 
+	@Disabled
 	@Test
 	void lineNumbersShouldBeAccurate() throws OPALException {
 

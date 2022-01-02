@@ -18,8 +18,12 @@
 
 package eu.fasten.core.merge;
 
-
 import eu.fasten.core.data.PartialJavaCallGraph;
+import org.json.JSONObject;
+import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
 
 import java.io.File;
 import java.io.IOException;
@@ -63,6 +67,7 @@ public class MergerEfficiencyTests {
                 }).collect(Collectors.toList());
     }
 
+    @Disabled
     @Test
     public void localMergerEfficiencyTest() {
         ThreadMXBean threadMXBean = ManagementFactory.getThreadMXBean();
