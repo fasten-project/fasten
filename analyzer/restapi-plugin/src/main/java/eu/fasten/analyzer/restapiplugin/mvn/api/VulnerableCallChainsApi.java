@@ -20,10 +20,10 @@ package eu.fasten.analyzer.restapiplugin.mvn.api;
 
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -36,26 +36,26 @@ public class VulnerableCallChainsApi {
         this.service = service;
     }
 
-    @GetMapping(value = "", produces = MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping(value = "", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<String> getChainsForPackage(@PathVariable("forge") String forge,
                                                @PathVariable("pkg") String packageName,
                                                @PathVariable("pkg_ver") String packageVersion) {
         return service.getChainsForPackage(forge, packageName, packageVersion);
     }
 
-    @GetMapping(value = "/module", produces = MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping(value = "/module", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<String> getChainsForPackage(@PathVariable("forge") String forge,
                                                @PathVariable("pkg") String packageName,
                                                @PathVariable("pkg_ver") String packageVersion,
-                                               @RequestParam("raw_path") String rawPath) {
+                                               @RequestBody String rawPath) {
         return service.getChainsForModule(forge, packageName, packageVersion, rawPath);
     }
 
-    @GetMapping(value = "/callable", produces = MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping(value = "/callable", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<String> getChainsForCallable(@PathVariable("forge") String forge,
                                                 @PathVariable("pkg") String packageName,
                                                 @PathVariable("pkg_ver") String packageVersion,
-                                                @RequestParam("raw_path") String rawPath) {
+                                                @RequestBody String rawPath) {
         return service.getChainsForCallable(forge, packageName, packageVersion, rawPath);
     }
 
