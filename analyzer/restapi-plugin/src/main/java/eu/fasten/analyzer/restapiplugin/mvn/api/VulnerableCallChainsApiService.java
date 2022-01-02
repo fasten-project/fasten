@@ -20,7 +20,7 @@ package eu.fasten.analyzer.restapiplugin.mvn.api;
 
 import org.springframework.http.ResponseEntity;
 
-public interface VulnerabilityCallChainApiService {
+public interface VulnerableCallChainsApiService {
 
     ResponseEntity<String> getChainsForPackage(String forge, String packageName, String packageVersion);
 

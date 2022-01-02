@@ -21,11 +21,10 @@ package eu.fasten.analyzer.restapiplugin.mvn.api.impl;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import eu.fasten.analyzer.restapiplugin.mvn.KnowledgeBaseConnector;
-import eu.fasten.analyzer.restapiplugin.mvn.api.VulnerabilityCallChainApiService;
+import eu.fasten.analyzer.restapiplugin.mvn.api.VulnerableCallChainsApiService;
 import eu.fasten.core.data.FastenURI;
 import eu.fasten.core.vulchains.VulnerableCallChain;
 import eu.fasten.core.vulchains.VulnerableCallChainRepository;
-import org.json.JSONArray;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Lazy;
@@ -39,15 +38,15 @@ import java.util.Set;
 
 @Lazy
 @Service
-public class VulnerabilityCallChainApiServiceImpl implements VulnerabilityCallChainApiService {
+public class VulnerableCallChainsApiServiceImpl implements VulnerableCallChainsApiService {
 
-    private static final Logger logger = LoggerFactory.getLogger(VulnerabilityCallChainApiServiceImpl.class);
+    private static final Logger logger = LoggerFactory.getLogger(VulnerableCallChainsApiServiceImpl.class);
 
     private VulnerableCallChainRepository vulnerableCallChainRepository;
 
-    public VulnerabilityCallChainApiServiceImpl() {
+    public VulnerableCallChainsApiServiceImpl() {
         try {
-            vulnerableCallChainRepository = new VulnerableCallChainRepository(KnowledgeBaseConnector.vulnerabilityCallChainsPath);
+            vulnerableCallChainRepository = new VulnerableCallChainRepository(KnowledgeBaseConnector.vulnerableCallChainsPath);
         } catch (Exception e) {
             logger.error("Error constructing Vulnerability Call Chain Repository", e);
             System.exit(1);
@@ -59,7 +58,7 @@ public class VulnerabilityCallChainApiServiceImpl implements VulnerabilityCallCh
      * @param chains - a set of {@link VulnerableCallChain} objects to be serialized.
      * @return {@link String} formatted as JSON response.
      */
-    private String vulnerabilityCallChainsToJSON(Set<VulnerableCallChain> chains) {
+    private String VulnerableCallChainsToJSON(Set<VulnerableCallChain> chains) {
         GsonBuilder builder = new GsonBuilder();
         Gson gson = builder.create();
         return gson.toJson(chains);
@@ -68,7 +67,7 @@ public class VulnerabilityCallChainApiServiceImpl implements VulnerabilityCallCh
     @Override
     public ResponseEntity<String> getChainsForPackage(String forge, String packageName, String packageVersion) {
         Set<VulnerableCallChain> chains = vulnerableCallChainRepository.getChainsForPackage(packageName, packageVersion);
-        var result = vulnerabilityCallChainsToJSON(chains);
+        var result = VulnerableCallChainsToJSON(chains);
         return new ResponseEntity<>(result, HttpStatus.OK);
     }
 
@@ -77,7 +76,7 @@ public class VulnerabilityCallChainApiServiceImpl implements VulnerabilityCallCh
         String decodedRawPath = java.net.URLDecoder.decode(rawPath, StandardCharsets.UTF_8);
         FastenURI fastenUri = FastenURI.create(forge, packageName, packageVersion, decodedRawPath);
         Set<VulnerableCallChain> chains = vulnerableCallChainRepository.getChainsForModule(fastenUri);
-        var result = vulnerabilityCallChainsToJSON(chains);
+        var result = VulnerableCallChainsToJSON(chains);
         return new ResponseEntity<>(result, HttpStatus.OK);
     }
 
@@ -86,7 +85,7 @@ public class VulnerabilityCallChainApiServiceImpl implements VulnerabilityCallCh
         String decodedRawPath = java.net.URLDecoder.decode(rawPath, StandardCharsets.UTF_8);
         FastenURI fastenUri = FastenURI.create(forge, packageName, packageVersion, decodedRawPath);
         Set<VulnerableCallChain> chains = vulnerableCallChainRepository.getChainsForCallable(fastenUri);
-        var result = vulnerabilityCallChainsToJSON(chains);
+        var result = VulnerableCallChainsToJSON(chains);
         return new ResponseEntity<>(result, HttpStatus.OK);
     }
 }

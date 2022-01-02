@@ -51,7 +51,7 @@ public class KnowledgeBaseConnector {
 
     public static String dependencyGraphPath;
 
-    public static String vulnerabilityCallChainsPath;
+    public static String vulnerableCallChainsPath;
 
     /**
      * Database connection context
@@ -137,8 +137,8 @@ public class KnowledgeBaseConnector {
      * Retrieves the vulnerability call chains path if possible.
      */
     @PostConstruct
-    public void setVulnerabilityCallChainsPath() {
-        KnowledgeBaseConnector.vulnerabilityCallChainsPath = vulnChainsPath;
+    public void setVulnerableCallChainsPath() {
+        KnowledgeBaseConnector.vulnerableCallChainsPath = vulnChainsPath;
     }
 
     /**
