@@ -23,6 +23,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
@@ -42,19 +43,19 @@ public class VulnerableCallChainsApi {
         return service.getChainsForPackage(forge, packageName, packageVersion);
     }
 
-    @GetMapping(value = "/module/{raw_path}", produces = MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping(value = "/module", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<String> getChainsForPackage(@PathVariable("forge") String forge,
                                                @PathVariable("pkg") String packageName,
                                                @PathVariable("pkg_ver") String packageVersion,
-                                               @PathVariable("raw_path") String rawPath) {
+                                               @RequestParam("raw_path") String rawPath) {
         return service.getChainsForModule(forge, packageName, packageVersion, rawPath);
     }
 
-    @GetMapping(value = "/callable/{raw_path}", produces = MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping(value = "/callable", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<String> getChainsForCallable(@PathVariable("forge") String forge,
                                                 @PathVariable("pkg") String packageName,
                                                 @PathVariable("pkg_ver") String packageVersion,
-                                                @PathVariable("raw_path") String rawPath) {
+                                                @RequestParam("raw_path") String rawPath) {
         return service.getChainsForCallable(forge, packageName, packageVersion, rawPath);
     }
 

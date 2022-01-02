@@ -73,8 +73,7 @@ public class VulnerableCallChainsApiServiceImpl implements VulnerableCallChainsA
 
     @Override
     public ResponseEntity<String> getChainsForModule(String forge, String packageName, String packageVersion, String rawPath) {
-        String decodedRawPath = java.net.URLDecoder.decode(rawPath, StandardCharsets.UTF_8);
-        FastenURI fastenUri = FastenURI.create(forge, packageName, packageVersion, decodedRawPath);
+        FastenURI fastenUri = FastenURI.create(forge, packageName, packageVersion, rawPath);
         Set<VulnerableCallChain> chains = vulnerableCallChainRepository.getChainsForModule(fastenUri);
         var result = VulnerableCallChainsToJSON(chains);
         return new ResponseEntity<>(result, HttpStatus.OK);
@@ -82,8 +81,7 @@ public class VulnerableCallChainsApiServiceImpl implements VulnerableCallChainsA
 
     @Override
     public ResponseEntity<String> getChainsForCallable(String forge, String packageName, String packageVersion, String rawPath) {
-        String decodedRawPath = java.net.URLDecoder.decode(rawPath, StandardCharsets.UTF_8);
-        FastenURI fastenUri = FastenURI.create(forge, packageName, packageVersion, decodedRawPath);
+        FastenURI fastenUri = FastenURI.create(forge, packageName, packageVersion, rawPath);
         Set<VulnerableCallChain> chains = vulnerableCallChainRepository.getChainsForCallable(fastenUri);
         var result = VulnerableCallChainsToJSON(chains);
         return new ResponseEntity<>(result, HttpStatus.OK);
