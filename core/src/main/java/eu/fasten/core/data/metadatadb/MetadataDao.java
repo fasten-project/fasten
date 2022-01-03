@@ -1644,7 +1644,7 @@ public class MetadataDao {
                 .select(p.fields())
                 .from(p)
                 .where(
-                    exists(context.select(p.ID).from(p).where(p.ID.eq(pv.PACKAGE_ID)).limit(1))
+                    exists(context.select(pv.ID).from(pv).where(pv.PACKAGE_ID.eq(p.ID)).limit(1))
                     .and(p.PACKAGE_NAME.like("%" + searchName + "%"))
                 )
                 .offset(offset)
