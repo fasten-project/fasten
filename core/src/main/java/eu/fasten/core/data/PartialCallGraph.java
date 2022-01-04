@@ -48,11 +48,6 @@ public abstract class PartialCallGraph {
     public String version;
 
     /**
-     * The product concatenated with version, separated by $.
-     */
-    public String productVersion;
-
-    /**
      * The timestamp (if specified, or -1) in seconds from UNIX Epoch.
      */
     public long timestamp;
@@ -83,7 +78,6 @@ public abstract class PartialCallGraph {
         this.forge = forge;
         this.product = product;
         this.version = version;
-        this.productVersion = this.product + "$" + this.version;
         this.timestamp = timestamp;
         this.uri = FastenURI.create("fasten://" + forge + "!" + product + "$" + version);
         this.cgGenerator = cgGenerator;
@@ -99,7 +93,6 @@ public abstract class PartialCallGraph {
         this.forge = json.getString("forge");
         this.product = json.getString("product");
         this.version = json.getString("version");
-        this.productVersion = this.product + "$" + this.version;
         this.timestamp = getTimeStamp(json);
         this.uri = FastenURI.create("fasten://" + forge + "!" + product + "$" + version);
         this.cgGenerator = json.getString("generator");

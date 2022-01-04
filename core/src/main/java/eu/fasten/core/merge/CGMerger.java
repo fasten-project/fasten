@@ -246,7 +246,7 @@ public class CGMerger {
 
     public DirectedGraph mergeWithCHA(final PartialJavaCallGraph cg) {
         for (final var directedERCGPair : this.ercgDependencySet) {
-            if (cg.productVersion.equals(directedERCGPair.getRight().productVersion)) {
+            if (cg.uri.equals(directedERCGPair.getRight().uri)) {
                 return mergeWithCHA(directedERCGPair.getKey(), getERCGArcs(directedERCGPair.getRight()));
             }
         }
