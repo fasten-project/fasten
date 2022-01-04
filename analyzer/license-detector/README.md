@@ -29,9 +29,9 @@
 
 The License detector is triggered by the [`fasten.SyncJava.out`] Kafka consumer topic, produced by `Flink's JobManager`.
 
-The function [`extractRepoPath`](https://github.com/fasten-project/fasten/blob/endocode/compliancePlugin/analyzer/license-detector/src/main/java/eu/fasten/analyzer/licensedetector/LicenseDetectorPlugin.java#L294-L314) extracts the repository path from the `Repo cloner` Kafka message `fasten.RepoCloner.out`.
+The function [`extractRepoPath`](https://github.com/fasten-project/fasten/blob/endocode/compliancePlugin/analyzer/license-detector/src/main/java/eu/fasten/analyzer/licensedetector/LicenseDetectorPlugin.java#L294-L314) extracts the repository path from the `Repo cloner` Kafka message [`fasten.RepoCloner.out`](https://github.com/fasten-project/fasten/wiki/Kafka-Topics#fastenrepocloner).
 
-The function [`extractRepoUrl`](https://github.com/fasten-project/fasten/blob/endocode/compliancePlugin/analyzer/license-detector/src/main/java/eu/fasten/analyzer/licensedetector/LicenseDetectorPlugin.java#L316-L332) extracts the repository URL, always from the `Repo cloner` Kafka message `fasten.RepoCloner.out`.
+The function [`extractRepoUrl`](https://github.com/fasten-project/fasten/blob/endocode/compliancePlugin/analyzer/license-detector/src/main/java/eu/fasten/analyzer/licensedetector/LicenseDetectorPlugin.java#L316-L332) extracts the repository URL, always from the `Repo cloner` Kafka message [`fasten.RepoCloner.out`](https://github.com/fasten-project/fasten/wiki/Kafka-Topics#fastenrepocloner).
 
 ## Retrieving the outbound license 
 
