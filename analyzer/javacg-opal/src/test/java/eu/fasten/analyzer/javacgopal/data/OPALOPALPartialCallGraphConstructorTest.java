@@ -169,7 +169,6 @@ class OPALOPALPartialCallGraphConstructorTest {
 		Assertions.assertEquals("1.7.29", cg.version);
 		Assertions.assertEquals(1574072773, cg.timestamp);
 		Assertions.assertEquals(new FastenJavaURI("fasten://mvn!org.slf4j:slf4j-api$1.7.29"), cg.uri);
-		Assertions.assertEquals(new FastenJavaURI("fasten://org.slf4j:slf4j-api$1.7.29"), cg.forgelessUri);
 		Assertions.assertEquals("org.slf4j:slf4j-api", cg.product);
 	}
 

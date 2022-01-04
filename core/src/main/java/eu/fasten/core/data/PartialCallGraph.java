@@ -63,11 +63,6 @@ public abstract class PartialCallGraph {
     public FastenURI uri;
 
     /**
-     * The forgeless URI of this revision.
-     */
-    public FastenURI forgelessUri;
-
-    /**
      * Keeps the name of call graph generator that generated this revision call graph.
      */
     protected String cgGenerator;
@@ -91,7 +86,6 @@ public abstract class PartialCallGraph {
         this.productVersion = this.product + "$" + this.version;
         this.timestamp = timestamp;
         this.uri = FastenURI.create("fasten://" + forge + "!" + product + "$" + version);
-        this.forgelessUri = FastenURI.create("fasten://" + product + "$" + version);
         this.cgGenerator = cgGenerator;
         this.nodeCount = nodeCount;
     }
@@ -108,7 +102,6 @@ public abstract class PartialCallGraph {
         this.productVersion = this.product + "$" + this.version;
         this.timestamp = getTimeStamp(json);
         this.uri = FastenURI.create("fasten://" + forge + "!" + product + "$" + version);
-        this.forgelessUri = FastenURI.create("fasten://" + product + "$" + version);
         this.cgGenerator = json.getString("generator");
         this.nodeCount = json.getInt("nodes");
 

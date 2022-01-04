@@ -315,10 +315,6 @@ public class PartialJavaCallGraph extends PartialCallGraph {
         if (uri != null ? !uri.equals(that.uri) : that.uri != null) {
             return false;
         }
-        if (forgelessUri != null ? !forgelessUri.equals(that.forgelessUri) :
-            that.forgelessUri != null) {
-            return false;
-        }
         return cgGenerator != null ? cgGenerator.equals(that.cgGenerator) :
             that.cgGenerator == null;
     }
@@ -333,7 +329,6 @@ public class PartialJavaCallGraph extends PartialCallGraph {
         result = 31 * result + (version != null ? version.hashCode() : 0);
         result = 31 * result + (int) (timestamp ^ (timestamp >>> 32));
         result = 31 * result + (uri != null ? uri.hashCode() : 0);
-        result = 31 * result + (forgelessUri != null ? forgelessUri.hashCode() : 0);
         result = 31 * result + (cgGenerator != null ? cgGenerator.hashCode() : 0);
         return result;
     }
