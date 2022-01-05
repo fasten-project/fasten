@@ -45,7 +45,7 @@ The second function will parse the `pom.xml`; if license information is present 
 
 If license information in the `pom.xml` is missing, the license detector will query the `GitHub APIs` through the [`getLicenseFromGitHub()`](https://github.com/fasten-project/fasten/blob/6e92f3c814865e5e53b226d8a76ef28867218f32/analyzer/license-detector/src/main/java/eu/fasten/analyzer/licensedetector/LicenseDetectorPlugin.java#L215-L292) function. If the repository URL is hosted on GitHub and the API `JSON` response contains the license key, this will be set as the outbound license for the analyzed package.
 
-If any `outbound` license is retrieved, the [`chttps://github.com/fasten-project/fasten/blob/6e92f3c814865e5e53b226d8a76ef28867218f32/analyzer/license-detector/src/main/java/eu/fasten/analyzer/licensedetector/LicenseDetectorPlugin.java#L76-L118ume()`](url) method will add this information at the [`fasten.LicenseDetector.out`](https://github.com/fasten-project/fasten/wiki/Kafka-Topics#fastenlicensedetector) Kafka message.
+If any `outbound` license is retrieved, the [produce()](https://github.com/fasten-project/fasten/blob/6e92f3c814865e5e53b226d8a76ef28867218f32/analyzer/license-detector/src/main/java/eu/fasten/analyzer/licensedetector/LicenseDetectorPlugin.java#L472-L481) method will add this information at the [`fasten.LicenseDetector.out`](https://github.com/fasten-project/fasten/wiki/Kafka-Topics#fastenlicensedetector) Kafka message.
 
 
 ## Detecting license information at the file level
