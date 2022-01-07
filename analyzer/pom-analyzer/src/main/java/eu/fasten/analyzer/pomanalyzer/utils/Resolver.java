@@ -19,6 +19,10 @@ import static java.lang.String.format;
 import static java.util.stream.IntStream.range;
 
 import java.io.File;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Set;
@@ -96,8 +100,10 @@ public class Resolver {
 		var res = new HashSet<String[]>();
 		try {
 			MavenResolvedArtifactImpl.artifactRepositories = res;
-			Maven.resolver() //
-					.loadPomFromFile(f) //
+
+			var resolver = Maven.configureResolver().fromFile(getSettingsXml());
+
+			resolver.loadPomFromFile(f) //
 					.importCompileAndRuntimeDependencies() //
 					.resolve() //
 					.withTransitivity() //
@@ -108,6 +114,27 @@ public class Resolver {
 			// no dependencies are declared, so no resolution required
 			return new HashSet<>();
 		}
+	}
+
+	private static File getSettingsXml() {
+		String path;
+		if (SystemUtils.IS_OS_WINDOWS) {
+			path = Path.of(".m2", "settings-win.xml").toString();
+		} else {
+			path = Path.of(".m2", "settings-other.xml").toString();
+		}
+		URL resource = Thread.currentThread().getContextClassLoader().getResource(path);
+		File f;
+		try {
+			f = new File(new URI(resource.toString()));
+			System.out.println("reading settings from file " + f);
+		} catch (URISyntaxException e) {
+			throw new RuntimeException(e);
+		}
+		if (!f.exists()) {
+			throw new IllegalStateException("Could not find boundled .m2/settings.xml");
+		}
+		return f;
 	}
 
 	private static Set<ResolutionResult> toResolutionResult(Set<String[]> res) {
