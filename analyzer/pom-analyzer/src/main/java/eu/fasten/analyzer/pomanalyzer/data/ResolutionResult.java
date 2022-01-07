@@ -19,6 +19,8 @@ import static org.apache.commons.lang3.builder.ToStringStyle.MULTI_LINE_STYLE;
 
 import java.io.File;
 import java.net.MalformedURLException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URL;
 
 import org.apache.commons.lang3.builder.EqualsBuilder;
@@ -53,23 +55,22 @@ public class ResolutionResult {
 	}
 
 	public String getPomUrl() {
-		String f = localPomFile.toURI().toString();
-		String pathM2 = localM2Repository.toURI().toString();
-		// this is system/config-dependent, folders don't necessarily end in /
-		if (!pathM2.endsWith(File.separator)) {
-			pathM2 += File.separator;
-		}
-		if (!f.startsWith(pathM2)) {
+		var localPomUri = localPomFile.toURI();
+		var localM2Uri = localM2Repository.toURI();
+		if (!localPomUri.getPath().startsWith(localM2Uri.getPath())) {
 			var msg = "instead of local .m2 folder, file is contained in '%s'";
-			throw new IllegalStateException(String.format(msg, f));
+			throw new IllegalStateException(String.format(msg, localPomUri));
 		}
 		try {
-			var repoUrl = new URL(artifactRepository);
-			var path = repoUrl.getPath() + "/" + f.substring(pathM2.length());
-			path = path.replace("//", "/");
-			var pomUrl = new URL(repoUrl.getProtocol(), repoUrl.getHost(), repoUrl.getPort(), path);
-			return pomUrl.toString();
-		} catch (MalformedURLException e) {
+			// The '/' in URIs is the correct path separator, no matter the platform.
+			var repoUri = new URI(artifactRepository);
+			var path = localM2Uri.relativize(localPomUri).getPath();
+			if (!repoUri.getPath().endsWith("/")) {
+				path = "/" + path;
+			}
+			return new URL(repoUri.getScheme(), repoUri.getHost(), repoUri.getPort(), repoUri.getPath() + path)
+					.toString();
+		} catch (MalformedURLException | URISyntaxException e) {
 			throw new RuntimeException(e);
 		}
 	}
