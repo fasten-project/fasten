@@ -26,6 +26,7 @@ import java.io.File;
 import java.net.MalformedURLException;
 import java.nio.file.Path;
 
+import org.apache.commons.lang3.SystemUtils;
 import org.junit.jupiter.api.Test;
 
 import eu.fasten.analyzer.pomanalyzer.utils.MavenRepositoryUtils;
@@ -76,7 +77,8 @@ public class ResolutionResultTest {
 	@Test
 	public void canGeneratePomUrlWithoutDoubleSlashes() throws MalformedURLException {
 
-		for (var m2 : new String[] { "/.m2", "/.m2/" }) {
+		for (var m2 : getOSDependentM2FoldersWithAndWithoutEndingFileDelimiter()) {
+			// use repos +/- ending file delimiter and +/- subfolder
 			for (var repo : new String[] { "http://a", "http://b/", "http://c/d", "http://c/e" }) {
 				var sut = new ResolutionResult("g1.g2:a:jar:1", repo) {
 					@Override
@@ -92,6 +94,13 @@ public class ResolutionResultTest {
 				assertTrue(actual.endsWith("/g1/g2/a/1/a-1.pom"));
 			}
 		}
+	}
+
+	private String[] getOSDependentM2FoldersWithAndWithoutEndingFileDelimiter() {
+		if (SystemUtils.IS_OS_WINDOWS) {
+			return new String[] { "C:\\.m2", "C:\\.m2\\" };
+		}
+		return new String[] { "/.m2", "/.m2/" };
 	}
 
 	@Test
