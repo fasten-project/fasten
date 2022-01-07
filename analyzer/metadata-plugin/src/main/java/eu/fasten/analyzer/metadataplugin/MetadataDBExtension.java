@@ -275,9 +275,10 @@ public abstract class MetadataDBExtension implements KafkaPlugin, DBConnector {
         var gid2uriMap = new HashMap<Long, String>(callablesIds.size());
         callables.forEach(c -> gid2uriMap.put(lidToGidMap.get(c.getId().longValue()), c.getFastenUri()));
 
-        // Create a GID Graph for production
         var typesMap = new HashMap<Long, String>(namespaceMap.size());
         namespaceMap.forEach((k, v) -> typesMap.put(v, k));
+        
+        // Create a GID Graph for production
         this.gidGraph = new ExtendedGidGraph(packageVersionId, callGraph.product, callGraph.version,
                 callablesIds, numInternal, edges, gid2uriMap, typesMap);
         return packageVersionId;

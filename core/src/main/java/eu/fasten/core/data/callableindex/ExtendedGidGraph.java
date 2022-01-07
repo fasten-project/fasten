@@ -75,14 +75,25 @@ public class ExtendedGidGraph extends GidGraph {
     public JSONObject toJSON() {
         var json = super.toJSON();
         var callSitesInfo = new JSONObject();
-        getCallsInfo().forEach((edge, info) -> {
-            var edgeStr = String.format("[%d, %d]", edge.getFirst(), edge.getSecond());
-            var infoJson = new JSONObject();
-            infoJson.put("line", info.getLine());
-            infoJson.put("receiver_type_ids", new JSONArray(Arrays.asList(info.getReceiverTypeIds())));
-            infoJson.put("call_type", info.getCallType().getLiteral());
-            callSitesInfo.put(edgeStr, infoJson);
-        });
+        try {
+            getCallsInfo().forEach((edge, info) -> {
+                var edgeStr = String.format("[%d, %d]", edge.getFirst(), edge.getSecond());
+                var infoJson = new JSONObject();
+                infoJson.put("line", info.getLine());
+                infoJson.put("receiver_type_ids", new JSONArray(Arrays.asList(info.getReceiverTypeIds())));
+                infoJson.put("call_type", info.getCallType().getLiteral());
+                callSitesInfo.put(edgeStr, infoJson);
+            });
+        } catch(NullPointerException e) {
+            getCallsInfo().forEach((edge, info) -> {
+                var edgeStr = String.format("[%d, %d]", edge.getFirst(), edge.getSecond());
+                var infoJson = new JSONObject();
+                infoJson.put("line", JSONObject.NULL);
+                infoJson.put("receiver_type_ids", JSONObject.NULL);
+                infoJson.put("call_type", JSONObject.NULL);
+                callSitesInfo.put(edgeStr, infoJson);
+            });
+        }
         json.put("callsites_info", callSitesInfo);
         var gidToUriJson = new JSONObject();
         this.gidToUriMap.forEach((k, v) -> gidToUriJson.put(String.valueOf(k), v));
