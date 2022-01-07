@@ -25,12 +25,17 @@ import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.SystemUtils;
 import org.jboss.shrinkwrap.resolver.api.maven.Maven;
 import org.jboss.shrinkwrap.resolver.impl.maven.MavenResolvedArtifactImpl;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import eu.fasten.analyzer.pomanalyzer.data.ResolutionResult;
 
 public class Resolver {
+
+	private static final Logger LOG = LoggerFactory.getLogger(Resolver.class);
 
 	// Attention: Be aware that the test suite for this class is disabled by default
 	// to avoid unnecessary downloads on every build. Make sure to re-enable the
@@ -74,8 +79,12 @@ public class Resolver {
 						f.delete();
 					}
 				} else {
-					String msg = "Cannot find artifactRepository for %s.";
-					throw new IllegalStateException(format(msg, res.coordinate));
+					if (SystemUtils.IS_OS_WINDOWS) {
+						LOG.error("Cannot find artifactRepository for {}.", res.coordinate);
+					} else {
+						String msg = "Cannot find artifactRepository for %s.";
+						throw new IllegalStateException(format(msg, res.coordinate));
+					}
 				}
 			});
 		});
