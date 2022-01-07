@@ -71,29 +71,39 @@ public class ExtendedGidGraph extends GidGraph {
         return typeMap;
     }
 
+    public JSONObject toCPythonJSON() {
+        var json = super.toJSON();
+        var callSitesInfo = new JSONObject();
+        getCallsInfo().forEach((edge, info) -> {
+            var edgeStr = String.format("[%d, %d]", edge.getFirst(), edge.getSecond());
+            var infoJson = new JSONObject();
+            infoJson.put("line", JSONObject.NULL);
+            infoJson.put("receiver_type_ids", JSONObject.NULL);
+            infoJson.put("call_type", JSONObject.NULL);
+            callSitesInfo.put(edgeStr, infoJson);
+        });
+        json.put("callsites_info", callSitesInfo);
+        var gidToUriJson = new JSONObject();
+        this.gidToUriMap.forEach((k, v) -> gidToUriJson.put(String.valueOf(k), v));
+        json.put("gid_to_uri", gidToUriJson);
+        var typesJson = new JSONObject();
+        this.typeMap.forEach((k, v) -> typesJson.put(String.valueOf(k), v));
+        json.put("types_map", typesJson);
+        return json;
+    }
+
     @Override
     public JSONObject toJSON() {
         var json = super.toJSON();
         var callSitesInfo = new JSONObject();
-        try {
-            getCallsInfo().forEach((edge, info) -> {
-                var edgeStr = String.format("[%d, %d]", edge.getFirst(), edge.getSecond());
-                var infoJson = new JSONObject();
-                infoJson.put("line", info.getLine());
-                infoJson.put("receiver_type_ids", new JSONArray(Arrays.asList(info.getReceiverTypeIds())));
-                infoJson.put("call_type", info.getCallType().getLiteral());
-                callSitesInfo.put(edgeStr, infoJson);
-            });
-        } catch(NullPointerException e) {
-            getCallsInfo().forEach((edge, info) -> {
-                var edgeStr = String.format("[%d, %d]", edge.getFirst(), edge.getSecond());
-                var infoJson = new JSONObject();
-                infoJson.put("line", JSONObject.NULL);
-                infoJson.put("receiver_type_ids", JSONObject.NULL);
-                infoJson.put("call_type", JSONObject.NULL);
-                callSitesInfo.put(edgeStr, infoJson);
-            });
-        }
+        getCallsInfo().forEach((edge, info) -> {
+            var edgeStr = String.format("[%d, %d]", edge.getFirst(), edge.getSecond());
+            var infoJson = new JSONObject();
+            infoJson.put("line", info.getLine());
+            infoJson.put("receiver_type_ids", new JSONArray(Arrays.asList(info.getReceiverTypeIds())));
+            infoJson.put("call_type", info.getCallType().getLiteral());
+            callSitesInfo.put(edgeStr, infoJson);
+        });
         json.put("callsites_info", callSitesInfo);
         var gidToUriJson = new JSONObject();
         this.gidToUriMap.forEach((k, v) -> gidToUriJson.put(String.valueOf(k), v));
