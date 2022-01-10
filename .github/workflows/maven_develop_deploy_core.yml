@@ -22,6 +22,6 @@ jobs:
       
       - run: |
           cd core
-          mvn -B -ntp deploy -s $GITHUB_WORKSPACE/settings.xml
+          mvn deploy -s $GITHUB_WORKSPACE/settings.xml
         env:
           GITHUB_TOKEN: ${{ github.token }}
