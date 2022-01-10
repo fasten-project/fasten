@@ -1,4 +1,4 @@
-name: Java CI develop
+name: Package and deploy 'eu.fasten.core'
 
 on:
   push:
