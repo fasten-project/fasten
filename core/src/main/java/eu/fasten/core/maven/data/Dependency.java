@@ -37,18 +37,23 @@ import eu.fasten.core.data.Constants;
 public class Dependency extends MavenProduct {
 	public static final Dependency empty = new Dependency("", "", "");
 
-	public final Set<VersionConstraint> versionConstraints;
-	public final Set<Exclusion> exclusions;
-	public final String scope;
-	public final boolean optional;
-	public final String type;
-	public final String classifier;
+	public Set<VersionConstraint> versionConstraints;
+	public Set<Exclusion> exclusions;
+	public String scope;
+	public boolean optional;
+	public String type;
+	public String classifier;
 
 	/**
 	 * Valid dependency scopes. Defined by maven. Learn more:
 	 * http://maven.apache.org/pom.html
 	 */
 	public static final String[] SCOPES = getScopes();
+
+	@SuppressWarnings("unused")
+	private Dependency() {
+		// exists for JSON object mappers
+	}
 
 	/**
 	 * Constructor for Dependency object. (From
