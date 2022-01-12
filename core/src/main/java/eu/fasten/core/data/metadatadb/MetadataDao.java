@@ -152,12 +152,15 @@ public class MetadataDao {
         return result.getId();
     }
 
-    /**
-     * Inserts a record in 'package_versions' table in the database.
-     */
     public long insertPackageVersion(long packageId, String cgGenerator, String version, Long artifactRepositoryId,
-                                     String architecture, Timestamp createdAt, JSONObject metadata) {
-        var metadataJsonb = metadata != null ? JSONB.valueOf(metadata.toString()) : null;
+            String architecture, Timestamp createdAt, JSONObject metadata) {
+    	return insertPackageVersion(packageId, cgGenerator, version, artifactRepositoryId, architecture, createdAt,
+    			metadata.toString());
+    }
+
+    public long insertPackageVersion(long packageId, String cgGenerator, String version, Long artifactRepositoryId,
+                                     String architecture, Timestamp createdAt, String metadata) {
+        var metadataJsonb = metadata != null ? JSONB.valueOf(metadata) : null;
         var resultRecord = context.insertInto(PackageVersions.PACKAGE_VERSIONS,
                 PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID,
                 PackageVersions.PACKAGE_VERSIONS.CG_GENERATOR,
@@ -190,9 +193,15 @@ public class MetadataDao {
      * @return ID of the package version (packageVersionId)
      */
     public long insertDependency(long packageVersionId, long dependencyId, String[] versionRanges,
-                                 String[] architecture, String[] dependencyType,
-                                 Long alternativeGroup, JSONObject metadata) {
-        var resultRecord = context.insertInto(Dependencies.DEPENDENCIES,
+    		String[] architecture, String[] dependencyType, Long alternativeGroup, JSONObject metadata) {
+    	return insertDependency(packageVersionId, dependencyId, versionRanges, architecture,
+    			dependencyType, alternativeGroup, metadata.toString());
+    }
+
+    	
+    public long insertDependency(long packageVersionId, long dependencyId, String[] versionRanges,
+            String[] architecture, String[] dependencyType, Long alternativeGroup, String metadata) {
+    		   var resultRecord = context.insertInto(Dependencies.DEPENDENCIES,
                 Dependencies.DEPENDENCIES.PACKAGE_VERSION_ID,
                 Dependencies.DEPENDENCIES.DEPENDENCY_ID,
                 Dependencies.DEPENDENCIES.VERSION_RANGE,
@@ -201,7 +210,7 @@ public class MetadataDao {
                 Dependencies.DEPENDENCIES.ALTERNATIVE_GROUP,
                 Dependencies.DEPENDENCIES.METADATA)
                 .values(packageVersionId, dependencyId, versionRanges, architecture, dependencyType,
-                        alternativeGroup, JSONB.valueOf(metadata.toString()))
+                        alternativeGroup, JSONB.valueOf(metadata))
                 .onConflictOnConstraint(Keys.UNIQUE_VERSION_DEPENDENCY_RANGE).doUpdate()
                 .set(Dependencies.DEPENDENCIES.VERSION_RANGE,
                         Dependencies.DEPENDENCIES.as("excluded").VERSION_RANGE)
