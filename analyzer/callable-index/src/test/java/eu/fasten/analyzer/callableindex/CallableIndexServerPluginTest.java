@@ -18,7 +18,7 @@
 
 package eu.fasten.analyzer.callableindex;
 
-import eu.fasten.core.data.callableindex.GidGraph;
+import eu.fasten.core.data.callableindex.ExtendedGidGraph;
 import eu.fasten.core.data.callableindex.RocksDao;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -56,7 +56,7 @@ public class CallableIndexServerPluginTest {
         var jsonFile = getTestResource("gid_graph_test.json");
         json.getJSONObject("payload").put("dir", jsonFile.getPath());
         JSONTokener tokener = new JSONTokener(new FileReader(jsonFile));
-        var graph = GidGraph.getGraph(new JSONObject(tokener));
+        var graph = ExtendedGidGraph.getGraph(new JSONObject(tokener));
         callableIndexFastenPlugin.setRocksDao(rocksDao);
         callableIndexFastenPlugin.consume(json.toString());
         Mockito.verify(rocksDao).saveToRocksDb(graph);
