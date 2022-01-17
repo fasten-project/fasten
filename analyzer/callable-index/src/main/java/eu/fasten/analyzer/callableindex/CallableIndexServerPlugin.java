@@ -19,7 +19,7 @@
 package eu.fasten.analyzer.callableindex;
 
 import eu.fasten.core.data.Constants;
-import eu.fasten.core.data.callableindex.GidGraph;
+import eu.fasten.core.data.callableindex.ExtendedGidGraph;
 import eu.fasten.core.data.callableindex.RocksDao;
 import eu.fasten.core.plugins.CallableIndexConnector;
 import eu.fasten.core.plugins.KafkaPlugin;
@@ -95,7 +95,7 @@ public class CallableIndexServerPlugin extends Plugin {
             }
             final var path = json.optString("dir");
 
-            final GidGraph gidGraph;
+            final ExtendedGidGraph extendedGidGraph;
 
             if (path.isEmpty()) {
                 throw new RuntimeException("Provided path to GID graph file is empty");
@@ -103,7 +103,7 @@ public class CallableIndexServerPlugin extends Plugin {
 
             try {
                 JSONTokener tokener = new JSONTokener(new FileReader(path));
-                gidGraph = GidGraph.getGraph(new JSONObject(tokener));
+                extendedGidGraph = ExtendedGidGraph.getGraph(new JSONObject(tokener));
             } catch (JSONException e) {
                 logger.error("Could not parse GID graph", e);
                 throw e;
@@ -113,19 +113,19 @@ public class CallableIndexServerPlugin extends Plugin {
                 throw new RuntimeException("Couldn't find the GID graph at" + Paths.get(path).getFileName() + "on the FS");
             }
 
-            var artifact = gidGraph.getProduct() + "@" + gidGraph.getVersion();
+            var artifact = extendedGidGraph.getProduct() + "@" + extendedGidGraph.getVersion();
 
             final String groupId;
             final String artifactId;
-            if (gidGraph.getProduct().contains(Constants.mvnCoordinateSeparator)) {
-                groupId = gidGraph.getProduct().split(Constants.mvnCoordinateSeparator)[0];
-                artifactId = gidGraph.getProduct().split(Constants.mvnCoordinateSeparator)[1];
+            if (extendedGidGraph.getProduct().contains(Constants.mvnCoordinateSeparator)) {
+                groupId = extendedGidGraph.getProduct().split(Constants.mvnCoordinateSeparator)[0];
+                artifactId = extendedGidGraph.getProduct().split(Constants.mvnCoordinateSeparator)[1];
             } else {
-                final var productParts = gidGraph.getProduct().split("\\.");
+                final var productParts = extendedGidGraph.getProduct().split("\\.");
                 groupId = String.join(".", Arrays.copyOf(productParts, productParts.length - 1));
                 artifactId = productParts[productParts.length - 1];
             }
-            var version = gidGraph.getVersion();
+            var version = extendedGidGraph.getVersion();
             var product = artifactId + "_" + groupId + "_" + version;
 
             var firstLetter = artifactId.substring(0, 1);
@@ -133,7 +133,7 @@ public class CallableIndexServerPlugin extends Plugin {
             outputPath = File.separator + firstLetter + File.separator
                     + artifactId + File.separator + product + ".json";
             try {
-                rocksDao.saveToRocksDb(gidGraph);
+                rocksDao.saveToRocksDb(extendedGidGraph);
             } catch (Exception e) {
                 logger.error("Could not save GID graph of '" + artifact + "' into RocksDB", e);
                 throw new RuntimeException("Could not save GID graph of '" + artifact + "' into RocksDB");
@@ -141,7 +141,7 @@ public class CallableIndexServerPlugin extends Plugin {
             if (getPluginError() == null) {
                 logger.info("Saved the '" + artifact
                         + "' GID graph into RocksDB graph database with index "
-                        + gidGraph.getIndex());
+                        + extendedGidGraph.getIndex());
             }
         }
 
