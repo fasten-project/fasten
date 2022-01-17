@@ -18,7 +18,6 @@
 
 package eu.fasten.analyzer.callableindex;
 
-import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.callableindex.ExtendedGidGraph;
 import eu.fasten.core.data.callableindex.RocksDao;
 import eu.fasten.core.plugins.CallableIndexConnector;
@@ -32,11 +31,9 @@ import org.pf4j.PluginWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.nio.file.Paths;
-import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
@@ -55,7 +52,6 @@ public class CallableIndexServerPlugin extends Plugin {
         private Exception pluginError = null;
         private final Logger logger = LoggerFactory.getLogger(CallableIndexFastenPlugin.class.getName());
         private static RocksDao rocksDao;
-        private String outputPath;
 
         public void setRocksDao(RocksDao rocksDao) {
             CallableIndexFastenPlugin.rocksDao = rocksDao;
@@ -78,7 +74,7 @@ public class CallableIndexServerPlugin extends Plugin {
 
         @Override
         public String getOutputPath() {
-            return this.outputPath;
+            return null;
         }
 
         @Override
@@ -115,23 +111,6 @@ public class CallableIndexServerPlugin extends Plugin {
 
             var artifact = extendedGidGraph.getProduct() + "@" + extendedGidGraph.getVersion();
 
-            final String groupId;
-            final String artifactId;
-            if (extendedGidGraph.getProduct().contains(Constants.mvnCoordinateSeparator)) {
-                groupId = extendedGidGraph.getProduct().split(Constants.mvnCoordinateSeparator)[0];
-                artifactId = extendedGidGraph.getProduct().split(Constants.mvnCoordinateSeparator)[1];
-            } else {
-                final var productParts = extendedGidGraph.getProduct().split("\\.");
-                groupId = String.join(".", Arrays.copyOf(productParts, productParts.length - 1));
-                artifactId = productParts[productParts.length - 1];
-            }
-            var version = extendedGidGraph.getVersion();
-            var product = artifactId + "_" + groupId + "_" + version;
-
-            var firstLetter = artifactId.substring(0, 1);
-
-            outputPath = File.separator + firstLetter + File.separator
-                    + artifactId + File.separator + product + ".json";
             try {
                 rocksDao.saveToRocksDb(extendedGidGraph);
             } catch (Exception e) {
