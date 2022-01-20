@@ -19,7 +19,14 @@
 package eu.fasten.core.data.metadatadb;
 
 import com.github.t9t.jooq.json.JsonbDSL;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.TypeAdapter;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonWriter;
 import eu.fasten.core.data.Constants;
+import eu.fasten.core.data.FastenJavaURI;
+import eu.fasten.core.data.FastenURI;
 import eu.fasten.core.data.metadatadb.codegen.Keys;
 import eu.fasten.core.data.metadatadb.codegen.enums.Access;
 import eu.fasten.core.data.metadatadb.codegen.enums.CallableType;
@@ -36,6 +43,8 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.IOException;
 import java.sql.Timestamp;
 import java.util.*;
 import static org.jooq.impl.DSL.*;
@@ -1051,14 +1060,11 @@ public class MetadataDao {
                 .limit(limit)
                 .fetch();
 
-        // Returning the result
         logger.debug("Total rows: " + queryResult.size());
+
         var res = queryResult.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
 
-
-        //// Insert user-friendly formatted method signature
-
-        // Parse result json string back into object
+        // Temporary variable to contain pre-processed json from the query.
         JSONArray json;
         try {
             json = new JSONArray(res);
@@ -1067,21 +1073,29 @@ public class MetadataDao {
             return null;
         }
 
-        // Go through each callable, parse fasten uri, insert signature.
-        for (Object j : json) {
-            JSONObject jObj = (JSONObject) j;
-            var uri = jObj.getString("fasten_uri");
+        // The gson that will convert raw fasten uri into parsed object.
+        GsonBuilder builder = new GsonBuilder();
+        Gson gson = builder.create();
 
+        // The result array that will be returned.
+        JSONArray result = new JSONArray();
+
+        // Go through each callable, convert raw fasten uri into parsed object, write down to result array.
+        for (Object j : json) {
             try {
-                var uriObject = FastenUriUtils.parsePartialFastenUri(uri);
-                jObj.put("method_name", uriObject.get(2));
-                jObj.put("method_args", uriObject.get(3));
+                JSONObject jObj = (JSONObject) j;
+                var partialUri = jObj.getString("fasten_uri");
+                var fullUri = FastenUriUtils.generateFullFastenUri("mvn", packageName, packageVersion, partialUri);
+                var uriObj = new FastenJavaURI(fullUri);
+                var js =  gson.toJson(uriObj);
+                jObj.put("fasten_uri", new JSONObject(js));
+                result.put(jObj);
             } catch (IllegalArgumentException err) {
                 logger.warn("Error FASTEN URI Parser: " + err.toString());
             }
         }
 
-        return json.toString();
+        return result.toString();
     }
 
     public String getPackageBinaryModules(String packageName, String packageVersion, int offset, int limit) throws PackageVersionNotFoundException {
