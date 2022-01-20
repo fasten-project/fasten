@@ -22,6 +22,8 @@ import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -183,30 +185,6 @@ public class PartialJavaCallGraph extends PartialCallGraph {
         }
     }
 
-    public Int2ObjectMap<JavaType> externalNodeIdToTypeMap() {
-        final Int2ObjectMap<JavaType> result = new Int2ObjectOpenHashMap<>();
-        this.classHierarchy.get(JavaScope.externalTypes).values().parallelStream().forEach(type -> {
-            type.getMethods().keySet().forEach(key -> {
-                synchronized (result) {
-                    result.put(key, type);
-                }
-            });
-        });
-        return result;
-    }
-
-    public Int2ObjectMap<JavaType> internalNodeIdToTypeMap() {
-        final Int2ObjectMap<JavaType> result = new Int2ObjectOpenHashMap<>();
-        this.classHierarchy.get(JavaScope.internalTypes).values().parallelStream().forEach(type -> {
-            type.getMethods().keySet().forEach(key -> {
-                synchronized (result) {
-                    result.put(key, type);
-                }
-            });
-        });
-        return result;
-    }
-
     public Int2ObjectMap<String> nodeIDtoTypeNameMap() {
         final Int2ObjectMap<String> result = new Int2ObjectOpenHashMap<>();
         for (final var aClass : classHierarchy.get(JavaScope.internalTypes).entrySet()) {
@@ -267,14 +245,7 @@ public class PartialJavaCallGraph extends PartialCallGraph {
     }
 
     public JSONObject toJSON() {
-        final var result = new JSONObject();
-        result.put("forge", forge);
-        result.put("product", product);
-        result.put("version", version);
-        result.put("generator", cgGenerator);
-        if (timestamp >= 0) {
-            result.put("timestamp", timestamp);
-        }
+        final var result = super.toJSON();
         result.put(classHierarchyJSONKey, classHierarchyToJSON(classHierarchy));
         result.put("call-sites", graph.toJSON());
 
@@ -283,54 +254,14 @@ public class PartialJavaCallGraph extends PartialCallGraph {
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-
-        PartialJavaCallGraph that = (PartialJavaCallGraph) o;
-
-        if (timestamp != that.timestamp) {
-            return false;
-        }
-        if (classHierarchy != null ? !classHierarchy.equals(that.classHierarchy) :
-            that.classHierarchy != null) {
-            return false;
-        }
-        if (graph != null ? !graph.equals(that.graph) : that.graph != null) {
-            return false;
-        }
-        if (forge != null ? !forge.equals(that.forge) : that.forge != null) {
-            return false;
-        }
-        if (product != null ? !product.equals(that.product) : that.product != null) {
-            return false;
-        }
-        if (version != null ? !version.equals(that.version) : that.version != null) {
-            return false;
-        }
-        if (uri != null ? !uri.equals(that.uri) : that.uri != null) {
-            return false;
-        }
-        return cgGenerator != null ? cgGenerator.equals(that.cgGenerator) :
-            that.cgGenerator == null;
+        return o instanceof PartialJavaCallGraph &&
+            EqualsBuilder.reflectionEquals(this, o);
     }
 
     @Override
     public int hashCode() {
-        int result = classHierarchy != null ? classHierarchy.hashCode() : 0;
-        result = 31 * result + (graph != null ? graph.hashCode() : 0);
-        result = 31 * result + (forge != null ? forge.hashCode() : 0);
-        result = 31 * result + (product != null ? product.hashCode() : 0);
-        result = 31 * result + (version != null ? version.hashCode() : 0);
-        result = 31 * result + (int) (timestamp ^ (timestamp >>> 32));
-        result = 31 * result + (uri != null ? uri.hashCode() : 0);
-        result = 31 * result + (cgGenerator != null ? cgGenerator.hashCode() : 0);
-        return result;
+        return HashCodeBuilder.reflectionHashCode(this);
     }
-
 
     public EnumMap<JavaScope, Map<String, JavaType>> getClassHierarchy() {
     return classHierarchy;
