@@ -28,11 +28,6 @@ public abstract class PartialCallGraph {
     private static final Logger logger = LoggerFactory.getLogger(PartialCallGraph.class);
 
     /**
-     * The number of nodes in a revision call graph.
-     */
-    protected int nodeCount;
-
-    /**
      * The forge.
      */
     public String forge;
@@ -70,18 +65,16 @@ public abstract class PartialCallGraph {
      * @param version        the version.
      * @param timestamp      the timestamp (in seconds from UNIX epoch); optional: if not present,
      *                       it is set to -1.
-     * @param nodeCount      number of nodes
      * @param cgGenerator    The name of call graph generator that generated this call graph.
      */
     protected PartialCallGraph(final String forge, final String product, final String version,
-                               final long timestamp, int nodeCount, final String cgGenerator) {
+                               final long timestamp, final String cgGenerator) {
         this.forge = forge;
         this.product = product;
         this.version = version;
         this.timestamp = timestamp;
         this.uri = FastenURI.create("fasten://" + forge + "!" + product + "$" + version);
         this.cgGenerator = cgGenerator;
-        this.nodeCount = nodeCount;
     }
 
     /**
@@ -96,7 +89,6 @@ public abstract class PartialCallGraph {
         this.timestamp = getTimeStamp(json);
         this.uri = FastenURI.create("fasten://" + forge + "!" + product + "$" + version);
         this.cgGenerator = json.getString("generator");
-        this.nodeCount = json.getInt("nodes");
 
     }
 
@@ -104,9 +96,10 @@ public abstract class PartialCallGraph {
         return cgGenerator;
     }
 
-    public int getNodeCount() {
-        return nodeCount;
-    }
+    /**
+     * Returns the number of nodes in the Revision Call Graph.
+     */
+    public abstract int getNodeCount();
 
     public abstract <T> T getGraph();
 
@@ -138,7 +131,6 @@ public abstract class PartialCallGraph {
         if (timestamp >= 0) {
             result.put("timestamp", timestamp);
         }
-        result.put("nodes", nodeCount);
         return result;
     }
 

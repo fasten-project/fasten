@@ -46,16 +46,15 @@ public class PartialPythonCallGraph extends PartialCallGraph {
      * @param version        the version.
      * @param timestamp      the timestamp (in seconds from UNIX epoch); optional: if not present,
      *                       it is set to -1.
-     * @param nodeCount      number of nodes
      * @param cgGenerator    The name of call graph generator that generated this call graph.
      * @param classHierarchy class hierarchy of this revision including all classes of the revision
      * @param graph          the call graph (no control is done on the graph) {@link CPythonGraph}
      */
     public PartialPythonCallGraph(final String forge, final String product, final String version,
-                                  final long timestamp, int nodeCount, final String cgGenerator,
+                                  final long timestamp, final String cgGenerator,
                                   final EnumMap<PythonScope, Map<String, PythonType>>classHierarchy,
                                   final CPythonGraph graph) {
-        super(forge, product, version, timestamp, nodeCount, cgGenerator);
+        super(forge, product, version, timestamp, cgGenerator);
         this.classHierarchy = classHierarchy;
         this.graph = graph;
     }
@@ -102,6 +101,11 @@ public class PartialPythonCallGraph extends PartialCallGraph {
             modules.put(module, type);
         }
         return modules;
+    }
+
+    @Override
+    public int getNodeCount() {
+        return this.mapOfAllMethods().size();
     }
 
     /**
