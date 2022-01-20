@@ -50,7 +50,7 @@ class PartialJavaCallGraphTest {
 
    @Test
     void getNodeCount() {
-        assertEquals(5, graph.getNodeCount());
+        assertEquals(6, graph.getNodeCount());
     }
 
     @Test
