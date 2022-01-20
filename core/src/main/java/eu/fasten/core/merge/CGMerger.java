@@ -153,9 +153,9 @@ public class CGMerger {
     private DirectedGraph ercgToDirectedGraph(final PartialJavaCallGraph ercg, long offset) {
         final var result = new MergedDirectedGraph();
         final var uris = ercg.mapOfFullURIStrings();
-        final var directedMerge = PartialJavaCallGraph.toLocalDirectedGraph(ercg);
+        final var internalNodes = getAllInternalNodes(ercg);
 
-        for (Long node : directedMerge.nodes()) {
+        for (Long node : internalNodes) {
             var uri = uris.get(node.intValue());
 
             if (!allUris.containsValue(uri)) {
@@ -178,6 +178,11 @@ public class CGMerger {
         return result;
     }
 
+    private LongSet getAllInternalNodes(PartialJavaCallGraph pcg) {
+        LongSet nodes = new LongOpenHashSet();
+        pcg.getClassHierarchy().get(JavaScope.internalTypes).forEach((key, value) -> value.getMethods().keySet().forEach(nodes::add));
+        return nodes;
+    }
 
     /**
      * Create instance of callgraph merger from package names.

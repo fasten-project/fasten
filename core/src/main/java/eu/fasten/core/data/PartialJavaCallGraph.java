@@ -331,20 +331,6 @@ public class PartialJavaCallGraph extends PartialCallGraph {
         return result;
     }
 
-    /**
-     * Converts an {@link PartialJavaCallGraph} into a {@link DirectedGraph} using as global
-     * identifiers the local identifiers.
-     *
-     * @param erjcg an {@link PartialJavaCallGraph}.
-     * @return a directed graph based on the local identifiers of {@code erjcg}.
-     */
-    public static DirectedGraph toLocalDirectedGraph(final PartialJavaCallGraph erjcg) {
-        MergedDirectedGraph dg = new MergedDirectedGraph();
-        erjcg.getClassHierarchy().get(JavaScope.internalTypes).forEach((key, value) -> value.getMethods().keySet().forEach(dg::addInternalNode));
-        erjcg.getClassHierarchy().get(JavaScope.resolvedTypes).forEach((key, value) -> value.getMethods().keySet().forEach(dg::addInternalNode));
-
-        return dg;
-    }
 
     public EnumMap<JavaScope, Map<String, JavaType>> getClassHierarchy() {
     return classHierarchy;
