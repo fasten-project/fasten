@@ -24,7 +24,7 @@ import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.ExtendedRevisionCCallGraph;
 import eu.fasten.core.data.ExtendedRevisionCallGraph;
 import eu.fasten.core.data.Graph;
-import eu.fasten.core.data.callableindex.GidGraph;
+import eu.fasten.core.data.callableindex.ExtendedGidGraph;
 import eu.fasten.core.data.metadatadb.MetadataDao;
 import eu.fasten.core.data.metadatadb.codegen.enums.Access;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.CallSitesRecord;
@@ -136,9 +136,15 @@ public class MetadataDatabaseCPlugin extends Plugin {
             callablesIds.addAll(internalNodesSet);
             callablesIds.addAll(externalNodesSet);
 
+            var gid2uriMap = new HashMap<Long, String>(callablesIds.size());
+            callables.forEach(c -> gid2uriMap.put(lidToGidMap.get(c.getId().longValue()), c.getFastenUri()));
+
+            var typesMap = new HashMap<Long, String>(namespaceMap.size());
+            namespaceMap.forEach((k, v) -> typesMap.put(v, k));
+            
             // Create a GID Graph for production
-            this.gidGraph = new GidGraph(packageVersionId, callGraph.product, callGraph.version,
-                    callablesIds, numInternal, edges);
+            this.gidGraph = new ExtendedGidGraph(packageVersionId, callGraph.product, callGraph.version,
+                    callablesIds, numInternal, edges, gid2uriMap, typesMap);
             return packageVersionId;
         }
 

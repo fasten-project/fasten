@@ -59,9 +59,10 @@ public abstract class MetadataDBExtension implements KafkaPlugin, DBConnector {
     protected Exception pluginError = null;
     protected final Logger logger = LoggerFactory.getLogger(MetadataDBExtension.class.getName());
     protected boolean restartTransaction = false;
-    protected GidGraph gidGraph = null;
+    protected ExtendedGidGraph gidGraph = null;
     protected String outputPath;
     private String artifactRepository = null;
+    private String forge = null;
 
     @Override
     public void setDBConnection(Map<String, DSLContext> dslContexts) {
@@ -110,8 +111,8 @@ public abstract class MetadataDBExtension implements KafkaPlugin, DBConnector {
             if (!consumedJson.has("forge")) {
                 throw new JSONException("forge");
             }
-            final String forge = consumedJson.get("forge").toString();
-            callgraph = getExtendedRevisionCallGraph(forge, consumedJson);
+            this.forge = consumedJson.get("forge").toString();
+            callgraph = getExtendedRevisionCallGraph(this.forge, consumedJson);
         } catch (JSONException e) {
             logger.error("Error parsing JSON callgraph for '"
                     + Paths.get(path).getFileName() + "'", e);
@@ -176,7 +177,11 @@ public abstract class MetadataDBExtension implements KafkaPlugin, DBConnector {
         if (gidGraph == null) {
             return Optional.empty();
         } else {
-            return Optional.of(gidGraph.toJSON().toString());
+            if (this.forge.equals(Constants.mvnForge)) {
+                return Optional.of(gidGraph.toJSON().toString());
+            } else {
+                return Optional.of(gidGraph.toCPythonJSON().toString());
+            }
         }
     }
 
@@ -275,9 +280,10 @@ public abstract class MetadataDBExtension implements KafkaPlugin, DBConnector {
         var gid2uriMap = new HashMap<Long, String>(callablesIds.size());
         callables.forEach(c -> gid2uriMap.put(lidToGidMap.get(c.getId().longValue()), c.getFastenUri()));
 
-        // Create a GID Graph for production
         var typesMap = new HashMap<Long, String>(namespaceMap.size());
         namespaceMap.forEach((k, v) -> typesMap.put(v, k));
+        
+        // Create a GID Graph for production
         this.gidGraph = new ExtendedGidGraph(packageVersionId, callGraph.product, callGraph.version,
                 callablesIds, numInternal, edges, gid2uriMap, typesMap);
         return packageVersionId;
