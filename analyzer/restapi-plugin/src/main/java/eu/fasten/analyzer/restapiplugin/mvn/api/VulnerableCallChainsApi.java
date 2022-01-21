@@ -18,6 +18,7 @@
 
 package eu.fasten.analyzer.restapiplugin.mvn.api;
 
+import org.springframework.context.annotation.Lazy;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -26,6 +27,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+@Lazy
 @RestController
 @RequestMapping("/{forge}/packages/{pkg}/{pkg_ver}/vulnerable-call-chains")
 public class VulnerableCallChainsApi {
