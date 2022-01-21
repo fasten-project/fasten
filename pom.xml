@@ -108,7 +108,7 @@
             <dependency>
                 <groupId>org.apache.logging.log4j</groupId>
                 <artifactId>log4j-api</artifactId>
-                <version>2.17.0</version>
+                <version>2.17.1</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
@@ -280,10 +280,10 @@
     </reporting>
 
     <distributionManagement>
-        <snapshotRepository>
+        <repository>
             <id>github</id>
-            <name>GitHub Packages</name>
+            <name>GitHub Packages: fasten-project/fasten</name>
             <url>https://maven.pkg.github.com/fasten-project/fasten</url>
-        </snapshotRepository>
+        </repository>
     </distributionManagement>
 </project>
