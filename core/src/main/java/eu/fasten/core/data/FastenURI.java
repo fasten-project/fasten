@@ -51,7 +51,7 @@ public class FastenURI implements Serializable {
 
 		if (forgeProductVersion == null) rawForge = rawProduct = rawVersion = null;
 		else {
-			final var exclPos = forgeProductVersion.indexOf('!');
+			final var exclPos = forgeProductVersion.split("\\$")[0].indexOf('!');
 			String productVersion;
 			if (exclPos == -1) { // No forge
 				rawForge = null;
@@ -60,7 +60,7 @@ public class FastenURI implements Serializable {
 			else {
 				rawForge = forgeProductVersion.substring(0,  exclPos);
 				productVersion = forgeProductVersion.substring(exclPos + 1);
-				if (productVersion.indexOf('!') >= 0) throw new IllegalArgumentException("More than one forge");
+				if (productVersion.split("\\$")[0].indexOf('!') >= 0) throw new IllegalArgumentException("More than one forge");
 			}
 
                       this.validateRawForge();
