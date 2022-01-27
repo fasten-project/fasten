@@ -19,6 +19,10 @@
         </dependency>
     </dependencies>
 
+    <properties>
+        <maven.deploy.skip>true</maven.deploy.skip>
+    </properties>
+
     <parent>
         <groupId>eu.fasten</groupId>
         <artifactId>parent</artifactId>
