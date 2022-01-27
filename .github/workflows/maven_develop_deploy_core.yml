@@ -1,4 +1,4 @@
-name: Package and deploy 'eu.fasten.core'
+name: Package and deploy snapshot of 'eu.fasten.{parent, core}'
 
 on:
   push:
@@ -17,11 +17,7 @@ jobs:
           distribution: 'temurin'
           server-id: github # Value of distributionManagement/repository/id
           settings-path: ${{ github.workspace }} # location of settings.xml
-
-      - run: mvn -B -ntp clean package
       
-      - run: |
-          cd core
-          mvn deploy -s $GITHUB_WORKSPACE/settings.xml
+      - run: mvn -B -ntp clean deploy -s $GITHUB_WORKSPACE/settings.xml
         env:
           GITHUB_TOKEN: ${{ github.token }}
