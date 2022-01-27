@@ -120,7 +120,7 @@ public class RepoClonerPlugin extends Plugin {
             version = json.getString("version").replaceAll("[\\n\\t ]", "");
             commitTag = json.optString("commitTag").replaceAll("[\\n\\t ]", "");
             sourcesUrl = json.optString("sourcesUrl").replaceAll("[\\n\\t ]", "");
-            date = json.optLong("date", -1L);
+            date = json.optLong("releaseDate", -1L);
             forge = json.optString("forge");
             String product = group + Constants.mvnCoordinateSeparator + artifact
                     + Constants.mvnCoordinateSeparator + version;
