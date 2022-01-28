@@ -59,14 +59,14 @@ public class JSONUtils {
     }
 
     /**
-     * Converts an {@link ExtendedRevisionJavaCallGraph} object to its corresponding JSON String
+     * Converts an {@link PartialJavaCallGraph} object to its corresponding JSON String
      * without any object creation in between. It creates a {@link StringBuilder) in the beginning
      * and only appends to it in order to decrease the memory and time consumption.
      *
      * @param erjcg and object of java revision call graph to be converted to JSON String.
      * @return the corresponding JSON String.
      */
-    public static String toJSONString(final ExtendedRevisionJavaCallGraph erjcg) {
+    public static String toJSONString(final PartialJavaCallGraph erjcg) {
         var result = new StringBuilder("{");
         appendArtifactInformation(result, erjcg);
         appendCha(result, erjcg.classHierarchy);
@@ -88,9 +88,8 @@ public class JSONUtils {
      * @param result the StringBuilder to append the information.
      */
     private static void appendArtifactInformation(StringBuilder result,
-                                                  final ExtendedRevisionJavaCallGraph erjcg) {
+                                                  final PartialJavaCallGraph erjcg) {
         appendKeyValue(result, "product", erjcg.product);
-        appendKeyValue(result, "nodes", erjcg.nodeCount);
         appendKeyValue(result, "forge", erjcg.forge);
         appendKeyValue(result, "generator", erjcg.cgGenerator);
         appendKeyValue(result, "version", erjcg.version);

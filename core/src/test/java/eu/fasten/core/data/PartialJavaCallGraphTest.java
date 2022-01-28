@@ -34,9 +34,9 @@ import org.json.JSONTokener;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-class ExtendedRevisionJavaCallGraphTest {
+class PartialJavaCallGraphTest {
 
-    private static ExtendedRevisionJavaCallGraph graph;
+    private static PartialJavaCallGraph graph;
 
     @BeforeAll
     static void setUp() throws IOException, URISyntaxException {
@@ -45,12 +45,12 @@ class ExtendedRevisionJavaCallGraphTest {
 
         JSONTokener tokener = new JSONTokener(new FileReader(file));
 
-        graph = new ExtendedRevisionJavaCallGraph(new JSONObject(tokener));
+        graph = new PartialJavaCallGraph(new JSONObject(tokener));
     }
 
-    @Test
+   @Test
     void getNodeCount() {
-        assertEquals(5, graph.getNodeCount());
+        assertEquals(6, graph.getNodeCount());
     }
 
     @Test
@@ -112,7 +112,7 @@ class ExtendedRevisionJavaCallGraphTest {
 
         JSONTokener tokener = new JSONTokener(new FileReader(file));
 
-        var cg = new ExtendedRevisionJavaCallGraph(new JSONObject(tokener));
+        var cg = new PartialJavaCallGraph(new JSONObject(tokener));
 
         assertFalse(cg.isCallGraphEmpty());
     }
@@ -124,7 +124,7 @@ class ExtendedRevisionJavaCallGraphTest {
 
         JSONTokener tokener = new JSONTokener(new FileReader(file));
 
-        var cg = new ExtendedRevisionJavaCallGraph(new JSONObject(tokener));
+        var cg = new PartialJavaCallGraph(new JSONObject(tokener));
 
         assertFalse(cg.isCallGraphEmpty());
     }
@@ -136,7 +136,7 @@ class ExtendedRevisionJavaCallGraphTest {
 
         JSONTokener tokener = new JSONTokener(new FileReader(file));
 
-        var cg = new ExtendedRevisionJavaCallGraph(new JSONObject(tokener));
+        var cg = new PartialJavaCallGraph(new JSONObject(tokener));
 
         assertFalse(cg.isCallGraphEmpty());
     }
@@ -148,7 +148,7 @@ class ExtendedRevisionJavaCallGraphTest {
 
         JSONTokener tokener = new JSONTokener(new FileReader(file));
 
-        var cg = new ExtendedRevisionJavaCallGraph(new JSONObject(tokener));
+        var cg = new PartialJavaCallGraph(new JSONObject(tokener));
 
         assertTrue(cg.isCallGraphEmpty());
     }
@@ -169,7 +169,7 @@ class ExtendedRevisionJavaCallGraphTest {
                 .getResource("merge/merged_cg_test.json")).toURI().getPath());
 
         JSONTokener tokener = new JSONTokener(new FileReader(file));
-        var cg = new ExtendedRevisionJavaCallGraph(new JSONObject(tokener));
+        var cg = new PartialJavaCallGraph(new JSONObject(tokener));
         var mapURI = cg.mapOfFullURIStrings();
 
         // Internal types

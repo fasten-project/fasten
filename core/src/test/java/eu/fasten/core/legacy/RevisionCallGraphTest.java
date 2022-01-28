@@ -1,9 +1,10 @@
-package eu.fasten.core.data;
+package eu.fasten.core.legacy;
 
 import static net.javacrumbs.jsonunit.JsonAssert.assertJsonEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
+import eu.fasten.core.legacy.RevisionCallGraph;
 import it.unimi.dsi.fastutil.objects.ObjectLists;
 import java.util.List;
 import org.json.JSONArray;

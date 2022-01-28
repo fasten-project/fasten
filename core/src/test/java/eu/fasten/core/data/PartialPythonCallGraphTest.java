@@ -33,9 +33,9 @@ import org.json.JSONTokener;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-class ExtendedRevisionPythonCallGraphTest {
+class PartialPythonCallGraphTest {
 
-    private static ExtendedRevisionPythonCallGraph graph;
+    private static PartialPythonCallGraph graph;
 
     @BeforeAll
     static void setUp() throws IOException, URISyntaxException {
@@ -44,14 +44,14 @@ class ExtendedRevisionPythonCallGraphTest {
 
         JSONTokener tokener = new JSONTokener(new FileReader(file));
 
-        graph = new ExtendedRevisionPythonCallGraph(new JSONObject(tokener));
+        graph = new PartialPythonCallGraph(new JSONObject(tokener));
     }
 
-    @Test
+   @Test
     void getNodeCount() {
         assertEquals(5, graph.getNodeCount());
     }
-
+        
     @Test
     void toJSON() throws FileNotFoundException, URISyntaxException {
         var file = new File(Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
@@ -61,7 +61,7 @@ class ExtendedRevisionPythonCallGraphTest {
 
         JSONObject jsonGraph = new JSONObject(tokener);
 
-        System.out.println("HAAHAHAHAHAAAHAHAH " + jsonGraph.toString());
+        System.out.println(jsonGraph.toString());
 
         assertEquals(jsonGraph.getJSONObject("modules").getJSONObject("internal").toString(),
                 graph.toJSON().getJSONObject("modules").getJSONObject("internal").toString());
@@ -104,7 +104,7 @@ class ExtendedRevisionPythonCallGraphTest {
 
         JSONTokener tokener = new JSONTokener(new FileReader(file));
 
-        var cg = new ExtendedRevisionPythonCallGraph(new JSONObject(tokener));
+        var cg = new PartialPythonCallGraph(new JSONObject(tokener));
 
         assertFalse(cg.isCallGraphEmpty());
     }
@@ -116,7 +116,7 @@ class ExtendedRevisionPythonCallGraphTest {
 
         JSONTokener tokener = new JSONTokener(new FileReader(file));
 
-        var cg = new ExtendedRevisionPythonCallGraph(new JSONObject(tokener));
+        var cg = new PartialPythonCallGraph(new JSONObject(tokener));
 
         assertFalse(cg.isCallGraphEmpty());
     }
@@ -128,7 +128,7 @@ class ExtendedRevisionPythonCallGraphTest {
 
         JSONTokener tokener = new JSONTokener(new FileReader(file));
 
-        var cg = new ExtendedRevisionPythonCallGraph(new JSONObject(tokener));
+        var cg = new PartialPythonCallGraph(new JSONObject(tokener));
 
         assertTrue(cg.isCallGraphEmpty());
     }

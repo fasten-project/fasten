@@ -19,7 +19,7 @@
 package eu.fasten.analyzer.metadataplugin;
 
 import eu.fasten.core.data.Constants;
-import eu.fasten.core.data.ExtendedRevisionPythonCallGraph;
+import eu.fasten.core.data.PartialPythonCallGraph;
 import eu.fasten.core.data.metadatadb.MetadataDao;
 import org.jooq.DSLContext;
 import org.json.JSONException;
@@ -123,7 +123,7 @@ public class MetadataDatabasePythonPluginTest {
         Mockito.when(metadataDao.insertModule(Mockito.eq(packageVersionId), Mockito.eq(1L), Mockito.eq(null), Mockito.eq(null), Mockito.eq(null), Mockito.eq(null),
                 Mockito.eq(null), Mockito.eq(null))).thenReturn(internalModuleId);
 
-        long id = metadataDBExtension.saveToDatabase(new ExtendedRevisionPythonCallGraph(json), metadataDao);
+        long id = metadataDBExtension.saveToDatabase(new PartialPythonCallGraph(json), metadataDao);
         assertEquals(packageVersionId, id);
         Mockito.verify(metadataDao).insertPackage(json.getString("product"), Constants.pypiForge);
         Mockito.verify(metadataDao).insertPackageVersion(Mockito.eq(packageId), Mockito.eq(json.getString("generator")),
@@ -139,7 +139,7 @@ public class MetadataDatabasePythonPluginTest {
         var metadataDao = Mockito.mock(MetadataDao.class);
         var json = new JSONObject();
         assertThrows(JSONException.class, () -> metadataDBExtension
-                .saveToDatabase(new ExtendedRevisionPythonCallGraph(json), metadataDao));
+                .saveToDatabase(new PartialPythonCallGraph(json), metadataDao));
     }
 
     @Test

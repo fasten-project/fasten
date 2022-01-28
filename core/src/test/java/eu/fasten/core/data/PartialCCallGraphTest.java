@@ -33,9 +33,9 @@ import org.json.JSONTokener;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 
-class ExtendedRevisionCCallGraphTest {
+class PartialCCallGraphTest {
 
-    private static ExtendedRevisionCCallGraph graph;
+    private static PartialCCallGraph graph;
 
     @BeforeAll
     static void setUp() throws IOException, URISyntaxException {
@@ -44,10 +44,10 @@ class ExtendedRevisionCCallGraphTest {
 
         JSONTokener tokener = new JSONTokener(new FileReader(file));
 
-        graph = new ExtendedRevisionCCallGraph(new JSONObject(tokener));
+        graph = new PartialCCallGraph(new JSONObject(tokener));
     }
 
-    @Test
+   @Test
     void getNodeCount() {
         assertEquals(5, graph.getNodeCount());
     }
@@ -102,7 +102,7 @@ class ExtendedRevisionCCallGraphTest {
 
         JSONTokener tokener = new JSONTokener(new FileReader(file));
 
-        var cg = new ExtendedRevisionCCallGraph(new JSONObject(tokener));
+        var cg = new PartialCCallGraph(new JSONObject(tokener));
 
         assertFalse(cg.isCallGraphEmpty());
     }
@@ -114,7 +114,7 @@ class ExtendedRevisionCCallGraphTest {
 
         JSONTokener tokener = new JSONTokener(new FileReader(file));
 
-        var cg = new ExtendedRevisionCCallGraph(new JSONObject(tokener));
+        var cg = new PartialCCallGraph(new JSONObject(tokener));
 
         assertFalse(cg.isCallGraphEmpty());
     }
@@ -126,7 +126,7 @@ class ExtendedRevisionCCallGraphTest {
 
         JSONTokener tokener = new JSONTokener(new FileReader(file));
 
-        var cg = new ExtendedRevisionCCallGraph(new JSONObject(tokener));
+        var cg = new PartialCCallGraph(new JSONObject(tokener));
 
         assertFalse(cg.isCallGraphEmpty());
     }
@@ -138,7 +138,7 @@ class ExtendedRevisionCCallGraphTest {
 
         JSONTokener tokener = new JSONTokener(new FileReader(file));
 
-        var cg = new ExtendedRevisionCCallGraph(new JSONObject(tokener));
+        var cg = new PartialCCallGraph(new JSONObject(tokener));
 
         assertTrue(cg.isCallGraphEmpty());
     }

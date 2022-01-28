@@ -22,6 +22,8 @@ import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -38,66 +40,55 @@ import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
  *
  * @implNote each method in the revision has a unique id in this CHA.
  */
-public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<EnumMap<JavaScope,
-    Map<String, JavaType>>> {
-    static {
-        classHierarchyJSONKey = "cha";
-    }
+public class PartialJavaCallGraph extends PartialCallGraph {
 
+    public static final String classHierarchyJSONKey = "cha";
+
+    protected EnumMap<JavaScope, Map<String, JavaType>> classHierarchy;
 
     /**
-     * Creates {@link ExtendedRevisionJavaCallGraph} with the given builder.
-     *
-     * @param builder builder for {@link ExtendedRevisionJavaCallGraph}
+     * Includes all the edges of the revision call graph (internal, external,
+     * and resolved).
      */
-    public ExtendedRevisionJavaCallGraph(final ExtendedBuilder<EnumMap<JavaScope, Map<String,
-        JavaType>>> builder) {
-        super(builder);
-    }
+    protected JavaGraph graph;
 
     /**
-     * Creates {@link ExtendedRevisionJavaCallGraph} with the given data.
+     * Creates {@link PartialJavaCallGraph} with the given data.
      *
      * @param forge          the forge.
      * @param product        the product.
      * @param version        the version.
      * @param timestamp      the timestamp (in seconds from UNIX epoch); optional: if not present,
      *                       it is set to -1.
-     * @param nodeCount      number of nodes
      * @param cgGenerator    The name of call graph generator that generated this call graph.
      * @param classHierarchy class hierarchy of this revision including all classes of the revision
      *                       <code> Map<{@link FastenURI}, {@link JavaType}> </code>
-     * @param graph          the call graph (no control is done on the graph) {@link Graph}
+     * @param graph          the call graph (no control is done on the graph) {@link CPythonGraph}
      */
-    public ExtendedRevisionJavaCallGraph(final String forge, final String product, final String version,
-                                         final long timestamp, int nodeCount, final String cgGenerator,
-                                         final EnumMap<JavaScope,Map<String, JavaType>> classHierarchy,
-                                         final Graph graph) {
-        super(forge, product, version, timestamp, nodeCount, cgGenerator, classHierarchy, graph);
+    public PartialJavaCallGraph(final String forge, final String product, final String version,
+                                final long timestamp, final String cgGenerator,
+                                final EnumMap<JavaScope,Map<String, JavaType>> classHierarchy,
+                                final JavaGraph graph) {
+        super(forge, product, version, timestamp, cgGenerator);
+        this.classHierarchy = classHierarchy;
+        this.graph = graph;
     }
 
 
     /**
-     * Creates {@link ExtendedRevisionCallGraph} for the given JSONObject.
+     * Creates {@link PartialCallGraph} for the given JSONObject.
      *
      * @param json JSONObject of a revision call graph.
      */
-    public ExtendedRevisionJavaCallGraph(final JSONObject json) throws JSONException {
-        super(json, ExtendedRevisionJavaCallGraph.class);
+    public PartialJavaCallGraph(final JSONObject json) throws JSONException {
+        super(json);
         this.graph = new JavaGraph(json.getJSONArray("call-sites"));
+        this.classHierarchy = getCHAFromJSON(json.getJSONObject(classHierarchyJSONKey));
     }
 
-    /**
-     * Creates builder to build {@link ExtendedRevisionJavaCallGraph}.
-     *
-     * @return created builder
-     */
-    public static ExtendedBuilderJava extendedBuilder() {
-        return new ExtendedBuilderJava();
-    }
-
+    @Override
     public JavaGraph getGraph() {
-        return (JavaGraph) this.graph;
+        return this.graph;
     }
 
     /**
@@ -134,7 +125,6 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Enu
      *
      * @return a Map of method ids and their corresponding {@link FastenURI}
      */
-    @Override
     public Int2ObjectMap<JavaNode> mapOfAllMethods() {
         Int2ObjectMap<JavaNode> result = new Int2ObjectOpenHashMap<>();
         for (final var aClass : this.getClassHierarchy().get(JavaScope.internalTypes).entrySet()) {
@@ -147,6 +137,11 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Enu
             result.putAll(aClass.getValue().getMethods());
         }
         return result;
+    }
+
+    @Override
+    public int getNodeCount() {
+        return this.mapOfAllMethods().size();
     }
 
     /**
@@ -188,30 +183,6 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Enu
                 result.put(nodeEntry.getKey(), fullUri);
             }
         }
-    }
-
-    public Int2ObjectMap<JavaType> externalNodeIdToTypeMap() {
-        final Int2ObjectMap<JavaType> result = new Int2ObjectOpenHashMap<>();
-        this.classHierarchy.get(JavaScope.externalTypes).values().parallelStream().forEach(type -> {
-            type.getMethods().keySet().forEach(key -> {
-                synchronized (result) {
-                    result.put(key, type);
-                }
-            });
-        });
-        return result;
-    }
-
-    public Int2ObjectMap<JavaType> internalNodeIdToTypeMap() {
-        final Int2ObjectMap<JavaType> result = new Int2ObjectOpenHashMap<>();
-        this.classHierarchy.get(JavaScope.internalTypes).values().parallelStream().forEach(type -> {
-            type.getMethods().keySet().forEach(key -> {
-                synchronized (result) {
-                    result.put(key, type);
-                }
-            });
-        });
-        return result;
     }
 
     public Int2ObjectMap<String> nodeIDtoTypeNameMap() {
@@ -274,92 +245,34 @@ public class ExtendedRevisionJavaCallGraph extends ExtendedRevisionCallGraph<Enu
     }
 
     public JSONObject toJSON() {
-        final var result = new JSONObject();
-        result.put("forge", forge);
-        result.put("product", product);
-        result.put("version", version);
-        result.put("generator", cgGenerator);
-        if (timestamp >= 0) {
-            result.put("timestamp", timestamp);
-        }
+        final var result = super.toJSON();
         result.put(classHierarchyJSONKey, classHierarchyToJSON(classHierarchy));
         result.put("call-sites", graph.toJSON());
-        result.put("nodes", nodeCount);
 
         return result;
     }
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-
-        ExtendedRevisionCallGraph<?> that = (ExtendedRevisionCallGraph<?>) o;
-
-        if (nodeCount != that.nodeCount) {
-            return false;
-        }
-        if (timestamp != that.timestamp) {
-            return false;
-        }
-        if (classHierarchy != null ? !classHierarchy.equals(that.classHierarchy) :
-            that.classHierarchy != null) {
-            return false;
-        }
-        if (graph != null ? !graph.equals(that.graph) : that.graph != null) {
-            return false;
-        }
-        if (forge != null ? !forge.equals(that.forge) : that.forge != null) {
-            return false;
-        }
-        if (product != null ? !product.equals(that.product) : that.product != null) {
-            return false;
-        }
-        if (version != null ? !version.equals(that.version) : that.version != null) {
-            return false;
-        }
-        if (uri != null ? !uri.equals(that.uri) : that.uri != null) {
-            return false;
-        }
-        if (forgelessUri != null ? !forgelessUri.equals(that.forgelessUri) :
-            that.forgelessUri != null) {
-            return false;
-        }
-        return cgGenerator != null ? cgGenerator.equals(that.cgGenerator) :
-            that.cgGenerator == null;
+        return o instanceof PartialJavaCallGraph &&
+            EqualsBuilder.reflectionEquals(this, o);
     }
 
     @Override
     public int hashCode() {
-        int result = classHierarchy != null ? classHierarchy.hashCode() : 0;
-        result = 31 * result + nodeCount;
-        result = 31 * result + (graph != null ? graph.hashCode() : 0);
-        result = 31 * result + (forge != null ? forge.hashCode() : 0);
-        result = 31 * result + (product != null ? product.hashCode() : 0);
-        result = 31 * result + (version != null ? version.hashCode() : 0);
-        result = 31 * result + (int) (timestamp ^ (timestamp >>> 32));
-        result = 31 * result + (uri != null ? uri.hashCode() : 0);
-        result = 31 * result + (forgelessUri != null ? forgelessUri.hashCode() : 0);
-        result = 31 * result + (cgGenerator != null ? cgGenerator.hashCode() : 0);
-        return result;
+        return HashCodeBuilder.reflectionHashCode(this);
+    }
+
+    public EnumMap<JavaScope, Map<String, JavaType>> getClassHierarchy() {
+    return classHierarchy;
     }
 
     /**
-     * Converts an {@link ExtendedRevisionJavaCallGraph} into a {@link DirectedGraph} using as global
-     * identifiers the local identifiers.
+     * Checks whether this {@link PartialCallGraph} is empty, e.g. has no calls.
      *
-     * @param erjcg an {@link ExtendedRevisionJavaCallGraph}.
-     * @return a directed graph based on the local identifiers of {@code erjcg}.
+     * @return true if this {@link PartialCallGraph} is empty
      */
-    public static DirectedGraph toLocalDirectedGraph(final ExtendedRevisionJavaCallGraph erjcg) {
-        MergedDirectedGraph dg = new MergedDirectedGraph();
-        erjcg.getClassHierarchy().get(JavaScope.internalTypes).forEach((key, value) -> value.getMethods().keySet().forEach(dg::addInternalNode));
-        erjcg.getClassHierarchy().get(JavaScope.resolvedTypes).forEach((key, value) -> value.getMethods().keySet().forEach(dg::addInternalNode));
-
-        return dg;
+    public boolean isCallGraphEmpty() {
+        return graph.getCallSites().isEmpty();
     }
 }

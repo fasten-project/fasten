@@ -20,13 +20,13 @@ package eu.fasten.analyzer.javacgopal;
 
 import eu.fasten.analyzer.javacgopal.data.CGAlgorithm;
 import eu.fasten.analyzer.javacgopal.data.OPALCallGraphConstructor;
+import eu.fasten.core.data.PartialJavaCallGraph;
 import eu.fasten.core.data.opal.MavenCoordinate;
-import eu.fasten.analyzer.javacgopal.data.PartialCallGraphConstructor;
+import eu.fasten.analyzer.javacgopal.data.OPALPartialCallGraphConstructor;
 import eu.fasten.analyzer.javacgopal.data.CallPreservationStrategy;
 import eu.fasten.core.data.opal.exceptions.MissingArtifactException;
 import eu.fasten.core.data.opal.exceptions.OPALException;
 import eu.fasten.core.data.DirectedGraph;
-import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
 import eu.fasten.core.data.JSONUtils;
 import eu.fasten.core.maven.utils.MavenUtilities;
 import eu.fasten.core.merge.CGMerger;
@@ -192,7 +192,7 @@ public class Main implements Runnable {
 			throws IOException, MissingArtifactException {
 		final long startTime = System.currentTimeMillis();
 		final DirectedGraph result;
-		final var deps = new ArrayList<ExtendedRevisionJavaCallGraph>();
+		final var deps = new ArrayList<PartialJavaCallGraph>();
 		for (final var dep : dependencies) {
 			deps.add(generate(dep, "", getCGAlgorithm(), true));
 		}
@@ -236,22 +236,18 @@ public class Main implements Runnable {
 	 * @return generated revision call graph
 	 * @throws IOException file related exceptions, e.g. FileNotFoundException
 	 */
-	public <T> ExtendedRevisionJavaCallGraph generate(final T artifact, final String mainClass, CGAlgorithm algorithm,
-			final boolean writeToFile) throws MissingArtifactException, IOException {
-		final ExtendedRevisionJavaCallGraph revisionCallGraph;
+	public <T> PartialJavaCallGraph generate(final T artifact, final String mainClass, CGAlgorithm algorithm,
+											 final boolean writeToFile) throws MissingArtifactException, IOException {
+		final PartialJavaCallGraph revisionCallGraph;
 
 		final long startTime = System.currentTimeMillis();
 
 		if (artifact instanceof File) {
 			logger.info("Generating graph for {}", ((File) artifact).getAbsolutePath());
-			final var cg = new PartialCallGraphConstructor().construct(new OPALCallGraphConstructor().construct((File) artifact, algorithm), CallPreservationStrategy.ONLY_STATIC_CALLSITES);
-			// TODO substantially reduce the complexity of the following statement
-			revisionCallGraph = ExtendedRevisionJavaCallGraph.extendedBuilder().graph(cg.graph)
-					.product(cleanUpFileName((File) artifact)).version("").timestamp(0).cgGenerator("").forge("")
-					.classHierarchy(cg.classHierarchy).nodeCount(cg.nodeCount).build();
-
+			final var cg = new OPALPartialCallGraphConstructor().construct(new OPALCallGraphConstructor().construct((File) artifact, algorithm), CallPreservationStrategy.ONLY_STATIC_CALLSITES);
+			revisionCallGraph = new PartialJavaCallGraph("", cleanUpFileName((File) artifact), "", 0, "", cg.classHierarchy, cg.graph);
 		} else {
-			revisionCallGraph = PartialCallGraphConstructor.createExtendedRevisionJavaCallGraph((MavenCoordinate) artifact,
+			revisionCallGraph = OPALPartialCallGraphConstructor.createExtendedRevisionJavaCallGraph((MavenCoordinate) artifact,
 					algorithm, Long.parseLong(this.commands.computations.timestamp),
 					(repos == null || repos.size() < 1) ? MavenUtilities.MAVEN_CENTRAL_REPO : repos.get(0),
 					CallPreservationStrategy.INCLUDING_ALL_SUBTYPES);

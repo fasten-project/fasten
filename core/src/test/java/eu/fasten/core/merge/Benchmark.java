@@ -20,7 +20,7 @@ package eu.fasten.core.merge;
 
 import ch.qos.logback.classic.Level;
 import eu.fasten.core.data.DirectedGraph;
-import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
+import eu.fasten.core.data.PartialJavaCallGraph;
 import eu.fasten.core.data.callableindex.RocksDao;
 import eu.fasten.core.data.metadatadb.codegen.tables.Callables;
 import eu.fasten.core.dbconnectors.PostgresConnector;
@@ -149,11 +149,11 @@ public class Benchmark implements Runnable {
         return missedEdges;
     }
 
-    private ExtendedRevisionJavaCallGraph getLocalCallGraph() {
-        ExtendedRevisionJavaCallGraph callgraph = null;
+    private PartialJavaCallGraph getLocalCallGraph() {
+        PartialJavaCallGraph callgraph = null;
         try {
             var tokener = new JSONTokener(new FileReader(path));
-            callgraph = new ExtendedRevisionJavaCallGraph(new JSONObject(tokener));
+            callgraph = new PartialJavaCallGraph(new JSONObject(tokener));
         } catch (FileNotFoundException e) {
             logger.error("Couldn't read merged call graph file", e);
             System.exit(1);
@@ -161,7 +161,7 @@ public class Benchmark implements Runnable {
         return callgraph;
     }
 
-    private Set<Pair<String, String>> ERCGToSet(final ExtendedRevisionJavaCallGraph callgraph) {
+    private Set<Pair<String, String>> ERCGToSet(final PartialJavaCallGraph callgraph) {
         var localMethodsMap = callgraph.mapOfAllMethods();
         var localResolvedGraph = new HashSet<Pair<String, String>>();
 

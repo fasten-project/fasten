@@ -63,21 +63,21 @@ import scala.Option;
 import scala.collection.Iterator;
 import scala.collection.mutable.HashSet;
 
-class PartialCallGraphConstructorTest {
+class OPALOPALPartialCallGraphConstructorTest {
 
-	private static PartialCallGraph singleCallCG;
+	private static OPALPartialCallGraph singleCallCG;
 
 	@BeforeAll
 	static void setUp() throws OPALException {
 		OPALCallGraphConstructor cgc = new OPALCallGraphConstructor();
 		File f = getTestResource("SingleSourceToTarget.class");
-		singleCallCG = new PartialCallGraphConstructor().construct(cgc.construct(f, CHA), ONLY_STATIC_CALLSITES);
+		singleCallCG = new OPALPartialCallGraphConstructor().construct(cgc.construct(f, CHA), ONLY_STATIC_CALLSITES);
 	}
 
 	@Test
 	void testAnnotations() throws OPALException {
 		OPALCallGraphConstructor cgc = new OPALCallGraphConstructor();
-		PartialCallGraph annotatedClass = new PartialCallGraphConstructor().construct(cgc.construct(
+		OPALPartialCallGraph annotatedClass = new OPALPartialCallGraphConstructor().construct(cgc.construct(
 				getTestResource("PackageApi.class"),
 				CHA), ONLY_STATIC_CALLSITES);
 	}
@@ -161,14 +161,14 @@ class PartialCallGraphConstructorTest {
 	@Test
 	void createExtendedRevisionJavaCallGraph() throws MissingArtifactException, OPALException {
 		var coordinate = new MavenCoordinate("org.slf4j", "slf4j-api", "1.7.29", "jar");
-		var cg = PartialCallGraphConstructor.createExtendedRevisionJavaCallGraph(coordinate, CGAlgorithm.CHA, 1574072773,
+		var cg = OPALPartialCallGraphConstructor
+			.createExtendedRevisionJavaCallGraph(coordinate, CGAlgorithm.CHA, 1574072773,
 				MavenUtilities.MAVEN_CENTRAL_REPO, CallPreservationStrategy.ONLY_STATIC_CALLSITES);
 		assertNotNull(cg);
 		Assertions.assertEquals(Constants.mvnForge, cg.forge);
 		Assertions.assertEquals("1.7.29", cg.version);
 		Assertions.assertEquals(1574072773, cg.timestamp);
 		Assertions.assertEquals(new FastenJavaURI("fasten://mvn!org.slf4j:slf4j-api$1.7.29"), cg.uri);
-		Assertions.assertEquals(new FastenJavaURI("fasten://org.slf4j:slf4j-api$1.7.29"), cg.forgelessUri);
 		Assertions.assertEquals("org.slf4j:slf4j-api", cg.product);
 	}
 
@@ -203,7 +203,7 @@ class PartialCallGraphConstructorTest {
 
 		var constructor = new OPALCallGraph(CHA, project, callGraph);
 
-		var pcg = new PartialCallGraphConstructor().construct(constructor, CallPreservationStrategy.INCLUDING_ALL_SUBTYPES);
+		var pcg = new OPALPartialCallGraphConstructor().construct(constructor, CallPreservationStrategy.INCLUDING_ALL_SUBTYPES);
 		assertNotNull(pcg);
 
 		Mockito.verify(callGraph, Mockito.times(2)).calleesOf(declaredMethod);
@@ -240,7 +240,7 @@ class PartialCallGraphConstructorTest {
 
 		var constructor = new OPALCallGraph(CHA, project, callGraph);
 
-		var pcg = new PartialCallGraphConstructor().construct(constructor, CallPreservationStrategy.INCLUDING_ALL_SUBTYPES);
+		var pcg = new OPALPartialCallGraphConstructor().construct(constructor, CallPreservationStrategy.INCLUDING_ALL_SUBTYPES);
 		assertNotNull(pcg);
 
 		Mockito.verify(declaredMethod, Mockito.times(1)).definedMethod();
@@ -278,7 +278,7 @@ class PartialCallGraphConstructorTest {
 
 		var constructor = new OPALCallGraph(CHA, project, callGraph);
 
-		var pcg = new PartialCallGraphConstructor().construct(constructor, CallPreservationStrategy.INCLUDING_ALL_SUBTYPES);
+		var pcg = new OPALPartialCallGraphConstructor().construct(constructor, CallPreservationStrategy.INCLUDING_ALL_SUBTYPES);
 		assertNotNull(pcg);
 
 		Mockito.verify(callGraph, Mockito.times(1)).calleesOf(declaredMethod);
@@ -314,7 +314,7 @@ class PartialCallGraphConstructorTest {
 
 		var constructor = new OPALCallGraph(CHA, project, callGraph);
 
-		var pcg = new PartialCallGraphConstructor().construct(constructor, CallPreservationStrategy.INCLUDING_ALL_SUBTYPES);
+		var pcg = new OPALPartialCallGraphConstructor().construct(constructor, CallPreservationStrategy.INCLUDING_ALL_SUBTYPES);
 		assertNotNull(pcg);
 
 		Mockito.verify(callGraph, Mockito.never()).calleesOf(Mockito.any());

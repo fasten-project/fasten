@@ -54,7 +54,6 @@ import com.google.common.primitives.Longs;
 
 import eu.fasten.core.data.DirectedGraph;
 import eu.fasten.core.data.FastenURI;
-import eu.fasten.core.data.RevisionCallGraph;
 import eu.fasten.core.index.BVGraphSerializer;
 import it.unimi.dsi.bits.LongArrayBitVector;
 import it.unimi.dsi.fastutil.HashCommon;

@@ -21,6 +21,7 @@ package eu.fasten.analyzer.javacgopal;
 import static eu.fasten.analyzer.javacgopal.data.CGAlgorithm.CHA;
 import static eu.fasten.analyzer.javacgopal.data.CallPreservationStrategy.ONLY_STATIC_CALLSITES;
 
+import eu.fasten.core.data.PartialJavaCallGraph;
 import java.io.File;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -34,11 +35,8 @@ import org.pf4j.PluginWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import eu.fasten.analyzer.javacgopal.data.PartialCallGraphConstructor;
-import eu.fasten.analyzer.javacgopal.data.CGAlgorithm;
-import eu.fasten.analyzer.javacgopal.data.CallPreservationStrategy;
+import eu.fasten.analyzer.javacgopal.data.OPALPartialCallGraphConstructor;
 import eu.fasten.core.data.Constants;
-import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
 import eu.fasten.core.data.JSONUtils;
 import eu.fasten.core.data.opal.MavenCoordinate;
 import eu.fasten.core.data.opal.exceptions.EmptyCallGraphException;
@@ -59,7 +57,7 @@ public class OPALPlugin extends Plugin {
 
         private List<String> consumeTopics = new LinkedList<>(Collections.singletonList("fasten.POMAnalyzer.out"));
         private Exception pluginError;
-        private ExtendedRevisionJavaCallGraph graph;
+        private PartialJavaCallGraph graph;
         private String outputPath;
 
         @Override
@@ -85,7 +83,7 @@ public class OPALPlugin extends Plugin {
                 // Generate CG and measure construction duration.
                 logger.info("[CG-GENERATION] [UNPROCESSED] [-1] [" + mavenCoordinate.getCoordinate() + "] [NONE] ");
                 long date = kafkaConsumedJson.optLong("date", -1);
-				this.graph = PartialCallGraphConstructor.createExtendedRevisionJavaCallGraph(mavenCoordinate,
+				this.graph = OPALPartialCallGraphConstructor.createExtendedRevisionJavaCallGraph(mavenCoordinate,
                         CHA, date, artifactRepository, ONLY_STATIC_CALLSITES);
                 long endTime = System.nanoTime();
                 long duration = (endTime - startTime) / 1000000; // Compute duration in ms. 

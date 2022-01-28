@@ -20,65 +20,54 @@ package eu.fasten.core.data;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.List;
-import java.util.ArrayList;
 import java.util.EnumMap;
 
 import org.json.JSONObject;
 import org.json.JSONException;
 
 //Map<PythonScope, Map<String, PythonType>>
-public class ExtendedRevisionPythonCallGraph extends ExtendedRevisionCallGraph<EnumMap<PythonScope, Map<String, PythonType>>> {
-    static {
-        classHierarchyJSONKey = "modules";
-    }
+public class PartialPythonCallGraph extends PartialCallGraph {
+
+    public static final String classHierarchyJSONKey = "modules";
+
+    protected EnumMap<PythonScope, Map<String, PythonType>> classHierarchy;
 
     /**
-     * Creates {@link ExtendedRevisionPythonCallGraph} with the given builder.
-     *
-     * @param builder builder for {@link ExtendedRevisionCCallGraph}
+     * Includes all the edges of the revision call graph (internal, external,
+     * and resolved).
      */
-    public ExtendedRevisionPythonCallGraph(final ExtendedBuilder<EnumMap<PythonScope, Map<String, PythonType>>> builder) {
-        super(builder);
-    }
+    protected CPythonGraph graph;
 
     /**
-     * Creates {@link ExtendedRevisionPythonCallGraph} with the given data.
+     * Creates {@link PartialPythonCallGraph} with the given data.
      *
      * @param forge          the forge.
      * @param product        the product.
      * @param version        the version.
      * @param timestamp      the timestamp (in seconds from UNIX epoch); optional: if not present,
      *                       it is set to -1.
-     * @param nodeCount      number of nodes
      * @param cgGenerator    The name of call graph generator that generated this call graph.
      * @param classHierarchy class hierarchy of this revision including all classes of the revision
-     *                       <code> Map<{@link FastenURI}, {@link CallType}> </code>
-     * @param graph          the call graph (no control is done on the graph) {@link Graph}
+     * @param graph          the call graph (no control is done on the graph) {@link CPythonGraph}
      */
-    public ExtendedRevisionPythonCallGraph(final String forge, final String product, final String version,
-                                     final long timestamp, int nodeCount, final String cgGenerator,
-                                     final EnumMap<PythonScope, Map<String, PythonType>>classHierarchy,
-                                     final Graph graph) {
-        super(forge, product, version, timestamp, nodeCount, cgGenerator, classHierarchy, graph);
+    public PartialPythonCallGraph(final String forge, final String product, final String version,
+                                  final long timestamp, final String cgGenerator,
+                                  final EnumMap<PythonScope, Map<String, PythonType>>classHierarchy,
+                                  final CPythonGraph graph) {
+        super(forge, product, version, timestamp, cgGenerator);
+        this.classHierarchy = classHierarchy;
+        this.graph = graph;
     }
 
     /**
-     * Creates {@link ExtendedRevisionCallGraph} for the given JSONObject.
+     * Creates {@link PartialCallGraph} for the given JSONObject.
      *
      * @param json JSONObject of a revision call graph.
      */
-    public ExtendedRevisionPythonCallGraph(final JSONObject json) throws JSONException {
-        super(json, ExtendedRevisionPythonCallGraph.class);
-    }
-
-    /**
-     * Creates builder to build {@link ExtendedRevisionCCallGraph}.
-     *
-     * @return created builder
-     */
-    public static ExtendedBuilderPython extendedBuilder() {
-        return new ExtendedBuilderPython();
+    public PartialPythonCallGraph(final JSONObject json) throws JSONException {
+        super(json);
+        this.classHierarchy = getCHAFromJSON(json.getJSONObject(classHierarchyJSONKey));
+        this.graph = new CPythonGraph(json.getJSONObject("graph"));
     }
 
     /**
@@ -114,12 +103,16 @@ public class ExtendedRevisionPythonCallGraph extends ExtendedRevisionCallGraph<E
         return modules;
     }
 
+    @Override
+    public int getNodeCount() {
+        return this.mapOfAllMethods().size();
+    }
+
     /**
      * Returns the map of all the methods of this object.
      *
      * @return a Map of method ids and their corresponding {@link FastenURI}
      */
-    @Override
     public Map<Integer, PythonNode> mapOfAllMethods() {
         Map<Integer, PythonNode> result = new HashMap<>();
         for (final var aClass : this.getClassHierarchy().get(PythonScope.internal).entrySet()) {
@@ -149,6 +142,15 @@ public class ExtendedRevisionPythonCallGraph extends ExtendedRevisionCallGraph<E
         return result;
     }
 
+    @Override
+    public CPythonGraph getGraph() { return graph; }
+
+    public JSONObject toJSON() {
+        final var result = super.toJSON();
+        result.put(classHierarchyJSONKey, classHierarchyToJSON(classHierarchy));
+        result.put("graph", graph.toJSON());
+        return result;
+    }
     /**
      * Produces the JSON of methods
      *
@@ -162,6 +164,10 @@ public class ExtendedRevisionPythonCallGraph extends ExtendedRevisionCallGraph<E
         return result;
     }
 
+   public EnumMap<PythonScope, Map<String, PythonType>> getClassHierarchy() {
+        return classHierarchy;
+    }
+
     /**
      * Returns a string representation of the revision.
      *
@@ -169,5 +175,17 @@ public class ExtendedRevisionPythonCallGraph extends ExtendedRevisionCallGraph<E
      */
     public String getRevisionName() {
         return this.product + "_" + this.version;
+    }
+
+    /**
+     * Checks whether this {@link PartialCallGraph} is empty, e.g. has no calls.
+     *
+     * @return true if this {@link PartialCallGraph} is empty
+     */
+
+    public boolean isCallGraphEmpty() {
+        return this.graph.getInternalCalls().isEmpty()
+            && this.graph.getExternalCalls().isEmpty()
+            && this.graph.getResolvedCalls().isEmpty();
     }
 }
