@@ -67,6 +67,7 @@ public class OPALPlugin extends Plugin {
 
         @Override
         public void consume(String kafkaRecord) {
+            logger.info("Consuming {}", kafkaRecord);
             pluginError = null;
             outputPath = null;
             graph = null;

@@ -147,6 +147,7 @@ public class MavenArtifactDownloader {
      * Utility function that stores the contents of GET request to a temporary file.
      */
     private static Optional<File> httpGetFile(final String url) throws MissingArtifactException {
+        logger.info("Downloading artifact from URL: {}", url);
         Path tempFile = null;
         try {
             final var packaging = url.substring(url.lastIndexOf("."));
