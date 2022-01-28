@@ -15,31 +15,23 @@
  */
 package eu.fasten.core.data.opal;
 
-import eu.fasten.core.data.opal.exceptions.MissingArtifactException;
-import eu.fasten.core.data.Constants;
-import eu.fasten.core.maven.utils.MavenUtilities;
-import org.json.JSONException;
-import org.json.JSONObject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URL;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
-import java.util.Arrays;
+import static eu.fasten.core.maven.utils.MavenUtilities.MAVEN_CENTRAL_REPO;
+
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Optional;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import eu.fasten.core.data.Constants;
+import eu.fasten.core.maven.utils.MavenUtilities;
 
 /**
  * Maven coordinate as g:a:v e.g. "com.google.guava:guava:jar:28.1-jre".
  */
 public class MavenCoordinate {
 
-    private LinkedList<String> mavenRepos;
+    private List<String> mavenRepos;
 
     private final String groupID;
     private final String artifactID;
@@ -48,7 +40,7 @@ public class MavenCoordinate {
     private final String packaging;
 
     public LinkedList<String> getMavenRepos() {
-        return mavenRepos;
+        return new LinkedList<>(mavenRepos);
     }
 
     public void setMavenRepos(List<String> mavenRepos) {
@@ -108,14 +100,21 @@ public class MavenCoordinate {
     /**
      * Construct MavenCoordinate form json.
      *
-     * @param kafkaConsumedJson json representation of Maven coordinate
+     * @param json json representation of Maven coordinate
      */
-    public MavenCoordinate(final JSONObject kafkaConsumedJson) throws JSONException {
-        this.mavenRepos = MavenUtilities.getRepos();
-        this.groupID = kafkaConsumedJson.getString("groupId");
-        this.artifactID = kafkaConsumedJson.getString("artifactId");
-        this.versionConstraint = kafkaConsumedJson.getString("version");
-        this.packaging = kafkaConsumedJson.optString("packagingType", "jar");
+    public MavenCoordinate(final JSONObject json) throws JSONException {
+        // TODO this handling should not be necessary and is just left for legacy messages
+        if(json.has("artifactRepository")) {
+            var repo = json.optString("artifactRepository", MAVEN_CENTRAL_REPO);
+            mavenRepos = List.of(repo);
+        } else {
+            // this is really bad handling. Either we know the repo, or we won't find it
+            mavenRepos = MavenUtilities.getRepos();
+        }
+        this.groupID = json.getString("groupId");
+        this.artifactID = json.getString("artifactId");
+        this.versionConstraint = json.getString("version");
+        this.packaging = json.optString("packagingType", "jar");
     }
 
     /**
@@ -153,9 +152,9 @@ public class MavenCoordinate {
      *
      * @return product URL
      */
-    public String toProductUrl(String repo, String extension) {
-        return this.toURL(repo) + "/" + this.artifactID + "-" + this.versionConstraint
-                + "." + extension;
+    public String toProductUrl() {
+        var repo = mavenRepos.get(0);
+        return this.toURL(repo) + "/" + artifactID + "-" + versionConstraint + "." + packaging;
     }
     
     @Override

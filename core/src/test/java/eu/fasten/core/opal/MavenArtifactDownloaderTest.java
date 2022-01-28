@@ -1,16 +1,16 @@
 package eu.fasten.core.opal;
 
-import eu.fasten.core.data.opal.MavenArtifactDownloader;
-import eu.fasten.core.data.opal.MavenCoordinate;
-import eu.fasten.core.data.opal.exceptions.MissingArtifactException;
-import eu.fasten.core.maven.utils.MavenUtilities;
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.ArrayList;
 import java.util.Collections;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import org.junit.jupiter.api.Test;
+
+import eu.fasten.core.data.opal.MavenArtifactDownloader;
+import eu.fasten.core.data.opal.MavenCoordinate;
+import eu.fasten.core.data.opal.exceptions.MissingArtifactException;
+import eu.fasten.core.maven.utils.MavenUtilities;
 
 public class MavenArtifactDownloaderTest {
 
@@ -42,12 +42,10 @@ public class MavenArtifactDownloaderTest {
     }
 
     @Test
-    void downloadJarWrongPackaging() throws MissingArtifactException {
+    void downloadJarWrongPackaging() {
         var coordinate = new MavenCoordinate("org.slf4j", "slf4j-api", "1.7.30", "wrongPackagingType");
-        var resolver = new MavenArtifactDownloader(coordinate);
-
-        assertNotNull(resolver.downloadArtifact(MavenUtilities.MAVEN_CENTRAL_REPO));
+        assertThrows(MissingArtifactException.class, () -> {
+            new MavenArtifactDownloader(coordinate).downloadArtifact(MavenUtilities.MAVEN_CENTRAL_REPO);
+        });
     }
-
-
 }

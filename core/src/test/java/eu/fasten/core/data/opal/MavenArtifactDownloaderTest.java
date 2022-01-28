@@ -15,7 +15,6 @@
  */
 package eu.fasten.core.data.opal;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.ArrayList;
@@ -53,9 +52,10 @@ public class MavenArtifactDownloaderTest {
     }
 
     @Test
-    void downloadJarWrongPackaging() throws MissingArtifactException {
+    void downloadJarWrongPackaging() {
         var coordinate = new MavenCoordinate("org.slf4j", "slf4j-api", "1.7.30", "wrongPackagingType");
-
-        assertNotNull(new MavenArtifactDownloader(coordinate).downloadArtifact(MavenUtilities.MAVEN_CENTRAL_REPO));
+        assertThrows(MissingArtifactException.class, () -> {
+            new MavenArtifactDownloader(coordinate).downloadArtifact(MavenUtilities.MAVEN_CENTRAL_REPO);
+        });
     }
 }

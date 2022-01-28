@@ -1,12 +1,13 @@
 package eu.fasten.core.opal;
 
-import eu.fasten.core.data.opal.MavenCoordinate;
-import org.junit.jupiter.api.Test;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.ArrayList;
 import java.util.Collections;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import org.junit.jupiter.api.Test;
+
+import eu.fasten.core.data.opal.MavenCoordinate;
 
 public class MavenCoordinateTest {
 
@@ -48,8 +49,7 @@ public class MavenCoordinateTest {
 
     @Test
     void toURL() {
-        var coordinate = MavenCoordinate.fromString("GroupID:ArtifactID:Version", "jar");
-        assertEquals("repo/GroupID/ArtifactID/Version/ArtifactID-Version.jar", coordinate.toProductUrl("repo/", "jar"));
+        var mc = new MavenCoordinate("g1.g2", "aid", "v", "jar");
+        assertEquals("https://repo.maven.apache.org/maven2/g1/g2/aid/v/aid-v.jar", mc.toProductUrl());
     }
-
 }
