@@ -162,7 +162,7 @@ public class PackageApiServiceImplTest {
         packageName = "junit:junit";
         version = "4.12";
         Mockito.when(kbDao.assertPackageExistence(packageName, version)).thenReturn(false);
-        result = service.getPackageVersion(packageName, version, null, null);
+        result = service.getERCGLink(packageName, version, null, null);
         assertEquals(HttpStatus.CREATED, result.getStatusCode());
     }
 }
