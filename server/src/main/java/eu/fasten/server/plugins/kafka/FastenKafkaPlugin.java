@@ -297,7 +297,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
                         logger.error("Trying to store the hash of a record, but failed due to an IOException", e);
                     } finally { // Event if we hit an IOException, we will execute this finally block.
                         if (consumeTimeoutEnabled) {
-                            consumeWithTimeout(record.value(), consumeTimeout, exitOnTimeout);
+                            consumeWithTimeout(record.value(), consumeTimeout, exitOnTimeout, lane);
                         } else {
                             plugin.consume(record.value(), lane);
                         }
@@ -305,7 +305,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
                 }
             } else { // If local storage is not enabled.
                 if (consumeTimeoutEnabled) {
-                    consumeWithTimeout(record.value(), consumeTimeout, exitOnTimeout);
+                    consumeWithTimeout(record.value(), consumeTimeout, exitOnTimeout, lane);
                 } else {
                     plugin.consume(record.value(), lane);
                 }
@@ -556,8 +556,8 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
      *                <p>
      *                Based on: https://stackoverflow.com/questions/1164301/how-do-i-call-some-blocking-method-with-a-timeout-in-java
      */
-    public void consumeWithTimeout(String input, long timeout, boolean exitOnTimeout) {
-        Runnable consumeTask = () -> plugin.consume(input);
+    public void consumeWithTimeout(String input, long timeout, boolean exitOnTimeout, ProcessingLane lane) {
+        Runnable consumeTask = () -> plugin.consume(input, lane);
 
         // Submit the consume task to a thread.
         var futureConsumeTask = executorService.submit(consumeTask);

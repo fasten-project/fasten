@@ -38,6 +38,7 @@ public class KafkaPluginConsumeBehaviourTest {
         dummyPlugin = mock(DummyPlugin.class);
     }
 
+    @SuppressWarnings("unchecked")
     public void setupMocks(FastenKafkaPlugin kafkaPlugin) throws IllegalAccessException {
         // Hacky way to override consumer and producer with a mock.
         KafkaConsumer<String, String> mockConsumer = mock(KafkaConsumer.class);
@@ -96,6 +97,7 @@ public class KafkaPluginConsumeBehaviourTest {
 
         verify(dummyPlugin).setPluginError(any());
         verify(dummyPlugin, never()).consume(any());
+        verify(dummyPlugin, never()).consume(any(), any(ProcessingLane.class));
     }
 
     @Test
@@ -123,7 +125,7 @@ public class KafkaPluginConsumeBehaviourTest {
         setupMocks(kafkaPlugin);
 
         kafkaPlugin.handleConsuming();
-        verify(dummyPlugin).consume("{key: 'Im a record!'}");
+        verify(dummyPlugin).consume("{key: 'Im a record!'}", ProcessingLane.PRIORITY);
     }
 
     public static void setEnv(String key, String value) {
@@ -137,6 +139,7 @@ public class KafkaPluginConsumeBehaviourTest {
     }
 
     // https://stackoverflow.com/questions/318239/how-do-i-set-environment-variables-from-java
+    @SuppressWarnings(value = {"unchecked", "rawtypes"})
     private static void setEnvMap(Map<String, String> newenv) throws Exception {
         try {
             Class<?> processEnvironmentClass = Class.forName("java.lang.ProcessEnvironment");
@@ -146,7 +149,7 @@ public class KafkaPluginConsumeBehaviourTest {
             env.putAll(newenv);
             Field theCaseInsensitiveEnvironmentField = processEnvironmentClass.getDeclaredField("theCaseInsensitiveEnvironment");
             theCaseInsensitiveEnvironmentField.setAccessible(true);
-            Map<String, String> cienv = (Map<String, String>)     theCaseInsensitiveEnvironmentField.get(null);
+            Map<String, String> cienv = (Map<String, String>) theCaseInsensitiveEnvironmentField.get(null);
             cienv.putAll(newenv);
         } catch (NoSuchFieldException e) {
             Class[] classes = Collections.class.getDeclaredClasses();
@@ -225,7 +228,6 @@ public class KafkaPluginConsumeBehaviourTest {
         public void setPluginError(Exception throwable) {
 
         }
-
 
         @Override
         public void freeResource() {

@@ -1,16 +1,18 @@
 package eu.fasten.server.plugins.kafka;
 
-import eu.fasten.core.plugins.KafkaPlugin;
-import org.junit.jupiter.api.Test;
+import static eu.fasten.core.plugins.KafkaPlugin.ProcessingLane.NORMAL;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.TimeoutException;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.Test;
+
+import eu.fasten.core.plugins.KafkaPlugin;
 
 public class KafkaConsumeTimeoutTest {
 
@@ -43,7 +45,7 @@ public class KafkaConsumeTimeoutTest {
         FastenKafkaPlugin plugin = new FastenKafkaPlugin(false, new Properties(), new Properties(), new Properties(), dummyPlugin, 0, null, null, "", true, timeOut, false, false, "");
 
         long startTime  = System.currentTimeMillis();
-        plugin.consumeWithTimeout("dummy", timeOut, false);
+        plugin.consumeWithTimeout("dummy", timeOut, false, NORMAL);
         long endTime = System.currentTimeMillis();
         long duration = (endTime - startTime) / 1000;
 
@@ -59,7 +61,7 @@ public class KafkaConsumeTimeoutTest {
         FastenKafkaPlugin plugin = new FastenKafkaPlugin(false, new Properties(), new Properties(), new Properties(), dummyPlugin, 0, null, null, "", true, timeOut, false, false, "");
 
         long startTime  = System.currentTimeMillis();
-        plugin.consumeWithTimeout("dummy", timeOut, false);
+        plugin.consumeWithTimeout("dummy", timeOut, false, NORMAL);
         long endTime = System.currentTimeMillis();
         long duration = (endTime - startTime) / 1000;
 
@@ -77,7 +79,7 @@ public class KafkaConsumeTimeoutTest {
         FastenKafkaPlugin plugin = new FastenKafkaPlugin(false, new Properties(), new Properties(), new Properties(), dummyPlugin, 0, null, null, "", true, timeOut, false, false, "");
 
         long startTime  = System.currentTimeMillis();
-        plugin.consumeWithTimeout("dummy", timeOut, false);
+        plugin.consumeWithTimeout("dummy", timeOut, false, NORMAL);
         long endTime = System.currentTimeMillis();
         long duration = (endTime - startTime) / 1000;
 
