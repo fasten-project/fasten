@@ -24,9 +24,6 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import eu.fasten.core.data.PartialJavaCallGraph;
-import eu.fasten.core.data.opal.exceptions.EmptyCallGraphException;
-import eu.fasten.core.data.opal.exceptions.MissingArtifactException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -37,7 +34,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
+import eu.fasten.core.data.PartialJavaCallGraph;
 import eu.fasten.core.data.opal.exceptions.EmptyCallGraphException;
 import eu.fasten.core.data.opal.exceptions.MissingArtifactException;
 
