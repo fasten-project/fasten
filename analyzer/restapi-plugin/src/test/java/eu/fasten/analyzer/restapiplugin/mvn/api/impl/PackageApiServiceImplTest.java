@@ -22,6 +22,7 @@ import eu.fasten.analyzer.restapiplugin.mvn.KnowledgeBaseConnector;
 import eu.fasten.analyzer.restapiplugin.mvn.RestApplication;
 import eu.fasten.core.data.metadatadb.MetadataDao;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.http.HttpStatus;
@@ -149,6 +150,7 @@ public class PackageApiServiceImplTest {
     }
 
     @Test
+    @Disabled("Causes internet traffic")
     void getERCGLinkTest() throws IOException {
         var packageName = "junit:junit";
         var version = "4.12";
