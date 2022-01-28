@@ -15,11 +15,6 @@
  */
 package eu.fasten.core.data.opal;
 
-import eu.fasten.core.data.opal.exceptions.MissingArtifactException;
-import eu.fasten.core.maven.utils.MavenUtilities;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -30,6 +25,12 @@ import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.Optional;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import eu.fasten.core.data.opal.exceptions.MissingArtifactException;
+import eu.fasten.core.maven.utils.MavenUtilities;
 
 /**
  * A set of methods for downloading POM and JAR files given Maven coordinates.
@@ -60,8 +61,7 @@ public class MavenArtifactDownloader {
         try {
             if (Arrays.asList(packaging).contains(mavenCoordinate.getPackaging())) {
                 foundPackage = true;
-                artifactFile = httpGetFile(mavenCoordinate
-                        .toProductUrl(mavenRepos.get(repoNumber), mavenCoordinate.getPackaging()));
+                artifactFile = httpGetFile(mavenCoordinate.toProductUrl());
             }
         } catch (MissingArtifactException e) {
             foundPackage = false;
@@ -91,7 +91,7 @@ public class MavenArtifactDownloader {
             startTime = System.nanoTime();
             try {
                 foundPackage = true;
-                artifactFile = httpGetFile(mavenCoordinate.toProductUrl(mavenRepos.get(repoNumber), s));
+                artifactFile = httpGetFile(mavenCoordinate.toProductUrl());
             } catch (MissingArtifactException e) {
                 foundPackage = false;
 
