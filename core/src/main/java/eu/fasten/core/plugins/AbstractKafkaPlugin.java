@@ -75,19 +75,19 @@ public abstract class AbstractKafkaPlugin implements KafkaPlugin {
 
 	@Override
 	public void consume(String record) {
-		throw new RuntimeException(
-				"Not implemented. Override 'consume(String, KafkaRecordKind)'.");
+		var msg = "Not implemented. Override 'consume(String, %s)' in %s.";
+        throw new RuntimeException(String.format(msg, ProcessingLane.class.getSimpleName(), getClass().getName()));
 	}
 
 	@Override
 	public Optional<String> produce() {
-		throw new RuntimeException(
-				"Not implemented. Override either 'produceMultiple' (preferred) or 'produce' and 'getOutputPath'.");
+		var msg = "Not implemented. Override either 'produceMultiple' (preferred) or 'produce' and 'getOutputPath' in %s.";
+        throw new RuntimeException(String.format(msg, getClass().getName()));
 	}
 
 	@Override
 	public String getOutputPath() {
-		throw new RuntimeException(
-				"Not implemented. Override either 'produceMultiple' (preferred) or 'produce' and 'getOutputPath'.");
+		var msg = "Not implemented. Override either 'produceMultiple' (preferred) or 'produce' and 'getOutputPath'.";
+        throw new RuntimeException(String.format(msg, getClass().getName()));
 	}
 }
