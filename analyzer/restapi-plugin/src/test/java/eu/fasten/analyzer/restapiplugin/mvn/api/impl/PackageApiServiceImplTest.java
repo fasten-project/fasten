@@ -115,7 +115,7 @@ public class PackageApiServiceImplTest {
     }
 
     @Test
-    void getPackageVersionLazyIngestionTest() {
+    void getPackageVersionIngestionTest() {
         var packageName = "junit:junit";
         var version = "4.12";
         Mockito.when(kbDao.getPackageVersion(packageName, version)).thenReturn(null);

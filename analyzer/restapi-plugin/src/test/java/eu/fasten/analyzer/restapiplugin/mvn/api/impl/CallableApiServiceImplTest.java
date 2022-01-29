@@ -94,6 +94,7 @@ public class CallableApiServiceImplTest {
 
         Mockito.verify(kbDao, Mockito.times(1)).getCallableMetadata(packageName, version, callable);
     }
+
     @Test
     void getCallablesTest() {
         var ids = List.of(1L, 2L, 3L);
