@@ -86,10 +86,17 @@ public class StitchingApiServiceImplTest {
     }
 
     @Test
-    void getCallablesMetadataNegativeTest() {
+    void getCallablesMetadataInvalidURITest() {
         var allAttributes = false;
         var attributes = List.of("foo");
         var result = service.getCallablesMetadata(List.of("invalid_uri"), allAttributes, attributes);
+        assertEquals(HttpStatus.BAD_REQUEST, result.getStatusCode());
+    }
+
+    @Test
+    void getCallablesMetadataNegativeTest() {
+        var uris = List.of("fasten://mvn!group:artifact$version/namespace/callable_uri");
+        var result = service.getCallablesMetadata(uris, false, null);
         assertEquals(HttpStatus.BAD_REQUEST, result.getStatusCode());
     }
 }
