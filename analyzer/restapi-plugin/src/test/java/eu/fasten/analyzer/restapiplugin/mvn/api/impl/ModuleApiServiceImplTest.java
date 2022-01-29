@@ -55,7 +55,7 @@ public class ModuleApiServiceImplTest {
     }
 
     @Test
-    void getModuleMetadataTest() {
+    void getModuleMetadataPositiveTest() {
         var packageName = "group:artifact";
         var version = "version";
         var module = "module";
@@ -65,13 +65,20 @@ public class ModuleApiServiceImplTest {
         var result = service.getModuleMetadata(packageName, version, module, null, null);
         assertEquals(expected, result);
 
-        Mockito.when(kbDao.getModuleMetadata(packageName, version, module)).thenReturn(null);
-        result = service.getModuleMetadata(packageName, version, module, null, null);
-        assertEquals(HttpStatus.NOT_FOUND, result.getStatusCode());
-
-        Mockito.verify(kbDao, Mockito.times(2)).getModuleMetadata(packageName, version, module);
+        Mockito.verify(kbDao, Mockito.times(1)).getModuleMetadata(packageName, version, module);
     }
 
+    @Test
+    void getModuleMetadataNegativeTest() {
+        var packageName = "group:artifact";
+        var version = "version";
+        var module = "module";
+        Mockito.when(kbDao.getModuleMetadata(packageName, version, module)).thenReturn(null);
+        var result = service.getModuleMetadata(packageName, version, module, null, null);
+        assertEquals(HttpStatus.NOT_FOUND, result.getStatusCode());
+
+        Mockito.verify(kbDao, Mockito.times(1)).getModuleMetadata(packageName, version, module);
+    }
     @Test
     void getModuleFilesTest() {
         var packageName = "group:artifact";
