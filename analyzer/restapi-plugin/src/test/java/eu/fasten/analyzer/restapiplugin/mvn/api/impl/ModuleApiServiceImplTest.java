@@ -43,7 +43,7 @@ public class ModuleApiServiceImplTest {
     }
 
     @Test
-    void getPackageModulesTest() {
+    void getPackageModulesPositiveTest() {
         var packageName = "group:artifact";
         var version = "version";
         var response = "modules";
@@ -51,6 +51,17 @@ public class ModuleApiServiceImplTest {
         var expected = new ResponseEntity<>(response, HttpStatus.OK);
         var result = service.getPackageModules(packageName, version, offset, limit, null, null);
         assertEquals(expected, result);
+        Mockito.verify(kbDao).getPackageModules(packageName, version, offset, limit);
+    }
+
+    @Test
+    void getPackageModulesNegativeTest() {
+        var packageName = "group:artifact";
+        var version = "version";
+        Mockito.when(kbDao.getPackageModules(packageName, version, offset, limit)).thenReturn(null);
+        var result = service.getPackageModules(packageName, version, offset, limit, null, null);
+        assertEquals(HttpStatus.NOT_FOUND, result.getStatusCode());
+
         Mockito.verify(kbDao).getPackageModules(packageName, version, offset, limit);
     }
 
@@ -81,7 +92,7 @@ public class ModuleApiServiceImplTest {
     }
 
     @Test
-    void getModuleFilesTest() {
+    void getModuleFilesPositiveTest() {
         var packageName = "group:artifact";
         var version = "version";
         var module = "module";
@@ -90,6 +101,17 @@ public class ModuleApiServiceImplTest {
         var expected = new ResponseEntity<>(response, HttpStatus.OK);
         var result = service.getModuleFiles(packageName, version, module, offset, limit, null, null);
         assertEquals(expected, result);
+        Mockito.verify(kbDao).getModuleFiles(packageName, version, module, offset, limit);
+    }
+
+    @Test
+    void getModuleFilesNegativeTest() {
+        var packageName = "group:artifact";
+        var version = "version";
+        var module = "module";
+        Mockito.when(kbDao.getModuleFiles(packageName, version, module, offset, limit)).thenReturn(null);
+        var result = service.getModuleFiles(packageName, version, module, offset, limit, null, null);
+        assertEquals(HttpStatus.NOT_FOUND, result.getStatusCode());
         Mockito.verify(kbDao).getModuleFiles(packageName, version, module, offset, limit);
     }
 
@@ -103,6 +125,17 @@ public class ModuleApiServiceImplTest {
         var expected = new ResponseEntity<>(response, HttpStatus.OK);
         var result = service.getModuleCallables(packageName, version, module, offset, limit, null, null);
         assertEquals(expected, result);
+        Mockito.verify(kbDao).getModuleCallables(packageName, version, module, offset, limit);
+    }
+
+    @Test
+    void getModuleCallablesNegativeTest() {
+        var packageName = "group:artifact";
+        var version = "version";
+        var module = "module";
+        Mockito.when(kbDao.getModuleCallables(packageName, version, module, offset, limit)).thenReturn(null);
+        var result = service.getModuleCallables(packageName, version, module, offset, limit, null, null);
+        assertEquals(HttpStatus.NOT_FOUND, result.getStatusCode());
         Mockito.verify(kbDao).getModuleCallables(packageName, version, module, offset, limit);
     }
 }
