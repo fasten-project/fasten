@@ -79,6 +79,7 @@ public class ModuleApiServiceImplTest {
 
         Mockito.verify(kbDao, Mockito.times(1)).getModuleMetadata(packageName, version, module);
     }
+
     @Test
     void getModuleFilesTest() {
         var packageName = "group:artifact";
