@@ -41,7 +41,7 @@ public class PackageVersionApiServiceImplTest {
     }
 
     @Test
-    void getERCGLinkTest() {
+    void getERCGLinkPositiveTest() {
         var coordinate = "group:artifact:version";
         var id = 42L;
         Mockito.when(kbDao.getArtifactName(id)).thenReturn(coordinate);
@@ -50,10 +50,16 @@ public class PackageVersionApiServiceImplTest {
         var result = service.getERCGLink(id);
         assertEquals(expected, result);
 
+        Mockito.verify(kbDao, Mockito.times(1)).getArtifactName(id);
+    }
+    @Test
+    void getERCGLinkNegativeTest() {
+        var id = 42L;
+        KnowledgeBaseConnector.rcgBaseUrl = "http://lima.ewi.tudelft.nl/";
         Mockito.when(kbDao.getArtifactName(id)).thenReturn(null);
-        result = service.getERCGLink(id);
+        var result = service.getERCGLink(id);
         assertEquals(HttpStatus.NOT_FOUND, result.getStatusCode());
 
-        Mockito.verify(kbDao, Mockito.times(2)).getArtifactName(id);
+        Mockito.verify(kbDao, Mockito.times(1)).getArtifactName(id);
     }
 }
