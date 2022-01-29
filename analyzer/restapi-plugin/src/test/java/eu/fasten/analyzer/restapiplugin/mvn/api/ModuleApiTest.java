@@ -47,7 +47,7 @@ public class ModuleApiTest {
         Mockito.when(service.getPackageModules(packageName, version, offset, limit, null, null)).thenReturn(response);
         var result = api.getPackageModules(packageName, version, offset, limit, null, null);
         assertEquals(response, result);
-        Mockito.verify(service, Mockito.times(1)).getPackageModules(packageName, version, offset, limit, null, null);
+        Mockito.verify(service).getPackageModules(packageName, version, offset, limit, null, null);
     }
 
     @Test
@@ -59,7 +59,7 @@ public class ModuleApiTest {
         Mockito.when(service.getModuleMetadata(packageName, version, module, null, null)).thenReturn(response);
         var result = api.getModuleMetadata(packageName, version, module, null, null);
         assertEquals(response, result);
-        Mockito.verify(service, Mockito.times(1)).getModuleMetadata(packageName, version, module, null, null);
+        Mockito.verify(service).getModuleMetadata(packageName, version, module, null, null);
     }
 
     @Test
@@ -71,7 +71,7 @@ public class ModuleApiTest {
         Mockito.when(service.getModuleFiles(packageName, version, module, offset, limit, null, null)).thenReturn(response);
         var result = api.getModuleFiles(packageName, version, module, offset, limit, null, null);
         assertEquals(response, result);
-        Mockito.verify(service, Mockito.times(1)).getModuleFiles(packageName, version, module, offset, limit, null, null);
+        Mockito.verify(service).getModuleFiles(packageName, version, module, offset, limit, null, null);
     }
 
     @Test
@@ -83,6 +83,6 @@ public class ModuleApiTest {
         Mockito.when(service.getModuleCallables(packageName, version, module, offset, limit, null, null)).thenReturn(response);
         var result = api.getModuleCallables(packageName, version, module, offset, limit, null, null);
         assertEquals(response, result);
-        Mockito.verify(service, Mockito.times(1)).getModuleCallables(packageName, version, module, offset, limit, null, null);
+        Mockito.verify(service).getModuleCallables(packageName, version, module, offset, limit, null, null);
     }
 }
