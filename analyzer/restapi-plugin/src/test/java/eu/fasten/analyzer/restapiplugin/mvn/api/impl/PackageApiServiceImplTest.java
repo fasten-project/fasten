@@ -21,6 +21,7 @@ package eu.fasten.analyzer.restapiplugin.mvn.api.impl;
 import eu.fasten.analyzer.restapiplugin.mvn.KnowledgeBaseConnector;
 import eu.fasten.analyzer.restapiplugin.mvn.RestApplication;
 import eu.fasten.core.data.metadatadb.MetadataDao;
+import eu.fasten.core.maven.data.PackageVersionNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -150,7 +151,7 @@ public class PackageApiServiceImplTest {
     }
 
     @Test
-    void getPackageCallgraphTest() throws IOException {
+    void getPackageCallgraphPositiveTest() throws IOException {
         var packageName = "group:artifact";
         var version = "version";
         var response = "package callgraph";
@@ -159,6 +160,17 @@ public class PackageApiServiceImplTest {
         var result = service.getPackageCallgraph(packageName, version, offset, limit, null, null);
         Mockito.verify(kbDao).getPackageCallgraph(packageName, version, offset, limit);
         assertEquals(expected, result);
+    }
+
+    @Test
+    void getPackageCallgraphIngestionTest() throws IOException {
+        var packageName = "junit:junit";
+        var version = "4.12";
+        Mockito.when(kbDao.getPackageCallgraph(packageName, version, offset, limit)).thenThrow(new PackageVersionNotFoundException("Error"));
+        var result = service.getPackageCallgraph(packageName, version, offset, limit, null, null);
+        assertEquals(HttpStatus.CREATED, result.getStatusCode());
+
+        Mockito.verify(kbDao).getPackageCallgraph(packageName, version, offset, limit);
     }
 
     @Test
@@ -197,7 +209,7 @@ public class PackageApiServiceImplTest {
     }
 
     @Test
-    void getERCGLinkNegativeTest() throws IOException {
+    void getERCGLinkIngestionTest() throws IOException {
         var packageName = "junit:junit";
         var version = "4.12";
         Mockito.when(kbDao.assertPackageExistence(packageName, version)).thenReturn(false);
