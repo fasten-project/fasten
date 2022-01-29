@@ -162,13 +162,23 @@ public class PackageApiServiceImplTest {
     }
 
     @Test
-    void searchPackageNamesTest() {
+    void searchPackageNamesPositiveTest() {
         var packageName = "group:artifact";
         var response = "matching package versions";
         Mockito.when(kbDao.searchPackageNames(packageName, offset, limit)).thenReturn(response);
         var expected = new ResponseEntity<>(response, HttpStatus.OK);
         var result = service.searchPackageNames(packageName, offset, limit);
         assertEquals(expected, result);
+        Mockito.verify(kbDao).searchPackageNames(packageName, offset, limit);
+    }
+
+    @Test
+    void searchPackageNamesNegativeTest() {
+        var packageName = "group:artifact";
+        Mockito.when(kbDao.searchPackageNames(packageName, offset, limit)).thenReturn(null);
+        var result = service.searchPackageNames(packageName, offset, limit);
+        assertEquals(HttpStatus.NOT_FOUND, result.getStatusCode());
+
         Mockito.verify(kbDao).searchPackageNames(packageName, offset, limit);
     }
 
@@ -190,7 +200,6 @@ public class PackageApiServiceImplTest {
     void getERCGLinkNegativeTest() throws IOException {
         var packageName = "junit:junit";
         var version = "4.12";
-        KnowledgeBaseConnector.rcgBaseUrl = "http://lima.ewi.tudelft.nl/";
         Mockito.when(kbDao.assertPackageExistence(packageName, version)).thenReturn(false);
         var result = service.getERCGLink(packageName, version, null, null);
         assertEquals(HttpStatus.CREATED, result.getStatusCode());

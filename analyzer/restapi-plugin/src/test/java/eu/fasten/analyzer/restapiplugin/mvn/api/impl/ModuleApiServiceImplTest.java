@@ -105,7 +105,7 @@ public class ModuleApiServiceImplTest {
     }
 
     @Test
-    void getModuleCallablesTest() {
+    void getModuleCallablesPositiveTest() {
         var packageName = "group:artifact";
         var version = "version";
         var module = "module";
