@@ -1,5 +1,8 @@
 package eu.fasten.server.plugins.kafka;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -8,43 +11,59 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Properties;
 
+import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.apache.kafka.clients.consumer.ConsumerRecords;
 import org.apache.kafka.clients.consumer.KafkaConsumer;
 import org.apache.kafka.clients.producer.KafkaProducer;
+import org.apache.kafka.clients.producer.ProducerRecord;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mockito;
+
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 
 import eu.fasten.core.plugins.KafkaPlugin;
 import eu.fasten.core.plugins.KafkaPlugin.ProcessingLane;
 
 public class KafkaPluginConsumeBehaviourTest {
 
-	DummyPlugin dummyPlugin;
+	KafkaPlugin dummyPlugin;
+	private KafkaProducer<String, String> mockProducer;
 
-    @BeforeEach
-    public void setUp() {
-        dummyPlugin = mock(DummyPlugin.class);
-    }
+	@BeforeEach
+	public void setUp() {
+		dummyPlugin = mock(KafkaPlugin.class);
+	}
 
+	@AfterEach
+	public void tearDown() {
+		File f = new File("src/test/resources/test_pod/");
+		FileUtils.deleteQuietly(f);
+	}
+
+	
     @SuppressWarnings("unchecked")
-    public void setupMocks(FastenKafkaPlugin kafkaPlugin) throws IllegalAccessException {
+	public void setupMocks(FastenKafkaPlugin kafkaPlugin) throws IllegalAccessException {
         // Hacky way to override consumer and producer with a mock.
         KafkaConsumer<String, String> mockConsumer = mock(KafkaConsumer.class);
         FieldUtils.writeField(kafkaPlugin, "connNorm", mockConsumer, true);
         FieldUtils.writeField(kafkaPlugin, "connPrio", mockConsumer, true);
-        KafkaProducer<String, String> mockProducer = mock(KafkaProducer.class);
+        mockProducer = mock(KafkaProducer.class);
         FieldUtils.writeField(kafkaPlugin, "producer", mockProducer, true);
         List<String> mockTopics = mock(List.class);
         FieldUtils.writeField(kafkaPlugin, "prioTopics", mockTopics, true);
@@ -127,8 +146,62 @@ public class KafkaPluginConsumeBehaviourTest {
         kafkaPlugin.handleConsuming();
         verify(dummyPlugin).consume("{key: 'Im a record!'}", ProcessingLane.PRIORITY);
     }
+    
+    @Test
+	public void exceptionsAreStoredInPlugin() throws Exception {
+		FastenKafkaPlugin kafkaPlugin = spy(new FastenKafkaPlugin(false, new Properties(), new Properties(),
+				new Properties(), dummyPlugin, 0, null, null, "", false, 0, false, false, ""));
+		setupMocks(kafkaPlugin);
 
-    public static void setEnv(String key, String value) {
+
+		var e = createNestedException();
+		Mockito.doThrow(e).when(dummyPlugin).consume(Mockito.any(),any(ProcessingLane.class));
+
+		kafkaPlugin.handleConsuming();
+
+		
+		var captor = ArgumentCaptor.forClass(Exception.class);
+		verify(dummyPlugin).setPluginError(captor.capture());
+		Exception actual = captor.getValue();
+
+    	assertSame(e,  actual);
+    }
+    
+    @Test
+	public void outputContainsRichError() throws Exception {
+		FastenKafkaPlugin kafkaPlugin = spy(new FastenKafkaPlugin(false, new Properties(), new Properties(),
+				new Properties(), dummyPlugin, 0, null, null, "", false, 0, false, false, ""));
+		setupMocks(kafkaPlugin);
+
+		var e = createNestedException();
+		Mockito.when(dummyPlugin.getPluginError()).thenReturn(e);
+
+		kafkaPlugin.handleProducing("{}", 123, ProcessingLane.NORMAL);
+		
+		@SuppressWarnings("unchecked")
+		ArgumentCaptor<ProducerRecord<String, String>> captor = ArgumentCaptor.forClass(ProducerRecord.class);
+		verify(mockProducer).send(captor.capture(), any());
+		String json = captor.getValue().value();
+		JsonObject obj = JsonParser.parseString(json).getAsJsonObject();
+		
+		var errObj = obj.getAsJsonObject("error");
+        assertEquals("java.lang.RuntimeException", errObj.getAsJsonPrimitive("type").getAsString());
+        assertEquals("java.io.FileNotFoundException: XXX", errObj.getAsJsonPrimitive("message").getAsString());
+        var stacktrace = errObj.getAsJsonPrimitive("stacktrace").getAsString();
+		assertTrue(stacktrace.contains("RuntimeException"));
+		assertTrue(stacktrace.contains("Caused by: java.io.FileNotFoundException: XXX"));
+		assertTrue(stacktrace.contains("\tat "));
+    }
+
+    private Exception createNestedException() {
+		try {
+			throw new FileNotFoundException("XXX");
+		} catch(Exception e) {
+			return new RuntimeException(e);
+		}
+	}
+
+	public static void setEnv(String key, String value) {
         var map = new HashMap<String, String>();
         map.put(key, value);
         try {
@@ -164,74 +237,6 @@ public class KafkaPluginConsumeBehaviourTest {
                     map.putAll(newenv);
                 }
             }
-        }
-    }
-
-    class DummyPlugin implements KafkaPlugin {
-
-
-        @Override
-        public Optional<List<String>> consumeTopic() {
-            return Optional.empty();
-        }
-
-        @Override
-        public void setTopics(List<String> consumeTopics) {
-
-        }
-
-        @Override
-        public void consume(String record) {
-        }
-
-        @Override
-        public Optional<String> produce() {
-            return Optional.empty();
-        }
-
-        @Override
-        public String getOutputPath() {
-            return null;
-        }
-
-        @Override
-        public String name() {
-            return null;
-        }
-
-        @Override
-        public String description() {
-            return null;
-        }
-
-        @Override
-        public String version() {
-            return null;
-        }
-
-        @Override
-        public void start() {
-
-        }
-
-        @Override
-        public void stop() {
-
-        }
-
-        @Override
-        public Exception getPluginError() {
-            return null;
-        }
-
-        @Override
-        public void setPluginError(Exception throwable) {
-
-        }
-
-        @Override
-        public void freeResource() {
-
         }
     }
 }
