@@ -51,11 +51,12 @@ public class BinaryModuleApiServiceImplTest {
         var expected = new ResponseEntity<>(response, HttpStatus.OK);
         var result = service.getPackageBinaryModules(packageName, version, offset, limit, null, null);
         assertEquals(expected, result);
-        Mockito.verify(kbDao).getPackageBinaryModules(packageName, version, offset, limit);
+        Mockito.verify(kbDao, Mockito.times(1)).getPackageBinaryModules(packageName, version, offset, limit);
     }
 
+
     @Test
-    void getBinaryModuleMetadataTest() {
+    void getBinaryModuleMetadataPositiveTest() {
         var packageName = "pkg";
         var version = "pkg ver";
         var module = "bin module";
@@ -65,11 +66,20 @@ public class BinaryModuleApiServiceImplTest {
         var result = service.getBinaryModuleMetadata(packageName, version, module, null, null);
         assertEquals(expected, result);
 
+        Mockito.verify(kbDao, Mockito.times(1)).getBinaryModuleMetadata(packageName, version, module);
+    }
+
+    @Test
+    void getBinaryModuleMetadataNegativeTest() {
+        var packageName = "pkg";
+        var version = "pkg ver";
+        var module = "bin module";
+
         Mockito.when(kbDao.getBinaryModuleMetadata(packageName, version, module)).thenReturn(null);
-        result = service.getBinaryModuleMetadata(packageName, version, module, null, null);
+        var result = service.getBinaryModuleMetadata(packageName, version, module, null, null);
         assertEquals(HttpStatus.NOT_FOUND, result.getStatusCode());
 
-        Mockito.verify(kbDao, Mockito.times(2)).getBinaryModuleMetadata(packageName, version, module);
+        Mockito.verify(kbDao, Mockito.times(1)).getBinaryModuleMetadata(packageName, version, module);
     }
 
     @Test
@@ -82,6 +92,6 @@ public class BinaryModuleApiServiceImplTest {
         var expected = new ResponseEntity<>(response, HttpStatus.OK);
         var result = service.getBinaryModuleFiles(packageName, version, module, offset, limit, null, null);
         assertEquals(expected, result);
-        Mockito.verify(kbDao).getBinaryModuleFiles(packageName, version, module, offset, limit);
+        Mockito.verify(kbDao, Mockito.times(1)).getBinaryModuleFiles(packageName, version, module, offset, limit);
     }
 }
