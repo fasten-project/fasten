@@ -58,7 +58,7 @@ public class PackageApiServiceImplTest {
     }
 
     @Test
-    void getPackageLastVersionTest() {
+    void getPackageLastVersionPositiveTest() {
         var packageName = "group:artifact";
         var response = "a package";
         Mockito.when(kbDao.getPackageLastVersion(packageName)).thenReturn(response);
@@ -66,11 +66,17 @@ public class PackageApiServiceImplTest {
         var result = service.getPackageLastVersion(packageName);
         assertEquals(expected, result);
 
+        Mockito.verify(kbDao, Mockito.times(1)).getPackageLastVersion(packageName);
+    }
+
+    @Test
+    void getPackageLastVersionNegativeTest() {
+        var packageName = "group:artifact";
         Mockito.when(kbDao.getPackageLastVersion(packageName)).thenReturn(null);
-        result = service.getPackageLastVersion(packageName);
+        var result = service.getPackageLastVersion(packageName);
         assertEquals(HttpStatus.NOT_FOUND, result.getStatusCode());
 
-        Mockito.verify(kbDao, Mockito.times(2)).getPackageLastVersion(packageName);
+        Mockito.verify(kbDao, Mockito.times(1)).getPackageLastVersion(packageName);
     }
 
     @Test
@@ -81,11 +87,11 @@ public class PackageApiServiceImplTest {
         var expected = new ResponseEntity<>(response, HttpStatus.OK);
         var result = service.getPackageVersions(packageName, offset, limit);
         assertEquals(expected, result);
-        Mockito.verify(kbDao).getPackageVersions(packageName, offset, limit);
+        Mockito.verify(kbDao, Mockito.times(1)).getPackageVersions(packageName, offset, limit);
     }
 
     @Test
-    void getPackageVersionTest() {
+    void getPackageVersionPositiveTest() {
         var packageName = "group:artifact";
         var version = "version";
         var response = "package version";
@@ -94,23 +100,33 @@ public class PackageApiServiceImplTest {
         var result = service.getPackageVersion(packageName, version, null, null);
         assertEquals(expected, result);
 
+        Mockito.verify(kbDao, Mockito.times(1)).getPackageVersion(packageName, version);
+    }
+
+    @Test
+    void getPackageVersionNegativeTest() {
+        var packageName = "group:artifact";
+        var version = "version";
         Mockito.when(kbDao.getPackageVersion(packageName, version)).thenReturn(null);
-        result = service.getPackageVersion(packageName, version, null, null);
+        var result = service.getPackageVersion(packageName, version, null, null);
         assertEquals(HttpStatus.BAD_REQUEST, result.getStatusCode());
 
-        Mockito.verify(kbDao, Mockito.times(2)).getPackageVersion(packageName, version);
+        Mockito.verify(kbDao, Mockito.times(1)).getPackageVersion(packageName, version);
+    }
 
-        packageName = "junit:junit";
-        version = "4.12";
+    @Test
+    void getPackageVersionLazyIngestionTest() {
+        var packageName = "junit:junit";
+        var version = "4.12";
         Mockito.when(kbDao.getPackageVersion(packageName, version)).thenReturn(null);
-        result = service.getPackageVersion(packageName, version, null, null);
+        var result = service.getPackageVersion(packageName, version, null, null);
         assertEquals(HttpStatus.CREATED, result.getStatusCode());
 
         Mockito.verify(kbDao, Mockito.times(1)).getPackageVersion(packageName, version);
     }
 
     @Test
-    void getPackageMetadataTest() {
+    void getPackageMetadataPositiveTest() {
         var packageName = "group:artifact";
         var version = "version";
         var response = "package metadata";
@@ -119,11 +135,18 @@ public class PackageApiServiceImplTest {
         var result = service.getPackageMetadata(packageName, version);
         assertEquals(expected, result);
 
+        Mockito.verify(kbDao, Mockito.times(1)).getPackageMetadata(packageName, version);
+    }
+
+    @Test
+    void getPackageNegativeMetadataTest() {
+        var packageName = "group:artifact";
+        var version = "version";
         Mockito.when(kbDao.getPackageMetadata(packageName, version)).thenReturn(null);
-        result = service.getPackageMetadata(packageName, version);
+        var result = service.getPackageMetadata(packageName, version);
         assertEquals(HttpStatus.NOT_FOUND, result.getStatusCode());
 
-        Mockito.verify(kbDao, Mockito.times(2)).getPackageMetadata(packageName, version);
+        Mockito.verify(kbDao, Mockito.times(1)).getPackageMetadata(packageName, version);
     }
 
     @Test
@@ -151,7 +174,7 @@ public class PackageApiServiceImplTest {
 
     @Test
     @Disabled("Causes internet traffic")
-    void getERCGLinkTest() throws IOException {
+    void getERCGLinkPositiveTest() throws IOException {
         var packageName = "junit:junit";
         var version = "4.12";
         Mockito.when(kbDao.assertPackageExistence(packageName, version)).thenReturn(true);
@@ -159,10 +182,19 @@ public class PackageApiServiceImplTest {
         var result = service.getERCGLink(packageName, version, null, null);
         assertNotNull(result);
 
-        packageName = "junit:junit";
-        version = "4.12";
+        Mockito.verify(kbDao, Mockito.times(1)).assertPackageExistence(packageName, version);
+
+    }
+
+    @Test
+    void getERCGLinkNegativeTest() throws IOException {
+        var packageName = "junit:junit";
+        var version = "4.12";
+        KnowledgeBaseConnector.rcgBaseUrl = "http://lima.ewi.tudelft.nl/";
         Mockito.when(kbDao.assertPackageExistence(packageName, version)).thenReturn(false);
-        result = service.getPackageVersion(packageName, version, null, null);
+        var result = service.getERCGLink(packageName, version, null, null);
         assertEquals(HttpStatus.CREATED, result.getStatusCode());
+
+        Mockito.verify(kbDao, Mockito.times(1)).assertPackageExistence(packageName, version);
     }
 }
