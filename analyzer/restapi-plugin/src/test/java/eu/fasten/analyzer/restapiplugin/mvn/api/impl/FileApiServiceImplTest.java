@@ -21,6 +21,7 @@ package eu.fasten.analyzer.restapiplugin.mvn.api.impl;
 import eu.fasten.analyzer.restapiplugin.mvn.KnowledgeBaseConnector;
 import eu.fasten.analyzer.restapiplugin.mvn.RestApplication;
 import eu.fasten.core.data.metadatadb.MetadataDao;
+import eu.fasten.core.maven.data.PackageVersionNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -43,7 +44,7 @@ public class FileApiServiceImplTest {
     }
 
     @Test
-    void getPackageFilesTest() {
+    void getPackageFilesPositiveTest() {
         var packageName = "pkg";
         var version = "pkg ver";
         var response = "files";
@@ -54,4 +55,13 @@ public class FileApiServiceImplTest {
         Mockito.verify(kbDao).getPackageFiles(packageName, version, offset, limit);
     }
 
+    @Test
+    void getPackageFilesIngestionTest(){
+        var packageName = "junit:junit";
+        var version = "4.12";
+        Mockito.when(kbDao.getPackageFiles(packageName, version, offset, limit)).thenThrow(new PackageVersionNotFoundException("Error"));
+        var result = service.getPackageFiles(packageName, version, offset, limit, null, null);
+        assertEquals(HttpStatus.CREATED, result.getStatusCode());
+        Mockito.verify(kbDao).getPackageFiles(packageName, version, offset, limit);
+    }
 }

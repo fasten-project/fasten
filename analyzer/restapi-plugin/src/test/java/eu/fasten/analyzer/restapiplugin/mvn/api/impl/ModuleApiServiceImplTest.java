@@ -21,6 +21,7 @@ package eu.fasten.analyzer.restapiplugin.mvn.api.impl;
 import eu.fasten.analyzer.restapiplugin.mvn.KnowledgeBaseConnector;
 import eu.fasten.analyzer.restapiplugin.mvn.RestApplication;
 import eu.fasten.core.data.metadatadb.MetadataDao;
+import eu.fasten.core.maven.data.PackageVersionNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -43,7 +44,7 @@ public class ModuleApiServiceImplTest {
     }
 
     @Test
-    void getPackageModulesTest() {
+    void getPackageModulesPositiveTest() {
         var packageName = "group:artifact";
         var version = "version";
         var response = "modules";
@@ -51,6 +52,17 @@ public class ModuleApiServiceImplTest {
         var expected = new ResponseEntity<>(response, HttpStatus.OK);
         var result = service.getPackageModules(packageName, version, offset, limit, null, null);
         assertEquals(expected, result);
+        Mockito.verify(kbDao).getPackageModules(packageName, version, offset, limit);
+    }
+
+    @Test
+    void getPackageModulesIngestionTest() {
+        var packageName = "junit:junit";
+        var version = "4.12";
+        Mockito.when(kbDao.getPackageModules(packageName, version, offset, limit)).thenThrow(new PackageVersionNotFoundException("Error"));
+        var result = service.getPackageModules(packageName, version, offset, limit, null, null);
+        assertEquals(HttpStatus.CREATED, result.getStatusCode());
+
         Mockito.verify(kbDao).getPackageModules(packageName, version, offset, limit);
     }
 
@@ -81,6 +93,17 @@ public class ModuleApiServiceImplTest {
     }
 
     @Test
+    void getModuleMetadataIngestionTest() {
+        var packageName = "junit:junit";
+        var version = "4.12";
+        var module = "module";
+        Mockito.when(kbDao.getModuleMetadata(packageName, version, module)).thenThrow(new PackageVersionNotFoundException("Error"));
+        var result = service.getModuleMetadata(packageName, version, module, null, null);
+        assertEquals(HttpStatus.CREATED, result.getStatusCode());
+
+        Mockito.verify(kbDao, Mockito.times(1)).getModuleMetadata(packageName, version, module);
+    }
+    @Test
     void getModuleFilesPositiveTest() {
         var packageName = "group:artifact";
         var version = "version";
@@ -101,6 +124,18 @@ public class ModuleApiServiceImplTest {
         Mockito.when(kbDao.getModuleFiles(packageName, version, module, offset, limit)).thenReturn(null);
         var result = service.getModuleFiles(packageName, version, module, offset, limit, null, null);
         assertEquals(HttpStatus.NOT_FOUND, result.getStatusCode());
+        Mockito.verify(kbDao).getModuleFiles(packageName, version, module, offset, limit);
+    }
+
+    @Test
+    void getModuleFilesIngestionTest() {
+        var packageName = "junit:junit";
+        var version = "4.12";
+        var module = "module";
+        Mockito.when(kbDao.getModuleFiles(packageName, version, module, offset, limit)).thenThrow(new PackageVersionNotFoundException("Error"));
+        var result = service.getModuleFiles(packageName, version, module, offset, limit, null, null);
+        assertEquals(HttpStatus.CREATED, result.getStatusCode());
+
         Mockito.verify(kbDao).getModuleFiles(packageName, version, module, offset, limit);
     }
 
@@ -127,4 +162,17 @@ public class ModuleApiServiceImplTest {
         assertEquals(HttpStatus.NOT_FOUND, result.getStatusCode());
         Mockito.verify(kbDao).getModuleCallables(packageName, version, module, offset, limit);
     }
+
+    @Test
+    void getModuleCallablesIngestionTest() {
+        var packageName = "junit:junit";
+        var version = "4.12";
+        var module = "module";
+        Mockito.when(kbDao.getModuleCallables(packageName, version, module, offset, limit)).thenThrow(new PackageVersionNotFoundException("Error"));
+        var result = service.getModuleCallables(packageName, version, module, offset, limit, null, null);
+        assertEquals(HttpStatus.CREATED, result.getStatusCode());
+
+        Mockito.verify(kbDao).getModuleCallables(packageName, version, module, offset, limit);
+    }
+
 }
