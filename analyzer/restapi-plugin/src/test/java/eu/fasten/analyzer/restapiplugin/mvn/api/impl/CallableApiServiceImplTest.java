@@ -58,7 +58,7 @@ public class CallableApiServiceImplTest {
     }
 
     @Test
-    void getCallableMetadataTest() {
+    void getCallableMetadataPositiveTest() {
         var packageName = "group:artifact";
         var version = "version";
         var callable = "callable uri";
@@ -68,21 +68,32 @@ public class CallableApiServiceImplTest {
         var result = service.getCallableMetadata(packageName, version, callable, null, null);
         assertEquals(expected, result);
 
+        Mockito.verify(kbDao, Mockito.times(1)).getCallableMetadata(packageName, version, callable);
+    }
+
+    @Test
+    void getCallableMetadataNegativeTest() {
+        var packageName = "group:artifact";
+        var version = "version";
+        var callable = "callable uri";
         Mockito.when(kbDao.getCallableMetadata(packageName, version, callable)).thenReturn(null);
-        result = service.getCallableMetadata(packageName, version, callable, null, null);
+        var result = service.getCallableMetadata(packageName, version, callable, null, null);
         assertEquals(HttpStatus.BAD_REQUEST, result.getStatusCode());
-
-        Mockito.verify(kbDao, Mockito.times(2)).getCallableMetadata(packageName, version, callable);
-
-        packageName = "junit:junit";
-        version = "4.12";
-        Mockito.when(kbDao.getCallableMetadata(packageName, version, callable)).thenReturn(null);
-        result = service.getCallableMetadata(packageName, version, callable, null, null);
-        assertEquals(HttpStatus.CREATED, result.getStatusCode());
 
         Mockito.verify(kbDao, Mockito.times(1)).getCallableMetadata(packageName, version, callable);
     }
 
+    @Test
+    void getCallableMetadataIngestTest() {
+        var packageName = "junit:junit";
+        var version = "4.12";
+        var callable = "callable uri";
+        Mockito.when(kbDao.getCallableMetadata(packageName, version, callable)).thenReturn(null);
+        var result = service.getCallableMetadata(packageName, version, callable, null, null);
+        assertEquals(HttpStatus.CREATED, result.getStatusCode());
+
+        Mockito.verify(kbDao, Mockito.times(1)).getCallableMetadata(packageName, version, callable);
+    }
     @Test
     void getCallablesTest() {
         var ids = List.of(1L, 2L, 3L);
