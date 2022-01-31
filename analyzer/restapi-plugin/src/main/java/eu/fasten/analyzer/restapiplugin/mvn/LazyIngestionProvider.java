@@ -18,12 +18,8 @@
 
 package eu.fasten.analyzer.restapiplugin.mvn;
 
-import eu.fasten.core.data.Constants;
-import eu.fasten.core.data.metadatadb.codegen.tables.records.IngestedArtifactsRecord;
-import eu.fasten.core.maven.MavenResolver;
-import eu.fasten.core.maven.utils.MavenUtilities;
-import org.apache.commons.math3.util.Pair;
-import org.json.JSONObject;
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toSet;
 
 import java.io.IOException;
 import java.sql.Timestamp;
@@ -31,10 +27,21 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import org.json.JSONObject;
+
+import eu.fasten.core.data.Constants;
+import eu.fasten.core.maven.MavenResolver;
+import eu.fasten.core.maven.utils.MavenUtilities;
+
 public class LazyIngestionProvider {
 
     private static boolean hasArtifactBeenIngested(String packageName, String version) {
-        return KnowledgeBaseConnector.kbDao.isArtifactIngested(packageName, version);
+        return KnowledgeBaseConnector.kbDao.isArtifactIngested(toKey(packageName, version));
+    }
+
+    private static String toKey(String packageName, String version) {
+        var key = String.format("%s:jar:%s-PRIORITY", packageName, version);
+        return key;
     }
 
     public static void ingestArtifactIfNecessary(String packageName, String version, String artifactRepo, Long date) throws IllegalArgumentException, IOException {
@@ -60,7 +67,7 @@ public class LazyIngestionProvider {
                 jsonRecord.put("date", date);
             }
             Timestamp curTime = new Timestamp(System.currentTimeMillis());
-			KnowledgeBaseConnector.kbDao.insertIngestedArtifact(packageName, version, curTime);
+            KnowledgeBaseConnector.kbDao.insertIngestedArtifact(toKey(packageName, version), "0.0.1-SNAPSHOT");
             if (KnowledgeBaseConnector.kafkaProducer != null && KnowledgeBaseConnector.ingestTopic != null) {
                 KafkaWriter.sendToKafka(KnowledgeBaseConnector.kafkaProducer, KnowledgeBaseConnector.ingestTopic, jsonRecord.toString());
             }
@@ -84,12 +91,12 @@ public class LazyIngestionProvider {
     }
 
     public static void batchIngestArtifacts(List<IngestedArtifact> artifacts) throws IllegalArgumentException {
-        var alreadyIngestedArtifacts = KnowledgeBaseConnector.kbDao.areArtifactsIngested(
-                artifacts.stream().map(a -> a.packageName).collect(Collectors.toList()),
-                artifacts.stream().map(a -> a.version).collect(Collectors.toList())
-        );
+        var keys = artifacts.stream() //
+                .map(a -> toKey(a.packageName, a.version)) //
+                .collect(toList());
+        var alreadyIngestedArtifacts = KnowledgeBaseConnector.kbDao.areArtifactsIngested(keys);
         artifacts = artifacts.stream()
-                .filter(a -> !alreadyIngestedArtifacts.contains(new Pair<>(a.packageName, a.version)))
+                .filter(a -> !alreadyIngestedArtifacts.contains(toKey(a.packageName, a.version)))
                 .collect(Collectors.toList());
         artifacts.forEach(a -> {
             var groupId = a.packageName.split(":")[0];
@@ -101,10 +108,10 @@ public class LazyIngestionProvider {
                         + " Make sure the Maven coordinate and repository are correct");
             }
         });
-        var ingestedArtifactRecords = artifacts.stream()
-                .map(a -> new IngestedArtifactsRecord(0L, a.packageName, a.version, new Timestamp(System.currentTimeMillis())))
-                .collect(Collectors.toList());
-        KnowledgeBaseConnector.kbDao.batchInsertIngestedArtifacts(ingestedArtifactRecords);
+        var newKeys = artifacts.stream()
+                .map(a -> toKey(a.packageName, a.version))
+                .collect(toSet());
+        KnowledgeBaseConnector.kbDao.batchInsertIngestedArtifacts(newKeys, "");
         for (var artifact : artifacts) {
             if (KnowledgeBaseConnector.kafkaProducer != null && KnowledgeBaseConnector.ingestTopic != null) {
                 var jsonRecord = new JSONObject();
