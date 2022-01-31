@@ -24,6 +24,7 @@ import static eu.fasten.core.merge.CallGraphUtils.decode;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import eu.fasten.core.data.JavaScope;
 import eu.fasten.core.data.PartialJavaCallGraph;
 import java.io.File;
 import java.net.URISyntaxException;
@@ -102,6 +103,12 @@ public class CGandStitchingTest {
             "\n", toString(mergedRcg));
     }
 
+    @Test
+    public void noPackage() throws URISyntaxException {
+        final var np = getRCG("merge/staticInitializer/NoPackage.class", "noPackage", "0.0.0");
+        Assertions.assertEquals(np.getClassHierarchy().get(JavaScope.internalTypes).keySet(),
+            Set.of("//NoPackage"));
+    }
     private String toString(List<Pair<String, String>> mergedRcg) {
         return CallGraphUtils.toStringEdges(mergedRcg);
     }

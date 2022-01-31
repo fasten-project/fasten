@@ -38,7 +38,15 @@ public class JavaNode extends Node {
      */
     public JavaNode(final FastenURI uri, final Map<String, Object> metadata) {
         super(uri, metadata);
-        this.signature = StringUtils.substringAfter(FastenJavaURI.create(uri.toString()).decanonicalize().getEntity(), ".");
+        final var javaURI = FastenJavaURI.create(uri.toString());
+        String entity;
+        if (javaURI.getNamespace().equals("null")) {
+            entity = javaURI.getEntity();
+        } else {
+            entity = javaURI.decanonicalize().getEntity();
+        }
+        this.signature = StringUtils.substringAfter(entity, ".");
+
     }
 
     /**

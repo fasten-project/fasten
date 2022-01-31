@@ -211,7 +211,7 @@ class OPALMethodTest {
         Mockito.when(type.isArrayType()).thenReturn(false);
         Mockito.when(type.asObjectType()).thenReturn(objectType);
 
-        assertNull(OPALMethod.getPackageName(type));
+        assertEquals("", OPALMethod.getPackageName(type));
     }
 
     @Test

@@ -55,7 +55,10 @@ public class OPALMethod {
 
         final var javaURIRaw = FastenJavaURI.create(null, product, null,
                 packageName, className, method, params, returnType);
-        final var javaURI = javaURIRaw.canonicalize();
+        FastenJavaURI javaURI = javaURIRaw;
+        if (javaURIRaw.getNamespace() != null) {
+            javaURI = javaURIRaw.canonicalize();
+        }
 
         return FastenURI.createSchemeless(javaURI.getRawForge(), javaURI.getRawProduct(),
                 javaURI.getRawVersion(),
@@ -104,7 +107,7 @@ public class OPALMethod {
                 return slashToDot(Objects
                         .requireNonNull(getPackageName(parameter.asArrayType().componentType())));
             } else if (parameter.asObjectType().packageName().equals("")) {
-                return null;
+                return "";
             } else {
                 return slashToDot(parameter.asObjectType().packageName());
             }
