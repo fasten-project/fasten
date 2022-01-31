@@ -31,6 +31,4 @@ public interface ResolutionApiService {
 
     ResponseEntity<String> getDirectedGraph(long packageVersionId, boolean needStitching, long timestamp);
 
-    ResponseEntity<String> getTransitiveVulnerabilities(String package_name, String version);
-
 }
