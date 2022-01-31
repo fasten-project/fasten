@@ -240,6 +240,9 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
                 // TODO: Keep a list of processed priority messages like normal ones
             }
             doCommitSync(ProcessingLane.PRIORITY);
+        }
+
+        if(hadMessagesOnLastPollCycle) {
             return; // skip normal
         }
 
