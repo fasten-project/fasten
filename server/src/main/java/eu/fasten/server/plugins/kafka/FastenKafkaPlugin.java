@@ -166,7 +166,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
                         handleConsuming();
                     } else {
                         doCommitSync(ProcessingLane.NORMAL);
-                        handleProducing(null, System.currentTimeMillis() / 1000L, ProcessingLane.NORMAL);
+                        handleProducing(null, System.currentTimeMillis(), ProcessingLane.NORMAL);
                     }
                 } catch (WakeupException e) {
                     if (shouldFinishProcessing.get()) {
@@ -288,7 +288,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
      * This strategy provides at-least-once semantics.
      */
     public void processRecord(ConsumerRecord<String, String> record, ProcessingLane lane) {
-        long consumeTimestamp = System.currentTimeMillis() / 1000L;
+        long consumeTimestamp = System.currentTimeMillis();
 
         try {
             if (localStorage != null) { // If local storage is enabled.
@@ -458,7 +458,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
 
     private JSONObject getStdMsg(String input, long consumeTimestamp) {
         var stdoutMsg = new JSONObject();
-        stdoutMsg.put("createdAt", System.currentTimeMillis() / 1000L);
+        stdoutMsg.put("createdAt", System.currentTimeMillis());
         stdoutMsg.put("consumedAt", consumeTimestamp);
         stdoutMsg.put("plugin", plugin.getClass().getName());
         stdoutMsg.put("version", plugin.version());
