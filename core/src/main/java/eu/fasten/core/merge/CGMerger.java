@@ -238,13 +238,8 @@ public class CGMerger {
 
     public DirectedGraph mergeWithCHA(final long id) {
         final var callGraphData = fetchCallGraphData(id, rocksDao);
-        GraphMetadata graphArcs = null;
-        try {
-            graphArcs = rocksDao.getGraphMetadata(id, callGraphData);
-        } catch (RocksDBException e) {
-            logger.error("Could not retrieve arcs (graph metadata) from graph database:", e);
-        }
-        return mergeWithCHA(callGraphData, graphArcs);
+        var metadata = rocksDao.getGraphMetadata(id, callGraphData);
+        return mergeWithCHA(callGraphData, metadata);
     }
 
     public DirectedGraph mergeWithCHA(final String artifact) {
@@ -365,19 +360,20 @@ public class CGMerger {
      * @return merged call graph
      */
     public DirectedGraph mergeWithCHA(final DirectedGraph callGraph, final GraphMetadata metadata) {
-        final long totalTime = System.currentTimeMillis();
-
         if (callGraph == null) {
             logger.error("Empty call graph data");
             return null;
         }
-
-        var result = new MergedDirectedGraph();
-
-        if (metadata == null) {
+        if(metadata == null) {
+            logger.error("Graph metadata is not available, cannot merge");
             return null;
         }
 
+        final long totalTime = System.currentTimeMillis();
+        var result = new MergedDirectedGraph();
+
+        logger.info("Merging graph with {} nodes and {} edges",
+            callGraph.numNodes(), callGraph.numArcs());
         final Set<LongLongPair> edges = ConcurrentHashMap.newKeySet();
 
         metadata.gid2NodeMetadata.long2ObjectEntrySet().parallelStream().forEach(entry -> {
@@ -555,12 +551,12 @@ public class CGMerger {
         var result = new HashMap<String, Map<String, LongSet>>();
         int noCGCounter = 0, noMetadaCounter = 0;
         for (Long dependencyId : dependencySet) {
-            DirectedGraph cg = getGraphData(dependencyId);
+            var cg = getGraphData(dependencyId);
             if (cg == null) {
                 noCGCounter++;
                 continue;
             }
-            GraphMetadata metadata = getGraphMetadata(dependencyId, cg);
+            var metadata = rocksDao.getGraphMetadata(dependencyId, cg);
             if (metadata == null) {
                 noMetadaCounter++;
                 continue;
@@ -587,17 +583,6 @@ public class CGMerger {
                         .format((System.currentTimeMillis() - startTime) / 1000d));
 
         return result;
-    }
-
-    private GraphMetadata getGraphMetadata(Long dependencyId, DirectedGraph cg) {
-        GraphMetadata metadata;
-        try {
-            metadata = rocksDao.getGraphMetadata(dependencyId, cg);
-        } catch (RocksDBException e) {
-            throw new RuntimeException("An exception occurred retrieving metadata from rocks " +
-                "DB", e);
-        }
-        return metadata;
     }
 
     private DirectedGraph getGraphData(Long dependencyId) {
