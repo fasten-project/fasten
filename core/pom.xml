@@ -190,11 +190,10 @@
         <dependency>
             <groupId>org.jooq</groupId>
             <artifactId>jooq</artifactId>
-            <version>3.14.15</version>
+            <version>3.16.3</version>
         </dependency>
         <dependency>
-            <!-- This dependency can be removed once jOOQ v3.15 is out,
-                because the required functionality will be implemented there -->
+            <!-- TODO remove this dependency (functionality should be native since jOOQ v3.15 -->
             <groupId>com.github.t9t.jooq</groupId>
             <artifactId>jooq-postgresql-json</artifactId>
             <version>1.0.0</version>
@@ -284,50 +283,52 @@
 
     <build>
         <plugins>
-<!--             jOOQ code generation plugin-->
-<!--            <plugin>-->
-<!--                <groupId>org.jooq</groupId>-->
-<!--                <artifactId>jooq-codegen-maven</artifactId>-->
-<!--                <version>3.14.15</version>-->
-<!--                <executions>-->
-<!--                    <execution>-->
-<!--                        <goals>-->
-<!--                            <goal>generate</goal>-->
-<!--                        </goals>-->
-<!--                    </execution>-->
-<!--                </executions>-->
-<!--                <dependencies>-->
-<!--                    <dependency>-->
-<!--                        <groupId>org.postgresql</groupId>-->
-<!--                        <artifactId>postgresql</artifactId>-->
-<!--                        <version>9.4.1208</version>-->
-<!--                    </dependency>-->
-<!--                </dependencies>-->
-<!--                <configuration>-->
-<!--                    <jdbc>-->
-<!--                        <driver>org.postgresql.Driver</driver>-->
-<!--                        <url>jdbc:postgresql:fasten_java</url>-->
-<!--                        <user>fasten</user>-->
-<!--                        <password>fasten1234</password>-->
-<!--                    </jdbc>-->
-<!--                    <generator>-->
-<!--                        <generate>-->
-<!--                            <generatedAnnotation>true</generatedAnnotation>-->
-<!--                            <javaTimeTypes>false</javaTimeTypes>-->
-<!--                        </generate>-->
-<!--                        <database>-->
-<!--                            <name>org.jooq.meta.postgres.PostgresDatabase</name>-->
-<!--                            <includes>.*</includes>-->
-<!--                            <excludes>pg_stat_.*</excludes>-->
-<!--                            <inputSchema>public</inputSchema>-->
-<!--                        </database>-->
-<!--                        <target>-->
-<!--                            <packageName>eu.fasten.core.data.metadatadb.codegen</packageName>-->
-<!--                            <directory>src/main/java</directory>-->
-<!--                        </target>-->
-<!--                    </generator>-->
-<!--                </configuration>-->
-<!--            </plugin>-->
+            <!-- jOOQ code generation plugin-->
+            <!--to use, uncomment the following and run `mvn generate-sources` -->
+            <!-- <plugin>
+                <groupId>org.jooq</groupId>
+                <artifactId>jooq-codegen-maven</artifactId>
+                <version>3.16.3</version>
+                <executions>
+                    <execution>
+                        <id>generate-sources</id>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.postgresql</groupId>
+                        <artifactId>postgresql</artifactId>
+                        <version>9.4.1208</version>
+                    </dependency>
+                </dependencies>
+                <configuration>
+                    <jdbc>
+                        <driver>org.postgresql.Driver</driver>
+                        <url>jdbc:postgresql:fasten_java</url>
+                        <user>fasten</user>
+                        <password>fasten1234</password>
+                    </jdbc>
+                    <generator>
+                        <generate>
+                            <generatedAnnotation>true</generatedAnnotation>
+                            <javaTimeTypes>false</javaTimeTypes>
+                        </generate>
+                        <database>
+                            <name>org.jooq.meta.postgres.PostgresDatabase</name>
+                            <includes>.*</includes>
+                            <excludes>pg_stat_.*</excludes>
+                            <inputSchema>public</inputSchema>
+                        </database>
+                        <target>
+                            <packageName>eu.fasten.core.data.metadatadb.codegen</packageName>
+                            <directory>src/main/java</directory>
+                        </target>
+                    </generator>
+                </configuration>
+            </plugin>-->
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-source-plugin</artifactId>
