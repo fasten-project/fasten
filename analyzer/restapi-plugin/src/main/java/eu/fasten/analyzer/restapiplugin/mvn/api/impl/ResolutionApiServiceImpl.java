@@ -187,34 +187,4 @@ public class ResolutionApiServiceImpl implements ResolutionApiService {
         return new ResponseEntity<>(result, HttpStatus.OK);
     }
 
-    @Override
-    public ResponseEntity<String> getTransitiveVulnerabilities(String package_name, String version) {
-
-        // TODO: move this to the plugin's arguments.
-        var baseDir = "/mnt/fasten/vuln-paths-cache";
-        var split = package_name.split(Constants.mvnCoordinateSeparator);
-        var firstLetter = split[0].substring(0, 1);
-        var path = baseDir + File.separator + firstLetter +
-                File.separator + split[0] +
-                File.separator + split[1] +
-                File.separator + version + ".json";
-
-        try {
-            JSONObject jsonObject = new JSONObject(Files.readString(Path.of(path)));
-            return new ResponseEntity<>(jsonObject.toString(), HttpStatus.OK);
-        } catch (IOException e) {
-            logger.error("Vulnerability Cache File Not Found for " + package_name + Constants.mvnCoordinateSeparator + version, e);
-            try {
-                LazyIngestionProvider.ingestArtifactIfNecessary(package_name, version, null, (long) -1);
-                return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
-            } catch (IllegalArgumentException | IOException ill) {
-                return new ResponseEntity<>(ill.getMessage(), HttpStatus.BAD_REQUEST);
-            }
-        } catch (JSONException e) {
-            logger.error("Couldn't parse JSON from Vulnerability Cache File", e);
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-
-    }
-
 }
