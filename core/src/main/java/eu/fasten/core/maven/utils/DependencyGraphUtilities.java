@@ -18,13 +18,14 @@
 
 package eu.fasten.core.maven.utils;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.util.HashSet;
-import java.util.Optional;
-import java.util.Set;
-
+import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.Serializer;
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
+import eu.fasten.core.maven.DependencyGraphBuilder;
+import eu.fasten.core.maven.data.DependencyEdge;
+import eu.fasten.core.maven.data.Exclusion;
+import eu.fasten.core.maven.data.Revision;
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultDirectedGraph;
@@ -32,15 +33,12 @@ import org.jooq.DSLContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.Serializer;
-import com.esotericsoftware.kryo.io.Input;
-import com.esotericsoftware.kryo.io.Output;
-
-import eu.fasten.core.maven.DependencyGraphBuilder;
-import eu.fasten.core.maven.data.DependencyEdge;
-import eu.fasten.core.maven.data.Exclusion;
-import eu.fasten.core.maven.data.Revision;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.util.HashSet;
+import java.util.Optional;
+import java.util.Set;
 
 /**
  * Utility functions to construct and (de-)serialize Maven dependency graphs
@@ -106,7 +104,7 @@ public final class DependencyGraphUtilities {
         kryo.register(Revision.class);
         kryo.register(DependencyEdge.class);
         kryo.register(Exclusion.class);
-        kryo.register(Class.forName("eu.fasten.core.maven.data.Dependency$Exclusion"));
+        kryo.register(Class.forName("eu.fasten.core.maven.data.Exclusion"));
         kryo.register(java.sql.Timestamp.class);
         kryo.register(java.util.ArrayList.class);
         kryo.register(Class.forName("java.util.Collections$UnmodifiableSet"));
