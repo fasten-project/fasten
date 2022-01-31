@@ -59,7 +59,7 @@ import eu.fasten.server.plugins.FastenServerPlugin;
 
 public class FastenKafkaPlugin implements FastenServerPlugin {
 
-    private static final Duration POLL_TIMEOUT = Duration.ofMillis(250);
+    private static final Duration POLL_TIMEOUT = Duration.ofSeconds(2);
 
     private final Logger logger = LoggerFactory.getLogger(FastenKafkaPlugin.class);
     private final KafkaPlugin plugin;
@@ -89,6 +89,8 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
     // Executor service which creates a thread pool and re-uses threads when
     // possible.
     private final ExecutorService executorService = Executors.newCachedThreadPool();
+
+    private boolean hadMessagesOnLastPollCycle;
 
     /**
      * Constructs a FastenKafkaConsumer.
@@ -220,9 +222,17 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
         // processed
         sendHeartBeat(connNorm);
 
+        // normally, we ONLY wait on PRIO and ONLY when there have been no messages in any lane...
+        var prioTimeout = hadMessagesOnLastPollCycle ? Duration.ZERO : POLL_TIMEOUT;
+        // ... unless there is no subscription for PRIO, then we wait in NORMAL instead
+        var normTimeout = prioTopics.isEmpty() ? POLL_TIMEOUT : Duration.ZERO;
+
+        hadMessagesOnLastPollCycle = false;
+        
         if (!prioTopics.isEmpty()) {
-            var prioRecords = connPrio.poll(POLL_TIMEOUT);
+            var prioRecords = connPrio.poll(prioTimeout);
             for (var r : prioRecords) {
+                hadMessagesOnLastPollCycle = true;
                 logger.info("Read priority message offset {} from partition {}.", r.offset(), r.partition());
                 processRecord(r, ProcessingLane.PRIORITY);
                 logger.info("Successfully processed priority message offset {} from partition {}.", r.offset(),
@@ -234,7 +244,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
         }
 
         if (!normTopics.isEmpty()) {
-            var records = connNorm.poll(POLL_TIMEOUT);
+            var records = connNorm.poll(normTimeout);
 
             // Keep a list of all records and offsets we processed (by default this is only
             // 1).
@@ -242,6 +252,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
 
             // Although we loop through all records, by default we only poll 1 record.
             for (var r : records) {
+                hadMessagesOnLastPollCycle = true;
                 logger.info("Read normal message offset {} from partition {}.", r.offset(), r.partition());
                 processRecord(r, ProcessingLane.NORMAL);
                 logger.info("Successfully processed normal message offset {} from partition {}.", r.offset(),
