@@ -15,32 +15,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
 package eu.fasten.core.merge;
 
-import com.google.common.collect.BiMap;
-import com.google.common.collect.HashBiMap;
-import eu.fasten.core.data.Constants;
-import eu.fasten.core.data.DirectedGraph;
-import eu.fasten.core.data.PartialJavaCallGraph;
-import eu.fasten.core.data.FastenJavaURI;
-import eu.fasten.core.data.FastenURI;
-import eu.fasten.core.data.JavaNode;
-import eu.fasten.core.data.JavaScope;
-import eu.fasten.core.data.JavaType;
-import eu.fasten.core.data.MergedDirectedGraph;
-import eu.fasten.core.data.callableindex.GraphMetadata;
-import eu.fasten.core.data.callableindex.RocksDao;
-import eu.fasten.core.data.metadatadb.codegen.tables.Callables;
-import eu.fasten.core.data.metadatadb.codegen.tables.ModuleNames;
-import eu.fasten.core.data.metadatadb.codegen.tables.Modules;
-import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
-import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
-import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
-import it.unimi.dsi.fastutil.longs.LongLongPair;
-import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
-import it.unimi.dsi.fastutil.longs.LongSet;
-import it.unimi.dsi.fastutil.longs.LongSets;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -53,6 +29,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
+
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -66,6 +43,31 @@ import org.json.JSONObject;
 import org.rocksdb.RocksDBException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.google.common.collect.BiMap;
+import com.google.common.collect.HashBiMap;
+
+import eu.fasten.core.data.Constants;
+import eu.fasten.core.data.DirectedGraph;
+import eu.fasten.core.data.FastenJavaURI;
+import eu.fasten.core.data.FastenURI;
+import eu.fasten.core.data.JavaNode;
+import eu.fasten.core.data.JavaScope;
+import eu.fasten.core.data.JavaType;
+import eu.fasten.core.data.MergedDirectedGraph;
+import eu.fasten.core.data.PartialJavaCallGraph;
+import eu.fasten.core.data.callableindex.GraphMetadata;
+import eu.fasten.core.data.callableindex.RocksDao;
+import eu.fasten.core.data.metadatadb.codegen.tables.Callables;
+import eu.fasten.core.data.metadatadb.codegen.tables.ModuleNames;
+import eu.fasten.core.data.metadatadb.codegen.tables.Modules;
+import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
+import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
+import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
+import it.unimi.dsi.fastutil.longs.LongLongPair;
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
+import it.unimi.dsi.fastutil.longs.LongSet;
+import it.unimi.dsi.fastutil.longs.LongSets;
 
 public class CGMerger {
 
@@ -300,57 +302,7 @@ public class CGMerger {
             this.target = target;
         }
     }
-
-    /**
-     * Node containing method signature and type information.
-     */
-    private static class Node {
-        private final String signature;
-        private final String typeUri;
-
-        /**
-         * Create new Node instance.
-         *
-         * @param uri fastenURI
-         */
-        public Node(final FastenJavaURI uri) {
-            this.typeUri = "/" + uri.getNamespace() + "/" + uri.getClassName();
-            this.signature = StringUtils.substringAfter(uri.decanonicalize().getEntity(), ".");
-        }
-
-        /**
-         * Check if the given method is a constructor.
-         *
-         * @return true, if the method is constructor
-         */
-        public boolean isConstructor() {
-            return signature.startsWith("<init>");
-        }
-
-        /**
-         * Get full fastenURI.
-         *
-         * @return fastenURI
-         */
-        public String getUri() {
-            return typeUri + "." + signature;
-        }
-    }
-
-    private long updateNode(final long node, final long offset,
-                            final BiMap<Integer, String> uris) {
-        var uri = uris.get((int) node);
-
-        if (allUris.containsValue(uri)) {
-            return allUris.inverse().get(uri);
-        } else {
-            final var updatedNode = node + offset;
-            this.allUris.put(updatedNode, uri);
-            return updatedNode;
-        }
-    }
-
-
+    
     private GraphMetadata getERCGArcs(final PartialJavaCallGraph ercg) {
         final var map = new Long2ObjectOpenHashMap<GraphMetadata.NodeMetadata>();
         final var allMethods = ercg.mapOfAllMethods();
@@ -364,6 +316,8 @@ public class CGMerger {
             final var receivers = new HashSet<GraphMetadata.ReceiverRecord>();
             final var metadata = callsite.getValue();
             for (var obj : metadata.values()) {
+                // TODO this cast seems to be unnecessary
+                @SuppressWarnings("unchecked")
                 var receiver = (HashMap<String, Object>) obj;
                 var receiverTypes = getReceiver(receiver);
                 var callType = getCallType(receiver);
@@ -878,28 +832,6 @@ public class CGMerger {
             result.addInternalNode(node);
         }
     }
-    
-    /**
-     * Clone internal calls and internal arcs to the merged call graph.
-     *
-     * @param result        resulting merged call graph
-     * @param callGraphData initial call graph
-     */
-    private void cloneNodesAndArcs(final MergedDirectedGraph result,
-                                   final DirectedGraph callGraphData) {
-        var internalNodes = callGraphData.nodes();
-        internalNodes.removeAll(callGraphData.externalNodes());
-        for (var node : internalNodes) {
-            result.addInternalNode(node);
-        }
-        for (var source : internalNodes) {
-            for (var target : callGraphData.successors(source)) {
-                if (callGraphData.isInternal(target)) {
-                    result.addEdge(source, target);
-                }
-            }
-        }
-    }
 
     /**
      * Add a resolved edge to the {@link DirectedGraph}.
@@ -910,13 +842,13 @@ public class CGMerger {
      */
     private void addCall(final Set<LongLongPair> edges,
                          Long source, Long target, final boolean isCallback) {
-	if (isCallback) {
-	    Long t = source;
-	    source = target;
-	    target = t;
-	}
-
-	edges.add(LongLongPair.of(source, target));
+    	if (isCallback) {
+    	    Long t = source;
+    	    source = target;
+    	    target = t;
+    	}
+    
+    	edges.add(LongLongPair.of(source, target));
     }
 
 
