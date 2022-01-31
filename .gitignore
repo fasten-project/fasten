@@ -1,7 +1,3 @@
-### Analysis Artifacts ###
-
-/graph*.json
-
 ### Java ###
 
 # Compiled class file
@@ -191,3 +187,7 @@ modules.xml
 # End of https://www.gitignore.io/api/intellij
 
 
+# Serialized Dependency Graphs
+
+*.edges
+*.nodes
