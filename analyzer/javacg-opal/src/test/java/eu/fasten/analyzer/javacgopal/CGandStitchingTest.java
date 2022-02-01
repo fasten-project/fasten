@@ -105,7 +105,7 @@ public class CGandStitchingTest {
 
     @Test
     public void noPackage() throws URISyntaxException {
-        final var np = getRCG("merge/staticInitializer/NoPackage.class", "noPackage", "0.0.0");
+        final var np = getRCG("merge/staticInitializer/NoPackage.class", "NoPackage", "0.0.0");
         Assertions.assertEquals(np.getClassHierarchy().get(JavaScope.internalTypes).keySet(),
             Set.of("//NoPackage"));
     }
