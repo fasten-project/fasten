@@ -27,6 +27,11 @@ public class Exclusion implements Serializable {
 	public String artifactId;
 	public String groupId;
 
+    @SuppressWarnings("unused")
+    private Exclusion() {
+        // exists for JSON object mappers
+    }
+
 	public Exclusion(final String groupId, final String artifactId) {
 		this.groupId = groupId;
 		this.artifactId = artifactId;

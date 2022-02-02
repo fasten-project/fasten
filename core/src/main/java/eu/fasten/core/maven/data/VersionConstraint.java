@@ -24,12 +24,17 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 public class VersionConstraint {
 
-	public final String lowerBound;
-	public final boolean isLowerHardRequirement;
-	public final String upperBound;
-	public final boolean isUpperHardRequirement;
+	public String lowerBound;
+	public boolean isLowerHardRequirement;
+	public String upperBound;
+	public boolean isUpperHardRequirement;
 
-	public final String spec;
+	public String spec;
+
+    @SuppressWarnings("unused")
+    private VersionConstraint() {
+        // exists for JSON object mappers
+    }
 
 	/**
 	 * Constructs a VersionConstraint object from specification. (From
