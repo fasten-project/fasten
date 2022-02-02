@@ -79,7 +79,7 @@ RUN mkdir -p ${SCANCODE_LOCAL_DIRECTORY}
 COPY --from=scancode --chown=root ${SCANCODE_INSTALLATION_FOLDER}/ ${SCANCODE_LOCAL_DIRECTORY}
 
 # Installing scancode
-RUN ${SCANCODE_LOCAL_DIRECTORY}/configure --dev
+RUN ${SCANCODE_LOCAL_DIRECTORY}/configure
 ENV PATH="${SCANCODE_LOCAL_DIRECTORY}:${PATH}"
 
 # Copying all the needed JARs
@@ -109,7 +109,7 @@ RUN mkdir -p ${SCANCODE_LOCAL_DIRECTORY}
 COPY --from=scancode --chown=root ${SCANCODE_INSTALLATION_FOLDER}/ ${SCANCODE_LOCAL_DIRECTORY}
 
 # Installing scancode
-RUN ${SCANCODE_LOCAL_DIRECTORY}/configure --dev
+RUN ${SCANCODE_LOCAL_DIRECTORY}/configure
 ENV PATH="${SCANCODE_LOCAL_DIRECTORY}:${PATH}"
 
 # Copying all the needed (and already available) JARs
