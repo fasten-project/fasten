@@ -392,7 +392,7 @@ public class LicenseDetectorPlugin extends Plugin {
                     // Report full, absolute paths
                     "--full-root " +
                     // Scan using n parallel processes
-                    "--processes " + "$(nproc) " +
+                    "--processes " + "2 " +
                     // Write scan output as a compact JSON file
                     "--json " + resultPath + " " +
                     // SPDX RDF file
