@@ -60,6 +60,9 @@ public class Main implements Runnable {
 	@CommandLine.Option(names = { "-r" }, paramLabel = "REPOS", description = "Maven repositories", split = ",")
 	List<String> repos;
 
+	@CommandLine.Option(names = { "-ac" }, paramLabel = "ARTIFACT_COORD")
+	String artifactCoordinate;
+
 	static class Commands {
 		@CommandLine.ArgGroup(exclusive = false, multiplicity = "1")
 		Computations computations;
@@ -245,7 +248,10 @@ public class Main implements Runnable {
 		if (artifact instanceof File) {
 			logger.info("Generating graph for {}", ((File) artifact).getAbsolutePath());
 			final var cg = new OPALPartialCallGraphConstructor().construct(new OPALCallGraphConstructor().construct((File) artifact, algorithm), CallPreservationStrategy.ONLY_STATIC_CALLSITES);
-			revisionCallGraph = new PartialJavaCallGraph("", cleanUpFileName((File) artifact), "", 0, "", cg.classHierarchy, cg.graph);
+
+			MavenCoordinate coord = getMavenCoordinate(this.artifactCoordinate);
+			revisionCallGraph = new PartialJavaCallGraph("mvn", coord.getProduct(),
+				coord.getVersionConstraint(), 0, "OPAL", cg.classHierarchy, cg.graph);
 		} else {
 			revisionCallGraph = OPALPartialCallGraphConstructor.createExtendedRevisionJavaCallGraph((MavenCoordinate) artifact,
 					algorithm, Long.parseLong(this.commands.computations.timestamp),
@@ -263,8 +269,11 @@ public class Main implements Runnable {
 		return revisionCallGraph;
 	}
 
-	private String cleanUpFileName(File artifact) {
-		return artifact.getName().replace(".class", "").replace("$", "").replace(".jar", "");
+	private MavenCoordinate getMavenCoordinate(String artifactCoordinate) {
+		if (artifactCoordinate == null || artifactCoordinate.isEmpty()) {
+			throw new RuntimeException("coordinate is not specified check the arguments!");
+		}
+		return MavenCoordinate.fromString(artifactCoordinate, "jar");
 	}
 
 	/**
@@ -291,7 +300,7 @@ public class Main implements Runnable {
 		final var result = new ArrayList<MavenCoordinate>();
 		if (this.commands.computations.tools.merge.dependencies != null) {
 			for (String currentCoordinate : this.commands.computations.tools.merge.dependencies) {
-				var coordinate = MavenCoordinate.fromString(currentCoordinate, "jar");
+				MavenCoordinate coordinate = getMavenCoordinate(currentCoordinate);
 				if (this.repos != null && !this.repos.isEmpty()) {
 					coordinate.setMavenRepos(this.repos);
 				}
