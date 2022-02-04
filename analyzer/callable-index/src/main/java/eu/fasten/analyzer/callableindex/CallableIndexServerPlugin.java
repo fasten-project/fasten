@@ -52,6 +52,7 @@ public class CallableIndexServerPlugin extends Plugin {
         private Exception pluginError = null;
         private final Logger logger = LoggerFactory.getLogger(CallableIndexFastenPlugin.class.getName());
         private static RocksDao rocksDao;
+        private long packageVersionID;
 
         public void setRocksDao(RocksDao rocksDao) {
             CallableIndexFastenPlugin.rocksDao = rocksDao;
@@ -69,7 +70,9 @@ public class CallableIndexServerPlugin extends Plugin {
 
         @Override
         public Optional<String> produce() {
-            return Optional.empty();
+            final var output = new JSONObject();
+            output.put("packageVersionID", String.valueOf(this.packageVersionID));
+            return Optional.of(output.toString());
         }
 
         @Override
@@ -113,6 +116,9 @@ public class CallableIndexServerPlugin extends Plugin {
 
             try {
                 rocksDao.saveToRocksDb(extendedGidGraph);
+                this.packageVersionID = extendedGidGraph.getIndex();
+                logger.info("Saved package version {} in callable index.", this.packageVersionID);
+
             } catch (Exception e) {
                 logger.error("Could not save GID graph of '" + artifact + "' into RocksDB", e);
                 throw new RuntimeException("Could not save GID graph of '" + artifact + "' into RocksDB");
