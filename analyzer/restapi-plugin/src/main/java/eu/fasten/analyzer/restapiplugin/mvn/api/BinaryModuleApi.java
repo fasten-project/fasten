@@ -18,7 +18,11 @@
 
 package eu.fasten.analyzer.restapiplugin.mvn.api;
 
+import eu.fasten.analyzer.restapiplugin.mvn.KnowledgeBaseConnector;
+import eu.fasten.analyzer.restapiplugin.mvn.LazyIngestionProvider;
 import eu.fasten.analyzer.restapiplugin.mvn.RestApplication;
+import eu.fasten.core.maven.data.PackageVersionNotFoundException;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -27,15 +31,11 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.io.IOException;
+
 @RestController
 @RequestMapping("/mvn/packages")
 public class BinaryModuleApi {
-
-    private final BinaryModuleApiService service;
-
-    public BinaryModuleApi(BinaryModuleApiService service) {
-        this.service = service;
-    }
 
     @GetMapping(value = "/{pkg}/{pkg_ver}/binary-modules", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<String> getPackageBinaryModules(@PathVariable("pkg") String package_name,
@@ -44,7 +44,22 @@ public class BinaryModuleApi {
                                                    @RequestParam(required = false, defaultValue = RestApplication.DEFAULT_PAGE_SIZE) int limit,
                                                    @RequestParam(required = false) String artifactRepository,
                                                    @RequestParam(required = false) Long releaseDate) {
-        return service.getPackageBinaryModules(package_name, package_version, offset, limit, artifactRepository, releaseDate);
+        String result;
+        try {
+            result = KnowledgeBaseConnector.kbDao.getPackageBinaryModules(
+                    package_name, package_version, offset, limit);
+        } catch (PackageVersionNotFoundException e) {
+            try {
+                LazyIngestionProvider.ingestArtifactIfNecessary(package_name, package_version, artifactRepository, releaseDate);
+            } catch (IllegalArgumentException ex) {
+                return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST);
+            } catch (IOException ex) {
+                return new ResponseEntity<>(ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+            }
+            return new ResponseEntity<>("Package version not found, but should be processed soon. Try again later", HttpStatus.CREATED);
+        }
+        result = result.replace("\\/", "/");
+        return new ResponseEntity<>(result, HttpStatus.OK);
     }
 
     @GetMapping(value = "/{pkg}/{pkg_ver}/binary-modules/{binary}/metadata", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -53,7 +68,23 @@ public class BinaryModuleApi {
                                                    @PathVariable("binary") String binary_module,
                                                    @RequestParam(required = false) String artifactRepository,
                                                    @RequestParam(required = false) Long releaseDate) {
-        return service.getBinaryModuleMetadata(package_name, package_version, binary_module, artifactRepository, releaseDate);
+        String result;
+        try {
+            result = KnowledgeBaseConnector.kbDao.getBinaryModuleMetadata(
+                    package_name, package_version, binary_module);
+        } catch (PackageVersionNotFoundException e) {
+            try {
+                LazyIngestionProvider.ingestArtifactIfNecessary(package_name, package_version, artifactRepository, releaseDate);
+            } catch (IllegalArgumentException | IOException ex) {
+                return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST);
+            }
+            return new ResponseEntity<>("Package version not found, but should be processed soon. Try again later", HttpStatus.CREATED);
+        }
+        if (result == null) {
+            return new ResponseEntity<>("Binary module not found", HttpStatus.NOT_FOUND);
+        }
+        result = result.replace("\\/", "/");
+        return new ResponseEntity<>(result, HttpStatus.OK);
     }
 
     @GetMapping(value = "/{pkg}/{pkg_ver}/binary-modules/{binary}/files", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -64,6 +95,19 @@ public class BinaryModuleApi {
                                                 @RequestParam(required = false, defaultValue = RestApplication.DEFAULT_PAGE_SIZE) int limit,
                                                 @RequestParam(required = false) String artifactRepository,
                                                 @RequestParam(required = false) Long releaseDate) {
-        return service.getBinaryModuleFiles(package_name, package_version, binary_module, offset, limit, artifactRepository, releaseDate);
+        String result;
+        try {
+            result = KnowledgeBaseConnector.kbDao.getBinaryModuleFiles(
+                    package_name, package_version, binary_module, offset, limit);
+        } catch (PackageVersionNotFoundException e) {
+            try {
+                LazyIngestionProvider.ingestArtifactIfNecessary(package_name, package_version, artifactRepository, releaseDate);
+            } catch (IllegalArgumentException | IOException ex) {
+                return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST);
+            }
+            return new ResponseEntity<>("Package version not found, but should be processed soon. Try again later", HttpStatus.CREATED);
+        }
+        result = result.replace("\\/", "/");
+        return new ResponseEntity<>(result, HttpStatus.OK);
     }
 }
