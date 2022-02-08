@@ -18,7 +18,11 @@
 
 package eu.fasten.analyzer.restapiplugin.mvn.api;
 
+import eu.fasten.analyzer.restapiplugin.mvn.KnowledgeBaseConnector;
+import eu.fasten.analyzer.restapiplugin.mvn.LazyIngestionProvider;
 import eu.fasten.analyzer.restapiplugin.mvn.RestApplication;
+import eu.fasten.core.maven.data.PackageVersionNotFoundException;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -28,16 +32,11 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import java.io.IOException;
 
 @RestController
 @RequestMapping("/mvn/packages")
 public class ModuleApi {
-
-    private final ModuleApiService service;
-
-    public ModuleApi(ModuleApiService service) {
-        this.service = service;
-    }
 
     @GetMapping(value = "/{pkg}/{pkg_ver}/modules", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<String> getPackageModules(@PathVariable("pkg") String package_name,
@@ -46,16 +45,47 @@ public class ModuleApi {
                                              @RequestParam(required = false, defaultValue = RestApplication.DEFAULT_PAGE_SIZE) int limit,
                                              @RequestParam(required = false) String artifactRepository,
                                              @RequestParam(required = false) Long releaseDate) {
-        return service.getPackageModules(package_name, package_version, offset, limit, artifactRepository, releaseDate);
+        String result;
+        try {
+            result = KnowledgeBaseConnector.kbDao.getPackageModules(
+                    package_name, package_version, offset, limit);
+        } catch (PackageVersionNotFoundException e) {
+            try {
+                LazyIngestionProvider.ingestArtifactIfNecessary(package_name, package_version, artifactRepository, releaseDate);
+            } catch (IllegalArgumentException ex) {
+                return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST);
+            } catch (IOException ex) {
+                return new ResponseEntity<>(ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+            }
+            return new ResponseEntity<>("Package version not found, but should be processed soon. Try again later", HttpStatus.CREATED);
+        }
+        result = result.replace("\\/", "/");
+        return new ResponseEntity<>(result, HttpStatus.OK);
     }
 
     @PostMapping(value = "/{pkg}/{pkg_ver}/modules/metadata", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<String> getModuleMetadata(@PathVariable("pkg") String package_name,
                                              @PathVariable("pkg_ver") String package_version,
                                              @RequestBody String module_namespace,
-                                             @RequestParam(value = "artifactRepository", required = false) String artifactRepo,
+                                             @RequestParam(value = "artifactRepository", required = false) String artifactRepository,
                                              @RequestParam(required = false) Long releaseDate) {
-        return service.getModuleMetadata(package_name, package_version, module_namespace, artifactRepo, releaseDate);
+        
+        String result;
+        try {
+            result = KnowledgeBaseConnector.kbDao.getModuleMetadata(package_name, package_version, module_namespace);
+        } catch (PackageVersionNotFoundException e) {
+            try {
+                LazyIngestionProvider.ingestArtifactIfNecessary(package_name, package_version, artifactRepository, releaseDate);
+            } catch (IllegalArgumentException | IOException ex) {
+                return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST);
+            }
+            return new ResponseEntity<>("Package version not found, but should be processed soon. Try again later", HttpStatus.CREATED);
+        }
+        if (result == null) {
+            return new ResponseEntity<>("Module not found", HttpStatus.NOT_FOUND);
+        }
+        result = result.replace("\\/", "/");
+        return new ResponseEntity<>(result, HttpStatus.OK);
     }
 
     @PostMapping(value = "/{pkg}/{pkg_ver}/modules/files", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -66,7 +96,24 @@ public class ModuleApi {
                                           @RequestParam(required = false, defaultValue = RestApplication.DEFAULT_PAGE_SIZE) int limit,
                                           @RequestParam(required = false) String artifactRepository,
                                           @RequestParam(required = false) Long releaseDate) {
-        return service.getModuleFiles(package_name, package_version, module_namespace, offset, limit, artifactRepository, releaseDate);
+
+        String result;
+        try {
+            result = KnowledgeBaseConnector.kbDao.getModuleFiles(
+                    package_name, package_version, module_namespace, offset, limit);
+        } catch (PackageVersionNotFoundException e) {
+            try {
+                LazyIngestionProvider.ingestArtifactIfNecessary(package_name, package_version, artifactRepository, releaseDate);
+            } catch (IllegalArgumentException | IOException ex) {
+                return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST);
+            }
+            return new ResponseEntity<>("Package version not found, but should be processed soon. Try again later", HttpStatus.CREATED);
+        }
+        if (result == null) {
+            return new ResponseEntity<>("Module not found", HttpStatus.NOT_FOUND);
+        }
+        result = result.replace("\\/", "/");
+        return new ResponseEntity<>(result, HttpStatus.OK);
     }
 
     @PostMapping(value = "/{pkg}/{pkg_ver}/modules/callables", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -77,6 +124,23 @@ public class ModuleApi {
                                               @RequestParam(required = false, defaultValue = RestApplication.DEFAULT_PAGE_SIZE) int limit,
                                               @RequestParam(required = false) String artifactRepository,
                                               @RequestParam(required = false) Long releaseDate) {
-        return service.getModuleCallables(package_name, package_version, module_namespace, offset, limit, artifactRepository, releaseDate);
+
+        String result;
+        try {
+            result = KnowledgeBaseConnector.kbDao.getModuleCallables(
+                    package_name, package_version, module_namespace, offset, limit);
+        } catch (PackageVersionNotFoundException e) {
+            try {
+                LazyIngestionProvider.ingestArtifactIfNecessary(package_name, package_version, artifactRepository, releaseDate);
+            } catch (IllegalArgumentException | IOException ex) {
+                return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST);
+            }
+            return new ResponseEntity<>("Package version not found, but should be processed soon. Try again later", HttpStatus.CREATED);
+        }
+        if (result == null) {
+            return new ResponseEntity<>("Module not found", HttpStatus.NOT_FOUND);
+        }
+        result = result.replace("\\/", "/");
+        return new ResponseEntity<>(result, HttpStatus.OK);
     }
 }
