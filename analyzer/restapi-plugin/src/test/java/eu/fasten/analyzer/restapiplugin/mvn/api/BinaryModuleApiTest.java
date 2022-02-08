@@ -18,7 +18,10 @@
 
 package eu.fasten.analyzer.restapiplugin.mvn.api;
 
+import eu.fasten.analyzer.restapiplugin.mvn.KnowledgeBaseConnector;
 import eu.fasten.analyzer.restapiplugin.mvn.RestApplication;
+import eu.fasten.core.data.metadatadb.MetadataDao;
+import eu.fasten.core.maven.data.PackageVersionNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -28,49 +31,101 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class BinaryModuleApiTest {
 
-    private BinaryModuleApiService service;
-    private BinaryModuleApi api;
+    private BinaryModuleApi service;
+    private MetadataDao kbDao;
     private final int offset = 0;
     private final int limit = Integer.parseInt(RestApplication.DEFAULT_PAGE_SIZE);
 
     @BeforeEach
     void setUp() {
-        service = Mockito.mock(BinaryModuleApiService.class);
-        api = new BinaryModuleApi(service);
+        service = new BinaryModuleApi();
+        kbDao = Mockito.mock(MetadataDao.class);
+        KnowledgeBaseConnector.kbDao = kbDao;
     }
 
     @Test
-    public void getPackageBinaryModulesTest() {
-        var packageName = "pkg name";
-        var version = "pkg version";
-        var response = new ResponseEntity<>("package binary modules", HttpStatus.OK);
-        Mockito.when(service.getPackageBinaryModules(packageName, version, offset, limit, null, null)).thenReturn(response);
-        var result = api.getPackageBinaryModules(packageName, version, offset, limit, null, null);
-        assertEquals(response, result);
-        Mockito.verify(service).getPackageBinaryModules(packageName, version, offset, limit, null, null);
+    void getPackageBinaryModulesPositiveTest() {
+        var packageName = "pkg";
+        var version = "pkg ver";
+        var response = "modules";
+        Mockito.when(kbDao.getPackageBinaryModules(packageName, version, offset, limit)).thenReturn(response);
+        var expected = new ResponseEntity<>(response, HttpStatus.OK);
+        var result = service.getPackageBinaryModules(packageName, version, offset, limit, null, null);
+        assertEquals(expected, result);
+        Mockito.verify(kbDao, Mockito.times(1)).getPackageBinaryModules(packageName, version, offset, limit);
     }
 
     @Test
-    public void getBinaryModuleMetadataTest() {
-        var packageName = "pkg name";
-        var version = "pkg version";
-        var binModule = "binary module";
-        var response = new ResponseEntity<>("binary module metadata", HttpStatus.OK);
-        Mockito.when(service.getBinaryModuleMetadata(packageName, version, binModule, null, null)).thenReturn(response);
-        var result = api.getBinaryModuleMetadata(packageName, version, binModule, null, null);
-        assertEquals(response, result);
-        Mockito.verify(service).getBinaryModuleMetadata(packageName, version, binModule, null, null);
+    void getPackageBinaryModulesIngestionTest() {
+        var packageName = "junit:junit";
+        var version = "4.12";
+        Mockito.when(kbDao.getPackageBinaryModules(packageName, version, offset, limit)).thenThrow(new PackageVersionNotFoundException("Error"));
+        var result = service.getPackageBinaryModules(packageName, version, offset, limit, null, null);
+        assertEquals(HttpStatus.CREATED, result.getStatusCode());
+        Mockito.verify(kbDao, Mockito.times(1)).getPackageBinaryModules(packageName, version, offset, limit);
     }
 
     @Test
-    public void getBinaryModuleFilesTest() {
-        var packageName = "pkg name";
-        var version = "pkg version";
-        var binModule = "binary module";
-        var response = new ResponseEntity<>("binary module files", HttpStatus.OK);
-        Mockito.when(service.getBinaryModuleFiles(packageName, version, binModule, offset, limit, null, null)).thenReturn(response);
-        var result = api.getBinaryModuleFiles(packageName, version, binModule, offset, limit, null, null);
-        assertEquals(response, result);
-        Mockito.verify(service).getBinaryModuleFiles(packageName, version, binModule, offset, limit, null, null);
+    void getBinaryModuleMetadataPositiveTest() {
+        var packageName = "pkg";
+        var version = "pkg ver";
+        var module = "bin module";
+        var response = "module metadata";
+        Mockito.when(kbDao.getBinaryModuleMetadata(packageName, version, module)).thenReturn(response);
+        var expected = new ResponseEntity<>(response, HttpStatus.OK);
+        var result = service.getBinaryModuleMetadata(packageName, version, module, null, null);
+        assertEquals(expected, result);
+
+        Mockito.verify(kbDao, Mockito.times(1)).getBinaryModuleMetadata(packageName, version, module);
+    }
+
+    @Test
+    void getBinaryModuleMetadataNegativeTest() {
+        var packageName = "pkg";
+        var version = "pkg ver";
+        var module = "bin module";
+
+        Mockito.when(kbDao.getBinaryModuleMetadata(packageName, version, module)).thenReturn(null);
+        var result = service.getBinaryModuleMetadata(packageName, version, module, null, null);
+        assertEquals(HttpStatus.NOT_FOUND, result.getStatusCode());
+
+        Mockito.verify(kbDao, Mockito.times(1)).getBinaryModuleMetadata(packageName, version, module);
+    }
+
+    @Test
+    void getBinaryModuleMetadataIngestionTest() {
+        var packageName = "junit:junit";
+        var version = "4.12";
+        var module = "bin module";
+        Mockito.when(kbDao.getBinaryModuleMetadata(packageName, version, module)).thenThrow(new PackageVersionNotFoundException("Error"));
+        var result = service.getBinaryModuleMetadata(packageName, version, module, null, null);
+        assertEquals(HttpStatus.CREATED, result.getStatusCode());
+
+        Mockito.verify(kbDao, Mockito.times(1)).getBinaryModuleMetadata(packageName, version, module);
+    }
+
+    @Test
+    void getBinaryModuleFilesPositiveTest() {
+        var packageName = "pkg";
+        var version = "pkg ver";
+        var module = "bin module";
+        var response = "module files";
+        Mockito.when(kbDao.getBinaryModuleFiles(packageName, version, module, offset, limit)).thenReturn(response);
+        var expected = new ResponseEntity<>(response, HttpStatus.OK);
+        var result = service.getBinaryModuleFiles(packageName, version, module, offset, limit, null, null);
+        assertEquals(expected, result);
+        Mockito.verify(kbDao, Mockito.times(1)).getBinaryModuleFiles(packageName, version, module, offset, limit);
+    }
+
+    @Test
+    void getBinaryModuleFilesIngestionTest() {
+        var packageName = "junit:junit";
+        var version = "4.12";
+        var module = "bin module";
+        Mockito.when(kbDao.getBinaryModuleFiles(packageName, version, module, offset, limit)).thenThrow(new PackageVersionNotFoundException("Error"));
+        var result = service.getBinaryModuleFiles(packageName, version, module, offset, limit, null, null);
+        assertEquals(HttpStatus.CREATED, result.getStatusCode());
+
+        Mockito.verify(kbDao, Mockito.times(1)).getBinaryModuleFiles(packageName, version, module, offset, limit);
     }
 }

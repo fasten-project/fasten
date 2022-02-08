@@ -18,6 +18,9 @@
 
 package eu.fasten.analyzer.restapiplugin.mvn.api;
 
+import eu.fasten.analyzer.restapiplugin.mvn.KnowledgeBaseConnector;
+import eu.fasten.analyzer.restapiplugin.mvn.RestApplication;
+import eu.fasten.core.data.metadatadb.MetadataDao;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -27,22 +30,36 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class PackageVersionApiTest {
 
-    private PackageVersionApiService service;
-    private PackageVersionApi api;
+    private PackageVersionApi service;
+    private MetadataDao kbDao;
 
     @BeforeEach
     void setUp() {
-        service = Mockito.mock(PackageVersionApiService.class);
-        api = new PackageVersionApi(service);
+        service = new PackageVersionApi();
+        kbDao = Mockito.mock(MetadataDao.class);
+        KnowledgeBaseConnector.kbDao = kbDao;
     }
 
     @Test
-    public void getERCGLinkTest() {
+    void getERCGLinkPositiveTest() {
+        var coordinate = "group:artifact:version";
         var id = 42L;
-        var response = new ResponseEntity<>("ercg link", HttpStatus.OK);
-        Mockito.when(service.getERCGLink(id)).thenReturn(response);
-        var result = api.getERCGLink(id);
-        assertEquals(response, result);
-        Mockito.verify(service).getERCGLink(id);
+        Mockito.when(kbDao.getArtifactName(id)).thenReturn(coordinate);
+        KnowledgeBaseConnector.rcgBaseUrl = "http://lima.ewi.tudelft.nl/";
+        var expected = new ResponseEntity<>("http://lima.ewi.tudelft.nl/mvn/a/artifact/artifact_group_version.json", HttpStatus.OK);
+        var result = service.getERCGLink(id);
+        assertEquals(expected, result);
+
+        Mockito.verify(kbDao, Mockito.times(1)).getArtifactName(id);
+    }
+    @Test
+    void getERCGLinkNegativeTest() {
+        var id = 42L;
+        KnowledgeBaseConnector.rcgBaseUrl = "http://lima.ewi.tudelft.nl/";
+        Mockito.when(kbDao.getArtifactName(id)).thenReturn(null);
+        var result = service.getERCGLink(id);
+        assertEquals(HttpStatus.NOT_FOUND, result.getStatusCode());
+
+        Mockito.verify(kbDao, Mockito.times(1)).getArtifactName(id);
     }
 }
