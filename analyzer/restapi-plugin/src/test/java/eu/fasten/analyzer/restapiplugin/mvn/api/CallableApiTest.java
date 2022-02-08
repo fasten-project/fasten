@@ -18,58 +18,110 @@
 
 package eu.fasten.analyzer.restapiplugin.mvn.api;
 
+import eu.fasten.analyzer.restapiplugin.mvn.KnowledgeBaseConnector;
 import eu.fasten.analyzer.restapiplugin.mvn.RestApplication;
+import eu.fasten.core.data.metadatadb.MetadataDao;
+import eu.fasten.core.maven.data.PackageVersionNotFoundException;
+import org.json.JSONObject;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import java.util.HashMap;
 import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class CallableApiTest {
 
-    private CallableApiService service;
-    private CallableApi api;
+    private CallableApi service;
+    private MetadataDao kbDao;
     private final int offset = 0;
     private final int limit = Integer.parseInt(RestApplication.DEFAULT_PAGE_SIZE);
 
     @BeforeEach
     void setUp() {
-        service = Mockito.mock(CallableApiService.class);
-        api = new CallableApi(service);
+        service = new CallableApi();
+        kbDao = Mockito.mock(MetadataDao.class);
+        KnowledgeBaseConnector.kbDao = kbDao;
     }
 
     @Test
-    public void getPackageCallablesTest() {
-        var packageName = "pkg name";
-        var version = "pkg version";
-        var response = new ResponseEntity<>("package binary callables", HttpStatus.OK);
-        Mockito.when(service.getPackageCallables(packageName, version, offset, limit, null, null)).thenReturn(response);
-        var result = api.getPackageCallables(packageName, version, offset, limit, null, null);
-        assertEquals(response, result);
-        Mockito.verify(service).getPackageCallables(packageName, version, offset, limit, null, null);
+    void getPackageCallablesPositiveTest() {
+        var packageName = "pkg";
+        var version = "pkg ver";
+        var response = "callables";
+        Mockito.when(kbDao.getPackageCallables(packageName, version, offset, limit)).thenReturn(response);
+        var expected = new ResponseEntity<>(response, HttpStatus.OK);
+        var result = service.getPackageCallables(packageName, version, offset, limit, null, null);
+        assertEquals(expected, result);
+        Mockito.verify(kbDao).getPackageCallables(packageName, version, offset, limit);
     }
 
     @Test
-    public void getCallableMetadataTest() {
-        var packageName = "pkg name";
-        var version = "pkg version";
-        var callable = "callable";
-        var response = new ResponseEntity<>("callable metadata", HttpStatus.OK);
-        Mockito.when(service.getCallableMetadata(packageName, version, callable, null, null)).thenReturn(response);
-        var result = api.getCallableMetadata(packageName, version, callable, null, null);
-        assertEquals(response, result);
-        Mockito.verify(service).getCallableMetadata(packageName, version, callable, null, null);
+    void getPackageCallablesIngestionTest() {
+        var packageName = "junit:junit";
+        var version = "4.12";
+        Mockito.when(kbDao.getPackageCallables(packageName, version, offset, limit)).thenThrow(new PackageVersionNotFoundException("Error"));
+        var result = service.getPackageCallables(packageName, version, offset, limit, null, null);
+        assertEquals(HttpStatus.CREATED, result.getStatusCode());
+
+        Mockito.verify(kbDao).getPackageCallables(packageName, version, offset, limit);
     }
 
     @Test
-    public void getCallablesTest() {
+    void getCallableMetadataPositiveTest() {
+        var packageName = "group:artifact";
+        var version = "version";
+        var callable = "callable uri";
+        var response = "callable metadata";
+        Mockito.when(kbDao.getCallableMetadata(packageName, version, callable)).thenReturn(response);
+        var expected = new ResponseEntity<>(response, HttpStatus.OK);
+        var result = service.getCallableMetadata(packageName, version, callable, null, null);
+        assertEquals(expected, result);
+
+        Mockito.verify(kbDao, Mockito.times(1)).getCallableMetadata(packageName, version, callable);
+    }
+
+    @Test
+    void getCallableMetadataNegativeTest() {
+        var packageName = "group:artifact";
+        var version = "version";
+        var callable = "callable uri";
+        Mockito.when(kbDao.getCallableMetadata(packageName, version, callable)).thenReturn(null);
+        var result = service.getCallableMetadata(packageName, version, callable, null, null);
+        assertEquals(HttpStatus.BAD_REQUEST, result.getStatusCode());
+
+        Mockito.verify(kbDao, Mockito.times(1)).getCallableMetadata(packageName, version, callable);
+    }
+
+    @Test
+    void getCallableMetadataIngestTest() {
+        var packageName = "junit:junit";
+        var version = "4.12";
+        var callable = "callable uri";
+        Mockito.when(kbDao.getCallableMetadata(packageName, version, callable)).thenReturn(null);
+        var result = service.getCallableMetadata(packageName, version, callable, null, null);
+        assertEquals(HttpStatus.CREATED, result.getStatusCode());
+
+        Mockito.verify(kbDao, Mockito.times(1)).getCallableMetadata(packageName, version, callable);
+    }
+
+    @Test
+    void getCallablesTest() {
         var ids = List.of(1L, 2L, 3L);
-        var response = new ResponseEntity<>("callables metadata map", HttpStatus.OK);
-        Mockito.when(service.getCallables(ids)).thenReturn(response);
-        var result = api.getCallables(ids);
-        assertEquals(response, result);
-        Mockito.verify(service).getCallables(ids);
+        var map = new HashMap<Long, JSONObject>(3);
+        map.put(1L, new JSONObject("{\"foo\":\"bar\"}"));
+        map.put(2L, new JSONObject("{\"hello\":\"world\"}"));
+        map.put(3L, new JSONObject("{\"baz\":42}"));
+        Mockito.when(kbDao.getCallables(ids)).thenReturn(map);
+        var json = new JSONObject();
+        for (var id : ids) {
+            json.put(String.valueOf(id), map.get(id));
+        }
+        var expected = new ResponseEntity<>(json.toString(), HttpStatus.OK);
+        var result = service.getCallables(ids);
+        assertEquals(expected, result);
+        Mockito.verify(kbDao).getCallables(ids);
     }
 }
