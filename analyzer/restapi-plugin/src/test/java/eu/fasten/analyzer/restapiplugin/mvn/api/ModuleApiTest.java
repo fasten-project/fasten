@@ -18,7 +18,10 @@
 
 package eu.fasten.analyzer.restapiplugin.mvn.api;
 
+import eu.fasten.analyzer.restapiplugin.mvn.KnowledgeBaseConnector;
 import eu.fasten.analyzer.restapiplugin.mvn.RestApplication;
+import eu.fasten.core.data.metadatadb.MetadataDao;
+import eu.fasten.core.maven.data.PackageVersionNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -28,61 +31,148 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class ModuleApiTest {
 
-    private ModuleApiService service;
-    private ModuleApi api;
+    private ModuleApi service;
+    private MetadataDao kbDao;
     private final int offset = 0;
     private final int limit = Integer.parseInt(RestApplication.DEFAULT_PAGE_SIZE);
 
     @BeforeEach
     void setUp() {
-        service = Mockito.mock(ModuleApiService.class);
-        api = new ModuleApi(service);
+        service = new ModuleApi();
+        kbDao = Mockito.mock(MetadataDao.class);
+        KnowledgeBaseConnector.kbDao = kbDao;
     }
 
     @Test
-    public void getPackageModulesTest() {
-        var packageName = "pkg name";
-        var version = "pkg version";
-        var response = new ResponseEntity<>("package version modules", HttpStatus.OK);
-        Mockito.when(service.getPackageModules(packageName, version, offset, limit, null, null)).thenReturn(response);
-        var result = api.getPackageModules(packageName, version, offset, limit, null, null);
-        assertEquals(response, result);
-        Mockito.verify(service).getPackageModules(packageName, version, offset, limit, null, null);
+    void getPackageModulesPositiveTest() {
+        var packageName = "group:artifact";
+        var version = "version";
+        var response = "modules";
+        Mockito.when(kbDao.getPackageModules(packageName, version, offset, limit)).thenReturn(response);
+        var expected = new ResponseEntity<>(response, HttpStatus.OK);
+        var result = service.getPackageModules(packageName, version, offset, limit, null, null);
+        assertEquals(expected, result);
+        Mockito.verify(kbDao).getPackageModules(packageName, version, offset, limit);
     }
 
     @Test
-    public void getModuleMetadataTEst() {
-        var packageName = "pkg name";
-        var version = "pkg version";
-        var module = "module namespace";
-        var response = new ResponseEntity<>("module metadata", HttpStatus.OK);
-        Mockito.when(service.getModuleMetadata(packageName, version, module, null, null)).thenReturn(response);
-        var result = api.getModuleMetadata(packageName, version, module, null, null);
-        assertEquals(response, result);
-        Mockito.verify(service).getModuleMetadata(packageName, version, module, null, null);
+    void getPackageModulesIngestionTest() {
+        var packageName = "junit:junit";
+        var version = "4.12";
+        Mockito.when(kbDao.getPackageModules(packageName, version, offset, limit)).thenThrow(new PackageVersionNotFoundException("Error"));
+        var result = service.getPackageModules(packageName, version, offset, limit, null, null);
+        assertEquals(HttpStatus.CREATED, result.getStatusCode());
+
+        Mockito.verify(kbDao).getPackageModules(packageName, version, offset, limit);
     }
 
     @Test
-    public void getModuleFilesTest() {
-        var packageName = "pkg name";
-        var version = "pkg version";
-        var module = "module namespace";
-        var response = new ResponseEntity<>("module files", HttpStatus.OK);
-        Mockito.when(service.getModuleFiles(packageName, version, module, offset, limit, null, null)).thenReturn(response);
-        var result = api.getModuleFiles(packageName, version, module, offset, limit, null, null);
-        assertEquals(response, result);
-        Mockito.verify(service).getModuleFiles(packageName, version, module, offset, limit, null, null);
+    void getModuleMetadataPositiveTest() {
+        var packageName = "group:artifact";
+        var version = "version";
+        var module = "module";
+        var response = "module metadata";
+        Mockito.when(kbDao.getModuleMetadata(packageName, version, module)).thenReturn(response);
+        var expected = new ResponseEntity<>(response, HttpStatus.OK);
+        var result = service.getModuleMetadata(packageName, version, module, null, null);
+        assertEquals(expected, result);
+
+        Mockito.verify(kbDao, Mockito.times(1)).getModuleMetadata(packageName, version, module);
     }
 
     @Test
-    public void getModuleCallablesTest() {
-        var packageName = "pkg name";
-        var version = "pkg version";
-        var module = "module namespace";
-        var response = new ResponseEntity<>("module callables", HttpStatus.OK);
-        Mockito.when(service.getModuleCallables(packageName, version, module, offset, limit, null, null)).thenReturn(response);
-        var result = api.getModuleCallables(packageName, version, module, offset, limit, null, null);
-        assertEquals(response, result);
-        Mockito.verify(service).getModuleCallables(packageName, version, module, offset, limit, null, null);
+    void getModuleMetadataNegativeTest() {
+        var packageName = "group:artifact";
+        var version = "version";
+        var module = "module";
+        Mockito.when(kbDao.getModuleMetadata(packageName, version, module)).thenReturn(null);
+        var result = service.getModuleMetadata(packageName, version, module, null, null);
+        assertEquals(HttpStatus.NOT_FOUND, result.getStatusCode());
+
+        Mockito.verify(kbDao, Mockito.times(1)).getModuleMetadata(packageName, version, module);
     }
+
+    @Test
+    void getModuleMetadataIngestionTest() {
+        var packageName = "junit:junit";
+        var version = "4.12";
+        var module = "module";
+        Mockito.when(kbDao.getModuleMetadata(packageName, version, module)).thenThrow(new PackageVersionNotFoundException("Error"));
+        var result = service.getModuleMetadata(packageName, version, module, null, null);
+        assertEquals(HttpStatus.CREATED, result.getStatusCode());
+
+        Mockito.verify(kbDao, Mockito.times(1)).getModuleMetadata(packageName, version, module);
+    }
+    @Test
+    void getModuleFilesPositiveTest() {
+        var packageName = "group:artifact";
+        var version = "version";
+        var module = "module";
+        var response = "module files";
+        Mockito.when(kbDao.getModuleFiles(packageName, version, module, offset, limit)).thenReturn(response);
+        var expected = new ResponseEntity<>(response, HttpStatus.OK);
+        var result = service.getModuleFiles(packageName, version, module, offset, limit, null, null);
+        assertEquals(expected, result);
+        Mockito.verify(kbDao).getModuleFiles(packageName, version, module, offset, limit);
+    }
+
+    @Test
+    void getModuleFilesNegativeTest() {
+        var packageName = "group:artifact";
+        var version = "version";
+        var module = "module";
+        Mockito.when(kbDao.getModuleFiles(packageName, version, module, offset, limit)).thenReturn(null);
+        var result = service.getModuleFiles(packageName, version, module, offset, limit, null, null);
+        assertEquals(HttpStatus.NOT_FOUND, result.getStatusCode());
+        Mockito.verify(kbDao).getModuleFiles(packageName, version, module, offset, limit);
+    }
+
+    @Test
+    void getModuleFilesIngestionTest() {
+        var packageName = "junit:junit";
+        var version = "4.12";
+        var module = "module";
+        Mockito.when(kbDao.getModuleFiles(packageName, version, module, offset, limit)).thenThrow(new PackageVersionNotFoundException("Error"));
+        var result = service.getModuleFiles(packageName, version, module, offset, limit, null, null);
+        assertEquals(HttpStatus.CREATED, result.getStatusCode());
+
+        Mockito.verify(kbDao).getModuleFiles(packageName, version, module, offset, limit);
+    }
+
+    @Test
+    void getModuleCallablesPositiveTest() {
+        var packageName = "group:artifact";
+        var version = "version";
+        var module = "module";
+        var response = "module callables";
+        Mockito.when(kbDao.getModuleCallables(packageName, version, module, offset, limit)).thenReturn(response);
+        var expected = new ResponseEntity<>(response, HttpStatus.OK);
+        var result = service.getModuleCallables(packageName, version, module, offset, limit, null, null);
+        assertEquals(expected, result);
+        Mockito.verify(kbDao).getModuleCallables(packageName, version, module, offset, limit);
+    }
+
+    @Test
+    void getModuleCallablesNegativeTest() {
+        var packageName = "group:artifact";
+        var version = "version";
+        var module = "module";
+        Mockito.when(kbDao.getModuleCallables(packageName, version, module, offset, limit)).thenReturn(null);
+        var result = service.getModuleCallables(packageName, version, module, offset, limit, null, null);
+        assertEquals(HttpStatus.NOT_FOUND, result.getStatusCode());
+        Mockito.verify(kbDao).getModuleCallables(packageName, version, module, offset, limit);
+    }
+
+    @Test
+    void getModuleCallablesIngestionTest() {
+        var packageName = "junit:junit";
+        var version = "4.12";
+        var module = "module";
+        Mockito.when(kbDao.getModuleCallables(packageName, version, module, offset, limit)).thenThrow(new PackageVersionNotFoundException("Error"));
+        var result = service.getModuleCallables(packageName, version, module, offset, limit, null, null);
+        assertEquals(HttpStatus.CREATED, result.getStatusCode());
+
+        Mockito.verify(kbDao).getModuleCallables(packageName, version, module, offset, limit);
+    }
+
 }
