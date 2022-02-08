@@ -18,7 +18,10 @@
 
 package eu.fasten.analyzer.restapiplugin.mvn.api;
 
+import eu.fasten.analyzer.restapiplugin.mvn.KnowledgeBaseConnector;
 import eu.fasten.analyzer.restapiplugin.mvn.RestApplication;
+import eu.fasten.core.data.metadatadb.MetadataDao;
+import eu.fasten.core.maven.data.PackageVersionNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -28,25 +31,37 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class FileApiTest {
 
-    private FileApiService service;
-    private FileApi api;
+    private FileApi service;
+    private MetadataDao kbDao;
     private final int offset = 0;
     private final int limit = Integer.parseInt(RestApplication.DEFAULT_PAGE_SIZE);
 
     @BeforeEach
     void setUp() {
-        service = Mockito.mock(FileApiService.class);
-        api = new FileApi(service);
+        service = new FileApi();
+        kbDao = Mockito.mock(MetadataDao.class);
+        KnowledgeBaseConnector.kbDao = kbDao;
     }
 
     @Test
-    public void getPackageFilesTest() {
-        var packageName = "pkg name";
-        var version = "pkg version";
-        var response = new ResponseEntity<>("package version files", HttpStatus.OK);
-        Mockito.when(service.getPackageFiles(packageName, version, offset, limit, null, null)).thenReturn(response);
-        var result = api.getPackageFiles(packageName, version, offset, limit, null, null);
-        assertEquals(response, result);
-        Mockito.verify(service).getPackageFiles(packageName, version, offset, limit, null, null);
+    void getPackageFilesPositiveTest() {
+        var packageName = "pkg";
+        var version = "pkg ver";
+        var response = "files";
+        Mockito.when(kbDao.getPackageFiles(packageName, version, offset, limit)).thenReturn(response);
+        var expected = new ResponseEntity<>(response, HttpStatus.OK);
+        var result = service.getPackageFiles(packageName, version, offset, limit, null, null);
+        assertEquals(expected, result);
+        Mockito.verify(kbDao).getPackageFiles(packageName, version, offset, limit);
+    }
+
+    @Test
+    void getPackageFilesIngestionTest(){
+        var packageName = "junit:junit";
+        var version = "4.12";
+        Mockito.when(kbDao.getPackageFiles(packageName, version, offset, limit)).thenThrow(new PackageVersionNotFoundException("Error"));
+        var result = service.getPackageFiles(packageName, version, offset, limit, null, null);
+        assertEquals(HttpStatus.CREATED, result.getStatusCode());
+        Mockito.verify(kbDao).getPackageFiles(packageName, version, offset, limit);
     }
 }
