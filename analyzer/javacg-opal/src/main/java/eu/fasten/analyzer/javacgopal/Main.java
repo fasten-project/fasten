@@ -31,6 +31,12 @@ import eu.fasten.core.data.JSONUtils;
 import eu.fasten.core.maven.utils.MavenUtilities;
 import eu.fasten.core.merge.CGMerger;
 import eu.fasten.core.merge.CallGraphUtils;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.util.Collection;
+import org.jetbrains.annotations.NotNull;
+import org.json.JSONObject;
+import org.json.JSONTokener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
@@ -139,6 +145,13 @@ public class Main implements Runnable {
 	 * Run merge algorithm.
 	 */
 	private void runMerge() {
+		if (inputType.equals("JSON")) {
+			try {
+				merge(deserializeArtifact(artifact), deserializeDeps(dependencies));
+			} catch (IOException | OPALException | MissingArtifactException e) {
+				logger.error("Call graph couldn't be merge for coord: {}", getArtifactNameCoordinate().getCoordinate(), e);
+			}
+		}
 		if (inputType.equals("COORD")) {
 			try {
 				merge(getArtifactNameCoordinate(), getDependenciesCoordinates());
@@ -153,6 +166,24 @@ public class Main implements Runnable {
 				logger.error("Call graph couldn't be generated for file: {}", getArtifactFile().getName(), e);
 			}
 		}
+	}
+
+	private List<PartialJavaCallGraph> deserializeDeps(List<String> dependencies) {
+		List<PartialJavaCallGraph> result = new ArrayList<>();
+		for (final var dependency : dependencies) {
+			result.add(deserializeArtifact(dependency));
+		}
+		return result;
+	}
+
+	private PartialJavaCallGraph deserializeArtifact(String artifact) {
+		try {
+			var cg = new JSONTokener(new FileReader(new File(artifact)));
+			return new PartialJavaCallGraph(new JSONObject(cg));
+		} catch (FileNotFoundException e) {
+			throw new RuntimeException(e);
+		}
+
 	}
 
 	/**
@@ -170,13 +201,14 @@ public class Main implements Runnable {
 			throws IOException, MissingArtifactException {
 		final long startTime = System.currentTimeMillis();
 		final DirectedGraph result;
-		final var deps = new ArrayList<PartialJavaCallGraph>();
-		for (int i = 0; i < dependencies.size(); i++) {
-			T dep = dependencies.get(i);
-			deps.add(generate(dep, dependencyNames.get(i), getCGAlgorithm(), true));
+		final List<PartialJavaCallGraph> deps = new ArrayList<>();
+		if (artifact instanceof PartialJavaCallGraph){
+			deps.add((PartialJavaCallGraph) artifact);
+			deps.addAll((Collection<PartialJavaCallGraph>) dependencies);
+		} else {
+			deps.addAll(generatePCGs(artifact, dependencies));
 		}
-		final var art = generate(artifact, artifactName, getCGAlgorithm(), true);
-		deps.add(art);
+
 		final var merger = new CGMerger(deps);
 		result = merger.mergeAllDeps();
 
@@ -195,6 +227,20 @@ public class Main implements Runnable {
 		}
 
 		return result;
+	}
+
+	@NotNull
+	private <T> ArrayList<PartialJavaCallGraph> generatePCGs(T artifact,
+															 List<T> dependencies)
+		throws IOException {
+		final var deps = new ArrayList<PartialJavaCallGraph>();
+		for (int i = 0; i < dependencies.size(); i++) {
+			T dep = dependencies.get(i);
+			deps.add(generate(dep, dependencyNames.get(i), getCGAlgorithm(), true));
+		}
+		final var art = generate(artifact, artifactName, getCGAlgorithm(), true);
+		deps.add(art);
+		return deps;
 	}
 
 	private String getPath(String fileName) {
