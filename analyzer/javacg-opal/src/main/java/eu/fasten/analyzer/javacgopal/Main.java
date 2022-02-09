@@ -31,7 +31,6 @@ import eu.fasten.core.data.JSONUtils;
 import eu.fasten.core.maven.utils.MavenUtilities;
 import eu.fasten.core.merge.CGMerger;
 import eu.fasten.core.merge.CallGraphUtils;
-import org.apache.commons.io.FilenameUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
@@ -60,9 +59,6 @@ public class Main implements Runnable {
 	@CommandLine.Option(names = { "-r" }, paramLabel = "REPOS", description = "Maven repositories", split = ",")
 	List<String> repos;
 
-	@CommandLine.Option(names = { "-ac" }, paramLabel = "ARTIFACT_COORD")
-	String artifactCoordinate;
-
 	static class Commands {
 		@CommandLine.ArgGroup(exclusive = false, multiplicity = "1")
 		Computations computations;
@@ -73,12 +69,12 @@ public class Main implements Runnable {
 				"--artifact" }, paramLabel = "ARTIFACT", description = "Artifact, Maven coordinate or file path")
 		String artifact;
 
+		@CommandLine.Option(names = { "-an" }, paramLabel = "ARTIFACT_NAME")
+		String artifactName;
+
 		@CommandLine.Option(names = { "-i",
 				"--input-type" }, paramLabel = "MODE", description = "Input of algorithms are {FILE or COORD}", defaultValue = "FILE")
 		String mode;
-
-		@CommandLine.Option(names = { "-n", "--main" }, paramLabel = "MAIN", description = "Main class of artifact")
-		String main;
 
 		@CommandLine.Option(names = { "-ga",
 				"--genAlgorithm" }, paramLabel = "GenALG", description = "gen{RTA,CHA,AllocationSiteBasedPointsTo,TypeBasedPointsTo}", defaultValue = "CHA")
@@ -88,7 +84,7 @@ public class Main implements Runnable {
 		Tools tools;
 
 		@CommandLine.Option(names = { "-t",
-				"--timestamp" }, paramLabel = "TS", description = "Release TS", defaultValue = "0")
+				"--timestamp" }, paramLabel = "TS", description = "Release TS", defaultValue = "-1")
 		String timestamp;
 	}
 
@@ -114,6 +110,10 @@ public class Main implements Runnable {
 		@CommandLine.Option(names = { "-d",
 				"--dependencies" }, paramLabel = "DEPS", description = "Dependencies, coordinates or files", split = ",")
 		List<String> dependencies;
+
+		@CommandLine.Option(names = { "-dn",
+			"--dependencyNames" }, paramLabel = "DEPNAMES", description = "Dependency names", split = ",")
+		List<String> dependencyNames;
 	}
 
 	/**
@@ -147,13 +147,13 @@ public class Main implements Runnable {
 
 		try {
 			if (commands.computations.mode.equals("COORD")) {
-				final var artifact = getArtifactCoordinate();
+				final var artifact = getArtifactNameCoordinate();
 				logger.info("Generating call graph for the Maven coordinate: {}", artifact.getCoordinate());
-				generate(artifact, commands.computations.main, getCGAlgorithm(), writeToFile);
+				generate(artifact, commands.computations.artifactName, getCGAlgorithm(), writeToFile);
 			} else if (commands.computations.mode.equals("FILE")) {
 				File artifactFile = getArtifactFile();
 				logger.info("Generating call graph for artifact file: {}", artifactFile);
-				generate(artifactFile, commands.computations.main, getCGAlgorithm(), writeToFile);
+				generate(artifactFile, commands.computations.artifactName, getCGAlgorithm(), writeToFile);
 			}
 		} catch (IOException | OPALException | MissingArtifactException e) {
 			logger.error("Call graph couldn't be generated", e);
@@ -166,9 +166,9 @@ public class Main implements Runnable {
 	private void runMerge() {
 		if (commands.computations.mode.equals("COORD")) {
 			try {
-				merge(getArtifactCoordinate(), getDependenciesCoordinates());
+				merge(getArtifactNameCoordinate(), getDependenciesCoordinates());
 			} catch (IOException | OPALException | MissingArtifactException e) {
-				logger.error("Call graph couldn't be merge for coord: {}", getArtifactCoordinate().getCoordinate(), e);
+				logger.error("Call graph couldn't be merge for coord: {}", getArtifactNameCoordinate().getCoordinate(), e);
 			}
 
 		} else if (commands.computations.mode.equals("FILE")) {
@@ -196,23 +196,24 @@ public class Main implements Runnable {
 		final long startTime = System.currentTimeMillis();
 		final DirectedGraph result;
 		final var deps = new ArrayList<PartialJavaCallGraph>();
-		for (final var dep : dependencies) {
-			deps.add(generate(dep, "", getCGAlgorithm(), true));
+		var depNames = commands.computations.tools.merge.dependencyNames;
+		for (int i = 0; i < dependencies.size(); i++) {
+			T dep = dependencies.get(i);
+			deps.add(generate(dep, depNames.get(i), getCGAlgorithm(), true));
 		}
-		final var art = generate(artifact, commands.computations.main, getCGAlgorithm(), true);
+		final var art = generate(artifact, commands.computations.artifactName, getCGAlgorithm(), true);
 		deps.add(art);
 		final var merger = new CGMerger(deps);
-		result = merger.mergeWithCHA(art);
+		result = merger.mergeAllDeps();
 
 		if (result != null) {
 			logger.info("Resolved {} nodes, {} calls in {} seconds", result.nodes().size(), result.edgeSet().size(),
 					new DecimalFormat("#0.000").format((System.currentTimeMillis() - startTime) / 1000d));
 			if (!this.output.isEmpty()) {
 				try {
-					CallGraphUtils.writeToFile(Paths.get(Paths.get(this.output).getParent().toString(),
-							FilenameUtils.getBaseName(this.output) + "_" + getArtifactCoordinate().getCoordinate()
-									+ "_merged" + "." + FilenameUtils.getExtension(this.output))
-							.toString(), JSONUtils.toJSONString(result, getArtifactCoordinate()), "");
+					CallGraphUtils.writeToFile(
+						getPath(getArtifactNameCoordinate().getCoordinate() + "_merged"),
+						JSONUtils.toJSONString(result, getArtifactNameCoordinate()), "");
 				} catch (NullPointerException e) {
 					logger.error("Provided output path might be incomplete!");
 				}
@@ -220,6 +221,11 @@ public class Main implements Runnable {
 		}
 
 		return result;
+	}
+
+	private String getPath(String fileName) {
+		final var dir = Paths.get(this.output).toString()+File.separator;
+		return Paths.get(dir, fileName).toString();
 	}
 
 	private CGAlgorithm getCGAlgorithm() {
@@ -232,14 +238,15 @@ public class Main implements Runnable {
 	 * specified. If left empty a library entry point finder algorithm will be used.
 	 *
 	 * @param artifact    artifact to generate a call graph for
-	 * @param mainClass   main class in case the artifact is an application
+	 * @param artifactName   main class in case the artifact is an application
 	 * @param algorithm   algorithm for generating a call graph
 	 * @param writeToFile will be written to a file if true
 	 * @param <T>         artifact can be either a file or a coordinate
 	 * @return generated revision call graph
 	 * @throws IOException file related exceptions, e.g. FileNotFoundException
 	 */
-	public <T> PartialJavaCallGraph generate(final T artifact, final String mainClass, CGAlgorithm algorithm,
+	public <T> PartialJavaCallGraph generate(final T artifact, final String artifactName,
+											 final CGAlgorithm algorithm,
 											 final boolean writeToFile) throws MissingArtifactException, IOException {
 		final PartialJavaCallGraph revisionCallGraph;
 
@@ -249,12 +256,12 @@ public class Main implements Runnable {
 			logger.info("Generating graph for {}", ((File) artifact).getAbsolutePath());
 			final var cg = new OPALPartialCallGraphConstructor().construct(new OPALCallGraphConstructor().construct((File) artifact, algorithm), CallPreservationStrategy.ONLY_STATIC_CALLSITES);
 
-			MavenCoordinate coord = getMavenCoordinate(this.artifactCoordinate);
+			MavenCoordinate coord = getMavenCoordinate(artifactName);
 			revisionCallGraph = new PartialJavaCallGraph("mvn", coord.getProduct(),
 				coord.getVersionConstraint(), 0, "OPAL", cg.classHierarchy, cg.graph);
 		} else {
 			revisionCallGraph = OPALPartialCallGraphConstructor.createExtendedRevisionJavaCallGraph((MavenCoordinate) artifact,
-					algorithm, Long.parseLong(this.commands.computations.timestamp),
+					algorithm, Long.parseLong(commands.computations.timestamp),
 					(repos == null || repos.size() < 1) ? MavenUtilities.MAVEN_CENTRAL_REPO : repos.get(0),
 					CallPreservationStrategy.INCLUDING_ALL_SUBTYPES);
 		}
@@ -263,7 +270,8 @@ public class Main implements Runnable {
 				new DecimalFormat("#0.000").format((System.currentTimeMillis() - startTime) / 1000d));
 
 		if (writeToFile) {
-			CallGraphUtils.writeToFile(this.output, JSONUtils.toJSONString(revisionCallGraph), "");
+			CallGraphUtils.writeToFile(getPath(revisionCallGraph.getRevisionName()),
+				JSONUtils.toJSONString(revisionCallGraph),"");
 
 		}
 		return revisionCallGraph;
@@ -328,10 +336,10 @@ public class Main implements Runnable {
 	 *
 	 * @return artifact coordinate
 	 */
-	private MavenCoordinate getArtifactCoordinate() {
+	private MavenCoordinate getArtifactNameCoordinate() {
 		MavenCoordinate result = null;
 		if (this.commands.computations.artifact != null) {
-			result = MavenCoordinate.fromString(this.commands.computations.artifact, "jar");
+			result = MavenCoordinate.fromString(this.commands.computations.artifactName, "jar");
 			if (this.repos != null && !this.repos.isEmpty()) {
 				result.setMavenRepos(this.repos);
 			}
