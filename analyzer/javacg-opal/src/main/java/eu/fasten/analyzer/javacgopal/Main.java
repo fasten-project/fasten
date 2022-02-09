@@ -49,9 +49,6 @@ public class Main implements Runnable {
 
 	private static final Logger logger = LoggerFactory.getLogger(Main.class);
 
-	@CommandLine.ArgGroup(multiplicity = "1")
-	Commands commands;
-
 	@CommandLine.Option(names = { "-o",
 			"--output" }, paramLabel = "OUT", description = "Output directory path", defaultValue = "")
 	String output;
@@ -59,62 +56,41 @@ public class Main implements Runnable {
 	@CommandLine.Option(names = { "-r" }, paramLabel = "REPOS", description = "Maven repositories", split = ",")
 	List<String> repos;
 
-	static class Commands {
-		@CommandLine.ArgGroup(exclusive = false, multiplicity = "1")
-		Computations computations;
-	}
+	@CommandLine.Option(names = { "-a",
+			"--artifact" }, paramLabel = "ARTIFACT", description = "Artifact, Maven coordinate or file path")
+	String artifact;
 
-	static class Computations {
-		@CommandLine.Option(names = { "-a",
-				"--artifact" }, paramLabel = "ARTIFACT", description = "Artifact, Maven coordinate or file path")
-		String artifact;
+	@CommandLine.Option(names = { "-an" }, paramLabel = "ARTIFACT_NAME")
+	String artifactName;
 
-		@CommandLine.Option(names = { "-an" }, paramLabel = "ARTIFACT_NAME")
-		String artifactName;
+	@CommandLine.Option(names = { "-i",
+			"--input-type" }, paramLabel = "INPUTTYPE", description = "Input of algorithms " +
+		"are {FILE or COORD}", defaultValue = "FILE")
+	String inputType;
 
-		@CommandLine.Option(names = { "-i",
-				"--input-type" }, paramLabel = "MODE", description = "Input of algorithms are {FILE or COORD}", defaultValue = "FILE")
-		String mode;
+	@CommandLine.Option(names = { "-ga",
+			"--genAlgorithm" }, paramLabel = "GenALG", description = "gen{RTA,CHA,AllocationSiteBasedPointsTo,TypeBasedPointsTo}", defaultValue = "CHA")
+	String genAlgorithm;
 
-		@CommandLine.Option(names = { "-ga",
-				"--genAlgorithm" }, paramLabel = "GenALG", description = "gen{RTA,CHA,AllocationSiteBasedPointsTo,TypeBasedPointsTo}", defaultValue = "CHA")
-		String genAlgorithm;
+	@CommandLine.Option(names = { "-t",
+			"--timestamp" }, paramLabel = "TS", description = "Release TS", defaultValue = "-1")
+	String timestamp;
 
-		@CommandLine.ArgGroup(multiplicity = "1")
-		Tools tools;
+	@CommandLine.Option(names = { "-g",
+			"--generate" }, paramLabel = "GEN", description = "Generate call graph for artifact")
+	boolean doGenerate;
 
-		@CommandLine.Option(names = { "-t",
-				"--timestamp" }, paramLabel = "TS", description = "Release TS", defaultValue = "-1")
-		String timestamp;
-	}
+	@CommandLine.Option(names = { "-m",
+			"--merge" }, paramLabel = "MERGE", description = "Merge artifact CG to dependencies", required = true)
+	boolean doMerge;
 
-	static class Tools {
-		@CommandLine.ArgGroup(exclusive = false)
-		Opal opal;
+	@CommandLine.Option(names = { "-d",
+			"--dependencies" }, paramLabel = "DEPS", description = "Dependencies, coordinates or files", split = ",")
+	List<String> dependencies;
 
-		@CommandLine.ArgGroup(exclusive = false)
-		Merge merge;
-	}
-
-	static class Opal {
-		@CommandLine.Option(names = { "-g",
-				"--generate" }, paramLabel = "GEN", description = "Generate call graph for artifact")
-		boolean doGenerate;
-	}
-
-	static class Merge {
-		@CommandLine.Option(names = { "-m",
-				"--merge" }, paramLabel = "MERGE", description = "Merge artifact CG to dependencies", required = true)
-		boolean doMerge;
-
-		@CommandLine.Option(names = { "-d",
-				"--dependencies" }, paramLabel = "DEPS", description = "Dependencies, coordinates or files", split = ",")
-		List<String> dependencies;
-
-		@CommandLine.Option(names = { "-dn",
-			"--dependencyNames" }, paramLabel = "DEPNAMES", description = "Dependency names", split = ",")
-		List<String> dependencyNames;
-	}
+	@CommandLine.Option(names = { "-dn",
+		"--dependencyNames" }, paramLabel = "DEPNAMES", description = "Dependency names", split = ",")
+	List<String> dependencyNames;
 
 	/**
 	 * Generates RevisionCallGraphs using Opal for the specified artifact in the
@@ -129,14 +105,13 @@ public class Main implements Runnable {
 	 * provided.
 	 */
 	public void run() {
-		if (this.commands.computations != null && this.commands.computations.tools != null) {
-			if (this.commands.computations.tools.opal != null && this.commands.computations.tools.opal.doGenerate) {
-				runGenerate();
-			}
-			if (this.commands.computations.tools.merge != null && this.commands.computations.tools.merge.doMerge) {
-				runMerge();
-			}
+		if (doGenerate) {
+			runGenerate();
 		}
+		if (doMerge) {
+			runMerge();
+		}
+
 	}
 
 	/**
@@ -146,14 +121,14 @@ public class Main implements Runnable {
 		boolean writeToFile = !this.output.isEmpty();
 
 		try {
-			if (commands.computations.mode.equals("COORD")) {
+			if (inputType.equals("COORD")) {
 				final var artifact = getArtifactNameCoordinate();
 				logger.info("Generating call graph for the Maven coordinate: {}", artifact.getCoordinate());
-				generate(artifact, commands.computations.artifactName, getCGAlgorithm(), writeToFile);
-			} else if (commands.computations.mode.equals("FILE")) {
+				generate(artifact, artifactName, getCGAlgorithm(), writeToFile);
+			} else if (inputType.equals("FILE")) {
 				File artifactFile = getArtifactFile();
 				logger.info("Generating call graph for artifact file: {}", artifactFile);
-				generate(artifactFile, commands.computations.artifactName, getCGAlgorithm(), writeToFile);
+				generate(artifactFile, artifactName, getCGAlgorithm(), writeToFile);
 			}
 		} catch (IOException | OPALException | MissingArtifactException e) {
 			logger.error("Call graph couldn't be generated", e);
@@ -164,14 +139,14 @@ public class Main implements Runnable {
 	 * Run merge algorithm.
 	 */
 	private void runMerge() {
-		if (commands.computations.mode.equals("COORD")) {
+		if (inputType.equals("COORD")) {
 			try {
 				merge(getArtifactNameCoordinate(), getDependenciesCoordinates());
 			} catch (IOException | OPALException | MissingArtifactException e) {
 				logger.error("Call graph couldn't be merge for coord: {}", getArtifactNameCoordinate().getCoordinate(), e);
 			}
 
-		} else if (commands.computations.mode.equals("FILE")) {
+		} else if (inputType.equals("FILE")) {
 			try {
 				merge(getArtifactFile(), getDependenciesFiles());
 			} catch (IOException | OPALException | MissingArtifactException e) {
@@ -196,12 +171,11 @@ public class Main implements Runnable {
 		final long startTime = System.currentTimeMillis();
 		final DirectedGraph result;
 		final var deps = new ArrayList<PartialJavaCallGraph>();
-		var depNames = commands.computations.tools.merge.dependencyNames;
 		for (int i = 0; i < dependencies.size(); i++) {
 			T dep = dependencies.get(i);
-			deps.add(generate(dep, depNames.get(i), getCGAlgorithm(), true));
+			deps.add(generate(dep, dependencyNames.get(i), getCGAlgorithm(), true));
 		}
-		final var art = generate(artifact, commands.computations.artifactName, getCGAlgorithm(), true);
+		final var art = generate(artifact, artifactName, getCGAlgorithm(), true);
 		deps.add(art);
 		final var merger = new CGMerger(deps);
 		result = merger.mergeAllDeps();
@@ -224,12 +198,15 @@ public class Main implements Runnable {
 	}
 
 	private String getPath(String fileName) {
-		final var dir = Paths.get(this.output).toString()+File.separator;
+		var dir = Paths.get(this.output).toString();
+		if (!dir.endsWith(File.separator)) {
+			dir = dir + File.separator;
+		}
 		return Paths.get(dir, fileName).toString();
 	}
 
 	private CGAlgorithm getCGAlgorithm() {
-		return CGAlgorithm.valueOf(commands.computations.genAlgorithm);
+		return CGAlgorithm.valueOf(genAlgorithm);
 	}
 
 	/**
@@ -261,7 +238,7 @@ public class Main implements Runnable {
 				coord.getVersionConstraint(), 0, "OPAL", cg.classHierarchy, cg.graph);
 		} else {
 			revisionCallGraph = OPALPartialCallGraphConstructor.createExtendedRevisionJavaCallGraph((MavenCoordinate) artifact,
-					algorithm, Long.parseLong(commands.computations.timestamp),
+					algorithm, Long.parseLong(timestamp),
 					(repos == null || repos.size() < 1) ? MavenUtilities.MAVEN_CENTRAL_REPO : repos.get(0),
 					CallPreservationStrategy.INCLUDING_ALL_SUBTYPES);
 		}
@@ -291,8 +268,8 @@ public class Main implements Runnable {
 	 */
 	private List<File> getDependenciesFiles() {
 		final var result = new ArrayList<File>();
-		if (this.commands.computations.tools.merge.dependencies != null) {
-			for (String currentCoordinate : this.commands.computations.tools.merge.dependencies) {
+		if (dependencies != null) {
+			for (String currentCoordinate : dependencies) {
 				result.add(new File(currentCoordinate));
 			}
 		}
@@ -306,10 +283,10 @@ public class Main implements Runnable {
 	 */
 	private List<MavenCoordinate> getDependenciesCoordinates() {
 		final var result = new ArrayList<MavenCoordinate>();
-		if (this.commands.computations.tools.merge.dependencies != null) {
-			for (String currentCoordinate : this.commands.computations.tools.merge.dependencies) {
+		if (dependencies != null) {
+			for (String currentCoordinate : dependencies) {
 				MavenCoordinate coordinate = getMavenCoordinate(currentCoordinate);
-				if (this.repos != null && !this.repos.isEmpty()) {
+				if (repos != null && !repos.isEmpty()) {
 					coordinate.setMavenRepos(this.repos);
 				}
 				result.add(coordinate);
@@ -325,8 +302,8 @@ public class Main implements Runnable {
 	 */
 	private File getArtifactFile() {
 		File result = null;
-		if (this.commands.computations.artifact != null) {
-			result = new File(this.commands.computations.artifact);
+		if (artifact != null) {
+			result = new File(artifact);
 		}
 		return result;
 	}
@@ -338,8 +315,8 @@ public class Main implements Runnable {
 	 */
 	private MavenCoordinate getArtifactNameCoordinate() {
 		MavenCoordinate result = null;
-		if (this.commands.computations.artifact != null) {
-			result = MavenCoordinate.fromString(this.commands.computations.artifactName, "jar");
+		if (artifact != null) {
+			result = MavenCoordinate.fromString(artifactName, "jar");
 			if (this.repos != null && !this.repos.isEmpty()) {
 				result.setMavenRepos(this.repos);
 			}
