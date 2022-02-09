@@ -24,8 +24,6 @@ import eu.fasten.core.data.PartialJavaCallGraph;
 import eu.fasten.core.data.opal.MavenCoordinate;
 import eu.fasten.analyzer.javacgopal.data.OPALPartialCallGraphConstructor;
 import eu.fasten.analyzer.javacgopal.data.CallPreservationStrategy;
-import eu.fasten.core.data.opal.exceptions.MissingArtifactException;
-import eu.fasten.core.data.opal.exceptions.OPALException;
 import eu.fasten.core.data.DirectedGraph;
 import eu.fasten.core.data.JSONUtils;
 import eu.fasten.core.maven.utils.MavenUtilities;
@@ -126,45 +124,32 @@ public class Main implements Runnable {
 	private void runGenerate() {
 		boolean writeToFile = !this.output.isEmpty();
 
-		try {
-			if (inputType.equals("COORD")) {
-				final var artifact = getArtifactNameCoordinate();
-				logger.info("Generating call graph for the Maven coordinate: {}", artifact.getCoordinate());
-				generate(artifact, artifactName, getCGAlgorithm(), writeToFile);
-			} else if (inputType.equals("FILE")) {
-				File artifactFile = getArtifactFile();
-				logger.info("Generating call graph for artifact file: {}", artifactFile);
-				generate(artifactFile, artifactName, getCGAlgorithm(), writeToFile);
-			}
-		} catch (IOException | OPALException | MissingArtifactException e) {
-			logger.error("Call graph couldn't be generated", e);
+		if (inputType.equals("COORD")) {
+			final var artifact = getArtifactNameCoordinate();
+			logger.info("Generating call graph for the Maven coordinate: {}", artifact.getCoordinate());
+			generate(artifact, artifactName, getCGAlgorithm(), writeToFile);
+		} else if (inputType.equals("FILE")) {
+			File artifactFile = getArtifactFile();
+			logger.info("Generating call graph for artifact file: {}", artifactFile);
+			generate(artifactFile, artifactName, getCGAlgorithm(), writeToFile);
 		}
+
 	}
 
 	/**
 	 * Run merge algorithm.
 	 */
 	private void runMerge() {
-		if (inputType.equals("JSON")) {
-			try {
+		switch (inputType){
+			case "JSON":
 				merge(deserializeArtifact(artifact), deserializeDeps(dependencies));
-			} catch (IOException | OPALException | MissingArtifactException e) {
-				logger.error("Call graph couldn't be merge for coord: {}", getArtifactNameCoordinate().getCoordinate(), e);
-			}
-		}
-		if (inputType.equals("COORD")) {
-			try {
+				break;
+			case "COORD":
 				merge(getArtifactNameCoordinate(), getDependenciesCoordinates());
-			} catch (IOException | OPALException | MissingArtifactException e) {
-				logger.error("Call graph couldn't be merge for coord: {}", getArtifactNameCoordinate().getCoordinate(), e);
-			}
-
-		} else if (inputType.equals("FILE")) {
-			try {
+				break;
+			case "FILE":
 				merge(getArtifactFile(), getDependenciesFiles());
-			} catch (IOException | OPALException | MissingArtifactException e) {
-				logger.error("Call graph couldn't be generated for file: {}", getArtifactFile().getName(), e);
-			}
+				break;
 		}
 	}
 
@@ -194,11 +179,8 @@ public class Main implements Runnable {
 	 * @param dependencies list of dependencies
 	 * @param <T>          artifact can be either a file or coordinate
 	 * @return a revision call graph with resolved class hierarchy and calls
-	 * @throws IOException thrown in case file related exceptions occur, e.g
-	 *                     FileNotFoundException
 	 */
-	public <T> DirectedGraph merge(final T artifact, final List<T> dependencies)
-			throws IOException, MissingArtifactException {
+	public <T> DirectedGraph merge(final T artifact, final List<T> dependencies) {
 		final long startTime = System.currentTimeMillis();
 		final DirectedGraph result;
 		final List<PartialJavaCallGraph> deps = new ArrayList<>();
@@ -220,9 +202,10 @@ public class Main implements Runnable {
 					CallGraphUtils.writeToFile(
 						getPath(getArtifactNameCoordinate().getCoordinate() + "_merged"),
 						JSONUtils.toJSONString(result, getArtifactNameCoordinate()), "");
-				} catch (NullPointerException e) {
-					logger.error("Provided output path might be incomplete!");
+				} catch (IOException e) {
+					throw new RuntimeException(e);
 				}
+
 			}
 		}
 
@@ -231,8 +214,7 @@ public class Main implements Runnable {
 
 	@NotNull
 	private <T> ArrayList<PartialJavaCallGraph> generatePCGs(T artifact,
-															 List<T> dependencies)
-		throws IOException {
+															 List<T> dependencies) {
 		final var deps = new ArrayList<PartialJavaCallGraph>();
 		for (int i = 0; i < dependencies.size(); i++) {
 			T dep = dependencies.get(i);
@@ -266,11 +248,10 @@ public class Main implements Runnable {
 	 * @param writeToFile will be written to a file if true
 	 * @param <T>         artifact can be either a file or a coordinate
 	 * @return generated revision call graph
-	 * @throws IOException file related exceptions, e.g. FileNotFoundException
 	 */
 	public <T> PartialJavaCallGraph generate(final T artifact, final String artifactName,
 											 final CGAlgorithm algorithm,
-											 final boolean writeToFile) throws MissingArtifactException, IOException {
+											 final boolean writeToFile) {
 		final PartialJavaCallGraph revisionCallGraph;
 
 		final long startTime = System.currentTimeMillis();
@@ -293,8 +274,12 @@ public class Main implements Runnable {
 				new DecimalFormat("#0.000").format((System.currentTimeMillis() - startTime) / 1000d));
 
 		if (writeToFile) {
-			CallGraphUtils.writeToFile(getPath(revisionCallGraph.getRevisionName()),
-				JSONUtils.toJSONString(revisionCallGraph),"");
+			try {
+				CallGraphUtils.writeToFile(getPath(revisionCallGraph.getRevisionName()),
+					JSONUtils.toJSONString(revisionCallGraph),"");
+			} catch (IOException e) {
+				throw new RuntimeException(e);
+			}
 
 		}
 		return revisionCallGraph;
