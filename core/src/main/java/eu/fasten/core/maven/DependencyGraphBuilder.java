@@ -46,21 +46,53 @@ import eu.fasten.core.maven.data.DependencyEdge;
 import eu.fasten.core.maven.data.Revision;
 import eu.fasten.core.maven.data.VersionConstraint;
 import eu.fasten.core.maven.utils.DependencyGraphUtilities;
+import picocli.CommandLine;
 
-public class DependencyGraphBuilder {
+@CommandLine.Command(name = "DependencyGraphBuilder")
+public class DependencyGraphBuilder implements Runnable {
 
     private static final Logger logger = LoggerFactory.getLogger(DependencyGraphBuilder.class);
 
-    public static void main(String[] args) throws Exception {
-        var dbContext = PostgresConnector.getDSLContext("jdbc:postgresql://localhost:5432/fasten_java", "fastenro", true);
+    @CommandLine.Option(names = {"-p", "--serializedPath"},
+            paramLabel = "PATH",
+            description = "Path to load a serialized Maven dependency graph from",
+            required = true)
+    protected String serializedPath;
 
-        String path = "mavengraph";
-        if (args.length > 0 && args[0] != null) {
-            path = args[0];
+    @CommandLine.Option(names = {"-d", "--database"},
+            paramLabel = "DB_URL",
+            description = "Database URL for connection",
+            required = true)
+    protected String dbUrl;
+
+    @CommandLine.Option(names = {"-u", "--user"},
+            paramLabel = "DB_USER",
+            description = "Database user name",
+            required = true)
+    protected String dbUser;
+
+    public static void main(String[] args) {
+        final int exitCode = new CommandLine(new DependencyGraphBuilder()).execute(args);
+        System.exit(exitCode);
+    }
+
+     @Override
+    public void run()  {
+
+        DSLContext dbContext;
+        try {
+            dbContext = PostgresConnector.getDSLContext(dbUrl, dbUser, true);
+        } catch (Exception e) {
+            logger.warn("Could not connect to Database", e);
+            return;
         }
-
-        if (DependencyGraphUtilities.loadDependencyGraph(path).isEmpty()) {
-            DependencyGraphUtilities.buildDependencyGraphFromScratch(dbContext, path);
+        try {
+            if (DependencyGraphUtilities.loadDependencyGraph(serializedPath).isEmpty()) {
+                DependencyGraphUtilities.buildDependencyGraphFromScratch(dbContext, serializedPath);
+            }
+        } catch (Exception e) {
+            logger.warn("Could not load serialized dependency graph from {}\n", serializedPath, e);
+            return;
         }
     }
 
