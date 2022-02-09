@@ -42,17 +42,17 @@ class JSONUtilsTest {
 
         var coordinate =
             new MavenCoordinate("com.github.shoothzj", "java-tool", "3.0.30.RELEASE", "jar");
-        graph = OPALPartialCallGraphConstructor.createExtendedRevisionJavaCallGraph(coordinate,
+        graph = OPALPartialCallGraphConstructor.createPartialJavaCG(coordinate,
             CGAlgorithm.CHA, 1574072773, MavenUtilities.MAVEN_CENTRAL_REPO, CallPreservationStrategy.ONLY_STATIC_CALLSITES);
 
         coordinate =
             new MavenCoordinate("abbot", "costello", "1.4.0", "jar");
-        artifact = OPALPartialCallGraphConstructor.createExtendedRevisionJavaCallGraph(coordinate,
+        artifact = OPALPartialCallGraphConstructor.createPartialJavaCG(coordinate,
             CGAlgorithm.CHA, 1574072773, MavenUtilities.MAVEN_CENTRAL_REPO, CallPreservationStrategy.ONLY_STATIC_CALLSITES);
 
         coordinate =
             new MavenCoordinate("abbot", "abbot", "1.4.0", "jar");
-        dependency = OPALPartialCallGraphConstructor.createExtendedRevisionJavaCallGraph(coordinate,
+        dependency = OPALPartialCallGraphConstructor.createPartialJavaCG(coordinate,
             CGAlgorithm.CHA, 1574072773, MavenUtilities.MAVEN_CENTRAL_REPO, CallPreservationStrategy.ONLY_STATIC_CALLSITES);
         final var deps = new ArrayList<>(Collections.singletonList(dependency));
         deps.add(artifact);
@@ -101,7 +101,7 @@ class JSONUtilsTest {
 
         for (int i = 0; i < coordsSize; i++) {
             MavenCoordinate coord = coords.get(i);
-            final var cg = OPALPartialCallGraphConstructor.createExtendedRevisionJavaCallGraph(coord,
+            final var cg = OPALPartialCallGraphConstructor.createPartialJavaCG(coord,
                 CGAlgorithm.CHA, 1574072773, MavenUtilities.getRepos().get(0), CallPreservationStrategy.ONLY_STATIC_CALLSITES);
 
             logger.debug("Serialization for: {}", coord.getCoordinate());

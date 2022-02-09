@@ -76,7 +76,7 @@ public class OPALPlugin extends Plugin {
                 // Generate CG and measure construction duration.
                 logger.info("[CG-GENERATION] [UNPROCESSED] [-1] [" + mavenCoordinate.getCoordinate() + "] [NONE] ");
                 long date = json.optLong("releaseDate", -1);
-				this.graph = OPALPartialCallGraphConstructor.createExtendedRevisionJavaCallGraph(mavenCoordinate,
+				this.graph = OPALPartialCallGraphConstructor.createPartialJavaCG(mavenCoordinate,
                         CHA, date, artifactRepository, ONLY_STATIC_CALLSITES);
                 long duration = currentTimeMillis() - startTime; 
 

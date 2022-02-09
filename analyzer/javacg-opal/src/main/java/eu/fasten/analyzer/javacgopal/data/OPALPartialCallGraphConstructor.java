@@ -107,7 +107,7 @@ public class OPALPartialCallGraphConstructor {
      * @param timestamp  timestamp of the revision release
      * @return RevisionCallGraph of the given coordinate.
      */
-    public static PartialJavaCallGraph createExtendedRevisionJavaCallGraph(
+    public static PartialJavaCallGraph createPartialJavaCG(
             final MavenCoordinate coordinate, 
             CGAlgorithm algorithm, final long timestamp, final String artifactRepo, CallPreservationStrategy callSiteOnly) {
 

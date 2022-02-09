@@ -162,7 +162,7 @@ class OPALOPALPartialCallGraphConstructorTest {
 	void createExtendedRevisionJavaCallGraph() throws MissingArtifactException, OPALException {
 		var coordinate = new MavenCoordinate("org.slf4j", "slf4j-api", "1.7.29", "jar");
 		var cg = OPALPartialCallGraphConstructor
-			.createExtendedRevisionJavaCallGraph(coordinate, CGAlgorithm.CHA, 1574072773,
+			.createPartialJavaCG(coordinate, CGAlgorithm.CHA, 1574072773,
 				MavenUtilities.MAVEN_CENTRAL_REPO, CallPreservationStrategy.ONLY_STATIC_CALLSITES);
 		assertNotNull(cg);
 		Assertions.assertEquals(Constants.mvnForge, cg.forge);
