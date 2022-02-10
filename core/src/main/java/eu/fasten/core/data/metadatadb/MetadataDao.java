@@ -18,27 +18,69 @@
 
 package eu.fasten.core.data.metadatadb;
 
-import com.github.t9t.jooq.json.JsonbDSL;
-import eu.fasten.core.data.Constants;
-import eu.fasten.core.data.metadatadb.codegen.Keys;
-import eu.fasten.core.data.metadatadb.codegen.enums.Access;
-import eu.fasten.core.data.metadatadb.codegen.enums.CallableType;
-import eu.fasten.core.data.metadatadb.codegen.tables.*;
-import eu.fasten.core.data.metadatadb.codegen.tables.records.CallSitesRecord;
-import eu.fasten.core.data.metadatadb.codegen.tables.records.CallablesRecord;
-import eu.fasten.core.data.metadatadb.codegen.tables.records.IngestedArtifactsRecord;
-import eu.fasten.core.maven.data.PackageVersionNotFoundException;
-import eu.fasten.core.utils.FastenUriUtils;
+import static org.jooq.impl.DSL.and;
+import static org.jooq.impl.DSL.exists;
+import static org.jooq.impl.DSL.field;
+import static org.jooq.impl.DSL.trueCondition;
+
+import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
 import org.apache.commons.math3.util.Pair;
-import org.jooq.*;
+import org.jooq.Condition;
+import org.jooq.DSLContext;
+import org.jooq.JSONB;
+import org.jooq.JSONFormat;
+import org.jooq.Record;
+import org.jooq.Record1;
+import org.jooq.Record2;
+import org.jooq.Result;
+import org.jooq.SelectField;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import java.sql.Timestamp;
-import java.util.*;
-import static org.jooq.impl.DSL.*;
+
+import com.github.t9t.jooq.json.JsonbDSL;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+
+import eu.fasten.core.data.Constants;
+import eu.fasten.core.data.FastenJavaURI;
+import eu.fasten.core.data.metadatadb.codegen.Keys;
+import eu.fasten.core.data.metadatadb.codegen.enums.Access;
+import eu.fasten.core.data.metadatadb.codegen.enums.CallableType;
+import eu.fasten.core.data.metadatadb.codegen.tables.ArtifactRepositories;
+import eu.fasten.core.data.metadatadb.codegen.tables.BinaryModuleContents;
+import eu.fasten.core.data.metadatadb.codegen.tables.BinaryModules;
+import eu.fasten.core.data.metadatadb.codegen.tables.CallSites;
+import eu.fasten.core.data.metadatadb.codegen.tables.Callables;
+import eu.fasten.core.data.metadatadb.codegen.tables.Dependencies;
+import eu.fasten.core.data.metadatadb.codegen.tables.Files;
+import eu.fasten.core.data.metadatadb.codegen.tables.IngestedArtifacts;
+import eu.fasten.core.data.metadatadb.codegen.tables.ModuleContents;
+import eu.fasten.core.data.metadatadb.codegen.tables.ModuleNames;
+import eu.fasten.core.data.metadatadb.codegen.tables.Modules;
+import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
+import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
+import eu.fasten.core.data.metadatadb.codegen.tables.VirtualImplementations;
+import eu.fasten.core.data.metadatadb.codegen.tables.Vulnerabilities;
+import eu.fasten.core.data.metadatadb.codegen.tables.VulnerabilitiesPurls;
+import eu.fasten.core.data.metadatadb.codegen.tables.VulnerabilitiesXCallables;
+import eu.fasten.core.data.metadatadb.codegen.tables.VulnerabilitiesXPackageVersions;
+import eu.fasten.core.data.metadatadb.codegen.tables.records.CallSitesRecord;
+import eu.fasten.core.data.metadatadb.codegen.tables.records.CallablesRecord;
+import eu.fasten.core.data.metadatadb.codegen.tables.records.IngestedArtifactsRecord;
+import eu.fasten.core.maven.data.PackageVersionNotFoundException;
+import eu.fasten.core.utils.FastenUriUtils;
 
 public class MetadataDao {
     private final Logger logger = LoggerFactory.getLogger(MetadataDao.class.getName());
@@ -143,20 +185,15 @@ public class MetadataDao {
         return result.getId();
     }
 
-    /**
-     * Inserts a record in 'package_versions' table in the database.
-     *
-     * @param packageId    ID of the package (references 'packages.id')
-     * @param cgGenerator  Tool used to generate this callgraph
-     * @param version      Version of the package
-     * @param architecture Architecture of the package
-     * @param createdAt    Timestamp when the package version was created
-     * @param metadata     Metadata of the package version
-     * @return ID of the new record
-     */
     public long insertPackageVersion(long packageId, String cgGenerator, String version, Long artifactRepositoryId,
-                                     String architecture, Timestamp createdAt, JSONObject metadata) {
-        var metadataJsonb = metadata != null ? JSONB.valueOf(metadata.toString()) : null;
+            String architecture, Timestamp createdAt, JSONObject metadata) {
+    	return insertPackageVersion(packageId, cgGenerator, version, artifactRepositoryId, architecture, createdAt,
+    			metadata.toString());
+    }
+
+    public long insertPackageVersion(long packageId, String cgGenerator, String version, Long artifactRepositoryId,
+                                     String architecture, Timestamp createdAt, String metadata) {
+        var metadataJsonb = metadata != null ? JSONB.valueOf(metadata) : null;
         var resultRecord = context.insertInto(PackageVersions.PACKAGE_VERSIONS,
                 PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID,
                 PackageVersions.PACKAGE_VERSIONS.CG_GENERATOR,
@@ -189,9 +226,15 @@ public class MetadataDao {
      * @return ID of the package version (packageVersionId)
      */
     public long insertDependency(long packageVersionId, long dependencyId, String[] versionRanges,
-                                 String[] architecture, String[] dependencyType,
-                                 Long alternativeGroup, JSONObject metadata) {
-        var resultRecord = context.insertInto(Dependencies.DEPENDENCIES,
+    		String[] architecture, String[] dependencyType, Long alternativeGroup, JSONObject metadata) {
+    	return insertDependency(packageVersionId, dependencyId, versionRanges, architecture,
+    			dependencyType, alternativeGroup, metadata.toString());
+    }
+
+    	
+    public long insertDependency(long packageVersionId, long dependencyId, String[] versionRanges,
+            String[] architecture, String[] dependencyType, Long alternativeGroup, String metadata) {
+    		   var resultRecord = context.insertInto(Dependencies.DEPENDENCIES,
                 Dependencies.DEPENDENCIES.PACKAGE_VERSION_ID,
                 Dependencies.DEPENDENCIES.DEPENDENCY_ID,
                 Dependencies.DEPENDENCIES.VERSION_RANGE,
@@ -200,7 +243,7 @@ public class MetadataDao {
                 Dependencies.DEPENDENCIES.ALTERNATIVE_GROUP,
                 Dependencies.DEPENDENCIES.METADATA)
                 .values(packageVersionId, dependencyId, versionRanges, architecture, dependencyType,
-                        alternativeGroup, JSONB.valueOf(metadata.toString()))
+                        alternativeGroup, JSONB.valueOf(metadata))
                 .onConflictOnConstraint(Keys.UNIQUE_VERSION_DEPENDENCY_RANGE).doUpdate()
                 .set(Dependencies.DEPENDENCIES.VERSION_RANGE,
                         Dependencies.DEPENDENCIES.as("excluded").VERSION_RANGE)
@@ -651,58 +694,51 @@ public class MetadataDao {
         return ids;
     }
 
-    public void insertIngestedArtifact(String packageName, String version, Timestamp timestamp) {
+    public void insertIngestedArtifact(String key, String pluginVersion) {
+        var timestamp = new Timestamp(new Date().getTime());
         context.insertInto(IngestedArtifacts.INGESTED_ARTIFACTS,
-                IngestedArtifacts.INGESTED_ARTIFACTS.PACKAGE_NAME,
-                IngestedArtifacts.INGESTED_ARTIFACTS.VERSION,
+                IngestedArtifacts.INGESTED_ARTIFACTS.KEY,
+                IngestedArtifacts.INGESTED_ARTIFACTS.PLUGIN_VERSION,
                 IngestedArtifacts.INGESTED_ARTIFACTS.TIMESTAMP)
-                .values(packageName, version, timestamp)
-                .onConflictOnConstraint(Keys.UNIQUE_INGESTED_ARTIFACTS).doUpdate()
-                .set(IngestedArtifacts.INGESTED_ARTIFACTS.PACKAGE_NAME, IngestedArtifacts.INGESTED_ARTIFACTS.as("excluded").PACKAGE_NAME)
-                .set(IngestedArtifacts.INGESTED_ARTIFACTS.VERSION, IngestedArtifacts.INGESTED_ARTIFACTS.as("excluded").VERSION)
-                .set(IngestedArtifacts.INGESTED_ARTIFACTS.TIMESTAMP, IngestedArtifacts.INGESTED_ARTIFACTS.as("excluded").TIMESTAMP)
+                .values(key, pluginVersion,timestamp)
                 .execute();
     }
 
-    public void batchInsertIngestedArtifacts(List<IngestedArtifactsRecord> ingestedArtifacts) {
+    public void batchInsertIngestedArtifacts(Set<String> keys, String pluginVersion) {
+        var timestamp = new Timestamp(new Date().getTime());
         var insert = context.insertInto(IngestedArtifacts.INGESTED_ARTIFACTS,
-                IngestedArtifacts.INGESTED_ARTIFACTS.PACKAGE_NAME,
-                IngestedArtifacts.INGESTED_ARTIFACTS.VERSION,
+                IngestedArtifacts.INGESTED_ARTIFACTS.KEY,
+                IngestedArtifacts.INGESTED_ARTIFACTS.PLUGIN_VERSION,
                 IngestedArtifacts.INGESTED_ARTIFACTS.TIMESTAMP);
-        for (var artifact : ingestedArtifacts) {
-            insert = insert.values(artifact.getPackageName(), artifact.getVersion(), artifact.getTimestamp());
+        for (var key : keys) {
+            insert = insert.values(key, pluginVersion, timestamp);
         }
-        insert.onConflictOnConstraint(Keys.UNIQUE_INGESTED_ARTIFACTS).doUpdate()
-                .set(IngestedArtifacts.INGESTED_ARTIFACTS.TIMESTAMP, IngestedArtifacts.INGESTED_ARTIFACTS.as("excluded").TIMESTAMP)
-                .execute();
+        insert.execute();
     }
 
-    public boolean isArtifactIngested(String packageName, String version) {
+    public boolean isArtifactIngested(String key) {
         var result = context
-                .select(IngestedArtifacts.INGESTED_ARTIFACTS.PACKAGE_NAME,
-                        IngestedArtifacts.INGESTED_ARTIFACTS.VERSION)
+                .select(IngestedArtifacts.INGESTED_ARTIFACTS.TIMESTAMP)
                 .from(IngestedArtifacts.INGESTED_ARTIFACTS)
-                .where(IngestedArtifacts.INGESTED_ARTIFACTS.PACKAGE_NAME.eq(packageName))
-                .and(IngestedArtifacts.INGESTED_ARTIFACTS.VERSION.eq(version))
+                .where(IngestedArtifacts.INGESTED_ARTIFACTS.KEY.eq(key))
                 .fetch();
         return !result.isEmpty();
     }
 
-    public Set<Pair<String, String>> areArtifactsIngested(List<String> packageNames, List<String> versions) {
-        var condition = IngestedArtifacts.INGESTED_ARTIFACTS.PACKAGE_NAME.eq(packageNames.get(0))
-                .and(IngestedArtifacts.INGESTED_ARTIFACTS.VERSION.eq(versions.get(0)));
-        for (int i = 1; i < packageNames.size(); i++) {
-            condition = condition.or(IngestedArtifacts.INGESTED_ARTIFACTS.PACKAGE_NAME.eq(packageNames.get(i))
-                    .and(IngestedArtifacts.INGESTED_ARTIFACTS.VERSION.eq(versions.get(i))));
+    public Set<String> areArtifactsIngested(List<String> keys) {
+        if(keys.isEmpty()) {
+            return new HashSet<>();
         }
-        var result = context
-                .select(IngestedArtifacts.INGESTED_ARTIFACTS.PACKAGE_NAME,
-                        IngestedArtifacts.INGESTED_ARTIFACTS.VERSION)
-                .from(IngestedArtifacts.INGESTED_ARTIFACTS)
-                .where(condition)
-                .fetch();
-        var ingestedArtifacts = new HashSet<Pair<String, String>>(result.size());
-        result.forEach(r -> ingestedArtifacts.add(new Pair<>(r.component1(), r.component2())));
+        var condition = IngestedArtifacts.INGESTED_ARTIFACTS.KEY.eq(keys.get(0));
+        for (int i = 1; i < keys.size(); i++) {
+            condition = condition.or(IngestedArtifacts.INGESTED_ARTIFACTS.KEY.eq(keys.get(i)));
+        }
+        var ingestedArtifacts = new HashSet<String>();
+        context.select(IngestedArtifacts.INGESTED_ARTIFACTS.KEY)
+               .from(IngestedArtifacts.INGESTED_ARTIFACTS)
+               .where(condition)
+               .fetch()
+               .forEach(r -> ingestedArtifacts.add(r.component1()));
         return ingestedArtifacts;
     }
 
@@ -1051,14 +1087,11 @@ public class MetadataDao {
                 .limit(limit)
                 .fetch();
 
-        // Returning the result
         logger.debug("Total rows: " + queryResult.size());
+
         var res = queryResult.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
 
-
-        //// Insert user-friendly formatted method signature
-
-        // Parse result json string back into object
+        // Temporary variable to contain pre-processed json from the query.
         JSONArray json;
         try {
             json = new JSONArray(res);
@@ -1067,21 +1100,29 @@ public class MetadataDao {
             return null;
         }
 
-        // Go through each callable, parse fasten uri, insert signature.
-        for (Object j : json) {
-            JSONObject jObj = (JSONObject) j;
-            var uri = jObj.getString("fasten_uri");
+        // The gson that will convert raw fasten uri into parsed object.
+        GsonBuilder builder = new GsonBuilder();
+        Gson gson = builder.create();
 
+        // The result array that will be returned.
+        JSONArray result = new JSONArray();
+
+        // Go through each callable, convert raw fasten uri into parsed object, write down to result array.
+        for (Object j : json) {
             try {
-                var uriObject = FastenUriUtils.parsePartialFastenUri(uri);
-                jObj.put("method_name", uriObject.get(2));
-                jObj.put("method_args", uriObject.get(3));
+                JSONObject jObj = (JSONObject) j;
+                var partialUri = jObj.getString("fasten_uri");
+                var fullUri = FastenUriUtils.generateFullFastenUri("mvn", packageName, packageVersion, partialUri);
+                var uriObj = new FastenJavaURI(fullUri);
+                var js =  gson.toJson(uriObj);
+                jObj.put("fasten_uri", new JSONObject(js));
+                result.put(jObj);
             } catch (IllegalArgumentException err) {
                 logger.warn("Error FASTEN URI Parser: " + err.toString());
             }
         }
 
-        return json.toString();
+        return result.toString();
     }
 
     public String getPackageBinaryModules(String packageName, String packageVersion, int offset, int limit) throws PackageVersionNotFoundException {
@@ -1644,7 +1685,7 @@ public class MetadataDao {
                 .select(p.fields())
                 .from(p)
                 .where(
-                    exists(context.select(p.ID).from(p).where(p.ID.eq(pv.PACKAGE_ID)).limit(1))
+                    exists(context.select(pv.ID).from(pv).where(pv.PACKAGE_ID.eq(p.ID)).limit(1))
                     .and(p.PACKAGE_NAME.like("%" + searchName + "%"))
                 )
                 .offset(offset)
@@ -1745,6 +1786,132 @@ public class MetadataDao {
         String result = queryResult.formatJSON(new JSONFormat().format(true).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
         logger.debug("Query dummy result: " + result);
         return ("dummy getVulnerabilities query OK!");
+    }
+
+    /**
+     * Get the vulnerability by externalId.
+     *
+     * @param externalId Source-specific external ID of vulnerability, i.e. CVE-2018-14041, or GHSA-2pwh-52h7-7j84
+     * @return The vulnerability information of given externalId, null if not find.
+     */
+    public String getVulnerability(String externalId) {
+        // Tables
+        Vulnerabilities v = Vulnerabilities.VULNERABILITIES;
+        // Select clause
+        SelectField<?>[] selectClause = new SelectField[]{v.ID, v.EXTERNAL_ID, v.STATEMENT};
+        // Queries
+        // SQL query
+        /*
+            SELECT v.ID, v.EXTERNAL_ID, v.STATEMENT
+            FROM vulnerabilities AS v
+            WHERE v.EXTERNAL_ID=<externalId>
+        */
+        Record queryResult = this.context
+                .select(selectClause)
+                .from(v)
+                .where(v.EXTERNAL_ID.eq(externalId))
+                .fetchOne();
+        if (queryResult == null) {
+            return null;
+        }
+        return queryResult.formatJSON(new JSONFormat().header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).format(true).quoteNested(false));
+    }
+
+    /**
+     * Get information of all vulnerabilities
+     *
+     * @param offset
+     * @param limit
+     * @return
+     */
+    public String getAllVulnerabilities(int offset, int limit) {
+        // Tables
+        Vulnerabilities v = Vulnerabilities.VULNERABILITIES;
+        var result = context
+                .select(v.fields())
+                .from(v)
+                .offset(offset)
+                .limit(limit)
+                .fetch();
+        return result.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
+    }
+
+    public String getPackageVersionVulnerabilities(String package_name, String package_version, boolean format) {
+        // Tables
+        Vulnerabilities v = Vulnerabilities.VULNERABILITIES;
+        VulnerabilitiesXPackageVersions vp = VulnerabilitiesXPackageVersions.VULNERABILITIES_X_PACKAGE_VERSIONS;
+
+        var package_version_id = getPackageVersionID(package_name, package_version);
+        var result = context
+                .select(v.fields())
+                .from(v)
+                .innerJoin(vp)
+                .on(v.ID.eq(vp.VULNERABILITY_ID))
+                .where(vp.PACKAGE_VERSION_ID.eq(package_version_id))
+                .fetch();
+        return result.formatJSON(new JSONFormat().format(format).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
+    }
+
+    public String getPurlVulnerabilities(String purl, boolean format) {
+        if (!assertPurlExistence(purl)) return null;
+        // Tables
+        Vulnerabilities v = Vulnerabilities.VULNERABILITIES;
+        VulnerabilitiesPurls vp = VulnerabilitiesPurls.VULNERABILITIES_PURLS;
+
+        // Query
+        var result = context
+                .select(v.fields())
+                .from(v)
+                .innerJoin(vp)
+                .on(v.ID.eq(vp.VULNERABILITY_ID))
+                .where(vp.PURL.eq(purl))
+                .fetch();
+        return  result.formatJSON(new JSONFormat().format(format).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
+    }
+
+    public boolean assertPurlExistence(String purl) {
+        VulnerabilitiesPurls vp = VulnerabilitiesPurls.VULNERABILITIES_PURLS;
+        var record = context
+                .select(vp.fields())
+                .from(vp)
+                .where(vp.PURL.eq(purl))
+                .limit(1)
+                .fetchOne();
+        return record != null;
+    }
+
+    public String getPurls(String externalId, int offset, int limit) {
+        // Tables
+        Vulnerabilities v = Vulnerabilities.VULNERABILITIES;
+        VulnerabilitiesPurls vp = VulnerabilitiesPurls.VULNERABILITIES_PURLS;
+        var result = context
+                .select(vp.fields())
+                .from(vp)
+                .innerJoin(v)
+                .on(vp.VULNERABILITY_ID.eq(v.ID))
+                .where(v.EXTERNAL_ID.eq(externalId))
+                .offset(offset)
+                .limit(limit)
+                .fetch();
+        return result.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
+
+    }
+
+    public Map getVulnerableCallables(String externalId, int offset, int limit) {
+        // Tables
+        Vulnerabilities v = Vulnerabilities.VULNERABILITIES;
+        VulnerabilitiesXCallables vc = VulnerabilitiesXCallables.VULNERABILITIES_X_CALLABLES;
+        var result = context
+                .select(vc.CALLABLE_ID)
+                .from(vc)
+                .innerJoin(v)
+                .on(vc.VULNERABILITY_ID.eq(v.ID))
+                .where(v.EXTERNAL_ID.eq(externalId))
+                .offset(offset)
+                .limit(limit)
+                .fetch();
+        var gid = result.getValues(vc.CALLABLE_ID);
+        return getFullFastenUris(gid);
     }
 
     /**

@@ -117,6 +117,7 @@ public class StitchingApiServiceImpl implements StitchingApiService {
         return new ResponseEntity<>(result, HttpStatus.OK);
     }
 
+    @Override
     public ResponseEntity<String> batchIngestArtifacts(JSONArray jsonArtifacts) {
         var artifacts = new ArrayList<LazyIngestionProvider.IngestedArtifact>();
         for (int i = 0; i < jsonArtifacts.length(); i++) {

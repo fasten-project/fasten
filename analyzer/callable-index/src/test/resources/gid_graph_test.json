@@ -1,0 +1,37 @@
+{
+  "index": 1,
+  "product": "test",
+  "version": "0.0.1",
+  "nodes": [
+    1,
+    2,
+    3
+  ],
+  "numInternalNodes": 2,
+  "edges": [
+    [
+      1,
+      2
+    ],
+    [
+      2,
+      3
+    ]
+  ],
+  "callsites_info": {
+    "[231732242, 231737053]": {
+      "line": 775,
+      "receiver_type_ids": [
+        9401
+      ],
+      "call_type": "static"
+    }
+  },
+  "gid_to_uri": {
+    "231733487": "/com.google.common.hash/Murmur3_32HashFunction.bits()%2Fjava.lang%2FIntegerType",
+    "231732155": "/com.google.common.primitives/Longs.concat(%2Fjava.lang%2FLongType%5B%5D%5B%5D)%2Fjava.lang%2FLongType%5B%5D"
+  },
+  "types_map": {
+    "4970": "/java.util.zip/ZipInputStream"
+  }
+}

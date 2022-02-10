@@ -21,6 +21,7 @@ package eu.fasten.analyzer.restapiplugin.mvn.api.impl;
 import eu.fasten.analyzer.restapiplugin.mvn.KnowledgeBaseConnector;
 import eu.fasten.analyzer.restapiplugin.mvn.RestApplication;
 import eu.fasten.core.data.metadatadb.MetadataDao;
+import eu.fasten.core.maven.data.PackageVersionNotFoundException;
 import org.json.JSONObject;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -46,7 +47,7 @@ public class CallableApiServiceImplTest {
     }
 
     @Test
-    void getPackageCallablesTest() {
+    void getPackageCallablesPositiveTest() {
         var packageName = "pkg";
         var version = "pkg ver";
         var response = "callables";
@@ -58,7 +59,18 @@ public class CallableApiServiceImplTest {
     }
 
     @Test
-    void getCallableMetadataTest() {
+    void getPackageCallablesIngestionTest() {
+        var packageName = "junit:junit";
+        var version = "4.12";
+        Mockito.when(kbDao.getPackageCallables(packageName, version, offset, limit)).thenThrow(new PackageVersionNotFoundException("Error"));
+        var result = service.getPackageCallables(packageName, version, offset, limit, null, null);
+        assertEquals(HttpStatus.CREATED, result.getStatusCode());
+
+        Mockito.verify(kbDao).getPackageCallables(packageName, version, offset, limit);
+    }
+
+    @Test
+    void getCallableMetadataPositiveTest() {
         var packageName = "group:artifact";
         var version = "version";
         var callable = "callable uri";
@@ -68,16 +80,28 @@ public class CallableApiServiceImplTest {
         var result = service.getCallableMetadata(packageName, version, callable, null, null);
         assertEquals(expected, result);
 
+        Mockito.verify(kbDao, Mockito.times(1)).getCallableMetadata(packageName, version, callable);
+    }
+
+    @Test
+    void getCallableMetadataNegativeTest() {
+        var packageName = "group:artifact";
+        var version = "version";
+        var callable = "callable uri";
         Mockito.when(kbDao.getCallableMetadata(packageName, version, callable)).thenReturn(null);
-        result = service.getCallableMetadata(packageName, version, callable, null, null);
+        var result = service.getCallableMetadata(packageName, version, callable, null, null);
         assertEquals(HttpStatus.BAD_REQUEST, result.getStatusCode());
 
-        Mockito.verify(kbDao, Mockito.times(2)).getCallableMetadata(packageName, version, callable);
+        Mockito.verify(kbDao, Mockito.times(1)).getCallableMetadata(packageName, version, callable);
+    }
 
-        packageName = "junit:junit";
-        version = "4.12";
+    @Test
+    void getCallableMetadataIngestTest() {
+        var packageName = "junit:junit";
+        var version = "4.12";
+        var callable = "callable uri";
         Mockito.when(kbDao.getCallableMetadata(packageName, version, callable)).thenReturn(null);
-        result = service.getCallableMetadata(packageName, version, callable, null, null);
+        var result = service.getCallableMetadata(packageName, version, callable, null, null);
         assertEquals(HttpStatus.CREATED, result.getStatusCode());
 
         Mockito.verify(kbDao, Mockito.times(1)).getCallableMetadata(packageName, version, callable);

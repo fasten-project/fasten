@@ -36,6 +36,11 @@
             <organization>TU Delft</organization>
         </developer>
         <developer>
+            <name>Amir M. Mir</name>
+            <email>mir-am@hotmail.com</email>
+            <organization>TU Delft</organization>
+        </developer>
+        <developer>
             <name>Mihhail Sokolov</name>
             <email>mihhail1998@gmail.com</email>
             <organization>TU Delft</organization>
@@ -88,33 +93,59 @@
         <module>server</module>
     </modules>
 
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-compress</artifactId>
+                <version>1.21</version>
+            </dependency>
+            <dependency>
+                <groupId>org.jsoup</groupId>
+                <artifactId>jsoup</artifactId>
+                <version>1.14.2</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.logging.log4j</groupId>
+                <artifactId>log4j-api</artifactId>
+                <version>2.17.1</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
     <dependencies>
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
-            <version>1.7.30</version>
+            <version>1.7.32</version>
         </dependency>
+        <dependency>
+		    <groupId>org.slf4j</groupId>
+		    <artifactId>slf4j-nop</artifactId>
+		    <version>1.7.30</version>
+		    <scope>test</scope>
+		</dependency>
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-classic</artifactId>
-            <version>1.2.3</version>
+            <version>1.2.7</version>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-api</artifactId>
-            <version>5.5.2</version>
+            <version>5.8.2</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-engine</artifactId>
-            <version>5.4.0</version>
+            <version>5.8.2</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
-            <version>3.3.3</version>
+            <version>4.1.0</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -249,10 +280,10 @@
     </reporting>
 
     <distributionManagement>
-        <snapshotRepository>
+        <repository>
             <id>github</id>
-            <name>GitHub Packages</name>
+            <name>GitHub Packages: fasten-project/fasten</name>
             <url>https://maven.pkg.github.com/fasten-project/fasten</url>
-        </snapshotRepository>
+        </repository>
     </distributionManagement>
 </project>

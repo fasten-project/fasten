@@ -22,17 +22,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
-import eu.fasten.analyzer.javacgopal.data.analysis.OPALClassHierarchy;
-import eu.fasten.analyzer.javacgopal.data.analysis.OPALType;
-import eu.fasten.core.data.JavaGraph;
-import eu.fasten.core.data.JavaScope;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.junit.jupiter.api.Assertions;
+
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -53,6 +49,10 @@ import org.opalj.collection.immutable.RefArray;
 import org.opalj.collection.immutable.UIDSet;
 import org.opalj.collection.immutable.UIDSet1;
 import org.opalj.tac.Stmt;
+
+import eu.fasten.analyzer.javacgopal.data.CallPreservationStrategy;
+import eu.fasten.core.data.JavaGraph;
+import eu.fasten.core.data.JavaScope;
 import scala.Option;
 import scala.Tuple2;
 import scala.collection.Iterator;
@@ -500,17 +500,17 @@ class OPALClassHierarchyTest {
         final Set<Integer> visitedPCs = new java.util.HashSet<>();
 
         Mockito.doReturn(newGraph).when(classHierarchy).getSubGraph(Mockito.any(), Mockito.any(),
-            Mockito.any(), Mockito.any(), Mockito.any(), Mockito.eq(false));
+            Mockito.any(), Mockito.any(), Mockito.any(), Mockito.eq(CallPreservationStrategy.INCLUDING_ALL_SUBTYPES));
 
         var source = Mockito.mock(Method.class);
         var targets = new HashSet<Tuple2<Object, Iterator<DeclaredMethod>>>().iterator();
         var stmts = new Stmt[] { Mockito.mock(Stmt.class) };
 
         classHierarchy.appendGraph(source, targets, stmts, existingGraph, incompeletes, visitedPCs,
-            false);
+        		CallPreservationStrategy.INCLUDING_ALL_SUBTYPES);
 
         Mockito.verify(classHierarchy, Mockito.times(1)).getSubGraph(source, targets, stmts,
-            incompeletes, visitedPCs, false);
+            incompeletes, visitedPCs, CallPreservationStrategy.INCLUDING_ALL_SUBTYPES);
         Mockito.verify(existingGraph, Mockito.times(1)).append(newGraph);
     }
 
@@ -548,7 +548,7 @@ class OPALClassHierarchyTest {
         final Set<Integer> visitedPCs = new java.util.HashSet<>();
 
         classHierarchy.getSubGraph(source, tupleSet.iterator(), stmts, incompeletes, visitedPCs,
-            false);
+        		CallPreservationStrategy.INCLUDING_ALL_SUBTYPES);
 
         Mockito.verify(classHierarchy, Mockito.times(1)).getCallSite(source, 1, stmts);
         Mockito.verify(classHierarchy, Mockito.never()).putCalls(Mockito.any(), Mockito.any(),
@@ -596,7 +596,7 @@ class OPALClassHierarchyTest {
 
         var source = Mockito.mock(Method.class);
         classHierarchy.getSubGraph(source, tupleSet.iterator(), stmts, incompeletes, visitedPCs,
-            false);
+        		CallPreservationStrategy.INCLUDING_ALL_SUBTYPES);
 
         Mockito.verify(classHierarchy, Mockito.times(1)).getCallSite(source, 1, stmts);
         Mockito.verify(classHierarchy, Mockito.times(2)).putCalls(Mockito.any(), Mockito.any(),
@@ -644,7 +644,7 @@ class OPALClassHierarchyTest {
         final Set<Integer> visitedPCs = new java.util.HashSet<>();
 
         classHierarchy.getSubGraph(source, tupleSet.iterator(), stmts, incompeletes, visitedPCs,
-            false);
+        		CallPreservationStrategy.INCLUDING_ALL_SUBTYPES);
 
         Mockito.verify(classHierarchy, Mockito.times(1)).getCallSite(source, 1, stmts);
         Mockito.verify(classHierarchy, Mockito.times(1)).putCalls(Mockito.any(), Mockito.any(),
@@ -689,7 +689,7 @@ class OPALClassHierarchyTest {
         final Set<Integer> visitedPCs = new java.util.HashSet<>();
 
         classHierarchy.getSubGraph(source, tupleSet.iterator(), stmts, incompeletes, visitedPCs,
-            false);
+        		CallPreservationStrategy.INCLUDING_ALL_SUBTYPES);
 
         Mockito.verify(classHierarchy, Mockito.times(1)).getCallSite(source, 1, stmts);
         Mockito.verify(classHierarchy, Mockito.times(0)).putCalls(Mockito.any(), Mockito.any(),
@@ -733,7 +733,7 @@ class OPALClassHierarchyTest {
         final Set<Integer> visitedPCs = new java.util.HashSet<>();
 
         classHierarchy.getSubGraph(source, tupleSet.iterator(), stmts, incompeletes, visitedPCs,
-            false);
+        		CallPreservationStrategy.INCLUDING_ALL_SUBTYPES);
 
         Mockito.verify(classHierarchy, Mockito.times(0)).getCallSite(Mockito.any(), Mockito.any(),
             Mockito.eq(stmts));

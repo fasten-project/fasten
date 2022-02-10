@@ -18,15 +18,16 @@
 
 package eu.fasten.core.maven;
 
-import eu.fasten.core.data.Constants;
-import eu.fasten.core.data.metadatadb.codegen.tables.Dependencies;
-import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
-import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
-import eu.fasten.core.dbconnectors.PostgresConnector;
-import eu.fasten.core.maven.data.Dependency;
-import eu.fasten.core.maven.data.Revision;
-import eu.fasten.core.maven.data.DependencyEdge;
-import eu.fasten.core.maven.utils.DependencyGraphUtilities;
+import java.util.AbstractMap;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 import org.jgrapht.Graph;
 import org.jgrapht.graph.DefaultDirectedGraph;
@@ -35,29 +36,63 @@ import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.AbstractMap;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.stream.Collectors;
+import eu.fasten.core.data.Constants;
+import eu.fasten.core.data.metadatadb.codegen.tables.Dependencies;
+import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
+import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
+import eu.fasten.core.dbconnectors.PostgresConnector;
+import eu.fasten.core.maven.data.Dependency;
+import eu.fasten.core.maven.data.DependencyEdge;
+import eu.fasten.core.maven.data.Revision;
+import eu.fasten.core.maven.data.VersionConstraint;
+import eu.fasten.core.maven.utils.DependencyGraphUtilities;
+import picocli.CommandLine;
 
-public class DependencyGraphBuilder {
+@CommandLine.Command(name = "DependencyGraphBuilder")
+public class DependencyGraphBuilder implements Runnable {
 
     private static final Logger logger = LoggerFactory.getLogger(DependencyGraphBuilder.class);
 
-    public static void main(String[] args) throws Exception {
-        var dbContext = PostgresConnector.getDSLContext("jdbc:postgresql://localhost:5432/fasten_java", "fastenro", true);
+    @CommandLine.Option(names = {"-p", "--serializedPath"},
+            paramLabel = "PATH",
+            description = "Path to load a serialized Maven dependency graph from",
+            required = true)
+    protected String serializedPath;
 
-        String path = "mavengraph";
-        if (args.length > 0 && args[0] != null) {
-            path = args[0];
+    @CommandLine.Option(names = {"-d", "--database"},
+            paramLabel = "DB_URL",
+            description = "Database URL for connection",
+            required = true)
+    protected String dbUrl;
+
+    @CommandLine.Option(names = {"-u", "--user"},
+            paramLabel = "DB_USER",
+            description = "Database user name",
+            required = true)
+    protected String dbUser;
+
+    public static void main(String[] args) {
+        final int exitCode = new CommandLine(new DependencyGraphBuilder()).execute(args);
+        System.exit(exitCode);
+    }
+
+     @Override
+    public void run()  {
+
+        DSLContext dbContext;
+        try {
+            dbContext = PostgresConnector.getDSLContext(dbUrl, dbUser, true);
+        } catch (Exception e) {
+            logger.warn("Could not connect to Database", e);
+            return;
         }
-
-        if (DependencyGraphUtilities.loadDependencyGraph(path).isEmpty()) {
-            DependencyGraphUtilities.buildDependencyGraphFromScratch(dbContext, path);
+        try {
+            if (DependencyGraphUtilities.loadDependencyGraph(serializedPath).isEmpty()) {
+                DependencyGraphUtilities.buildDependencyGraphFromScratch(dbContext, serializedPath);
+            }
+        } catch (Exception e) {
+            logger.warn("Could not load serialized dependency graph from {}\n", serializedPath, e);
+            return;
         }
     }
 
@@ -108,7 +143,7 @@ public class DependencyGraphBuilder {
     }
 
     public List<Revision> findMatchingRevisions(List<Revision> revisions,
-                                                List<Dependency.VersionConstraint> constraints) {
+                                                Set<VersionConstraint> constraints) {
         if (revisions == null) {
             return Collections.emptyList();
         }
@@ -131,7 +166,7 @@ public class DependencyGraphBuilder {
         }).collect(Collectors.toList());
     }
 
-    private boolean checkVersionLowerBound(Dependency.VersionConstraint constraint, DefaultArtifactVersion version) {
+    private boolean checkVersionLowerBound(VersionConstraint constraint, DefaultArtifactVersion version) {
         if (constraint.lowerBound.isEmpty()) {
             return true;
         }
@@ -142,7 +177,7 @@ public class DependencyGraphBuilder {
         }
     }
 
-    private boolean checkVersionUpperBound(Dependency.VersionConstraint constraint, DefaultArtifactVersion version) {
+    private boolean checkVersionUpperBound(VersionConstraint constraint, DefaultArtifactVersion version) {
         if (constraint.upperBound.isEmpty()) {
             return true;
         }

@@ -29,7 +29,7 @@
 hs_err_pid*
 
 ### Maven ###
-target/
+target
 pom.xml.tag
 pom.xml.releaseBackup
 pom.xml.versionsBackup
@@ -190,6 +190,7 @@ modules.xml
 
 # End of https://www.gitignore.io/api/intellij
 
-!/analyzer/javacg-wala/src/test/resources/*.jar
-!/analyzer/javacg-opal/lib/**/*.jar
-!/analyzer/javacg-opal/src/test/resources/*.class
+# Serialized Dependency Graphs
+
+*.edges
+*.nodes

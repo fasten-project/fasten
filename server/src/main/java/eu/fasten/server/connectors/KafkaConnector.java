@@ -66,8 +66,8 @@ public class KafkaConnector {
         if (staticMemberShip) {
             // Assign a static ID to the consumer based pods' unique name in K8s env.
             if (System.getenv("POD_INSTANCE_ID") != null) {
-                logger.info(String.format("Static Membership ID: %s", System.getenv("POD_INSTANCE_ID")));
-                properties.setProperty(ConsumerConfig.GROUP_INSTANCE_ID_CONFIG, System.getenv("POD_INSTANCE_ID"));
+                logger.info(String.format("Static Membership ID: %s", System.getenv("POD_INSTANCE_ID") + clientIdSuffix));
+                properties.setProperty(ConsumerConfig.GROUP_INSTANCE_ID_CONFIG, System.getenv("POD_INSTANCE_ID") + clientIdSuffix);
             } else {
                 logger.warn("Static Membership was enabled but POD_INSTANCE_ID was not defined. Plugin will proceed without Static Membership.");
             }

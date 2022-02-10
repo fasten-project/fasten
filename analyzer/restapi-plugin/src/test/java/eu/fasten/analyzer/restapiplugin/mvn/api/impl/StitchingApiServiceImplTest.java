@@ -40,7 +40,7 @@ public class StitchingApiServiceImplTest {
         service = new StitchingApiServiceImpl();
         kbDao = Mockito.mock(MetadataDao.class);
         KnowledgeBaseConnector.kbDao = kbDao;
-        KnowledgeBaseConnector.dbContext = Mockito.mock(DSLContext.class);
+        KnowledgeBaseConnector.dbJavaContext = Mockito.mock(DSLContext.class);
     }
 
     @Test
@@ -52,11 +52,11 @@ public class StitchingApiServiceImplTest {
         var expected = new ResponseEntity<>(new JSONObject(map).toString(), HttpStatus.OK);
         var result = service.resolveCallablesToUris(gids);
         assertEquals(expected, result);
-        Mockito.verify(kbDao).getFullFastenUris(gids);
+        Mockito.verify(kbDao, Mockito.times(1)).getFullFastenUris(gids);
     }
 
     @Test
-    void getCallablesMetadataTest() {
+    void getCallablesMetadataPositiveAllAttributesTest() {
         var uris = List.of("fasten://mvn!group:artifact$version/namespace/callable_uri");
         var map = new HashMap<String, JSONObject>(1);
         map.put(uris.get(0), new JSONObject("{\"hello\":\"world\", \"foo\":8}"));
@@ -67,16 +67,36 @@ public class StitchingApiServiceImplTest {
         var result = service.getCallablesMetadata(uris, allAttributes, attributes);
         assertEquals(expected, result);
 
-        allAttributes = false;
-        attributes = List.of("foo");
-        result = service.getCallablesMetadata(uris, allAttributes, attributes);
-        expected = new ResponseEntity<>(new JSONObject("{\"fasten://mvn!group:artifact$version/namespace/callable_uri\":{\"foo\":8}}").toString(), HttpStatus.OK);
-        assertEquals(expected, result);
-
-        result = service.getCallablesMetadata(List.of("invalid_uri"), allAttributes, attributes);
-        assertEquals(HttpStatus.BAD_REQUEST, result.getStatusCode());
-
-        Mockito.verify(kbDao, Mockito.times(2)).getCallablesMetadataByUri("mvn", "group:artifact", "version", List.of("/namespace/callable_uri"));
+        Mockito.verify(kbDao, Mockito.times(1)).getCallablesMetadataByUri("mvn", "group:artifact", "version", List.of("/namespace/callable_uri"));
     }
 
+    @Test
+    void getCallablesMetadataPositiveNotAllAttributesTest() {
+        var uris = List.of("fasten://mvn!group:artifact$version/namespace/callable_uri");
+        var map = new HashMap<String, JSONObject>(1);
+        map.put(uris.get(0), new JSONObject("{\"hello\":\"world\", \"foo\":8}"));
+        Mockito.when(kbDao.getCallablesMetadataByUri("mvn", "group:artifact", "version", List.of("/namespace/callable_uri"))).thenReturn(map);
+        var allAttributes = false;
+        List<String> attributes = List.of("foo");
+        var result = service.getCallablesMetadata(uris, allAttributes, attributes);
+        var expected = new ResponseEntity<>(new JSONObject("{\"fasten://mvn!group:artifact$version/namespace/callable_uri\":{\"foo\":8}}").toString(), HttpStatus.OK);
+        assertEquals(expected, result);
+
+        Mockito.verify(kbDao, Mockito.times(1)).getCallablesMetadataByUri("mvn", "group:artifact", "version", List.of("/namespace/callable_uri"));
+    }
+
+    @Test
+    void getCallablesMetadataInvalidURITest() {
+        var allAttributes = false;
+        var attributes = List.of("foo");
+        var result = service.getCallablesMetadata(List.of("invalid_uri"), allAttributes, attributes);
+        assertEquals(HttpStatus.BAD_REQUEST, result.getStatusCode());
+    }
+
+    @Test
+    void getCallablesMetadataNegativeTest() {
+        var uris = List.of("fasten://mvn!group:artifact$version/namespace/callable_uri");
+        var result = service.getCallablesMetadata(uris, false, null);
+        assertEquals(HttpStatus.BAD_REQUEST, result.getStatusCode());
+    }
 }

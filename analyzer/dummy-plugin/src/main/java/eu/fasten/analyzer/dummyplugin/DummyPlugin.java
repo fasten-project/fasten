@@ -1,5 +1,6 @@
 package eu.fasten.analyzer.dummyplugin;
 import eu.fasten.core.plugins.KafkaPlugin;
+import org.json.JSONObject;
 import org.pf4j.Extension;
 import org.pf4j.Plugin;
 import org.pf4j.PluginWrapper;
@@ -10,6 +11,7 @@ import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.IntStream;
 
 public class DummyPlugin extends Plugin {
     public DummyPlugin (PluginWrapper wrapper) {
@@ -21,6 +23,8 @@ public class DummyPlugin extends Plugin {
 
         private final Logger logger = LoggerFactory.getLogger(DummyPlugin.class.getName());
         private List<String> consumeTopics = new LinkedList<>(Collections.singletonList("dummytopic"));
+        private LinkedList<String> workingSet = new LinkedList<>();
+        private boolean processedWorkingSet = false;
 
         @Override
         public Optional<List<String>> consumeTopic() {
@@ -35,11 +39,20 @@ public class DummyPlugin extends Plugin {
         @Override
         public void consume(String record) {
             logger.info("Processing" + record);
+
+            if (workingSet.isEmpty() && !processedWorkingSet) {
+                IntStream.range(0, 5).forEachOrdered(n -> {
+                    workingSet.add("Item " + n);
+                });
+                processedWorkingSet = true;
+            }
         }
 
         @Override
         public Optional<String> produce() {
-            return Optional.empty();
+            var json = new JSONObject();
+            json.put("dummy", "dummy");
+            return Optional.of(json.toString());
         }
 
         @Override

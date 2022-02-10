@@ -51,17 +51,18 @@ import java.sql.BatchUpdateException;
 import java.sql.Timestamp;
 import java.util.*;
 
-public class MetadataDBExtension implements KafkaPlugin, DBConnector {
+public abstract class MetadataDBExtension implements KafkaPlugin, DBConnector {
 
-    protected List<String> consumeTopics = new LinkedList<>(Collections.singletonList("fasten.OPAL.out"));
+    protected List<String> consumeTopics = null;
     private static DSLContext dslContext;
     protected boolean processedRecord = false;
     protected Exception pluginError = null;
     protected final Logger logger = LoggerFactory.getLogger(MetadataDBExtension.class.getName());
     protected boolean restartTransaction = false;
-    protected GidGraph gidGraph = null;
+    protected ExtendedGidGraph gidGraph = null;
     protected String outputPath;
     private String artifactRepository = null;
+    private String forge = null;
 
     @Override
     public void setDBConnection(Map<String, DSLContext> dslContexts) {
@@ -92,7 +93,7 @@ public class MetadataDBExtension implements KafkaPlugin, DBConnector {
             consumedJson = consumedJson.getJSONObject("payload");
         }
         final var path = consumedJson.optString("dir");
-        final ExtendedRevisionCallGraph callgraph;
+        final PartialCallGraph callgraph;
         if (!path.isEmpty()) {
             // Parse ERCG from file
             try {
@@ -110,8 +111,8 @@ public class MetadataDBExtension implements KafkaPlugin, DBConnector {
             if (!consumedJson.has("forge")) {
                 throw new JSONException("forge");
             }
-            final String forge = consumedJson.get("forge").toString();
-            callgraph = getExtendedRevisionCallGraph(forge, consumedJson);
+            this.forge = consumedJson.get("forge").toString();
+            callgraph = getExtendedRevisionCallGraph(this.forge, consumedJson);
         } catch (JSONException e) {
             logger.error("Error parsing JSON callgraph for '"
                     + Paths.get(path).getFileName() + "'", e);
@@ -121,7 +122,7 @@ public class MetadataDBExtension implements KafkaPlugin, DBConnector {
         }
 
         this.artifactRepository = consumedJson.optString("artifactRepository",
-                (callgraph instanceof ExtendedRevisionJavaCallGraph) ? MavenUtilities.MAVEN_CENTRAL_REPO : null);
+                (callgraph instanceof PartialJavaCallGraph) ? MavenUtilities.MAVEN_CENTRAL_REPO : null);
         var revision = callgraph.product + Constants.mvnCoordinateSeparator + callgraph.version;
 
         int transactionRestartCount = 0;
@@ -176,7 +177,11 @@ public class MetadataDBExtension implements KafkaPlugin, DBConnector {
         if (gidGraph == null) {
             return Optional.empty();
         } else {
-            return Optional.of(gidGraph.toJSON().toString());
+            if (this.forge.equals(Constants.mvnForge)) {
+                return Optional.of(gidGraph.toJSON().toString());
+            } else {
+                return Optional.of(gidGraph.toCPythonJSON().toString());
+            }
         }
     }
 
@@ -190,7 +195,7 @@ public class MetadataDBExtension implements KafkaPlugin, DBConnector {
      *
      * @param callgraph Callgraph which contains information needed for output path
      */
-    protected void setOutputPath(ExtendedRevisionCallGraph callgraph) {
+    protected void setOutputPath(PartialCallGraph callgraph) {
         var forge = callgraph.forge;
         var product = callgraph.getRevisionName();
         var firstLetter = product.substring(0, 1);
@@ -199,15 +204,15 @@ public class MetadataDBExtension implements KafkaPlugin, DBConnector {
     }
 
     /**
-     * Factory method for ExtendedRevisionCallGraph
+     * Factory method for PartialCallGraph
      */
-    public ExtendedRevisionCallGraph getExtendedRevisionCallGraph(String forge, JSONObject json) {
+    public PartialCallGraph getExtendedRevisionCallGraph(String forge, JSONObject json) {
         if (forge.equals(Constants.mvnForge)) {
-            return new ExtendedRevisionJavaCallGraph(json);
+            return new PartialJavaCallGraph(json);
         } else if (forge.equals(Constants.debianForge)) {
-            return new ExtendedRevisionCCallGraph(json);
+            return new PartialCCallGraph(json);
         } else if (forge.equals(Constants.pypiForge)) {
-            return new ExtendedRevisionPythonCallGraph(json);
+            return new PartialPythonCallGraph(json);
         }
 
         return null;
@@ -220,7 +225,7 @@ public class MetadataDBExtension implements KafkaPlugin, DBConnector {
      * @param metadataDao Data Access Object to insert records in the database
      * @return Package ID saved in the database
      */
-    protected long saveToDatabase(ExtendedRevisionCallGraph callGraph, MetadataDao metadataDao) {
+    protected long saveToDatabase(PartialCallGraph callGraph, MetadataDao metadataDao) {
         // Insert package record
         final long packageId = metadataDao.insertPackage(callGraph.product, callGraph.forge);
 
@@ -275,30 +280,31 @@ public class MetadataDBExtension implements KafkaPlugin, DBConnector {
         var gid2uriMap = new HashMap<Long, String>(callablesIds.size());
         callables.forEach(c -> gid2uriMap.put(lidToGidMap.get(c.getId().longValue()), c.getFastenUri()));
 
-        // Create a GID Graph for production
         var typesMap = new HashMap<Long, String>(namespaceMap.size());
         namespaceMap.forEach((k, v) -> typesMap.put(v, k));
+        
+        // Create a GID Graph for production
         this.gidGraph = new ExtendedGidGraph(packageVersionId, callGraph.product, callGraph.version,
                 callablesIds, numInternal, edges, gid2uriMap, typesMap);
         return packageVersionId;
     }
 
-    protected Map<String, Long> getNamespaceMap(ExtendedRevisionCallGraph graph, MetadataDao metadataDao) {
+    protected Map<String, Long> getNamespaceMap(PartialCallGraph graph, MetadataDao metadataDao) {
         return new HashMap<>();
     }
 
     // All classes that implements this class must provide an implementation
     // for this method. We cannot convert this class to an abstract class.
     public Pair<ArrayList<CallablesRecord>, Integer> insertDataExtractCallables(
-            ExtendedRevisionCallGraph callgraph, MetadataDao metadataDao, long packageVersionId,
-            Map<String, Long> namespaceMap) {
+        PartialCallGraph callgraph, MetadataDao metadataDao, long packageVersionId,
+        Map<String, Long> namespaceMap) {
         return new ImmutablePair<>(new ArrayList<>(), 0);
     }
 
-    protected List<CallSitesRecord> insertEdges(Graph graph, Long2LongOpenHashMap lidToGidMap,
-                                                Map<String, Long> namespaceMap, MetadataDao metadataDao) {
-        return new ArrayList<>();
-    }
+    protected abstract <T> List<CallSitesRecord> insertEdges(T graph,
+                                                 Long2LongOpenHashMap lidToGidMap,
+                                                Map<String, Long> namespaceMap,
+                                                MetadataDao metadataDao);
 
     protected Timestamp getProperTimestamp(long timestamp) {
         if (timestamp == -1) {

@@ -20,6 +20,14 @@ public class FastenURITest {
         assertEquals("∂∂∂", fastenURI.getNamespace());
         assertEquals("πππ", fastenURI.getEntity());
 
+        fastenURI = new FastenURI("fasten://a!b$c!a/∂∂∂/πππ");
+        assertEquals("fasten", fastenURI.getScheme());
+        assertEquals("a", fastenURI.getForge());
+        assertEquals("b", fastenURI.getProduct());
+        assertEquals("c!a", fastenURI.getVersion());
+        assertEquals("∂∂∂", fastenURI.getNamespace());
+        assertEquals("πππ", fastenURI.getEntity());
+
         fastenURI = new FastenURI("fasten://b$c/∂∂∂/πππ");
         assertEquals("fasten", fastenURI.getScheme());
         assertNull(fastenURI.getForge());
@@ -59,10 +67,6 @@ public class FastenURITest {
 
         Assertions.assertThrows(IllegalArgumentException.class, () -> {
             new FastenURI("fasten://a!b!c/∂∂∂/πππ");
-        });
-
-        Assertions.assertThrows(IllegalArgumentException.class, () -> {
-            new FastenURI("fasten://a$b!c/∂∂∂/πππ");
         });
 
         Assertions.assertThrows(IllegalArgumentException.class, () -> {

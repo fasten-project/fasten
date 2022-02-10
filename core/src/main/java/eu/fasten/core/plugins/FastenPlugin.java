@@ -20,6 +20,9 @@ package eu.fasten.core.plugins;
 
 import org.pf4j.ExtensionPoint;
 
+import java.util.LinkedList;
+import java.util.Optional;
+
 /**
  * Base interface for all FASTEN plugins. Used mostly for discovery and loading.
  * <p>
@@ -81,12 +84,12 @@ public interface FastenPlugin extends ExtensionPoint {
      *
      * @param throwable exception or error.
      */
-    default void setPluginError(Exception throwable) {}
+    default void setPluginError(Exception throwable) {
+    }
 
     /**
      * The purpose of this method is to release all the resources of a plug-in. For example,
      * closing a stream or setting a big object to null.
      */
     void freeResource();
-
 }

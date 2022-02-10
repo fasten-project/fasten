@@ -10,13 +10,9 @@
         <artifactId>parent</artifactId>
         <version>0.0.1-SNAPSHOT</version>
     </parent>
-
     <artifactId>core</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
-    <packaging>jar</packaging>
 
     <name>core</name>
-
     <description>Manages the FASTEN graph and metadata storage.</description>
 
     <dependencies>
@@ -174,7 +170,7 @@
         <dependency>
             <groupId>org.apache.kafka</groupId>
             <artifactId>kafka-clients</artifactId>
-            <version>2.3.0</version>
+            <version>2.8.1</version>
         </dependency>
         <dependency>
             <groupId>com.esotericsoftware</groupId>
@@ -184,7 +180,7 @@
         <dependency>
             <groupId>org.postgresql</groupId>
             <artifactId>postgresql</artifactId>
-            <version>42.2.20</version>
+            <version>42.2.25</version>
         </dependency>
         <dependency>
             <groupId>org.rocksdb</groupId>
@@ -194,11 +190,10 @@
         <dependency>
             <groupId>org.jooq</groupId>
             <artifactId>jooq</artifactId>
-            <version>3.14.15</version>
+            <version>3.16.3</version>
         </dependency>
         <dependency>
-            <!-- This dependency can be removed once jOOQ v3.15 is out,
-                because the required functionality will be implemented there -->
+            <!-- TODO remove this dependency (functionality should be native since jOOQ v3.15 -->
             <groupId>com.github.t9t.jooq</groupId>
             <artifactId>jooq-postgresql-json</artifactId>
             <version>1.0.0</version>
@@ -233,12 +228,23 @@
             <version>2.17.0</version>
             <scope>test</scope>
         </dependency>
-        <dependency>
-            <groupId>org.jboss.shrinkwrap.resolver</groupId>
-            <artifactId>shrinkwrap-resolver-depchain</artifactId>
-            <version>3.1.4</version>
-            <type>pom</type>
-        </dependency>
+		<dependency>
+			<groupId>org.jboss.shrinkwrap.resolver</groupId>
+			<artifactId>shrinkwrap-resolver-depchain</artifactId>
+			<version>3.1.4</version>
+			<type>pom</type>
+			<exclusions>
+				<exclusion>
+					<groupId>org.jboss.shrinkwrap.resolver</groupId>
+					<artifactId>shrinkwrap-resolver-impl-maven</artifactId>
+				</exclusion>
+			</exclusions>
+		</dependency>
+		<dependency>
+			<groupId>org.jboss.shrinkwrap.resolver</groupId>
+			<artifactId>shrinkwrap-resolver-impl-maven-patched</artifactId>
+			<version>3.1.4</version>
+		</dependency>
         <dependency>
             <groupId>org.apache.maven</groupId>
             <artifactId>maven-artifact</artifactId>
@@ -279,54 +285,75 @@
             <artifactId>gson</artifactId>
             <version>2.8.6</version>
         </dependency>
+        <dependency>
+            <groupId>org.skyscreamer</groupId>
+            <artifactId>jsonassert</artifactId>
+            <version>1.5.0</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
         <plugins>
-<!--             jOOQ code generation plugin-->
-<!--            <plugin>-->
-<!--                <groupId>org.jooq</groupId>-->
-<!--                <artifactId>jooq-codegen-maven</artifactId>-->
-<!--                <version>3.14.15</version>-->
-<!--                <executions>-->
-<!--                    <execution>-->
-<!--                        <goals>-->
-<!--                            <goal>generate</goal>-->
-<!--                        </goals>-->
-<!--                    </execution>-->
-<!--                </executions>-->
-<!--                <dependencies>-->
-<!--                    <dependency>-->
-<!--                        <groupId>org.postgresql</groupId>-->
-<!--                        <artifactId>postgresql</artifactId>-->
-<!--                        <version>9.4.1208</version>-->
-<!--                    </dependency>-->
-<!--                </dependencies>-->
-<!--                <configuration>-->
-<!--                    <jdbc>-->
-<!--                        <driver>org.postgresql.Driver</driver>-->
-<!--                        <url>jdbc:postgresql:fasten_java</url>-->
-<!--                        <user>fasten</user>-->
-<!--                        <password>fasten1234</password>-->
-<!--                    </jdbc>-->
-<!--                    <generator>-->
-<!--                        <generate>-->
-<!--                            <generatedAnnotation>true</generatedAnnotation>-->
-<!--                            <javaTimeTypes>false</javaTimeTypes>-->
-<!--                        </generate>-->
-<!--                        <database>-->
-<!--                            <name>org.jooq.meta.postgres.PostgresDatabase</name>-->
-<!--                            <includes>.*</includes>-->
-<!--                            <excludes>pg_stat_.*</excludes>-->
-<!--                            <inputSchema>public</inputSchema>-->
-<!--                        </database>-->
-<!--                        <target>-->
-<!--                            <packageName>eu.fasten.core.data.metadatadb.codegen</packageName>-->
-<!--                            <directory>src/main/java</directory>-->
-<!--                        </target>-->
-<!--                    </generator>-->
-<!--                </configuration>-->
-<!--            </plugin>-->
+            <!-- jOOQ code generation plugin-->
+            <!--to use, uncomment the following and run `mvn generate-sources` -->
+            <!-- <plugin>
+                <groupId>org.jooq</groupId>
+                <artifactId>jooq-codegen-maven</artifactId>
+                <version>3.16.3</version>
+                <executions>
+                    <execution>
+                        <id>generate-sources</id>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.postgresql</groupId>
+                        <artifactId>postgresql</artifactId>
+                        <version>9.4.1208</version>
+                    </dependency>
+                </dependencies>
+                <configuration>
+                    <jdbc>
+                        <driver>org.postgresql.Driver</driver>
+                        <url>jdbc:postgresql:fasten_java</url>
+                        <user>fasten</user>
+                        <password>fasten1234</password>
+                    </jdbc>
+                    <generator>
+                        <generate>
+                            <generatedAnnotation>true</generatedAnnotation>
+                            <javaTimeTypes>false</javaTimeTypes>
+                        </generate>
+                        <database>
+                            <name>org.jooq.meta.postgres.PostgresDatabase</name>
+                            <includes>.*</includes>
+                            <excludes>pg_stat_.*</excludes>
+                            <inputSchema>public</inputSchema>
+                        </database>
+                        <target>
+                            <packageName>eu.fasten.core.data.metadatadb.codegen</packageName>
+                            <directory>src/main/java</directory>
+                        </target>
+                    </generator>
+                </configuration>
+            </plugin>-->
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-source-plugin</artifactId>
+				<version>2.1.2</version>
+				<executions>
+					<execution>
+						<id>attach-sources</id>
+						<goals>
+							<goal>jar-no-fork</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
         </plugins>
     </build>
 
@@ -345,4 +372,11 @@
         </plugins>
     </reporting>
 
+
+	<repositories>
+		<repository>
+			<id>github-shrinkwrap-resolver-patched</id>
+			<url>https://github.com/fasten-project/shrinkwrap-resolver-patched/raw/repository</url>
+		</repository>
+	</repositories>
 </project>

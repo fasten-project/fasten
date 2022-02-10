@@ -18,9 +18,7 @@
 
 package eu.fasten.analyzer.callableindex;
 
-import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.callableindex.ExtendedGidGraph;
-import eu.fasten.core.data.callableindex.GidGraph;
 import eu.fasten.core.data.callableindex.RocksDao;
 import eu.fasten.core.plugins.CallableIndexConnector;
 import eu.fasten.core.plugins.KafkaPlugin;
@@ -33,11 +31,9 @@ import org.pf4j.PluginWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.nio.file.Paths;
-import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
@@ -56,7 +52,7 @@ public class CallableIndexServerPlugin extends Plugin {
         private Exception pluginError = null;
         private final Logger logger = LoggerFactory.getLogger(CallableIndexFastenPlugin.class.getName());
         private static RocksDao rocksDao;
-        private String outputPath;
+        private long packageVersionID;
 
         public void setRocksDao(RocksDao rocksDao) {
             CallableIndexFastenPlugin.rocksDao = rocksDao;
@@ -74,12 +70,14 @@ public class CallableIndexServerPlugin extends Plugin {
 
         @Override
         public Optional<String> produce() {
-            return Optional.empty();
+            final var output = new JSONObject();
+            output.put("packageVersionID", String.valueOf(this.packageVersionID));
+            return Optional.of(output.toString());
         }
 
         @Override
         public String getOutputPath() {
-            return this.outputPath;
+            return null;
         }
 
         @Override
@@ -96,65 +94,39 @@ public class CallableIndexServerPlugin extends Plugin {
             }
             final var path = json.optString("dir");
 
-            final GidGraph gidGraph;
-            if (!path.isEmpty()) {
-                try {
-                    JSONTokener tokener = new JSONTokener(new FileReader(path));
-                    gidGraph = GidGraph.getGraph(new JSONObject(tokener));
-                } catch (JSONException e) {
-                    logger.error("Could not parse GID graph", e);
-                    setPluginError(e);
-                    return;
-                } catch (FileNotFoundException e) {
-                    logger.error("Error parsing JSON callgraph for '"
-                            + Paths.get(path).getFileName() + "'", e);
-                    setPluginError(e);
-                    return;
-                }
-            } else {
-                try {
-                    if (json.has("callsites_info")) {
-                        gidGraph = ExtendedGidGraph.getGraph(json);
-                    } else {
-                        gidGraph = GidGraph.getGraph(json);
-                    }
-                } catch (JSONException e) {
-                    logger.error("Could not parse GID graph", e);
-                    setPluginError(e);
-                    return;
-                }
+            final ExtendedGidGraph extendedGidGraph;
+
+            if (path.isEmpty()) {
+                throw new RuntimeException("Provided path to GID graph file is empty");
             }
 
-            var artifact = gidGraph.getProduct() + "@" + gidGraph.getVersion();
-
-            final String groupId;
-            final String artifactId;
-            if (gidGraph.getProduct().contains(Constants.mvnCoordinateSeparator)) {
-                groupId = gidGraph.getProduct().split(Constants.mvnCoordinateSeparator)[0];
-                artifactId = gidGraph.getProduct().split(Constants.mvnCoordinateSeparator)[1];
-            } else {
-                final var productParts = gidGraph.getProduct().split("\\.");
-                groupId = String.join(".", Arrays.copyOf(productParts, productParts.length - 1));
-                artifactId = productParts[productParts.length - 1];
-            }
-            var version = gidGraph.getVersion();
-            var product = artifactId + "_" + groupId + "_" + version;
-
-            var firstLetter = artifactId.substring(0, 1);
-
-            outputPath = File.separator + firstLetter + File.separator
-                    + artifactId + File.separator + product + ".json";
             try {
-                rocksDao.saveToRocksDb(gidGraph);
+                JSONTokener tokener = new JSONTokener(new FileReader(path));
+                extendedGidGraph = ExtendedGidGraph.getGraph(new JSONObject(tokener));
+            } catch (JSONException e) {
+                logger.error("Could not parse GID graph", e);
+                throw e;
+            } catch (FileNotFoundException e) {
+                logger.error("The JSON GID graph for '"
+                        + Paths.get(path).getFileName() + "'", e);
+                throw new RuntimeException("Couldn't find the GID graph at" + Paths.get(path).getFileName() + "on the FS");
+            }
+
+            var artifact = extendedGidGraph.getProduct() + "@" + extendedGidGraph.getVersion();
+
+            try {
+                rocksDao.saveToRocksDb(extendedGidGraph);
+                this.packageVersionID = extendedGidGraph.getIndex();
+                logger.info("Saved package version {} in callable index.", this.packageVersionID);
+
             } catch (Exception e) {
                 logger.error("Could not save GID graph of '" + artifact + "' into RocksDB", e);
-                setPluginError(e);
-                return;
+                throw new RuntimeException("Could not save GID graph of '" + artifact + "' into RocksDB");
             }
             if (getPluginError() == null) {
                 logger.info("Saved the '" + artifact
                         + "' GID graph into RocksDB graph database with index "
-                        + gidGraph.getIndex());
+                        + extendedGidGraph.getIndex());
             }
         }
 

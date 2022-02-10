@@ -58,7 +58,7 @@ public class ResolutionApiServiceImpl implements ResolutionApiService {
     public ResolutionApiServiceImpl() {
         try {
             var graphResolver = new GraphMavenResolver();
-            graphResolver.buildDependencyGraph(KnowledgeBaseConnector.dbContext, KnowledgeBaseConnector.dependencyGraphPath);
+            graphResolver.buildDependencyGraph(KnowledgeBaseConnector.dbJavaContext, KnowledgeBaseConnector.dependencyMavenGraphPath);
             this.graphResolver = graphResolver;
         } catch (Exception e) {
             logger.error("Error constructing dependency graph resolver", e);
@@ -83,7 +83,7 @@ public class ResolutionApiServiceImpl implements ResolutionApiService {
         Set<Revision> depSet;
         if (useDepGraph) {
             depSet = this.graphResolver.resolveDependencies(groupId,
-                    artifactId, version, timestamp, KnowledgeBaseConnector.dbContext, transitive);
+                    artifactId, version, timestamp, KnowledgeBaseConnector.dbJavaContext, transitive);
         } else {
             var mavenResolver = new MavenResolver();
             depSet = mavenResolver.resolveDependencies(groupId + ":" + artifactId + ":" + version);
@@ -133,7 +133,7 @@ public class ResolutionApiServiceImpl implements ResolutionApiService {
             return new Revision(id, groupId, artifactId, version, new Timestamp(-1));
         }).collect(Collectors.toSet());
         var virtualNode = this.graphResolver.addVirtualNode(new ObjectLinkedOpenHashSet<>(revisions));
-        var depSet = this.graphResolver.resolveDependencies(virtualNode, KnowledgeBaseConnector.dbContext, true);
+        var depSet = this.graphResolver.resolveDependencies(virtualNode, KnowledgeBaseConnector.dbJavaContext, true);
         this.graphResolver.removeVirtualNode(virtualNode);
         var jsonArray = new JSONArray();
         depSet.stream().map(r -> {
@@ -160,9 +160,9 @@ public class ResolutionApiServiceImpl implements ResolutionApiService {
             var artifactId = mavenCoordinate.split(Constants.mvnCoordinateSeparator)[1];
             var version = mavenCoordinate.split(Constants.mvnCoordinateSeparator)[2];
             var depSet = this.graphResolver.resolveDependencies(groupId,
-                    artifactId, version, timestamp, KnowledgeBaseConnector.dbContext, true);
+                    artifactId, version, timestamp, KnowledgeBaseConnector.dbJavaContext, true);
             var depIds = depSet.stream().map(r -> r.id).collect(Collectors.toSet());
-            var databaseMerger = new CGMerger(depIds, KnowledgeBaseConnector.dbContext, KnowledgeBaseConnector.graphDao);
+            var databaseMerger = new CGMerger(depIds, KnowledgeBaseConnector.dbJavaContext, KnowledgeBaseConnector.graphDao);
             graph = databaseMerger.mergeWithCHA(packageVersionId);
         } else {
             try {
@@ -185,36 +185,6 @@ public class ResolutionApiServiceImpl implements ResolutionApiService {
         var result = json.toString();
         result = result.replace("\\/", "/");
         return new ResponseEntity<>(result, HttpStatus.OK);
-    }
-
-    @Override
-    public ResponseEntity<String> getTransitiveVulnerabilities(String package_name, String version) {
-
-        // TODO: move this to the plugin's arguments.
-        var baseDir = "/mnt/fasten/vuln-paths-cache";
-        var split = package_name.split(Constants.mvnCoordinateSeparator);
-        var firstLetter = split[0].substring(0, 1);
-        var path = baseDir + File.separator + firstLetter +
-                File.separator + split[0] +
-                File.separator + split[1] +
-                File.separator + version + ".json";
-
-        try {
-            JSONObject jsonObject = new JSONObject(Files.readString(Path.of(path)));
-            return new ResponseEntity<>(jsonObject.toString(), HttpStatus.OK);
-        } catch (IOException e) {
-            logger.error("Vulnerability Cache File Not Found for " + package_name + Constants.mvnCoordinateSeparator + version, e);
-            try {
-                LazyIngestionProvider.ingestArtifactIfNecessary(package_name, version, null, (long) -1);
-                return new ResponseEntity<>(null, HttpStatus.NOT_FOUND);
-            } catch (IllegalArgumentException | IOException ill) {
-                return new ResponseEntity<>(ill.getMessage(), HttpStatus.BAD_REQUEST);
-            }
-        } catch (JSONException e) {
-            logger.error("Couldn't parse JSON from Vulnerability Cache File", e);
-            return new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-
     }
 
 }

@@ -18,15 +18,14 @@
 
 package eu.fasten.analyzer.javacgopal;
 
-import eu.fasten.analyzer.javacgopal.data.PartialCallGraph;
-import eu.fasten.core.data.Constants;
-import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
-import eu.fasten.core.data.JSONUtils;
-import eu.fasten.core.data.opal.MavenCoordinate;
-import eu.fasten.core.data.opal.exceptions.EmptyCallGraphException;
-import eu.fasten.core.data.opal.exceptions.MissingArtifactException;
-import eu.fasten.core.data.opal.exceptions.OPALException;
-import eu.fasten.core.plugins.KafkaPlugin;
+import static eu.fasten.analyzer.javacgopal.data.CGAlgorithm.CHA;
+import static eu.fasten.analyzer.javacgopal.data.CallPreservationStrategy.ONLY_STATIC_CALLSITES;
+import static eu.fasten.core.maven.utils.MavenUtilities.MAVEN_CENTRAL_REPO;
+import static java.lang.System.currentTimeMillis;
+
+import java.io.File;
+import java.util.Optional;
+
 import org.json.JSONObject;
 import org.pf4j.Extension;
 import org.pf4j.Plugin;
@@ -34,11 +33,15 @@ import org.pf4j.PluginWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Optional;
+import eu.fasten.analyzer.javacgopal.data.OPALPartialCallGraphConstructor;
+import eu.fasten.core.data.Constants;
+import eu.fasten.core.data.JSONUtils;
+import eu.fasten.core.data.PartialJavaCallGraph;
+import eu.fasten.core.data.opal.MavenCoordinate;
+import eu.fasten.core.data.opal.exceptions.EmptyCallGraphException;
+import eu.fasten.core.data.opal.exceptions.MissingArtifactException;
+import eu.fasten.core.data.opal.exceptions.OPALException;
+import eu.fasten.core.plugins.AbstractKafkaPlugin;
 
 public class OPALPlugin extends Plugin {
 
@@ -47,41 +50,35 @@ public class OPALPlugin extends Plugin {
     }
 
     @Extension
-    public static class OPAL implements KafkaPlugin {
+    public static class OPAL extends AbstractKafkaPlugin {
 
         private final Logger logger = LoggerFactory.getLogger(getClass());
 
-        private List<String> consumeTopics = new LinkedList<>(Collections.singletonList("fasten.POMAnalyzer.out"));
-        private Exception pluginError;
-        private ExtendedRevisionJavaCallGraph graph;
+        private PartialJavaCallGraph graph;
         private String outputPath;
 
         @Override
-        public Optional<List<String>> consumeTopic() {
-            return Optional.of(consumeTopics);
-        }
-
-        @Override
-        public void consume(String kafkaRecord) {
+        public void consume(String kafkaRecord, ProcessingLane l) {
+            logger.info("Consuming {}", kafkaRecord);
+            
             pluginError = null;
             outputPath = null;
             graph = null;
 
-            var kafkaConsumedJson = new JSONObject(kafkaRecord);
-            if (kafkaConsumedJson.has("payload")) {
-                kafkaConsumedJson = kafkaConsumedJson.getJSONObject("payload");
+            var json = new JSONObject(kafkaRecord);
+            if (json.has("payload")) {
+                json = json.getJSONObject("payload");
             }
-            var artifactRepository = kafkaConsumedJson.optString("artifactRepository", null);
-            kafkaConsumedJson.remove("artifactRepository");
-            final var mavenCoordinate = new MavenCoordinate(kafkaConsumedJson);
-            long startTime = System.nanoTime();
+            var artifactRepository = fixResetAndGetArtifactRepo(json);
+            final var mavenCoordinate = new MavenCoordinate(json);
+            long startTime = System.currentTimeMillis();
             try {
                 // Generate CG and measure construction duration.
                 logger.info("[CG-GENERATION] [UNPROCESSED] [-1] [" + mavenCoordinate.getCoordinate() + "] [NONE] ");
-                this.graph = PartialCallGraph.createExtendedRevisionJavaCallGraph(mavenCoordinate,
-                        "", "CHA", kafkaConsumedJson.optLong("date", -1), artifactRepository, true);
-                long endTime = System.nanoTime();
-                long duration = (endTime - startTime) / 1000000; // Compute duration in ms. 
+                long date = json.optLong("releaseDate", -1);
+				this.graph = OPALPartialCallGraphConstructor.createPartialJavaCG(mavenCoordinate,
+                        CHA, date, artifactRepository, ONLY_STATIC_CALLSITES);
+                long duration = currentTimeMillis() - startTime; 
 
                 if (this.graph.isCallGraphEmpty()) {
                     throw new EmptyCallGraphException();
@@ -90,6 +87,7 @@ public class OPALPlugin extends Plugin {
                 var groupId = graph.product.split(Constants.mvnCoordinateSeparator)[0];
                 var artifactId = graph.product.split(Constants.mvnCoordinateSeparator)[1];
                 var version = graph.version;
+                // TODO Use less confusing terminology, as graph.product != product (gid:aid vs. gid_aid_ver)
                 var product = artifactId + "_" + groupId + "_" + version;
 
                 var firstLetter = artifactId.substring(0, 1);
@@ -101,18 +99,26 @@ public class OPALPlugin extends Plugin {
                 logger.info("[CG-GENERATION] [SUCCESS] [" + duration + "] [" + mavenCoordinate.getCoordinate() + "] [NONE] ");
 
             } catch (OPALException | EmptyCallGraphException e) {
-                long endTime = System.nanoTime();
-                long duration = (endTime - startTime) / 1000000; // Compute duration in ms.
-
-                logger.error("[CG-GENERATION] [FAILED] [" + duration + "] [" + mavenCoordinate.getCoordinate() + "] [" + e.getClass().getSimpleName() + "] " + e.getMessage(), e);
-                setPluginError(e);
+                setError(mavenCoordinate, startTime, e, "CG-GENERATION");
             } catch (MissingArtifactException e) {
-                long endTime = System.nanoTime();
-                long duration = (endTime - startTime) / 1000000; // Compute duration in ms.
-
-                logger.error("[ARTIFACT-DOWNLOAD] [FAILED] [" + duration + "] [" + mavenCoordinate.getCoordinate() + "] [" + e.getClass().getSimpleName() + "] " + e.getMessage(), e);
-                setPluginError(e);
+                setError(mavenCoordinate, startTime, e, "ARTIFACT-DOWNLOAD");
             }
+        }
+
+        private static String fixResetAndGetArtifactRepo(JSONObject json) {
+            var repo = json.optString("artifactRepository", MAVEN_CENTRAL_REPO);
+            if(!repo.endsWith("/")) {
+                repo = repo + "/";
+            }
+            json.put("artifactRepository", repo);
+            return repo;
+        }
+
+        private void setError(final MavenCoordinate mavenCoordinate, long startTime, Exception e, String part) {
+            long endTime = System.nanoTime();
+            long duration = (endTime - startTime) / 1000000; // Compute duration in ms.
+            logger.error("[" + part + "] [FAILED] [" + duration + "] [" + mavenCoordinate.getCoordinate() + "] [" + e.getClass().getSimpleName() + "] " + e.getMessage(), e);
+            this.pluginError = e;
         }
 
         @Override
@@ -130,48 +136,6 @@ public class OPALPlugin extends Plugin {
         }
 
         @Override
-        public void setTopics(List<String> consumeTopics) {
-            this.consumeTopics = consumeTopics;
-        }
-
-        @Override
-        public String name() {
-            return this.getClass().getCanonicalName();
-        }
-
-        @Override
-        public String description() {
-            return "Generates call graphs for Java packages";
-        }
-
-        @Override
-        public void start() {
-        }
-
-        @Override
-        public void stop() {
-        }
-
-        @Override
-        public Exception getPluginError() {
-            return this.pluginError;
-        }
-
-        public void setPluginError(Exception throwable) {
-            this.pluginError = throwable;
-        }
-
-        @Override
-        public void freeResource() {
-        }
-
-        @Override
-        public String version() {
-            return "0.1.2";
-        }
-
-
-        @Override
         public boolean isStaticMembership() {
             return true; // The OPAL plugin relies on static members in a consumer group (using a K8s StatefulSet).
         }
@@ -185,6 +149,5 @@ public class OPALPlugin extends Plugin {
         public long getSessionTimeout() {
             return 1800000; // Due to static membership we also want to tune the session timeout to 30 minutes.
         }
-
     }
 }

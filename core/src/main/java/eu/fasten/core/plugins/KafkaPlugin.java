@@ -18,11 +18,19 @@
 
 package eu.fasten.core.plugins;
 
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Optional;
-import java.util.Properties;
 
 public interface KafkaPlugin extends FastenPlugin {
+	
+	public enum ProcessingLane {NORMAL, PRIORITY}
+	   
+    public class SingleRecord {
+    	public String outputPath;
+    	public String payload;
+    }
+    
     /**
      * Returns an optional singleton list with a Kafka topic from which messages
      * need to be consumed. If Optional.empty() is returned, the plugin
@@ -46,7 +54,11 @@ public interface KafkaPlugin extends FastenPlugin {
      * @param record a record to process
      */
     void consume(String record);
-
+    
+    default void consume(String record, ProcessingLane l) {
+    	consume(record);
+    }
+    
     /**
      * Return an optional results of the computation. The result is appended to
      * the payload of standard output message. If Optional.empty() is returned,
@@ -55,6 +67,23 @@ public interface KafkaPlugin extends FastenPlugin {
      * @return optional result of the computation
      */
     Optional<String> produce();
+
+    /**
+     *  this methods give the option to produce multiple outputs for a single input.
+     *  If not defined by the plugin, it will wrap the previous logic for a single record.
+     */
+    default List<SingleRecord> produceMultiple(ProcessingLane lane) {
+    	var l = new LinkedList<SingleRecord>();
+    	var rec = produce();
+    	
+    	if(rec != null && rec.isPresent()) {
+    		SingleRecord res = new SingleRecord();
+    		res.outputPath = getOutputPath();
+    		res.payload = rec.get();
+    		l.add(res);
+    	}
+    	return l;
+    }
 
     /**
      * Returns a relative path to a file, the result of processing

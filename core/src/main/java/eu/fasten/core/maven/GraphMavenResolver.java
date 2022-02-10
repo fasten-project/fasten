@@ -18,15 +18,20 @@
 
 package eu.fasten.core.maven;
 
-import eu.fasten.core.data.Constants;
-import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
-import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
-import eu.fasten.core.dbconnectors.PostgresConnector;
-import eu.fasten.core.maven.data.DependencyEdge;
-import eu.fasten.core.maven.data.MavenProduct;
-import eu.fasten.core.maven.data.Revision;
-import eu.fasten.core.maven.utils.DependencyGraphUtilities;
-import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenHashSet;
+import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Scanner;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 import org.apache.commons.lang3.tuple.ImmutableTriple;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.commons.math3.util.Pair;
@@ -37,12 +42,17 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import picocli.CommandLine;
 
-import java.sql.SQLException;
-import java.sql.Timestamp;
-import java.util.*;
-import java.util.stream.Collectors;
+import eu.fasten.core.data.Constants;
+import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
+import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
+import eu.fasten.core.dbconnectors.PostgresConnector;
+import eu.fasten.core.maven.data.DependencyEdge;
+import eu.fasten.core.maven.data.MavenProduct;
+import eu.fasten.core.maven.data.Revision;
+import eu.fasten.core.maven.utils.DependencyGraphUtilities;
+import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenHashSet;
+import picocli.CommandLine;
 
 @CommandLine.Command(name = "GraphMavenResolver")
 public class GraphMavenResolver implements Runnable {
@@ -242,7 +252,7 @@ public class GraphMavenResolver implements Runnable {
         var node = new Revision(-1, nodeGroup, nodeArtifact, nodeVersion, new Timestamp(-1));
         dependencyGraph.addVertex(node);
         directDependencies.forEach(d -> dependencyGraph.addVertex(d));
-        directDependencies.forEach(d -> dependencyGraph.addEdge(node, d, new DependencyEdge(node, d, "compile", false, new ArrayList<>(), "jar")));
+        directDependencies.forEach(d -> dependencyGraph.addEdge(node, d, new DependencyEdge(node, d, "compile", false, new HashSet<>(), "jar")));
         return node;
     }
 

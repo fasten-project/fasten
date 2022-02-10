@@ -18,8 +18,8 @@
 
 package eu.fasten.core.merge;
 
-import eu.fasten.core.data.ExtendedRevisionCallGraph;
-import eu.fasten.core.data.ExtendedRevisionJavaCallGraph;
+import eu.fasten.core.data.PartialCallGraph;
+import eu.fasten.core.data.PartialJavaCallGraph;
 import eu.fasten.core.data.JSONUtils;
 import eu.fasten.core.data.JavaNode;
 import it.unimi.dsi.fastutil.ints.IntIntPair;
@@ -57,8 +57,8 @@ public class CallGraphUtils {
      * @throws IOException throws IOException.
      */
     public static void diffInFile(final String resultPath, final int graphNumber,
-                                  final ExtendedRevisionJavaCallGraph firstGraph,
-                                  final ExtendedRevisionJavaCallGraph secondGraph)
+                                  final PartialJavaCallGraph firstGraph,
+                                  final PartialJavaCallGraph secondGraph)
         throws IOException {
 
         final String graphPath =
@@ -103,19 +103,19 @@ public class CallGraphUtils {
     }
 
     /**
-     * Converts {@link ExtendedRevisionCallGraph} graph into the list of node pairs.
+     * Converts {@link PartialCallGraph} graph into the list of node pairs.
      *
      * @param ercg call graph
      * @return list of node pairs
      */
     public static Map<String, List<Pair<String, String>>> convertToNodePairs(
-        final ExtendedRevisionJavaCallGraph ercg) {
+        final PartialJavaCallGraph ercg) {
 
-        return convertToNodePairs(ercg, true, true);
+        return convertToNodePairs(ercg, true);
     }
 
     public static Map<String, List<Pair<String, String>>> convertToNodePairs(
-        final ExtendedRevisionJavaCallGraph ercg, final boolean includeExternals,
+        final PartialJavaCallGraph ercg,
         final boolean includeInternals) {
 
         final Map<String, List<Pair<String, String>>> result =
@@ -126,19 +126,11 @@ public class CallGraphUtils {
             result.put("internalTypes",
                 getEdges(ercg.getGraph().getCallSites(), methods, types));
         }
-        result.put("resolvedTypes",
-            getEdges(ercg.getGraph().getResolvedCalls(), methods, types));
-
-        if (includeExternals) {
-            result.put("externalTypes",
-                getEdges(ercg.getGraph().getExternalCalls(), methods, types));
-        }
-
         return result;
     }
 
     /**
-     * Get edges of an {@link ExtendedRevisionCallGraph}.
+     * Get edges of an {@link PartialCallGraph}.
      *
      * @param calls   source, target of a call and metadata
      * @param methods node information

@@ -47,6 +47,10 @@ public class MetadataDatabaseJavaPlugin extends Plugin {
     public static class MetadataDBJavaExtension extends MetadataDBExtension {
         private static DSLContext dslContext;
 
+        public MetadataDBJavaExtension() {
+            super.consumeTopics = new LinkedList<>(Collections.singletonList("fasten.OPAL.out"));
+        }
+
         @Override
         public void setDBConnection(Map<String, DSLContext> dslContexts) {
             MetadataDBJavaExtension.dslContext = dslContexts.get(Constants.mvnForge);
@@ -63,7 +67,7 @@ public class MetadataDatabaseJavaPlugin extends Plugin {
          * @param callgraph Callgraph which contains information needed for output path
          */
         @Override
-        protected void setOutputPath(ExtendedRevisionCallGraph callgraph) {
+        protected void setOutputPath(PartialCallGraph callgraph) {
             var forge = callgraph.forge;
             final String groupId = callgraph.product.split(Constants.mvnCoordinateSeparator)[0];
             var product = callgraph.getRevisionName();
@@ -73,8 +77,8 @@ public class MetadataDatabaseJavaPlugin extends Plugin {
                     + groupId + File.separator + product + ".json";
         }
 
-        protected Map<String, Long> getNamespaceMap(ExtendedRevisionCallGraph graph, MetadataDao metadataDao) {
-            ExtendedRevisionJavaCallGraph javaGraph = (ExtendedRevisionJavaCallGraph) graph;
+        protected Map<String, Long> getNamespaceMap(PartialCallGraph graph, MetadataDao metadataDao) {
+            PartialJavaCallGraph javaGraph = (PartialJavaCallGraph) graph;
             var namespaces = new HashSet<String>();
             namespaces.addAll(javaGraph.getClassHierarchy().get(JavaScope.internalTypes).keySet());
             namespaces.addAll(javaGraph.getClassHierarchy().get(JavaScope.externalTypes).keySet());
@@ -99,9 +103,9 @@ public class MetadataDatabaseJavaPlugin extends Plugin {
         }
 
         public Pair<ArrayList<CallablesRecord>, Integer> insertDataExtractCallables(
-                ExtendedRevisionCallGraph callgraph, MetadataDao metadataDao, long packageVersionId,
-                Map<String, Long> namespaceMap) {
-            ExtendedRevisionJavaCallGraph javaCallGraph = (ExtendedRevisionJavaCallGraph) callgraph;
+            PartialCallGraph callgraph, MetadataDao metadataDao, long packageVersionId,
+            Map<String, Long> namespaceMap) {
+            PartialJavaCallGraph javaCallGraph = (PartialJavaCallGraph) callgraph;
             var callables = new ArrayList<CallablesRecord>();
             var cha = javaCallGraph.getClassHierarchy();
             var internalTypes = cha.get(JavaScope.internalTypes);
@@ -201,13 +205,14 @@ public class MetadataDatabaseJavaPlugin extends Plugin {
             return callables;
         }
 
-        protected List<CallSitesRecord> insertEdges(Graph graph, Long2LongOpenHashMap lidToGidMap,
+        @Override
+        protected <T> List<CallSitesRecord> insertEdges(T javaGraph, Long2LongOpenHashMap lidToGidMap,
                                                     Map<String, Long> typesMap, MetadataDao metadataDao) {
-            var javaGraph = (JavaGraph) graph;
-            final var numEdges = javaGraph.getCallSites().size();
+            var graph = (JavaGraph) javaGraph;
+            final var numEdges = graph.getCallSites().size();
 
             var callSites = new ArrayList<CallSitesRecord>(numEdges);
-            for (var edgeEntry : javaGraph.getCallSites().entrySet()) {
+            for (var edgeEntry : graph.getCallSites().entrySet()) {
 
                 // Get Global ID of the source callable
                 var source = lidToGidMap.get((long) edgeEntry.getKey().firstInt());
