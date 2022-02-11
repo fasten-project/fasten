@@ -40,8 +40,7 @@ public class StitchingApiTest {
         service = new StitchingApi();
         kbDao = Mockito.mock(MetadataDao.class);
         KnowledgeBaseConnector.kbDao = kbDao;
-        KnowledgeBaseConnector.dbJavaContext = Mockito.mock(DSLContext.class);
-    }
+        }
 
     @Test
     void resolveCallablesToUrisTest() {
