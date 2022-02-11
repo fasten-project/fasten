@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.restapiplugin.mvn;
+package eu.fasten.analyzer.restapiplugin;
 
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;

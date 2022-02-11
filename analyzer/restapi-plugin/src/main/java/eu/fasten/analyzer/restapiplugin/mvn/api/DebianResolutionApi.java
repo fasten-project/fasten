@@ -16,9 +16,9 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.restapiplugin.mvn.api;
+package eu.fasten.analyzer.restapiplugin.api;
 
-import eu.fasten.analyzer.restapiplugin.mvn.KnowledgeBaseConnector;
+import eu.fasten.analyzer.restapiplugin.KnowledgeBaseConnector;
 import eu.fasten.core.dependents.GraphResolver;
 import org.json.JSONArray;
 import org.json.JSONException;

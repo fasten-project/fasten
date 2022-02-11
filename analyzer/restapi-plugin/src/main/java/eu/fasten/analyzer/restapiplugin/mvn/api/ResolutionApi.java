@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.restapiplugin.mvn.api;
+package eu.fasten.analyzer.restapiplugin.api;
 
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.DirectedGraph;
@@ -24,8 +24,8 @@ import eu.fasten.core.maven.GraphMavenResolver;
 import eu.fasten.core.maven.MavenResolver;
 import eu.fasten.core.maven.data.Revision;
 import eu.fasten.core.merge.CGMerger;
-import eu.fasten.analyzer.restapiplugin.mvn.KnowledgeBaseConnector;
-import eu.fasten.analyzer.restapiplugin.mvn.LazyIngestionProvider;
+import eu.fasten.analyzer.restapiplugin.KnowledgeBaseConnector;
+import eu.fasten.analyzer.restapiplugin.LazyIngestionProvider;
 import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenHashSet;
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -72,7 +72,7 @@ public class ResolutionApi {
         }
     }
 
-    @GetMapping(value = "/mvn/packages/{pkg}/{pkg_ver}/resolve/dependencies", produces = MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping(value = "/packages/{pkg}/{pkg_ver}/resolve/dependencies", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<String> resolveDependencies(@PathVariable("pkg") String package_name,
                                                @PathVariable("pkg_ver") String package_version,
                                                @RequestParam(required = false, defaultValue = "true") boolean transitive,
@@ -112,7 +112,7 @@ public class ResolutionApi {
         return new ResponseEntity<>(result, HttpStatus.OK);
     }
 
-    @GetMapping(value = "/mvn/packages/{pkg}/{pkg_ver}/resolve/dependents", produces = MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping(value = "/packages/{pkg}/{pkg_ver}/resolve/dependents", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<String> resolveDependents(@PathVariable("pkg") String package_name,
                                              @PathVariable("pkg_ver") String package_version,
                                              @RequestParam(required = false, defaultValue = "true") boolean transitive,

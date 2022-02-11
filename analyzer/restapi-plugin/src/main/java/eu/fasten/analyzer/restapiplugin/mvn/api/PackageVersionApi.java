@@ -16,9 +16,9 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.restapiplugin.mvn.api;
+package eu.fasten.analyzer.restapiplugin.api;
 
-import eu.fasten.analyzer.restapiplugin.mvn.KnowledgeBaseConnector;
+import eu.fasten.analyzer.restapiplugin.KnowledgeBaseConnector;
 import eu.fasten.core.data.Constants;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -29,7 +29,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/mvn/package_version")
+@RequestMapping("/package_version")
 public class PackageVersionApi {
 
 

@@ -16,11 +16,11 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.restapiplugin.mvn.api;
+package eu.fasten.analyzer.restapiplugin.api;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-import eu.fasten.analyzer.restapiplugin.mvn.KnowledgeBaseConnector;
+import eu.fasten.analyzer.restapiplugin.KnowledgeBaseConnector;
 import eu.fasten.core.data.FastenURI;
 import eu.fasten.core.vulchains.VulnerableCallChain;
 import eu.fasten.core.vulchains.VulnerableCallChainRepository;

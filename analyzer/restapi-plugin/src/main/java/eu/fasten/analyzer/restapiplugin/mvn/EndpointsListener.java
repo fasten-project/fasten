@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.restapiplugin.mvn;
+package eu.fasten.analyzer.restapiplugin;
 
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationListener;

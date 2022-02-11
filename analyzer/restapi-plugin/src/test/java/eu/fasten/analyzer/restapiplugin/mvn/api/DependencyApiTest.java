@@ -16,11 +16,11 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.restapiplugin.mvn.api;
+package eu.fasten.analyzer.restapiplugin.api;
 
-import eu.fasten.analyzer.restapiplugin.mvn.KnowledgeBaseConnector;
-import eu.fasten.analyzer.restapiplugin.mvn.RestApplication;
-import eu.fasten.analyzer.restapiplugin.mvn.api.DependencyApi;
+import eu.fasten.analyzer.restapiplugin.KnowledgeBaseConnector;
+import eu.fasten.analyzer.restapiplugin.RestApplication;
+import eu.fasten.analyzer.restapiplugin.api.DependencyApi;
 import eu.fasten.core.data.metadatadb.MetadataDao;
 import eu.fasten.core.maven.data.PackageVersionNotFoundException;
 

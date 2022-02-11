@@ -1,4 +1,4 @@
-package eu.fasten.analyzer.restapiplugin.mvn;
+package eu.fasten.analyzer.restapiplugin;
 
 import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;

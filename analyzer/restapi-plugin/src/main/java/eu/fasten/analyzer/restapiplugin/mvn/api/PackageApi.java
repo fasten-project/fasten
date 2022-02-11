@@ -16,11 +16,11 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.restapiplugin.mvn.api;
+package eu.fasten.analyzer.restapiplugin.api;
 
-import eu.fasten.analyzer.restapiplugin.mvn.KnowledgeBaseConnector;
-import eu.fasten.analyzer.restapiplugin.mvn.LazyIngestionProvider;
-import eu.fasten.analyzer.restapiplugin.mvn.RestApplication;
+import eu.fasten.analyzer.restapiplugin.KnowledgeBaseConnector;
+import eu.fasten.analyzer.restapiplugin.LazyIngestionProvider;
+import eu.fasten.analyzer.restapiplugin.RestApplication;
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.maven.data.PackageVersionNotFoundException;
 import eu.fasten.core.maven.utils.MavenUtilities;
@@ -36,7 +36,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.io.IOException;
 
 @RestController
-@RequestMapping("/mvn/packages")
+@RequestMapping("/packages")
 public class PackageApi {
 
     @GetMapping(value = "", produces = MediaType.APPLICATION_JSON_VALUE)
