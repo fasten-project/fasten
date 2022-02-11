@@ -46,7 +46,7 @@ public class StitchingApi {
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     @PostMapping(value = "/callable_uris", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<String> resolveCallablesToUris(List<Long> gidList) {
+    public ResponseEntity<String> resolveCallablesToUris(@RequestBody List<Long> gidList) {
         var fastenUris = KnowledgeBaseConnector.kbDao.getFullFastenUris(gidList);
         var json = new JSONObject();
         fastenUris.forEach((key, value) -> json.put(String.valueOf(key), value));
