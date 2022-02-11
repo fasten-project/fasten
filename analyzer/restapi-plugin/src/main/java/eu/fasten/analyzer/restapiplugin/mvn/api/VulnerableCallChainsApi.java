@@ -34,13 +34,15 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.Set;
 
 @Lazy
 @RestController
-@RequestMapping("/{forge}/packages/{pkg}/{pkg_ver}/vulnerable-call-chains")
+@RequestMapping(value = "/{forge}/packages/{pkg}/{pkg_ver}/vulnerable-call-chains", produces = MediaType.APPLICATION_JSON_VALUE,
+        method = {RequestMethod.GET, RequestMethod.POST})
 public class VulnerableCallChainsApi {
 
     private static final Logger logger = LoggerFactory.getLogger(VulnerableCallChainsApi.class);
