@@ -63,7 +63,7 @@ public class PackageApi {
     ResponseEntity<String> getPackageVersions(@PathVariable("pkg") String package_name,
                                               @RequestParam(required = false, defaultValue = "0") int offset,
                                               @RequestParam(required = false, defaultValue = RestApplication.DEFAULT_PAGE_SIZE) int limit) {
-        String result = KnowledgeBaseConnector.kbDao.getPackageVersions(package_name, offset, limit);
+        String result = KnowledgeBaseConnector.kbDao.getPackageVersions(KnowledgeBaseConnector.forge, package_name, offset, limit);
         result = result.replace("\\/", "/");
         return new ResponseEntity<>(result, HttpStatus.OK);
     }
@@ -144,24 +144,44 @@ public class PackageApi {
                                        @PathVariable("pkg_ver") String version,
                                        @RequestParam(value = "artifactRepository", required = false) String artifactRepo,
                                        @RequestParam(required = false) Long releaseDate) {
-        try {
-            if (KnowledgeBaseConnector.kbDao.assertPackageExistence(packageName, version)) {
+        String result;
+        String url;
+        if (!KnowledgeBaseConnector.kbDao.assertPackageExistence(packageName, version)) {
+            try {
+                LazyIngestionProvider.ingestArtifactIfNecessary(packageName, version, artifactRepo, releaseDate);
+            } catch (IllegalArgumentException ex) {
+                return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST);     
+            } catch (IOException ex) {
+                return new ResponseEntity<>(ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+            }
+            return new ResponseEntity<>("Package version not found, but should be processed soon. Try again later", HttpStatus.CREATED);
+        }
+        switch (KnowledgeBaseConnector.forge) {
+            case "maven": {
                 var groupId = packageName.split(Constants.mvnCoordinateSeparator)[0];
                 var artifactId = packageName.split(Constants.mvnCoordinateSeparator)[1];
-                var url = String.format("%smvn/%s/%s/%s_%s_%s.json", KnowledgeBaseConnector.rcgBaseUrl,
+                url = String.format("%smvn/%s/%s/%s_%s_%s.json", KnowledgeBaseConnector.rcgBaseUrl,
                         artifactId.charAt(0), artifactId, artifactId, groupId, version).replace("\\/", "/");
-                var result = MavenUtilities.sendGetRequest(url);
-                if (result == null) {
-                    return new ResponseEntity<>("Could not find the requested data at " + url, HttpStatus.NOT_FOUND);
-                }
-                return new ResponseEntity<>(result, HttpStatus.OK);
-            } else {
-                LazyIngestionProvider.ingestArtifactIfNecessary(packageName, version, artifactRepo, releaseDate);
-                return new ResponseEntity<>("Package version not found, but should be processed soon. Try again later", HttpStatus.CREATED);
+                break;
             }
-        } catch (IOException e) {
-            return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+            case "pypi": {
+                url = String.format("%s/%s/%s/%s/%s/cg.json", KnowledgeBaseConnector.rcgBaseUrl + KnowledgeBaseConnector.forge + "/" + KnowledgeBaseConnector.forge,
+                    "callgraphs", packageName.charAt(0), packageName, version).replace("\\/", "/");
+                break;
+            }
+            case "debian": {
+                url = String.format("%s/%s/%s/%s/buster/%s/amd64/file.json", KnowledgeBaseConnector.rcgBaseUrl + KnowledgeBaseConnector.forge,
+                    "callgraphs", packageName.charAt(0), packageName, version).replace("\\/", "/");
+                break;
+            }
+            default:
+                return new ResponseEntity<>("Incorrect forge", HttpStatus.BAD_REQUEST);
         }
+        result = MavenUtilities.sendGetRequest(url);
+        if (result == null) {
+            return new ResponseEntity<>("Could not find the requested data at " + url, HttpStatus.NOT_FOUND);
+        }
+        return new ResponseEntity<>(result, HttpStatus.OK);
     }
 }
 
