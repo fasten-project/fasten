@@ -871,7 +871,7 @@ public class MetadataDao {
      * @param limit
      * @return Package version information, including potential vulnerabilities.
      */
-    public String getPackageVersions(String packageName, int offset, int limit) {
+    public String getPackageVersions(String forge, String packageName, int offset, int limit) {
 
         // SQL query
         /*
@@ -885,21 +885,36 @@ public class MetadataDao {
         Packages p = Packages.PACKAGES;
         PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
         ArtifactRepositories ar = ArtifactRepositories.ARTIFACT_REPOSITORIES;
-
-        // Query
-        var queryResult = context
-                .select(pv.ID, pv.PACKAGE_ID, pv.CG_GENERATOR, pv.VERSION, ar.REPOSITORY_BASE_URL, pv.ARCHITECTURE, pv.CREATED_AT)
-                .from(p)
-                .innerJoin(pv).on(p.ID.eq(pv.PACKAGE_ID))
-                .innerJoin(ar).on(pv.ARTIFACT_REPOSITORY_ID.eq(ar.ID))
-                .where(p.PACKAGE_NAME.equalIgnoreCase(packageName))
-                .offset(offset)
-                .limit(limit)
-                .fetch();
-
-        // Returning the result
-        logger.debug("Total rows: " + queryResult.size());
-        return queryResult.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
+        switch (forge) {
+            case "mvn": {
+                // Query
+                var queryResult = context
+                    .select(pv.ID, pv.PACKAGE_ID, pv.CG_GENERATOR, pv.VERSION, ar.REPOSITORY_BASE_URL, pv.ARCHITECTURE, pv.CREATED_AT)
+                    .from(p)
+                    .innerJoin(pv).on(p.ID.eq(pv.PACKAGE_ID))
+                    .innerJoin(ar).on(pv.ARTIFACT_REPOSITORY_ID.eq(ar.ID))
+                    .where(p.PACKAGE_NAME.equalIgnoreCase(packageName))
+                    .offset(offset)
+                    .limit(limit)
+                    .fetch();
+            // Returning the result
+            logger.debug("Total rows: " + queryResult.size());
+            return queryResult.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
+            }
+            default: {
+                var queryResult = context
+                    .select(pv.ID, pv.PACKAGE_ID, pv.CG_GENERATOR, pv.VERSION, pv.ARCHITECTURE, pv.CREATED_AT)
+                    .from(p)
+                    .innerJoin(pv).on(p.ID.eq(pv.PACKAGE_ID))
+                    .where(p.PACKAGE_NAME.equalIgnoreCase(packageName))
+                    .offset(offset)
+                    .limit(limit)
+                    .fetch();
+            // Returning the result
+            logger.debug("Total rows: " + queryResult.size());
+            return queryResult.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
+            }
+        }
     }
 
     /**
