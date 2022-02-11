@@ -35,18 +35,40 @@ public class PackageVersionApi {
 
     @GetMapping(value = "/{id}/rcg", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<String> getERCGLink(@PathVariable("id") long packageVersionId) {
+        String url;
         var artifact = KnowledgeBaseConnector.kbDao.getArtifactName(packageVersionId);
         if (artifact == null) {
             return new ResponseEntity<>("Package version not found", HttpStatus.NOT_FOUND);
         }
         var coordinate = artifact.split(Constants.mvnCoordinateSeparator);
-        var groupId = coordinate[0];
-        var artifactId = coordinate[1];
-        var version = coordinate[2];
-        String result = String.format("%smvn/%s/%s/%s_%s_%s.json", KnowledgeBaseConnector.rcgBaseUrl,
+        switch (KnowledgeBaseConnector.forge) {
+            case "maven": {
+                var groupId = coordinate[0];
+                var artifactId = coordinate[1];
+                var version = coordinate[2];
+                url = String.format("%smvn/%s/%s/%s_%s_%s.json", KnowledgeBaseConnector.rcgBaseUrl,
                 artifactId.charAt(0), artifactId, artifactId, groupId, version);
-        result = result.replace("\\/", "/");
-        return new ResponseEntity<>(result, HttpStatus.OK);
+                break;
+            }
+            case "pypi": {
+                var packageName = coordinate[0];
+                var version = coordinate[1];
+                url = String.format("%s/%s/%s/%s/%s/cg.json", KnowledgeBaseConnector.rcgBaseUrl + KnowledgeBaseConnector.forge + "/" + KnowledgeBaseConnector.forge,
+                        "callgraphs", packageName.charAt(0), packageName, version).replace("\\/", "/");
+                break;
+            }
+            case "debian": {
+                var packageName = coordinate[0];
+                var version = coordinate[1];
+                url = String.format("%s/%s/%s/%s/buster/%s/amd64/file.json", KnowledgeBaseConnector.rcgBaseUrl + KnowledgeBaseConnector.forge,
+                        "callgraphs", packageName.charAt(0), packageName, version).replace("\\/", "/");
+                break;
+            }
+            default:
+                return new ResponseEntity<>("Incorrect forge", HttpStatus.BAD_REQUEST);
+        }
+        url = url.replace("\\/", "/");
+        return new ResponseEntity<>(url, HttpStatus.OK);
     }
 }
 
