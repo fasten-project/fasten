@@ -16,11 +16,11 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.restapiplugin.mvn.api;
+package eu.fasten.analyzer.restapiplugin.api;
 
-import eu.fasten.analyzer.restapiplugin.mvn.KnowledgeBaseConnector;
-import eu.fasten.analyzer.restapiplugin.mvn.LazyIngestionProvider;
-import eu.fasten.analyzer.restapiplugin.mvn.RestApplication;
+import eu.fasten.analyzer.restapiplugin.KnowledgeBaseConnector;
+import eu.fasten.analyzer.restapiplugin.LazyIngestionProvider;
+import eu.fasten.analyzer.restapiplugin.RestApplication;
 import eu.fasten.core.maven.data.PackageVersionNotFoundException;
 import org.json.JSONObject;
 import org.springframework.http.HttpStatus;
@@ -40,7 +40,7 @@ import java.util.List;
 @RestController
 public class CallableApi {
 
-    @GetMapping(value = "/mvn/packages/{pkg}/{pkg_ver}/callables", produces = MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping(value = "/packages/{pkg}/{pkg_ver}/callables", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<String> getPackageCallables(@PathVariable("pkg") String package_name,
                                                @PathVariable("pkg_ver") String package_version,
                                                @RequestParam(required = false, defaultValue = "0") int offset,
@@ -65,7 +65,7 @@ public class CallableApi {
         return new ResponseEntity<>(result, HttpStatus.OK);
     }
 
-    @PostMapping(value = "/mvn/packages/{pkg}/{pkg_ver}/callable/metadata", produces = MediaType.APPLICATION_JSON_VALUE)
+    @PostMapping(value = "/packages/{pkg}/{pkg_ver}/callable/metadata", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<String> getCallableMetadata(@PathVariable("pkg") String package_name,
                                                @PathVariable("pkg_ver") String package_version,
                                                @RequestBody String fasten_uri,
