@@ -113,9 +113,8 @@ public class KnowledgeBaseConnector {
      */
     @PostConstruct
     public void connectToKnowledgeBase() {
-        forge = this.kbForge;
         try {
-            logger.info("Establishing connection to the " + forge +  " KnowledgeBase at " + kbUrl + ", user " + kbUser +"...");
+            logger.info("Establishing connection to the " + kbForge +  " KnowledgeBase at " + kbUrl + ", user " + kbUser +"...");
             dbContext = PostgresConnector.getDSLContext(kbUrl, kbUser, true);
             kbDao = new MetadataDao(dbContext);
         } catch (SQLException e) {
@@ -155,6 +154,11 @@ public class KnowledgeBaseConnector {
         KnowledgeBaseConnector.vulnerableCallChainsPath = vulnChainsPath;
     }
 
+    @PostConstruct
+    public void setForge() {
+        forge = this.kbForge;
+    }
+    
     /**
      * Established read-only connection to the graph database.
      */

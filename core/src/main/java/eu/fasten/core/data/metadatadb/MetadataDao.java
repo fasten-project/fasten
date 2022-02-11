@@ -923,7 +923,7 @@ public class MetadataDao {
         PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
         ArtifactRepositories ar = ArtifactRepositories.ARTIFACT_REPOSITORIES;
         switch (forge) {
-            case "mvn": {
+            case "maven": {
                 // Query
                 var queryResult = context
                     .select(pv.ID, pv.PACKAGE_ID, pv.CG_GENERATOR, pv.VERSION, ar.REPOSITORY_BASE_URL, pv.ARCHITECTURE, pv.CREATED_AT)
