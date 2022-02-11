@@ -45,7 +45,7 @@ public class PyPiResolutionApi {
     public PyPiResolutionApi() {
         try {
             var graphPyPiResolver = new GraphResolver();
-            graphPyPiResolver.buildDependencyGraph(KnowledgeBaseConnector.dbCContext, KnowledgeBaseConnector.dependencyPyPiGraphPath);
+            graphPyPiResolver.buildDependencyGraph(KnowledgeBaseConnector.dbContext, KnowledgeBaseConnector.dependencyGraphPath);
             this.graphPyPiResolver = graphPyPiResolver;
         } catch (Exception e) {
             logger.error("Error constructing PyPi dependency graph resolver", e);
@@ -59,7 +59,7 @@ public class PyPiResolutionApi {
                                              @RequestParam(required = false, defaultValue = "true") boolean transitive,
                                              @RequestParam(required = false, defaultValue = "-1") long timestamp) {
 
-        timestamp = ((timestamp == -1) ? this.graphPyPiResolver.getCreatedAt(package_name, package_version, KnowledgeBaseConnector.dbPythonContext): timestamp);
+        timestamp = ((timestamp == -1) ? this.graphPyPiResolver.getCreatedAt(package_name, package_version, KnowledgeBaseConnector.dbContext): timestamp);
         var depSet = this.graphPyPiResolver.resolveDependents(package_name,
             package_version, timestamp, transitive);
         var jsonArray = new JSONArray();

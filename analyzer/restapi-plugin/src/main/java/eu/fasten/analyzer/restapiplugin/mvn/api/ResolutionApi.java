@@ -64,7 +64,7 @@ public class ResolutionApi {
     public ResolutionApi() {
         try {
             var graphResolver = new GraphMavenResolver();
-            graphResolver.buildDependencyGraph(KnowledgeBaseConnector.dbJavaContext, KnowledgeBaseConnector.dependencyMavenGraphPath);
+            graphResolver.buildDependencyGraph(KnowledgeBaseConnector.dbContext, KnowledgeBaseConnector.dependencyGraphPath);
             this.graphResolver = graphResolver;
         } catch (Exception e) {
             logger.error("Error constructing dependency graph resolver", e);
@@ -93,7 +93,7 @@ public class ResolutionApi {
         Set<Revision> depSet;
         if (useDepGraph) {
             depSet = this.graphResolver.resolveDependencies(groupId,
-                    artifactId, package_version, timestamp, KnowledgeBaseConnector.dbJavaContext, transitive);
+                    artifactId, package_version, timestamp, KnowledgeBaseConnector.dbContext, transitive);
         } else {
             var mavenResolver = new MavenResolver();
             depSet = mavenResolver.resolveDependencies(groupId + ":" + artifactId + ":" + package_version);
@@ -145,7 +145,7 @@ public class ResolutionApi {
             return new Revision(id, groupId, artifactId, version, new Timestamp(-1));
         }).collect(Collectors.toSet());
         var virtualNode = this.graphResolver.addVirtualNode(new ObjectLinkedOpenHashSet<>(revisions));
-        var depSet = this.graphResolver.resolveDependencies(virtualNode, KnowledgeBaseConnector.dbJavaContext, true);
+        var depSet = this.graphResolver.resolveDependencies(virtualNode, KnowledgeBaseConnector.dbContext, true);
         this.graphResolver.removeVirtualNode(virtualNode);
         var jsonArray = new JSONArray();
         depSet.stream().map(r -> {
@@ -174,9 +174,9 @@ public class ResolutionApi {
             var artifactId = mavenCoordinate.split(Constants.mvnCoordinateSeparator)[1];
             var version = mavenCoordinate.split(Constants.mvnCoordinateSeparator)[2];
             var depSet = this.graphResolver.resolveDependencies(groupId,
-                    artifactId, version, timestamp, KnowledgeBaseConnector.dbJavaContext, true);
+                    artifactId, version, timestamp, KnowledgeBaseConnector.dbContext, true);
             var depIds = depSet.stream().map(r -> r.id).collect(Collectors.toSet());
-            var databaseMerger = new CGMerger(depIds, KnowledgeBaseConnector.dbJavaContext, KnowledgeBaseConnector.graphDao);
+            var databaseMerger = new CGMerger(depIds, KnowledgeBaseConnector.dbContext, KnowledgeBaseConnector.graphDao);
             graph = databaseMerger.mergeWithCHA(packageVersionId);
         } else {
             try {

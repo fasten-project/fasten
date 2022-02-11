@@ -44,7 +44,7 @@ public class DebianResolutionApi {
     public DebianResolutionApi() {
         try {
             var graphDebianResolver = new GraphResolver();
-            graphDebianResolver.buildDependencyGraph(KnowledgeBaseConnector.dbCContext, KnowledgeBaseConnector.dependencyDebianGraphPath);
+            graphDebianResolver.buildDependencyGraph(KnowledgeBaseConnector.dbContext, KnowledgeBaseConnector.dependencyGraphPath);
             this.graphDebianResolver = graphDebianResolver;
         } catch (Exception e) {
             logger.error("Error constructing Debian dependency graph resolver", e);
@@ -57,7 +57,7 @@ public class DebianResolutionApi {
                                              @PathVariable("pkg_ver") String package_version,
                                              @RequestParam(required = false, defaultValue = "true") boolean transitive,
                                              @RequestParam(required = false, defaultValue = "-1") long timestamp) {
-        timestamp = ((timestamp == -1) ? this.graphDebianResolver.getCreatedAt(package_name,package_version, KnowledgeBaseConnector.dbCContext): timestamp);
+        timestamp = ((timestamp == -1) ? this.graphDebianResolver.getCreatedAt(package_name,package_version, KnowledgeBaseConnector.dbContext): timestamp);
         var depSet = this.graphDebianResolver.resolveDependents(package_name,
            package_version, timestamp, transitive);
         var jsonArray = new JSONArray();
