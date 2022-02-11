@@ -41,7 +41,7 @@ import java.util.Set;
 
 @Lazy
 @RestController
-@RequestMapping(value = "/{forge}/packages/{pkg}/{pkg_ver}/vulnerable-call-chains", produces = MediaType.APPLICATION_JSON_VALUE,
+@RequestMapping(value = "/packages/{pkg}/{pkg_ver}/vulnerable-call-chains", produces = MediaType.APPLICATION_JSON_VALUE,
         method = {RequestMethod.GET, RequestMethod.POST})
 public class VulnerableCallChainsApi {
 
@@ -70,8 +70,7 @@ public class VulnerableCallChainsApi {
     }
 
     @PostMapping(value = "", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<String> getChainsForPackage(@PathVariable("forge") String forge,
-                                               @PathVariable("pkg") String packageName,
+    ResponseEntity<String> getChainsForPackage(@PathVariable("pkg") String packageName,
                                                @PathVariable("pkg_ver") String packageVersion) {
 
         Set<VulnerableCallChain> chains = vulnerableCallChainRepository.getChainsForPackage(packageName, packageVersion);
@@ -80,24 +79,22 @@ public class VulnerableCallChainsApi {
     }
 
     @PostMapping(value = "/module", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<String> getChainsForPackage(@PathVariable("forge") String forge,
-                                               @PathVariable("pkg") String packageName,
+    ResponseEntity<String> getChainsForPackage(@PathVariable("pkg") String packageName,
                                                @PathVariable("pkg_ver") String packageVersion,
                                                @RequestBody String rawPath) {
 
-        FastenURI fastenUri = FastenURI.create(forge, packageName, packageVersion, rawPath);
+        FastenURI fastenUri = FastenURI.create(KnowledgeBaseConnector.forge, packageName, packageVersion, rawPath);
         Set<VulnerableCallChain> chains = vulnerableCallChainRepository.getChainsForModule(fastenUri);
         var result = VulnerableCallChainsToJSON(chains);
         return new ResponseEntity<>(result, HttpStatus.OK);
     }
 
     @PostMapping(value = "/callable", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<String> getChainsForCallable(@PathVariable("forge") String forge,
-                                                @PathVariable("pkg") String packageName,
+    ResponseEntity<String> getChainsForCallable(@PathVariable("pkg") String packageName,
                                                 @PathVariable("pkg_ver") String packageVersion,
                                                 @RequestBody String rawPath) {
 
-        FastenURI fastenUri = FastenURI.create(forge, packageName, packageVersion, rawPath);
+        FastenURI fastenUri = FastenURI.create(KnowledgeBaseConnector.forge, packageName, packageVersion, rawPath);
         Set<VulnerableCallChain> chains = vulnerableCallChainRepository.getChainsForCallable(fastenUri);
         var result = VulnerableCallChainsToJSON(chains);
         return new ResponseEntity<>(result, HttpStatus.OK);
