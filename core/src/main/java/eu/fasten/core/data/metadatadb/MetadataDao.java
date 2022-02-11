@@ -54,7 +54,9 @@ import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
 import eu.fasten.core.data.Constants;
+import eu.fasten.core.data.FastenPythonURI;
 import eu.fasten.core.data.FastenJavaURI;
+import eu.fasten.core.data.FastenCURI;
 import eu.fasten.core.data.metadatadb.codegen.Keys;
 import eu.fasten.core.data.metadatadb.codegen.enums.Access;
 import eu.fasten.core.data.metadatadb.codegen.enums.CallableType;
@@ -1055,7 +1057,8 @@ public class MetadataDao {
         return queryResult.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
     }
 
-    public String getModuleCallables(String packageName,
+    public String getModuleCallables(String forge,
+                                     String packageName,
                                      String packageVersion,
                                      String moduleNamespace,
                                      int offset,
@@ -1107,18 +1110,56 @@ public class MetadataDao {
         // The result array that will be returned.
         JSONArray result = new JSONArray();
 
-        // Go through each callable, convert raw fasten uri into parsed object, write down to result array.
-        for (Object j : json) {
-            try {
-                JSONObject jObj = (JSONObject) j;
-                var partialUri = jObj.getString("fasten_uri");
-                var fullUri = FastenUriUtils.generateFullFastenUri("mvn", packageName, packageVersion, partialUri);
-                var uriObj = new FastenJavaURI(fullUri);
-                var js =  gson.toJson(uriObj);
-                jObj.put("fasten_uri", new JSONObject(js));
-                result.put(jObj);
-            } catch (IllegalArgumentException err) {
-                logger.warn("Error FASTEN URI Parser: " + err.toString());
+        switch (forge) {
+            case "maven": {
+                for (Object j : json) {
+                    try {
+                        JSONObject jObj = (JSONObject) j;
+                        var partialUri = jObj.getString("fasten_uri");
+                        var fullUri = FastenUriUtils.generateFullFastenUri("mvn", packageName, packageVersion, partialUri);
+                        var uriObj = new FastenJavaURI(fullUri);
+                        var js =  gson.toJson(uriObj);
+                        jObj.put("fasten_uri", new JSONObject(js));
+                        result.put(jObj);
+                    } catch (IllegalArgumentException err) {
+                        logger.warn("Error FASTEN URI Java Parser: " + err.toString());
+                    }
+                }
+                break;
+            }
+            case "pypi": {
+                for (Object j : json) {
+                    try {
+                        JSONObject jObj = (JSONObject) j;
+                        var partialUri = jObj.getString("fasten_uri");
+                        var fullUri = FastenUriUtils.generateFullFastenUri("pypi", packageName, packageVersion, partialUri);
+                        var uriObj = new FastenPythonURI(fullUri);
+                        var js =  gson.toJson(uriObj);
+                        jObj.put("fasten_uri", new JSONObject(js));
+                        result.put(jObj);
+                    } catch (IllegalArgumentException err) {
+                        logger.warn("Error FASTEN URI Python Parser: " + err.toString());
+                    }
+                }
+                break;
+            }
+            case "debian": {
+                for (Object j : json) {
+                    logger.info("json: " + j);
+                    try {
+                        JSONObject jObj = (JSONObject) j;
+                        var partialUri = jObj.getString("fasten_uri");
+                        var fullUri = FastenUriUtils.generateFullFastenUri("debian", packageName, packageVersion, partialUri);
+                        logger.info("fulluri: " + fullUri);
+                        var uriObj = new FastenCURI(fullUri);
+                        var js =  gson.toJson(uriObj);
+                        jObj.put("fasten_uri", new JSONObject(js));
+                        result.put(jObj);
+                    } catch (IllegalArgumentException err) {
+                        logger.warn("Error FASTEN URI C Parser: " + err.toString());
+                    }
+                }
+                break;
             }
         }
 

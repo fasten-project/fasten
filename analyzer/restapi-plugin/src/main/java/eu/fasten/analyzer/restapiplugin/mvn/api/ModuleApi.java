@@ -128,7 +128,7 @@ public class ModuleApi {
         String result;
         try {
             result = KnowledgeBaseConnector.kbDao.getModuleCallables(
-                    package_name, package_version, module_namespace, offset, limit);
+                    KnowledgeBaseConnector.forge, package_name, package_version, module_namespace, offset, limit);
         } catch (PackageVersionNotFoundException e) {
             try {
                 LazyIngestionProvider.ingestArtifactIfNecessary(package_name, package_version, artifactRepository, releaseDate);
