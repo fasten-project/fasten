@@ -57,6 +57,7 @@ import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.FastenPythonURI;
 import eu.fasten.core.data.FastenJavaURI;
 import eu.fasten.core.data.FastenCURI;
+import eu.fasten.core.data.FastenURI;
 import eu.fasten.core.data.metadatadb.codegen.Keys;
 import eu.fasten.core.data.metadatadb.codegen.enums.Access;
 import eu.fasten.core.data.metadatadb.codegen.enums.CallableType;
@@ -871,7 +872,7 @@ public class MetadataDao {
      * @param limit
      * @return Package version information, including potential vulnerabilities.
      */
-    public String getPackageVersions(String forge, String packageName, int offset, int limit) {
+    public String getPackageVersions(String packageName, int offset, int limit) {
 
         // SQL query
         /*
@@ -885,36 +886,19 @@ public class MetadataDao {
         Packages p = Packages.PACKAGES;
         PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
         ArtifactRepositories ar = ArtifactRepositories.ARTIFACT_REPOSITORIES;
-        switch (forge) {
-            case "mvn": {
-                // Query
-                var queryResult = context
-                    .select(pv.ID, pv.PACKAGE_ID, pv.CG_GENERATOR, pv.VERSION, ar.REPOSITORY_BASE_URL, pv.ARCHITECTURE, pv.CREATED_AT)
-                    .from(p)
-                    .innerJoin(pv).on(p.ID.eq(pv.PACKAGE_ID))
-                    .innerJoin(ar).on(pv.ARTIFACT_REPOSITORY_ID.eq(ar.ID))
-                    .where(p.PACKAGE_NAME.equalIgnoreCase(packageName))
-                    .offset(offset)
-                    .limit(limit)
-                    .fetch();
-            // Returning the result
-            logger.debug("Total rows: " + queryResult.size());
-            return queryResult.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
-            }
-            default: {
-                var queryResult = context
-                    .select(pv.ID, pv.PACKAGE_ID, pv.CG_GENERATOR, pv.VERSION, pv.ARCHITECTURE, pv.CREATED_AT)
-                    .from(p)
-                    .innerJoin(pv).on(p.ID.eq(pv.PACKAGE_ID))
-                    .where(p.PACKAGE_NAME.equalIgnoreCase(packageName))
-                    .offset(offset)
-                    .limit(limit)
-                    .fetch();
-            // Returning the result
-            logger.debug("Total rows: " + queryResult.size());
-            return queryResult.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
-            }
-        }
+        // Query
+        var queryResult = context
+                .select(pv.ID, pv.PACKAGE_ID, pv.CG_GENERATOR, pv.VERSION, ar.REPOSITORY_BASE_URL, pv.ARCHITECTURE, pv.CREATED_AT)
+                .from(p)
+                .innerJoin(pv).on(p.ID.eq(pv.PACKAGE_ID))
+                .leftJoin(ar).on(pv.ARTIFACT_REPOSITORY_ID.eq(ar.ID))
+                .where(p.PACKAGE_NAME.equalIgnoreCase(packageName))
+                .offset(offset)
+                .limit(limit)
+                .fetch();
+        // Returning the result
+        logger.debug("Total rows: " + queryResult.size());
+        return queryResult.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
     }
 
     /**
@@ -1125,59 +1109,35 @@ public class MetadataDao {
         // The result array that will be returned.
         JSONArray result = new JSONArray();
 
-        switch (forge) {
-            case "mvn": {
-                for (Object j : json) {
-                    try {
-                        JSONObject jObj = (JSONObject) j;
-                        var partialUri = jObj.getString("fasten_uri");
+        for (Object j : json) {
+            try {
+                JSONObject jObj = (JSONObject) j;
+                var partialUri = jObj.getString("fasten_uri");
+                FastenURI uriObj = null;
+                switch (forge) {
+                    case "mvn": {
                         var fullUri = FastenUriUtils.generateFullFastenUri("mvn", packageName, packageVersion, partialUri);
-                        var uriObj = new FastenJavaURI(fullUri);
-                        var js =  gson.toJson(uriObj);
-                        jObj.put("fasten_uri", new JSONObject(js));
-                        result.put(jObj);
-                    } catch (IllegalArgumentException err) {
-                        logger.warn("Error FASTEN URI Java Parser: " + err.toString());
+                        uriObj = new FastenJavaURI(fullUri);
+                        break;
                     }
-                }
-                break;
-            }
-            case "pypi": {
-                for (Object j : json) {
-                    try {
-                        JSONObject jObj = (JSONObject) j;
-                        var partialUri = jObj.getString("fasten_uri");
+                    case "pypi": {
                         var fullUri = FastenUriUtils.generateFullFastenUri("pypi", packageName, packageVersion, partialUri);
-                        var uriObj = new FastenPythonURI(fullUri);
-                        var js =  gson.toJson(uriObj);
-                        jObj.put("fasten_uri", new JSONObject(js));
-                        result.put(jObj);
-                    } catch (IllegalArgumentException err) {
-                        logger.warn("Error FASTEN URI Python Parser: " + err.toString());
+                        uriObj = new FastenPythonURI(fullUri);
+                        break;
                     }
-                }
-                break;
-            }
-            case "debian": {
-                for (Object j : json) {
-                    logger.info("json: " + j);
-                    try {
-                        JSONObject jObj = (JSONObject) j;
-                        var partialUri = jObj.getString("fasten_uri");
+                    case "debian": {
                         var fullUri = FastenUriUtils.generateFullFastenUri("debian", packageName, packageVersion, partialUri);
-                        logger.info("fulluri: " + fullUri);
-                        var uriObj = new FastenCURI(fullUri);
-                        var js =  gson.toJson(uriObj);
-                        jObj.put("fasten_uri", new JSONObject(js));
-                        result.put(jObj);
-                    } catch (IllegalArgumentException err) {
-                        logger.warn("Error FASTEN URI C Parser: " + err.toString());
+                        uriObj = new FastenCURI(fullUri);
+                        break;
                     }
                 }
-                break;
+                var js =  gson.toJson(uriObj);
+                jObj.put("fasten_uri", new JSONObject(js));
+                result.put(jObj);
+            } catch (IllegalArgumentException err) {
+                logger.warn("Error FASTEN URI Parser: " + err.toString());
             }
         }
-
         return result.toString();
     }
 

@@ -63,7 +63,7 @@ public class PackageApi {
     ResponseEntity<String> getPackageVersions(@PathVariable("pkg") String package_name,
                                               @RequestParam(required = false, defaultValue = "0") int offset,
                                               @RequestParam(required = false, defaultValue = RestApplication.DEFAULT_PAGE_SIZE) int limit) {
-        String result = KnowledgeBaseConnector.kbDao.getPackageVersions(KnowledgeBaseConnector.forge, package_name, offset, limit);
+        String result = KnowledgeBaseConnector.kbDao.getPackageVersions(package_name, offset, limit);
         result = result.replace("\\/", "/");
         return new ResponseEntity<>(result, HttpStatus.OK);
     }
