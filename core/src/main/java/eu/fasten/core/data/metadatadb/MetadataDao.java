@@ -886,7 +886,7 @@ public class MetadataDao {
         PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
         ArtifactRepositories ar = ArtifactRepositories.ARTIFACT_REPOSITORIES;
         switch (forge) {
-            case "maven": {
+            case "mvn": {
                 // Query
                 var queryResult = context
                     .select(pv.ID, pv.PACKAGE_ID, pv.CG_GENERATOR, pv.VERSION, ar.REPOSITORY_BASE_URL, pv.ARCHITECTURE, pv.CREATED_AT)
@@ -1126,7 +1126,7 @@ public class MetadataDao {
         JSONArray result = new JSONArray();
 
         switch (forge) {
-            case "maven": {
+            case "mvn": {
                 for (Object j : json) {
                     try {
                         JSONObject jObj = (JSONObject) j;
