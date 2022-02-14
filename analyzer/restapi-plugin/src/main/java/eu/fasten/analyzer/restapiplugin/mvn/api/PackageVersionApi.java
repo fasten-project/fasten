@@ -42,7 +42,7 @@ public class PackageVersionApi {
         }
         var coordinate = artifact.split(Constants.mvnCoordinateSeparator);
         switch (KnowledgeBaseConnector.forge) {
-            case "maven": {
+            case "mvn": {
                 var groupId = coordinate[0];
                 var artifactId = coordinate[1];
                 var version = coordinate[2];

@@ -64,7 +64,7 @@ public class ResolutionApi {
 
     public ResolutionApi() {
         switch(KnowledgeBaseConnector.forge) {
-            case "maven": {
+            case "mvn": {
                 try {
                     var graphMavenResolver = new GraphMavenResolver();
                     graphMavenResolver.buildDependencyGraph(KnowledgeBaseConnector.dbContext, KnowledgeBaseConnector.dependencyGraphPath);
@@ -134,7 +134,7 @@ public class ResolutionApi {
                                              @RequestParam(required = false, defaultValue = "-1") long timestamp) {
         JSONArray jsonArray = new JSONArray();
         switch (KnowledgeBaseConnector.forge) {
-            case "maven": {
+            case "mvn": {
                 var groupId = package_name.split(Constants.mvnCoordinateSeparator)[0];
                 var artifactId = package_name.split(Constants.mvnCoordinateSeparator)[1];
                 var depSet = this.graphMavenResolver.resolveDependents(groupId,

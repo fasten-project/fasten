@@ -157,7 +157,7 @@ public class PackageApi {
             return new ResponseEntity<>("Package version not found, but should be processed soon. Try again later", HttpStatus.CREATED);
         }
         switch (KnowledgeBaseConnector.forge) {
-            case "maven": {
+            case "mvn": {
                 var groupId = packageName.split(Constants.mvnCoordinateSeparator)[0];
                 var artifactId = packageName.split(Constants.mvnCoordinateSeparator)[1];
                 url = String.format("%smvn/%s/%s/%s_%s_%s.json", KnowledgeBaseConnector.rcgBaseUrl,
