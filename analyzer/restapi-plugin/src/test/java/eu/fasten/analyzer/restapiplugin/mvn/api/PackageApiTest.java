@@ -85,11 +85,11 @@ public class PackageApiTest {
     void getPackageVersionsTest() {
         var packageName = "group:artifact";
         var response = "package versions";
-        Mockito.when(kbDao.getPackageVersions(KnowledgeBaseConnector.forge, packageName, offset, limit)).thenReturn(response);
+        Mockito.when(kbDao.getPackageVersions(packageName, offset, limit)).thenReturn(response);
         var expected = new ResponseEntity<>(response, HttpStatus.OK);
         var result = service.getPackageVersions(packageName, offset, limit);
         assertEquals(expected, result);
-        Mockito.verify(kbDao, Mockito.times(1)).getPackageVersions(KnowledgeBaseConnector.forge, packageName, offset, limit);
+        Mockito.verify(kbDao, Mockito.times(1)).getPackageVersions(packageName, offset, limit);
     }
 
     @Test
