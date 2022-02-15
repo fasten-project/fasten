@@ -67,6 +67,8 @@ public class KnowledgeBaseConnector {
 
     public static String forge;
 
+    public static String dependencyResolverAddress;
+
     /**
      * KnowledgeBase username, retrieved from the server configuration file.
      */
@@ -109,6 +111,14 @@ public class KnowledgeBaseConnector {
     private String kbForge;
 
     /**
+     * The IP Address of the Dependency Resolver Microsrervice used for C or Python
+     */
+
+    @Value("${dependency.resolver.address}")
+    private String dependencyResolverApiAddress;
+
+
+    /**
      * Connects to the KnowledgeBase before starting the REST server.
      */
     @PostConstruct
@@ -144,6 +154,14 @@ public class KnowledgeBaseConnector {
     @PostConstruct
     public void setDependencyGraphPath() {
         KnowledgeBaseConnector.dependencyGraphPath = depGraphPath;
+    }
+
+    /**
+     * Retrieves the dependency graph if possible, otherwise constructs the graph from database.
+     */
+    @PostConstruct
+    public void setDependencyResolverPath() {
+        KnowledgeBaseConnector.dependencyResolverAddress= dependencyResolverApiAddress;
     }
 
     /**

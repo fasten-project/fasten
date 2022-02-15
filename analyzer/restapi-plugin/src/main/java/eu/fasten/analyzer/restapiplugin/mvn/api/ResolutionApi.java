@@ -24,6 +24,7 @@ import eu.fasten.core.dependents.GraphResolver;
 import eu.fasten.core.maven.GraphMavenResolver;
 import eu.fasten.core.maven.MavenResolver;
 import eu.fasten.core.maven.data.Revision;
+import eu.fasten.core.maven.utils.MavenUtilities;
 import eu.fasten.core.merge.CGMerger;
 import eu.fasten.analyzer.restapiplugin.KnowledgeBaseConnector;
 import eu.fasten.analyzer.restapiplugin.LazyIngestionProvider;
@@ -93,38 +94,51 @@ public class ResolutionApi {
                                                @RequestParam(required = false, defaultValue = "true") boolean transitive,
                                                @RequestParam(required = false, defaultValue = "-1") long timestamp,
                                                @RequestParam(required = false, defaultValue = "true") boolean useDepGraph) {
-        if (!KnowledgeBaseConnector.kbDao.assertPackageExistence(package_name, package_version)) {
-            try {
-                LazyIngestionProvider.ingestArtifactWithDependencies(package_name, package_version);
-            } catch (IllegalArgumentException e) {
-                return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
-            } catch (IOException e) {
-                return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        switch (KnowledgeBaseConnector.forge) {
+            case "mvn": {
+                if (!KnowledgeBaseConnector.kbDao.assertPackageExistence(package_name, package_version)) {
+                    try {
+                        LazyIngestionProvider.ingestArtifactWithDependencies(package_name, package_version);
+                    } catch (IllegalArgumentException e) {
+                        return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
+                    } catch (IOException e) {
+                        return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+                    }
+                    return new ResponseEntity<>("Package version not found, but should be processed soon. Try again later", HttpStatus.CREATED);
+                }
+                var groupId = package_name.split(Constants.mvnCoordinateSeparator)[0];
+                var artifactId = package_name.split(Constants.mvnCoordinateSeparator)[1];
+                Set<Revision> depSet;
+                if (useDepGraph) {
+                    depSet = this.graphMavenResolver.resolveDependencies(groupId,
+                            artifactId, package_version, timestamp, KnowledgeBaseConnector.dbContext, transitive);
+                } else {
+                    var mavenResolver = new MavenResolver();
+                    depSet = mavenResolver.resolveDependencies(groupId + ":" + artifactId + ":" + package_version);
+                }
+                var jsonArray = new JSONArray();
+                depSet.stream().map(Revision::toJSON).peek(json -> {
+                    var group = json.getString("groupId");
+                    var artifact = json.getString("artifactId");
+                    var ver = json.getString("version");
+                    var url = String.format("%smvn/%s/%s/%s_%s_%s.json", KnowledgeBaseConnector.rcgBaseUrl,
+                            artifact.charAt(0), artifact, artifact, group, ver);
+                    json.put("url", url);
+                }).forEach(jsonArray::put);
+                var result = jsonArray.toString();
+                result = result.replace("\\/", "/");
+                return new ResponseEntity<>(result, HttpStatus.OK);
             }
-            return new ResponseEntity<>("Package version not found, but should be processed soon. Try again later", HttpStatus.CREATED);
+            default: {
+                var query = "http://"+ KnowledgeBaseConnector.dependencyResolverAddress + "/dependencies/"+ package_name+"/"+package_version;
+                var result = MavenUtilities.sendGetRequest(query);
+                if (result == null) {
+                    return new ResponseEntity<>("Could not find the requested data", HttpStatus.NOT_FOUND);
+                }
+                result = result.replaceAll("\\s+","");
+                return new ResponseEntity<>(result, HttpStatus.OK);
+            }
         }
-        var groupId = package_name.split(Constants.mvnCoordinateSeparator)[0];
-        var artifactId = package_name.split(Constants.mvnCoordinateSeparator)[1];
-        Set<Revision> depSet;
-        if (useDepGraph) {
-            depSet = this.graphMavenResolver.resolveDependencies(groupId,
-                    artifactId, package_version, timestamp, KnowledgeBaseConnector.dbContext, transitive);
-        } else {
-            var mavenResolver = new MavenResolver();
-            depSet = mavenResolver.resolveDependencies(groupId + ":" + artifactId + ":" + package_version);
-        }
-        var jsonArray = new JSONArray();
-        depSet.stream().map(Revision::toJSON).peek(json -> {
-            var group = json.getString("groupId");
-            var artifact = json.getString("artifactId");
-            var ver = json.getString("version");
-            var url = String.format("%smvn/%s/%s/%s_%s_%s.json", KnowledgeBaseConnector.rcgBaseUrl,
-                    artifact.charAt(0), artifact, artifact, group, ver);
-            json.put("url", url);
-        }).forEach(jsonArray::put);
-        var result = jsonArray.toString();
-        result = result.replace("\\/", "/");
-        return new ResponseEntity<>(result, HttpStatus.OK);
     }
 
     @GetMapping(value = "/packages/{pkg}/{pkg_ver}/resolve/dependents", produces = MediaType.APPLICATION_JSON_VALUE)
