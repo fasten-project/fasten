@@ -1,33 +1,31 @@
 package eu.fasten.analyzer.debianlicensedetector;
 
-import com.google.common.collect.Sets;
-import eu.fasten.core.data.metadatadb.license.DetectedLicense;
-import eu.fasten.core.data.metadatadb.license.DetectedLicenseSource;
-import eu.fasten.core.data.metadatadb.license.DetectedLicenses;
+//import eu.fasten.core.data.metadatadb.license.DetectedLicense;
+//import eu.fasten.core.data.metadatadb.license.DetectedLicenseSource;
+//import eu.fasten.core.data.metadatadb.license.DetectedLicenses;
 import eu.fasten.core.plugins.KafkaPlugin;
-import org.apache.maven.model.License;
-import org.apache.maven.model.Model;
-import org.apache.maven.model.io.xpp3.MavenXpp3Reader;
-import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
+        import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
 import org.json.JSONArray;
-import org.json.JSONException;
 import org.json.JSONObject;
 import org.pf4j.Extension;
 import org.pf4j.Plugin;
 import org.pf4j.PluginWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import java.util.List;
+import java.net.HttpURLConnection;
+import java.net.SocketTimeoutException;
+import java.net.URL;
 
 import javax.annotation.Nullable;
 import java.io.*;
-import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
-import java.net.ProtocolException;
-import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.*;
-import java.util.regex.Pattern;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.logging.FileHandler;
 import java.util.stream.Collectors;
 
 
@@ -38,7 +36,7 @@ public class DebianLicenseDetectorPlugin extends Plugin {
     }
 
     @Extension
-    public static class DebianLicenseDetector implements KafkaPlugin {
+    public static class DebianLicenseDetectorExtension implements KafkaPlugin {
         private static String packageVersion = "latest";
         private static String packageName ;
         private static int HttpGetCount = 0;
@@ -50,7 +48,7 @@ public class DebianLicenseDetectorPlugin extends Plugin {
         private static String FileDoubleEntered = null;
         private static String CurrentPathAndFilename = null;
 
-        private final Logger logger = LoggerFactory.getLogger(DebianLicenseDetector.class.getName());
+        private final Logger logger = LoggerFactory.getLogger(DebianLicenseDetectorExtension.class.getName());
 
         protected Exception pluginError = null;
 
@@ -62,11 +60,16 @@ public class DebianLicenseDetectorPlugin extends Plugin {
         /**
          * TODO
          */
-        protected DetectedLicenses detectedLicenses = new DetectedLicenses();
+        //protected DetectedLicenses detectedLicenses = new DetectedLicenses();
 
         @Override
         public Optional<List<String>> consumeTopic() {
             return Optional.of(Collections.singletonList(consumerTopic));
+        }
+
+        @Override
+        public void setTopics(List<String> consumeTopics) {
+
         }
 
         @Override
@@ -79,79 +82,79 @@ public class DebianLicenseDetectorPlugin extends Plugin {
          */
         protected void reset() {
             pluginError = null;
-            detectedLicenses = new DetectedLicenses();
+            //detectedLicenses = new DetectedLicenses();
         }
 
         @Override
-        public void consume(String record) {
-            try { // Fasten error-handling guidelines
-                reset();
-                JSONObject json = new JSONObject(record);
-                logger.info("Debian license detector started.");
+        public void consume(String record) throws IOException, InterruptedException, TimeoutException {
+        //try { // Fasten error-handling guidelines
+            reset();
+            JSONObject json = new JSONObject(record);
+            logger.info("Debian license detector started.");
 
-                // Retrieving the package name
-                String packageName = extractPackageName(json);
-                logger.info("The package to analyze is:"+packageName+".");
-                // Retrieving the package version
-                String packageVersion = extractPackageVersion(json);
-                logger.info("The package version is:"+packageVersion+".");
+            // Retrieving the package name
+            String packageName = extractPackageName(json);
+            logger.info("The package to analyze is:"+packageName+".");
+            // Retrieving the package version
+            String packageVersion = extractPackageVersion(json);
+            logger.info("The package version is:"+packageVersion+".");
 
-                // these logs should be saved in some shared directory, and a policy of log deletion should be implemented
-                String directoryName = "logs";
-                File directory = new File(directoryName);
-                if (!directory.exists()) {
-                    directory.mkdir();
-                }
-                FileHandler fh;
-                String timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
-                // This block configures the logger with handler and formatter
-                fh = new FileHandler("logs/D4.2" + timeStamp + ".log");
-                logger.addHandler(fh);
-                SimpleFormatter formatter = new SimpleFormatter();
-                fh.setFormatter(formatter);
-
-                long startTime = System.currentTimeMillis();
-                MeasureElapsedTime();
-                String path = packageName + "/" + packageVersion;
-                var jsonOutputPayload = new JSONObject();
-                jsonOutputPayload = GetDirectoryOrFileJSON(path);
-                System.out.println(jsonOutputPayload);
-                if (jsonOutputPayload == null) {
-                    logger.info("Analyzed: " + packageName + " version : " + packageVersion);
-                    logger.info("The package is not present on the Debian repository.");
-                } else {
-                    packageVersion = jsonOutputPayload.getString("version");
-                    file = new File("logs/" + packageName + "-" + packageVersion + "_LicensesAtFileLevel_ld.json");
-                    Files.deleteIfExists(file.toPath());
-                    file.createNewFile();
-                    logger.info(file + " created.");
-                    logger.info("Analyzing: " + packageName + " version : " + packageVersion);
-                    AnalyzeDirectory(jsonOutputPayload, packageName, packageVersion);
-                }
-
-                long endTime = System.currentTimeMillis();
-                long duration = (endTime - startTime);  //Total execution time in milliseconds
-
-
-                logger.info("Analysis completed successfully\n " +
-                        "During this analysis " + HttpGetCount + " HTTP requests have been performed.\n" +
-                        "During this analysis " + FilesCount + " files have been found.\n" +
-                        "During this analysis " + FilesWithLicensesCount + " files with licenses have been found.\n" +
-                        "The analysis took:" + ConvertMsToMins(duration) + ".\n"
-                );
-                if (NumberOfFilesWithDoubleEntries > 0) {
-                    logger.info("The number of files with detected double entries are: " + NumberOfFilesWithDoubleEntries + ".\n" +
-                            "The five files detected with a double entry are :" + FileDoubleEntered + ".\n"
-                    );
-                }
-                packageVersion = "latest";
-                HttpGetCount = 0;
-                FilesCount = 0;
-                FilesWithLicensesCount = 0;
-                NumberOfFilesWithDoubleEntries = 0;
-                file = null;
-                FileDoubleEntered = null;
+            // these logs should be saved in some shared directory, and a policy of log deletion should be implemented
+            String directoryName = "logs";
+            File directory = new File(directoryName);
+            if (!directory.exists()) {
+                directory.mkdir();
             }
+            FileHandler fh;
+            //String timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
+
+            long startTime = System.currentTimeMillis();
+            MeasureElapsedTime();
+            String path = packageName + "/" + packageVersion;
+            var jsonOutputPayload = new JSONObject();
+            jsonOutputPayload = GetDirectoryOrFileJSON(path);
+            System.out.println(jsonOutputPayload);
+            if (jsonOutputPayload == null) {
+                logger.info("Analyzed: " + packageName + " version : " + packageVersion);
+                logger.info("The package is not present on the Debian repository.");
+            } else {
+                packageVersion = jsonOutputPayload.getString("version");
+                file = new File("logs/" + packageName + "-" + packageVersion + "_LicensesAtFileLevel_ld.json");
+                Files.deleteIfExists(file.toPath());
+                file.createNewFile();
+                logger.info(file + " created.");
+                logger.info("Analyzing: " + packageName + " version : " + packageVersion);
+                AnalyzeDirectory(jsonOutputPayload, packageName, packageVersion);
+            }
+
+            long endTime = System.currentTimeMillis();
+            long duration = (endTime - startTime);  //Total execution time in milliseconds
+
+
+            logger.info("Analysis completed successfully\n " +
+                    "During this analysis " + HttpGetCount + " HTTP requests have been performed.\n" +
+                    "During this analysis " + FilesCount + " files have been found.\n" +
+                    "During this analysis " + FilesWithLicensesCount + " files with licenses have been found.\n" +
+                    "The analysis took:" + ConvertMsToMins(duration) + ".\n"
+            );
+            if (NumberOfFilesWithDoubleEntries > 0) {
+                logger.info("The number of files with detected double entries are: " + NumberOfFilesWithDoubleEntries + ".\n" +
+                        "The five files detected with a double entry are :" + FileDoubleEntered + ".\n"
+                );
+            }
+            packageVersion = "latest";
+            HttpGetCount = 0;
+            FilesCount = 0;
+            FilesWithLicensesCount = 0;
+            NumberOfFilesWithDoubleEntries = 0;
+            file = null;
+            FileDoubleEntered = null;
+        //}
+        }
+
+        @Override
+        public Optional<String> produce() {
+            return Optional.empty();
         }
 
         // this method first get the license from one of the copyrights files (copyright, license or readme), if
@@ -163,7 +166,7 @@ public class DebianLicenseDetectorPlugin extends Plugin {
          * @param packageVersion the version of the package to be scanned.
          * @return the set of detected outbound licenses.
          */
-        protected Set<DetectedLicense> getDebianOutboundLicenses(String packageName, String packageVersion, String repoUrl) {
+        /* protected Set<DetectedLicense> getDebianOutboundLicenses(String packageName, String packageVersion, String repoUrl) {
 
             try {
                 // Retrieving the outbound license(s) from one of the copyright files (copyright, license or readme)
@@ -201,7 +204,7 @@ public class DebianLicenseDetectorPlugin extends Plugin {
             }
 
             return Collections.emptySet();
-        }
+        }*/
 
         // TODO
         /**
@@ -212,7 +215,7 @@ public class DebianLicenseDetectorPlugin extends Plugin {
          * @return the detected licenses.
          * @throws XmlPullParserException in case the `pom.xml` file couldn't be parsed as an XML file.
          */
-        protected Set<DetectedLicense> getLicensesFromCopyrightFile(String packageName, String packageVersion) throws XmlPullParserException {
+        /*protected Set<DetectedLicense> getLicensesFromCopyrightFile(String packageName, String packageVersion) throws XmlPullParserException {
 
             // Result
             List<License> licenses;
@@ -253,7 +256,8 @@ public class DebianLicenseDetectorPlugin extends Plugin {
 
             // No licenses were detected
             return Collections.emptySet();
-        }
+        }*/
+
 
         /**
          * Retrieves the outbound license of a GitHub project using its API.
@@ -263,6 +267,7 @@ public class DebianLicenseDetectorPlugin extends Plugin {
          * @throws IllegalArgumentException in case the repository is not hosted on GitHub.
          * @throws IOException              in case there was a problem contacting the GitHub API.
          */
+        /*
         protected DetectedDebianLicense getDebianLicenseFromGitHub(String repoUrl)
                 throws IllegalArgumentException, IOException {
 
@@ -333,14 +338,14 @@ public class DebianLicenseDetectorPlugin extends Plugin {
 
             return repoLicense;
         }
-
+        */
         /**
          * ############################ TODO ########################
          *                  Here the input topic changed.
          *                  Integrate Magiel suggested code.
          * Retrieves the package version of the input record.
          *
-         * @param record the input record containing the package version information.
+         * @param json the input record containing the package version information.
          * @return the package version
          * @throws IllegalArgumentException in case the function couldn't find the package version.
          */
@@ -365,7 +370,7 @@ public class DebianLicenseDetectorPlugin extends Plugin {
          *
          * Retrieves the package name of the input record.
          *
-         * @param record the input record containing package information.
+         * @param json the input record containing package information.
          * @return the package name.
          */
         protected String extractPackageName(JSONObject json) {
@@ -409,7 +414,7 @@ public class DebianLicenseDetectorPlugin extends Plugin {
          * @param packageName the package name to be analyzed.
          * @param packageVersion the package version to be analyzed.
          */
-        protected JSONObject retrieveCopyrightFile(String packageName, String packageVersion) {
+        protected JSONObject retrieveCopyrightFile(String packageName, String packageVersion) throws IOException, TimeoutException {
             URL url = new URL("https://sources.debian.org/api/src/" + packageName + "/" + packageVersion + "/");
             JSONObject LicenseAndPath = new JSONObject();
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
@@ -441,7 +446,7 @@ public class DebianLicenseDetectorPlugin extends Plugin {
                         String checksum = RetrieveChecksum(name, packageName, packageVersion);
                         if (checksum != null) {
                             // the following String should be modified in a JSONObject, and then parsing the license key
-                            JSONObject LicenseAndPath = RetrieveLicenseAndPathJSON(checksum, packageName, packageVersion);
+                            LicenseAndPath = RetrieveLicenseAndPathJSON(checksum, packageName, packageVersion);
                             if (LicenseAndPath.getString("license")!= null){
                                 license = LicenseAndPath.getString("license");
                             }
@@ -454,7 +459,7 @@ public class DebianLicenseDetectorPlugin extends Plugin {
                     if (name.toLowerCase().contains(licenseStr)) {
                         String checksum = RetrieveChecksum(name, packageName, packageVersion);
                         if (checksum != null) {
-                            JSONObject LicenseAndPath = RetrieveLicenseAndPathJSON(checksum, packageName, packageVersion);
+                            LicenseAndPath = RetrieveLicenseAndPathJSON(checksum, packageName, packageVersion);
                             if (LicenseAndPath.getString("license")!= null){
                                 license = LicenseAndPath.getString("license");
                             }
@@ -467,7 +472,7 @@ public class DebianLicenseDetectorPlugin extends Plugin {
                     if (name.toLowerCase().contains(readme)) {
                         String checksum = RetrieveChecksum(name, packageName, packageVersion);
                         if (checksum != null) {
-                            JSONObject LicenseAndPath = RetrieveLicenseAndPathJSON(checksum, packageName, packageVersion);
+                            LicenseAndPath = RetrieveLicenseAndPathJSON(checksum, packageName, packageVersion);
                             if (LicenseAndPath.getString("license") != null) {
                                 license = LicenseAndPath.getString("license");
                             }
@@ -480,8 +485,9 @@ public class DebianLicenseDetectorPlugin extends Plugin {
                 }
             } else {
                 System.out.println(" No contents key in this JSON");
-                return licenseAndFilePath;
+                return LicenseAndPath;
             }
+            return LicenseAndPath;
         }
 
         // retrieve checksum for a given file
@@ -544,39 +550,43 @@ public class DebianLicenseDetectorPlugin extends Plugin {
         }
 
         // return a JSONObject with license and path. This method is invoked right after RetrieveLicenseAndPathJSON().
-        protected JSONObject RetrieveLicenseAndPath(String checksum, String packageName, String packageVersion) throws IOException {
-            URL url = new URL("https://sources.debian.org/copyright/api/sha256/?checksum=" + checksum + "&package=" + packageName);
+        protected JSONObject RetrieveLicenseAndPath(JSONObject jsonOutputPayload) {
             String license = null;
             String filePath = null;
             //initialize an empty JSONObject
             JSONObject licenseAndFilePath = new JSONObject();
-
-            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-            conn.setRequestMethod("GET");
-            conn.setRequestProperty("Accept", "application/json");
-            if (conn.getResponseCode() != 200) {
-                throw new RuntimeException("HTTP query failed. Error code: " + conn.getResponseCode());
-            }
-            InputStreamReader in = new InputStreamReader(conn.getInputStream());
-            BufferedReader br = new BufferedReader(in);
-            String jsonOutput = br.lines().collect(Collectors.joining());
-            var jsonOutputPayload = new JSONObject(jsonOutput);
             if (jsonOutputPayload.has("result")) {
-                JSONObject obj1= jsonOutputPayload.getJSONObject("result");
+                JSONObject obj1 = jsonOutputPayload.getJSONObject("result");
                 if (obj1.has("copyright")) {
                     JSONArray array1 = obj1.getJSONArray("copyright");
                     for (int i = 0; i < array1.length(); i++) {
                         JSONObject obj2 = array1.getJSONObject(i);
                         String version = obj2.getString("version");
-                        if (version.equals(packageVersion)){
-                            license = obj2.getString("license");
-                            filePath = obj2.getString("path");
-                            licenseAndFilePath.put("license", license);
-                            licenseAndFilePath.put("path", filePath);
+                        String path = obj2.getString("path");
+                        if (version.equals(packageVersion)) {
+                            System.out.println(CurrentPathAndFilename);
+                            if (CurrentPathAndFilename != null){
+                                if (CurrentPathAndFilename.equals(path)) {
+                                    if (!obj2.isNull("license")) {
+                                        license = obj2.getString("license");
+                                        licenseAndFilePath.put("license", license);
+                                        FilesWithLicensesCount += 1;
+                                    }
+                                    else{
+                                        license = null;
+                                        licenseAndFilePath.put("license", license);
+                                    }
+                                    filePath = obj2.getString("path");
+                                    FilesCount+=1;
+                                    licenseAndFilePath.put("path", filePath);
+                                    System.out.println(CurrentPathAndFilename+" and "+path+" matched!");
+                                }
+                            }
                         }
                     }
                 }
             }
+
             return licenseAndFilePath;
         }
 
@@ -688,7 +698,7 @@ public class DebianLicenseDetectorPlugin extends Plugin {
             return output;
         }
 
-        // this method looks for dubplicate files, trying to prevent loops.
+        // this method looks for duplicate files, trying to prevent loops.
         protected boolean SearchPathInJsonFile(String jsonFile, String path){
             try{
                 BufferedReader br = new BufferedReader(new FileReader(jsonFile));
@@ -722,7 +732,7 @@ public class DebianLicenseDetectorPlugin extends Plugin {
         }
 
         // Loop through files and insert path and license into a JSONArray
-        protected JSONArray LoopThroughFiles(JSONArray JSONFiles) throws IOException, TimeoutException, InterruptedException {
+        protected void LoopThroughFiles(JSONArray JSONFiles) throws IOException, TimeoutException, InterruptedException {
             JSONArray LicenseAndPathFiles = new JSONArray();
             //JSONObject LicenseAndPathJSON = null;// = new JSONObject();
             String checksum = null;
@@ -763,7 +773,8 @@ public class DebianLicenseDetectorPlugin extends Plugin {
             }
         }
 
-
+        
+        /*
         @Override
         public Optional<String> produce() {
             if (detectedLicenses == null ||
@@ -773,7 +784,7 @@ public class DebianLicenseDetectorPlugin extends Plugin {
             } else {
                 return Optional.of(new JSONObject(detectedLicenses).toString());
             }
-        }
+        }*/
 
         @Override
         public String getOutputPath() {

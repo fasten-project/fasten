@@ -18,10 +18,12 @@
 
 package eu.fasten.analyzer.debianlicensedetector;
 
-//@CommandLine.Command(name = "DebianLicenseDetector")
+import picocli.CommandLine;
+
+@CommandLine.Command(name = "DebianLicenseDetector")
 public class Main implements Runnable {
     @Override
     public void run() {
-        DebianLicenseDetector.DebianLicenseDetector debianLicenseDetector = new DebianLicenseDetector.DebianLicenseDetector();
+        DebianLicenseDetectorPlugin.DebianLicenseDetectorExtension debianLicenseDetector = new DebianLicenseDetectorPlugin.DebianLicenseDetectorExtension();
     }
 }
