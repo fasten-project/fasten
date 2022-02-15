@@ -73,7 +73,7 @@
                                     <manifestEntries>
                                         <X-Compile-Source-JDK>11</X-Compile-Source-JDK>
                                         <X-Compile-Target-JDK>11</X-Compile-Target-JDK>
-                                        <Plugin-Class>eu.fasten.analyzer.licensedetector.LicenseDetectorPlugin
+                                        <Plugin-Class>eu.fasten.analyzer.debianlicensedetector.DebianLicenseDetectorPlugin
                                         </Plugin-Class>
                                         <Plugin-Id>license-detector</Plugin-Id>
                                         <Plugin-Version>0.0.1</Plugin-Version>
