@@ -72,11 +72,11 @@ public class DebianLicenseDetectorPlugin extends Plugin {
 
         }
 
+        /*
         @Override
         public void setTopic(String topicName) {
             this.consumerTopic = topicName;
-        }
-
+        }*/
         /**
          * Resets the internal state of this plugin.
          */
