@@ -1,4 +1,4 @@
-package eu.fasten.analyzer.licensedetector;
+package eu.fasten.analyzer.debianlicensedetector;
 
 import com.google.common.collect.Sets;
 import eu.fasten.core.data.metadatadb.license.DetectedLicense;
@@ -31,7 +31,7 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 
-public class LicenseDetectorPlugin extends Plugin {
+public class DebianLicenseDetectorPlugin extends Plugin {
 
     public DebianLicenseDetectorPlugin(PluginWrapper wrapper) {
         super(wrapper);
