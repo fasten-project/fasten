@@ -43,6 +43,8 @@
         <module>vulnerability-statements-processor</module>
         <module>vulnerability-packages-listener</module>
         <module>dummy-plugin</module>
+        <module>debian-license-detector</module>
+             
     </modules>
 
     <build>
