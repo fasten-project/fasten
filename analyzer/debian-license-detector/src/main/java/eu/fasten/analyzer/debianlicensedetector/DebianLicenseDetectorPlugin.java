@@ -4,7 +4,7 @@ package eu.fasten.analyzer.debianlicensedetector;
 //import eu.fasten.core.data.metadatadb.license.DetectedLicenseSource;
 //import eu.fasten.core.data.metadatadb.license.DetectedLicenses;
 import eu.fasten.core.plugins.KafkaPlugin;
-        import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
+import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import org.pf4j.Extension;
@@ -86,70 +86,82 @@ public class DebianLicenseDetectorPlugin extends Plugin {
         }
 
         @Override
-        public void consume(String record) throws IOException, InterruptedException, TimeoutException {
-        //try { // Fasten error-handling guidelines
-            reset();
-            JSONObject json = new JSONObject(record);
-            logger.info("Debian license detector started.");
+        public void consume(String record) {
+            try { // Fasten error-handling guidelines
+                reset();
+                JSONObject json = new JSONObject(record);
+                logger.info("Debian license detector started.");
 
-            // Retrieving the package name
-            String packageName = extractPackageName(json);
-            logger.info("The package to analyze is:"+packageName+".");
-            // Retrieving the package version
-            String packageVersion = extractPackageVersion(json);
-            logger.info("The package version is:"+packageVersion+".");
+                // Retrieving the package name
+                String packageName = extractPackageName(json);
+                logger.info("The package to analyze is:"+packageName+".");
+                // Retrieving the package version
+                String packageVersion = extractPackageVersion(json);
+                logger.info("The package version is:"+packageVersion+".");
 
-            // these logs should be saved in some shared directory, and a policy of log deletion should be implemented
-            String directoryName = "logs";
-            File directory = new File(directoryName);
-            if (!directory.exists()) {
-                directory.mkdir();
-            }
-            FileHandler fh;
-            //String timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
+                // these logs should be saved in some shared directory, and a policy of log deletion should be implemented
+                String directoryName = "logs";
+                File directory = new File(directoryName);
+                if (!directory.exists()) {
+                    directory.mkdir();
+                }
+                FileHandler fh;
+                //String timeStamp = new SimpleDateFormat("yyyy.MM.dd.HH.mm.ss").format(new Date());
 
-            long startTime = System.currentTimeMillis();
-            MeasureElapsedTime();
-            String path = packageName + "/" + packageVersion;
-            var jsonOutputPayload = new JSONObject();
-            jsonOutputPayload = GetDirectoryOrFileJSON(path);
-            System.out.println(jsonOutputPayload);
-            if (jsonOutputPayload == null) {
-                logger.info("Analyzed: " + packageName + " version : " + packageVersion);
-                logger.info("The package is not present on the Debian repository.");
-            } else {
-                packageVersion = jsonOutputPayload.getString("version");
-                file = new File("logs/" + packageName + "-" + packageVersion + "_LicensesAtFileLevel_ld.json");
-                Files.deleteIfExists(file.toPath());
-                file.createNewFile();
-                logger.info(file + " created.");
-                logger.info("Analyzing: " + packageName + " version : " + packageVersion);
-                AnalyzeDirectory(jsonOutputPayload, packageName, packageVersion);
-            }
+                long startTime = System.currentTimeMillis();
+                MeasureElapsedTime();
+                String path = packageName + "/" + packageVersion;
+                var jsonOutputPayload = new JSONObject();
+                jsonOutputPayload = GetDirectoryOrFileJSON(path);
+                System.out.println(jsonOutputPayload);
+                if (jsonOutputPayload == null) {
+                    logger.info("Analyzed: " + packageName + " version : " + packageVersion);
+                    logger.info("The package is not present on the Debian repository.");
+                } else {
+                    packageVersion = jsonOutputPayload.getString("version");
+                    file = new File("logs/" + packageName + "-" + packageVersion + "_LicensesAtFileLevel_ld.json");
+                    Files.deleteIfExists(file.toPath());
+                    file.createNewFile();
+                    logger.info(file + " created.");
+                    logger.info("Analyzing: " + packageName + " version : " + packageVersion);
+                    AnalyzeDirectory(jsonOutputPayload, packageName, packageVersion);
+                }
 
-            long endTime = System.currentTimeMillis();
-            long duration = (endTime - startTime);  //Total execution time in milliseconds
+                long endTime = System.currentTimeMillis();
+                long duration = (endTime - startTime);  //Total execution time in milliseconds
 
 
-            logger.info("Analysis completed successfully\n " +
-                    "During this analysis " + HttpGetCount + " HTTP requests have been performed.\n" +
-                    "During this analysis " + FilesCount + " files have been found.\n" +
-                    "During this analysis " + FilesWithLicensesCount + " files with licenses have been found.\n" +
-                    "The analysis took:" + ConvertMsToMins(duration) + ".\n"
-            );
-            if (NumberOfFilesWithDoubleEntries > 0) {
-                logger.info("The number of files with detected double entries are: " + NumberOfFilesWithDoubleEntries + ".\n" +
-                        "The five files detected with a double entry are :" + FileDoubleEntered + ".\n"
+                logger.info("Analysis completed successfully\n " +
+                        "During this analysis " + HttpGetCount + " HTTP requests have been performed.\n" +
+                        "During this analysis " + FilesCount + " files have been found.\n" +
+                        "During this analysis " + FilesWithLicensesCount + " files with licenses have been found.\n" +
+                        "The analysis took:" + ConvertMsToMins(duration) + ".\n"
                 );
+                if (NumberOfFilesWithDoubleEntries > 0) {
+                    logger.info("The number of files with detected double entries are: " + NumberOfFilesWithDoubleEntries + ".\n" +
+                            "The five files detected with a double entry are :" + FileDoubleEntered + ".\n"
+                    );
+                }
+                packageVersion = "latest";
+                HttpGetCount = 0;
+                FilesCount = 0;
+                FilesWithLicensesCount = 0;
+                NumberOfFilesWithDoubleEntries = 0;
+                file = null;
+                FileDoubleEntered = null;
+                } catch (SocketTimeoutException ex) {
+                ex.printStackTrace();
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            } catch (InterruptedException ex) {
+                ex.printStackTrace();
+            } catch (TimeoutException ex) {
+                ex.printStackTrace();
             }
-            packageVersion = "latest";
-            HttpGetCount = 0;
-            FilesCount = 0;
-            FilesWithLicensesCount = 0;
-            NumberOfFilesWithDoubleEntries = 0;
-            file = null;
-            FileDoubleEntered = null;
-        //}
+        /*} catch (Exception e) { // Fasten error-handling guidelines
+                logger.error(e.getMessage(), e.getCause());
+                setPluginError(e);
+            }*/
         }
 
         @Override
@@ -349,7 +361,7 @@ public class DebianLicenseDetectorPlugin extends Plugin {
          * @return the package version
          * @throws IllegalArgumentException in case the function couldn't find the package version.
          */
-        protected String extractPackageVersion(JSONObject json) throws IllegalArgumentException {
+        protected static String extractPackageVersion(JSONObject json) throws IllegalArgumentException {
             for (var key : json.keySet()) {
                 if (key.equals("version")) {
                     return json.getString("version");
@@ -373,7 +385,7 @@ public class DebianLicenseDetectorPlugin extends Plugin {
          * @param json the input record containing package information.
          * @return the package name.
          */
-        protected String extractPackageName(JSONObject json) {
+        protected static String extractPackageName(JSONObject json) {
             for (var key : json.keySet()) {
                 if (key.equals("product")) {
                     return json.getString("product");
@@ -603,7 +615,7 @@ public class DebianLicenseDetectorPlugin extends Plugin {
         }
 
         // this method retrieves the json file given a path
-        protected JSONObject GetDirectoryOrFileJSON(String path) throws InterruptedException, RuntimeException, IOException, TimeoutException, SocketTimeoutException {
+        protected static JSONObject GetDirectoryOrFileJSON(String path) throws InterruptedException, RuntimeException, IOException, TimeoutException, SocketTimeoutException {
             JSONObject JSONDirectoryOrFile = new JSONObject();
             URL url = new URL("https://sources.debian.org/api/src/" + path + "/");
             System.out.println(url);
@@ -673,7 +685,7 @@ public class DebianLicenseDetectorPlugin extends Plugin {
         }
 
         // this method is used to measure the time elapsed for scanning a given package
-        protected void MeasureElapsedTime() {
+        protected static void MeasureElapsedTime() {
             try {
                 TimeUnit.SECONDS.sleep(3);
             } catch (InterruptedException e) {
@@ -682,7 +694,7 @@ public class DebianLicenseDetectorPlugin extends Plugin {
         }
 
         // this method convert from milliseconds to minutes and seconds.
-        protected String ConvertMsToMins(long milliseconds) {
+        protected static String ConvertMsToMins(long milliseconds) {
 
             // formula for conversion for
             // milliseconds to minutes.
