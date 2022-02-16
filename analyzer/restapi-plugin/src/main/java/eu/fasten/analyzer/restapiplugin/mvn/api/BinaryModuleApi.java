@@ -38,8 +38,8 @@ import java.io.IOException;
 public class BinaryModuleApi {
 
     @GetMapping(value = "/{pkg}/{pkg_ver}/binary-modules", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<String> getPackageBinaryModules(@PathVariable("pkg") String package_name,
-                                                   @PathVariable("pkg_ver") String package_version,
+    ResponseEntity<String> getPackageBinaryModules(@PathVariable("pkg") String packageName,
+                                                   @PathVariable("pkg_ver") String packageVersion,
                                                    @RequestParam(required = false, defaultValue = "0") int offset,
                                                    @RequestParam(required = false, defaultValue = RestApplication.DEFAULT_PAGE_SIZE) int limit,
                                                    @RequestParam(required = false) String artifactRepository,
@@ -47,10 +47,10 @@ public class BinaryModuleApi {
         String result;
         try {
             result = KnowledgeBaseConnector.kbDao.getPackageBinaryModules(
-                    package_name, package_version, offset, limit);
+                    packageName, packageVersion, offset, limit);
         } catch (PackageVersionNotFoundException e) {
             try {
-                LazyIngestionProvider.ingestArtifactIfNecessary(package_name, package_version, artifactRepository, releaseDate);
+                LazyIngestionProvider.ingestArtifactIfNecessary(packageName, packageVersion, artifactRepository, releaseDate);
             } catch (IllegalArgumentException ex) {
                 return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST);
             } catch (IOException ex) {
@@ -63,18 +63,18 @@ public class BinaryModuleApi {
     }
 
     @GetMapping(value = "/{pkg}/{pkg_ver}/binary-modules/{binary}/metadata", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<String> getBinaryModuleMetadata(@PathVariable("pkg") String package_name,
-                                                   @PathVariable("pkg_ver") String package_version,
+    ResponseEntity<String> getBinaryModuleMetadata(@PathVariable("pkg") String packageName,
+                                                   @PathVariable("pkg_ver") String packageVersion,
                                                    @PathVariable("binary") String binary_module,
                                                    @RequestParam(required = false) String artifactRepository,
                                                    @RequestParam(required = false) Long releaseDate) {
         String result;
         try {
             result = KnowledgeBaseConnector.kbDao.getBinaryModuleMetadata(
-                    package_name, package_version, binary_module);
+                    packageName, packageVersion, binary_module);
         } catch (PackageVersionNotFoundException e) {
             try {
-                LazyIngestionProvider.ingestArtifactIfNecessary(package_name, package_version, artifactRepository, releaseDate);
+                LazyIngestionProvider.ingestArtifactIfNecessary(packageName, packageVersion, artifactRepository, releaseDate);
             } catch (IllegalArgumentException | IOException ex) {
                 return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST);
             }
@@ -88,8 +88,8 @@ public class BinaryModuleApi {
     }
 
     @GetMapping(value = "/{pkg}/{pkg_ver}/binary-modules/{binary}/files", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<String> getBinaryModuleFiles(@PathVariable("pkg") String package_name,
-                                                @PathVariable("pkg_ver") String package_version,
+    ResponseEntity<String> getBinaryModuleFiles(@PathVariable("pkg") String packageName,
+                                                @PathVariable("pkg_ver") String packageVersion,
                                                 @PathVariable("binary") String binary_module,
                                                 @RequestParam(required = false, defaultValue = "0") int offset,
                                                 @RequestParam(required = false, defaultValue = RestApplication.DEFAULT_PAGE_SIZE) int limit,
@@ -98,10 +98,10 @@ public class BinaryModuleApi {
         String result;
         try {
             result = KnowledgeBaseConnector.kbDao.getBinaryModuleFiles(
-                    package_name, package_version, binary_module, offset, limit);
+                    packageName, packageVersion, binary_module, offset, limit);
         } catch (PackageVersionNotFoundException e) {
             try {
-                LazyIngestionProvider.ingestArtifactIfNecessary(package_name, package_version, artifactRepository, releaseDate);
+                LazyIngestionProvider.ingestArtifactIfNecessary(packageName, packageVersion, artifactRepository, releaseDate);
             } catch (IllegalArgumentException | IOException ex) {
                 return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST);
             }

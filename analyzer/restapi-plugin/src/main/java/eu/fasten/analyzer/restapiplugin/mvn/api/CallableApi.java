@@ -41,8 +41,8 @@ import java.util.List;
 public class CallableApi {
 
     @GetMapping(value = "/packages/{pkg}/{pkg_ver}/callables", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<String> getPackageCallables(@PathVariable("pkg") String package_name,
-                                               @PathVariable("pkg_ver") String package_version,
+    ResponseEntity<String> getPackageCallables(@PathVariable("pkg") String packageName,
+                                               @PathVariable("pkg_ver") String packageVersion,
                                                @RequestParam(required = false, defaultValue = "0") int offset,
                                                @RequestParam(required = false, defaultValue = RestApplication.DEFAULT_PAGE_SIZE) int limit,
                                                @RequestParam(required = false) String artifactRepository,
@@ -50,10 +50,10 @@ public class CallableApi {
         String result;
         try {
             result = KnowledgeBaseConnector.kbDao.getPackageCallables(
-                    package_name, package_version, offset, limit);
+                    packageName, packageVersion, offset, limit);
         } catch (PackageVersionNotFoundException e) {
             try {
-                LazyIngestionProvider.ingestArtifactIfNecessary(package_name, package_version, artifactRepository, releaseDate);
+                LazyIngestionProvider.ingestArtifactIfNecessary(packageName, packageVersion, artifactRepository, releaseDate);
             } catch (IllegalArgumentException ex) {
                 return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST);
             } catch (IOException ex) {
@@ -66,16 +66,16 @@ public class CallableApi {
     }
 
     @PostMapping(value = "/packages/{pkg}/{pkg_ver}/callable/metadata", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<String> getCallableMetadata(@PathVariable("pkg") String package_name,
-                                               @PathVariable("pkg_ver") String package_version,
+    ResponseEntity<String> getCallableMetadata(@PathVariable("pkg") String packageName,
+                                               @PathVariable("pkg_ver") String packageVersion,
                                                @RequestBody String fasten_uri,
                                                @RequestParam(value = "artifactRepository", required = false) String artifactRepository,
                                                @RequestParam(required = false) Long releaseDate) {
         String result = KnowledgeBaseConnector.kbDao.getCallableMetadata(
-                package_name, package_version, fasten_uri);
+                packageName, packageVersion, fasten_uri);
         if (result == null) {
             try {
-                LazyIngestionProvider.ingestArtifactIfNecessary(package_name, package_version, artifactRepository, releaseDate);
+                LazyIngestionProvider.ingestArtifactIfNecessary(packageName, packageVersion, artifactRepository, releaseDate);
             } catch (IllegalArgumentException | IllegalStateException | IOException ex) {
                 return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST);
             }
