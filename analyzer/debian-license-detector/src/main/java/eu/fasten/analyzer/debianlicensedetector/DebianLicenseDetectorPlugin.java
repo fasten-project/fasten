@@ -365,8 +365,8 @@ public class DebianLicenseDetectorPlugin extends Plugin {
             for (var key : json.keySet()) {
                 if (key.equals("input")) {
                     for (var key2 : json.keySet()) {
-                        if (key2.equals("product")) {
-                            return json.getString("product");}
+                        if (key2.equals("version")) {
+                            return json.getString("version");}
                     }
                 } else {
                     String packageVersionNotFound = "Package version not found";
