@@ -41,7 +41,7 @@ public class ModuleApiTest {
         service = new ModuleApi();
         kbDao = Mockito.mock(MetadataDao.class);
         KnowledgeBaseConnector.kbDao = kbDao;
-        KnowledgeBaseConnector.forge = "maven";
+        KnowledgeBaseConnector.forge = "mvn";
     }
 
     @Test
@@ -142,7 +142,7 @@ public class ModuleApiTest {
 
     @Test
     void getModuleCallablesPositiveTest() {
-        var forge = "maven";
+        var forge = "mvn";
         var packageName = "group:artifact";
         var version = "version";
         var module = "module";
@@ -156,7 +156,7 @@ public class ModuleApiTest {
 
     @Test
     void getModuleCallablesNegativeTest() {
-        var forge = "maven";
+        var forge = "mvn";
         var packageName = "group:artifact";
         var version = "version";
         var module = "module";
@@ -168,7 +168,7 @@ public class ModuleApiTest {
 
     @Test
     void getModuleCallablesIngestionTest() {
-        var forge = "maven";
+        var forge = "mvn";
         var packageName = "junit:junit";
         var version = "4.12";
         var module = "module";

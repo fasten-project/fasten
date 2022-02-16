@@ -38,7 +38,7 @@ public class PackageVersionApiTest {
         service = new PackageVersionApi();
         kbDao = Mockito.mock(MetadataDao.class);
         KnowledgeBaseConnector.kbDao = kbDao;
-        KnowledgeBaseConnector.forge = "maven";
+        KnowledgeBaseConnector.forge = "mvn";
     }
 
     @Test
