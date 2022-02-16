@@ -51,6 +51,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -198,28 +199,50 @@ public class ResolutionApi {
     }
 
     @PostMapping(value = "/resolve_dependencies", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<String> resolveMultipleDependencies(@RequestBody List<String> mavenCoordinates) {
-        var revisions = mavenCoordinates.stream().map(c -> {
-            var groupId = c.split(Constants.mvnCoordinateSeparator)[0];
-            var artifactId = c.split(Constants.mvnCoordinateSeparator)[1];
-            var version = c.split(Constants.mvnCoordinateSeparator)[2];
-            var id = KnowledgeBaseConnector.kbDao.getPackageVersionID(groupId + Constants.mvnCoordinateSeparator + artifactId, version);
-            return new Revision(id, groupId, artifactId, version, new Timestamp(-1));
-        }).collect(Collectors.toSet());
-        var virtualNode = this.graphMavenResolver.addVirtualNode(new ObjectLinkedOpenHashSet<>(revisions));
-        var depSet = this.graphMavenResolver.resolveDependencies(virtualNode, KnowledgeBaseConnector.dbContext, true);
-        this.graphMavenResolver.removeVirtualNode(virtualNode);
-        var jsonArray = new JSONArray();
-        depSet.stream().map(r -> {
-            var json = new JSONObject();
-            var url = String.format("%smvn/%s/%s/%s_%s_%s.json", KnowledgeBaseConnector.rcgBaseUrl,
-                    r.artifactId.charAt(0), r.artifactId, r.artifactId, r.groupId, r.version);
-            json.put(String.valueOf(r.id), url);
-            return json;
-        }).forEach(jsonArray::put);
-        var result = jsonArray.toString();
-        result = result.replace("\\/", "/");
-        return new ResponseEntity<>(result, HttpStatus.OK);
+    ResponseEntity<String> resolveMultipleDependencies(@RequestBody List<String> coordinates) {
+        switch (KnowledgeBaseConnector.forge) {
+            case "mvn": {
+                var revisions = coordinates.stream().map(c -> {
+                    var groupId = c.split(Constants.mvnCoordinateSeparator)[0];
+                    var artifactId = c.split(Constants.mvnCoordinateSeparator)[1];
+                    var version = c.split(Constants.mvnCoordinateSeparator)[2];
+                    var id = KnowledgeBaseConnector.kbDao.getPackageVersionID(groupId + Constants.mvnCoordinateSeparator + artifactId, version);
+                    return new Revision(id, groupId, artifactId, version, new Timestamp(-1));
+                }).collect(Collectors.toSet());
+                var virtualNode = this.graphMavenResolver.addVirtualNode(new ObjectLinkedOpenHashSet<>(revisions));
+                var depSet = this.graphMavenResolver.resolveDependencies(virtualNode, KnowledgeBaseConnector.dbContext, true);
+                this.graphMavenResolver.removeVirtualNode(virtualNode);
+                var jsonArray = new JSONArray();
+                depSet.stream().map(r -> {
+                    var json = new JSONObject();
+                    var url = String.format("%smvn/%s/%s/%s_%s_%s.json", KnowledgeBaseConnector.rcgBaseUrl,
+                            r.artifactId.charAt(0), r.artifactId, r.artifactId, r.groupId, r.version);
+                    json.put(String.valueOf(r.id), url);
+                    return json;
+                }).forEach(jsonArray::put);
+                var result = jsonArray.toString();
+                result = result.replace("\\/", "/");
+                return new ResponseEntity<>(result, HttpStatus.OK);
+            }
+            default: {
+                ObjectLinkedOpenHashSet deps = new ObjectLinkedOpenHashSet<String>();
+                coordinates.forEach(c -> {
+                    var packageName = c.split(Constants.mvnCoordinateSeparator)[0];
+                    var packageVersion = c.split(Constants.mvnCoordinateSeparator)[1];
+                    var query = "http://"+ KnowledgeBaseConnector.dependencyResolverAddress + "/dependencies/"+ packageName+"/"+packageVersion;
+                    var requestResult = MavenUtilities.sendGetRequest(query);
+                    var depList = new JSONArray(requestResult);
+                     depList.forEach(item -> {
+                        JSONObject obj = (JSONObject) item;
+                        if (!deps.contains(obj.toString())) {
+                            deps.add(obj.toString());
+                        }
+                    });
+                });
+            List<String> result = new ArrayList<String>(deps);
+            return new ResponseEntity<>(result.toString(), HttpStatus.OK);
+            }
+        }
     }
 
     @GetMapping(value = "/__INTERNAL__/packages/{pkg_version_id}/directedgraph", produces = MediaType.APPLICATION_JSON_VALUE)
