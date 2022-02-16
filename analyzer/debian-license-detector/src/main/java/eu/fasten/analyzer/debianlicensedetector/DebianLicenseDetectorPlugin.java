@@ -363,14 +363,14 @@ public class DebianLicenseDetectorPlugin extends Plugin {
          */
         protected static String extractPackageVersion(JSONObject json) throws IllegalArgumentException {
             for (var key : json.keySet()) {
-                if (key.equals("version")) {
-                    return json.getString("version");
-                } else {
-                    var other = json.get(key);
-                    if (other instanceof JSONObject) {
-                        var nestedResult = findPayload((JSONObject) other);
-                        if(nestedResult != null) return nestedResult;
+                if (key.equals("input")) {
+                    for (var key2 : json.keySet()) {
+                        if (key2.equals("product")) {
+                            return json.getString("product");}
                     }
+                } else {
+                    String packageVersionNotFound = "Package version not found";
+                    return packageVersionNotFound;
                 }
             }
             return null;
@@ -387,36 +387,17 @@ public class DebianLicenseDetectorPlugin extends Plugin {
          */
         protected static String extractPackageName(JSONObject json) {
             for (var key : json.keySet()) {
-                if (key.equals("product")) {
-                    return json.getString("product");
+                if (key.equals("input")) {
+                    for (var key2 : json.keySet()) {
+                        if (key2.equals("product")) {
+                            return json.getString("product");}
+                    }
                 } else {
-                    var other = json.get(key);
-                    if (other instanceof JSONObject) {
-                        var nestedResult = findPayload((JSONObject) other);
-                        if(nestedResult != null) return nestedResult;
+                    String packageNameNotFound = "Package name not found";
+                    return packageNameNotFound;
                     }
                 }
-            }
             return null;
-        }
-
-        /**
-         * * #################### TODO #####################
-         *          ....same as above...
-         *
-         * @param record the input record containing repository information.
-         * @return the input repository URL.
-         */
-        @Nullable
-        protected String extractRepoURL(String record) {
-            var payload = new JSONObject(record);
-            if (payload.has("fasten.RepoCloner.out")) {
-                payload = payload.getJSONObject("fasten.RepoCloner.out");
-            }
-            if (payload.has("payload")) {
-                payload = payload.getJSONObject("payload");
-            }
-            return payload.getString("repoUrl");
         }
 
         // this method was calling the previous version of RetrieveLicenseAndPath, TODO check if with RetrieveLicenseAndPathJSON all it is functioning
@@ -447,7 +428,7 @@ public class DebianLicenseDetectorPlugin extends Plugin {
                     JSONObject obj4 = array2.getJSONObject(i);
                     //Getting name and type of json objects inside array2
                     String name = obj4.getString("name");
-                    String type = obj4.getString("type");
+                    //String type = obj4.getString("type");
                     String copyright = "copyright";
                     String licenseStr = "license";
                     String readme = "readme";
