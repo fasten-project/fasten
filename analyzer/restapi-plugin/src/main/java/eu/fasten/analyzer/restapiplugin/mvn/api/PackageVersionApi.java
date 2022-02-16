@@ -29,7 +29,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/package_version")
+@RequestMapping("/packageVersion")
 public class PackageVersionApi {
 
 

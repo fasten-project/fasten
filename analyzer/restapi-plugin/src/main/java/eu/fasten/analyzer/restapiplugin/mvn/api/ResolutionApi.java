@@ -90,16 +90,16 @@ public class ResolutionApi {
         }
     }
     @GetMapping(value = "/packages/{pkg}/{pkg_ver}/resolve/dependencies", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<String> resolveDependencies(@PathVariable("pkg") String package_name,
-                                               @PathVariable("pkg_ver") String package_version,
+    ResponseEntity<String> resolveDependencies(@PathVariable("pkg") String packageName,
+                                               @PathVariable("pkg_ver") String packageVersion,
                                                @RequestParam(required = false, defaultValue = "true") boolean transitive,
                                                @RequestParam(required = false, defaultValue = "-1") long timestamp,
                                                @RequestParam(required = false, defaultValue = "true") boolean useDepGraph) {
         switch (KnowledgeBaseConnector.forge) {
             case "mvn": {
-                if (!KnowledgeBaseConnector.kbDao.assertPackageExistence(package_name, package_version)) {
+                if (!KnowledgeBaseConnector.kbDao.assertPackageExistence(packageName, packageVersion)) {
                     try {
-                        LazyIngestionProvider.ingestArtifactWithDependencies(package_name, package_version);
+                        LazyIngestionProvider.ingestArtifactWithDependencies(packageName, packageVersion);
                     } catch (IllegalArgumentException e) {
                         return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
                     } catch (IOException e) {
@@ -107,15 +107,15 @@ public class ResolutionApi {
                     }
                     return new ResponseEntity<>("Package version not found, but should be processed soon. Try again later", HttpStatus.CREATED);
                 }
-                var groupId = package_name.split(Constants.mvnCoordinateSeparator)[0];
-                var artifactId = package_name.split(Constants.mvnCoordinateSeparator)[1];
+                var groupId = packageName.split(Constants.mvnCoordinateSeparator)[0];
+                var artifactId = packageName.split(Constants.mvnCoordinateSeparator)[1];
                 Set<Revision> depSet;
                 if (useDepGraph) {
                     depSet = this.graphMavenResolver.resolveDependencies(groupId,
-                            artifactId, package_version, timestamp, KnowledgeBaseConnector.dbContext, transitive);
+                            artifactId, packageVersion, timestamp, KnowledgeBaseConnector.dbContext, transitive);
                 } else {
                     var mavenResolver = new MavenResolver();
-                    depSet = mavenResolver.resolveDependencies(groupId + ":" + artifactId + ":" + package_version);
+                    depSet = mavenResolver.resolveDependencies(groupId + ":" + artifactId + ":" + packageVersion);
                 }
                 var jsonArray = new JSONArray();
                 depSet.stream().map(Revision::toJSON).peek(json -> {
@@ -131,7 +131,7 @@ public class ResolutionApi {
                 return new ResponseEntity<>(result, HttpStatus.OK);
             }
             default: {
-                var query = "http://"+ KnowledgeBaseConnector.dependencyResolverAddress + "/dependencies/"+ package_name+"/"+package_version;
+                var query = "http://"+ KnowledgeBaseConnector.dependencyResolverAddress + "/dependencies/"+ packageName+"/"+packageVersion;
                 var result = MavenUtilities.sendGetRequest(query);
                 if (result == null) {
                     return new ResponseEntity<>("Could not find the requested data", HttpStatus.NOT_FOUND);
@@ -143,17 +143,17 @@ public class ResolutionApi {
     }
 
     @GetMapping(value = "/packages/{pkg}/{pkg_ver}/resolve/dependents", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<String> resolveDependents(@PathVariable("pkg") String package_name,
-                                             @PathVariable("pkg_ver") String package_version,
+    ResponseEntity<String> resolveDependents(@PathVariable("pkg") String packageName,
+                                             @PathVariable("pkg_ver") String packageVersion,
                                              @RequestParam(required = false, defaultValue = "true") boolean transitive,
                                              @RequestParam(required = false, defaultValue = "-1") long timestamp) {
         JSONArray jsonArray = new JSONArray();
         switch (KnowledgeBaseConnector.forge) {
             case "mvn": {
-                var groupId = package_name.split(Constants.mvnCoordinateSeparator)[0];
-                var artifactId = package_name.split(Constants.mvnCoordinateSeparator)[1];
+                var groupId = packageName.split(Constants.mvnCoordinateSeparator)[0];
+                var artifactId = packageName.split(Constants.mvnCoordinateSeparator)[1];
                 var depSet = this.graphMavenResolver.resolveDependents(groupId,
-                        artifactId, package_version, timestamp, transitive);
+                        artifactId, packageVersion, timestamp, transitive);
                 depSet.stream().map(eu.fasten.core.maven.data.Revision::toJSON).peek(json -> {
                     var group = json.getString("groupId");
                     var artifact = json.getString("artifactId");
@@ -165,9 +165,9 @@ public class ResolutionApi {
                 break;
             }
             case "pypi": {
-                timestamp = ((timestamp == -1) ? this.graphResolver.getCreatedAt(package_name,package_version, KnowledgeBaseConnector.dbContext): timestamp);
-                var depSet = this.graphResolver.resolveDependents(package_name,
-                package_version, timestamp, transitive);
+                timestamp = ((timestamp == -1) ? this.graphResolver.getCreatedAt(packageName,packageVersion, KnowledgeBaseConnector.dbContext): timestamp);
+                var depSet = this.graphResolver.resolveDependents(packageName,
+                packageVersion, timestamp, transitive);
                 depSet.stream().map(eu.fasten.core.dependents.data.Revision::toJSON).peek(json -> {
                     var dep_name = json.getString("package");
                     var ver = json.getString("version");
@@ -178,9 +178,9 @@ public class ResolutionApi {
                 break;
             }
             case "debian": {
-                timestamp = ((timestamp == -1) ? this.graphResolver.getCreatedAt(package_name,package_version, KnowledgeBaseConnector.dbContext): timestamp);
-                var depSet = this.graphResolver.resolveDependents(package_name,
-                package_version, timestamp, transitive);
+                timestamp = ((timestamp == -1) ? this.graphResolver.getCreatedAt(packageName,packageVersion, KnowledgeBaseConnector.dbContext): timestamp);
+                var depSet = this.graphResolver.resolveDependents(packageName,
+                packageVersion, timestamp, transitive);
                 depSet.stream().map(eu.fasten.core.dependents.data.Revision::toJSON).peek(json -> {
                     var dep_name = json.getString("package");
                     var ver = json.getString("version");

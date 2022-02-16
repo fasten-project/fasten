@@ -37,8 +37,8 @@ import java.io.IOException;
 public class DependencyApi {
 
     @GetMapping(value = "/{pkg}/{pkg_ver}/deps", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<String> getPackageDependencies(@PathVariable("pkg") String package_name,
-                                                  @PathVariable("pkg_ver") String package_version,
+    ResponseEntity<String> getPackageDependencies(@PathVariable("pkg") String packageName,
+                                                  @PathVariable("pkg_ver") String packageVersion,
                                                   @RequestParam(required = false, defaultValue = "0") int offset,
                                                   @RequestParam(required = false, defaultValue = RestApplication.DEFAULT_PAGE_SIZE) int limit,
                                                   @RequestParam(required = false) String artifactRepository,
@@ -46,10 +46,10 @@ public class DependencyApi {
         String result;
         try {
             result = KnowledgeBaseConnector.kbDao.getPackageDependencies(
-                    package_name, package_version, offset, limit);
+                    packageName, packageVersion, offset, limit);
         } catch (PackageVersionNotFoundException e) {
             try {
-                LazyIngestionProvider.ingestArtifactIfNecessary(package_name, package_version, artifactRepository, releaseDate);
+                LazyIngestionProvider.ingestArtifactIfNecessary(packageName, packageVersion, artifactRepository, releaseDate);
             } catch (IllegalArgumentException ex) {
                 return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST);
             } catch (IOException ex) {

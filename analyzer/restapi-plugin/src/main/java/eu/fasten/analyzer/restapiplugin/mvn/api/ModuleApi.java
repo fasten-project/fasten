@@ -39,8 +39,8 @@ import java.io.IOException;
 public class ModuleApi {
 
     @GetMapping(value = "/{pkg}/{pkg_ver}/modules", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<String> getPackageModules(@PathVariable("pkg") String package_name,
-                                             @PathVariable("pkg_ver") String package_version,
+    ResponseEntity<String> getPackageModules(@PathVariable("pkg") String packageName,
+                                             @PathVariable("pkg_ver") String packageVersion,
                                              @RequestParam(required = false, defaultValue = "0") int offset,
                                              @RequestParam(required = false, defaultValue = RestApplication.DEFAULT_PAGE_SIZE) int limit,
                                              @RequestParam(required = false) String artifactRepository,
@@ -48,10 +48,10 @@ public class ModuleApi {
         String result;
         try {
             result = KnowledgeBaseConnector.kbDao.getPackageModules(
-                    package_name, package_version, offset, limit);
+                    packageName, packageVersion, offset, limit);
         } catch (PackageVersionNotFoundException e) {
             try {
-                LazyIngestionProvider.ingestArtifactIfNecessary(package_name, package_version, artifactRepository, releaseDate);
+                LazyIngestionProvider.ingestArtifactIfNecessary(packageName, packageVersion, artifactRepository, releaseDate);
             } catch (IllegalArgumentException ex) {
                 return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST);
             } catch (IOException ex) {
@@ -64,18 +64,18 @@ public class ModuleApi {
     }
 
     @PostMapping(value = "/{pkg}/{pkg_ver}/modules/metadata", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<String> getModuleMetadata(@PathVariable("pkg") String package_name,
-                                             @PathVariable("pkg_ver") String package_version,
+    ResponseEntity<String> getModuleMetadata(@PathVariable("pkg") String packageName,
+                                             @PathVariable("pkg_ver") String packageVersion,
                                              @RequestBody String module_namespace,
                                              @RequestParam(value = "artifactRepository", required = false) String artifactRepository,
                                              @RequestParam(required = false) Long releaseDate) {
         
         String result;
         try {
-            result = KnowledgeBaseConnector.kbDao.getModuleMetadata(package_name, package_version, module_namespace);
+            result = KnowledgeBaseConnector.kbDao.getModuleMetadata(packageName, packageVersion, module_namespace);
         } catch (PackageVersionNotFoundException e) {
             try {
-                LazyIngestionProvider.ingestArtifactIfNecessary(package_name, package_version, artifactRepository, releaseDate);
+                LazyIngestionProvider.ingestArtifactIfNecessary(packageName, packageVersion, artifactRepository, releaseDate);
             } catch (IllegalArgumentException | IOException ex) {
                 return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST);
             }
@@ -89,8 +89,8 @@ public class ModuleApi {
     }
 
     @PostMapping(value = "/{pkg}/{pkg_ver}/modules/files", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<String> getModuleFiles(@PathVariable("pkg") String package_name,
-                                          @PathVariable("pkg_ver") String package_version,
+    ResponseEntity<String> getModuleFiles(@PathVariable("pkg") String packageName,
+                                          @PathVariable("pkg_ver") String packageVersion,
                                           @RequestBody String module_namespace,
                                           @RequestParam(required = false, defaultValue = "0") int offset,
                                           @RequestParam(required = false, defaultValue = RestApplication.DEFAULT_PAGE_SIZE) int limit,
@@ -100,10 +100,10 @@ public class ModuleApi {
         String result;
         try {
             result = KnowledgeBaseConnector.kbDao.getModuleFiles(
-                    package_name, package_version, module_namespace, offset, limit);
+                    packageName, packageVersion, module_namespace, offset, limit);
         } catch (PackageVersionNotFoundException e) {
             try {
-                LazyIngestionProvider.ingestArtifactIfNecessary(package_name, package_version, artifactRepository, releaseDate);
+                LazyIngestionProvider.ingestArtifactIfNecessary(packageName, packageVersion, artifactRepository, releaseDate);
             } catch (IllegalArgumentException | IOException ex) {
                 return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST);
             }
@@ -117,8 +117,8 @@ public class ModuleApi {
     }
 
     @PostMapping(value = "/{pkg}/{pkg_ver}/modules/callables", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<String> getModuleCallables(@PathVariable("pkg") String package_name,
-                                              @PathVariable("pkg_ver") String package_version,
+    ResponseEntity<String> getModuleCallables(@PathVariable("pkg") String packageName,
+                                              @PathVariable("pkg_ver") String packageVersion,
                                               @RequestBody String module_namespace,
                                               @RequestParam(required = false, defaultValue = "0") int offset,
                                               @RequestParam(required = false, defaultValue = RestApplication.DEFAULT_PAGE_SIZE) int limit,
@@ -128,10 +128,10 @@ public class ModuleApi {
         String result;
         try {
             result = KnowledgeBaseConnector.kbDao.getModuleCallables(
-                    KnowledgeBaseConnector.forge, package_name, package_version, module_namespace, offset, limit);
+                    KnowledgeBaseConnector.forge, packageName, packageVersion, module_namespace, offset, limit);
         } catch (PackageVersionNotFoundException e) {
             try {
-                LazyIngestionProvider.ingestArtifactIfNecessary(package_name, package_version, artifactRepository, releaseDate);
+                LazyIngestionProvider.ingestArtifactIfNecessary(packageName, packageVersion, artifactRepository, releaseDate);
             } catch (IllegalArgumentException | IOException ex) {
                 return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST);
             }
