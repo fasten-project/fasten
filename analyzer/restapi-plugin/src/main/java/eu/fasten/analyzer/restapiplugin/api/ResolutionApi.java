@@ -133,7 +133,7 @@ public class ResolutionApi {
             default: {
                 var query = KnowledgeBaseConnector.dependencyResolverAddress+"/dependencies/"+packageName+"/"+packageVersion;
                 var result = MavenUtilities.sendGetRequest(query);
-                if (result == null) {
+                if (result == null || result.contains("\"error\"")) {
                     return new ResponseEntity<>("Could not find the requested data", HttpStatus.NOT_FOUND);
                 }
                 result = result.replaceAll("\\s+","");
