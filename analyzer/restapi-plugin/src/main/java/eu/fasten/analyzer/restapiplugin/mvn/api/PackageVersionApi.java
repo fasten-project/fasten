@@ -42,7 +42,7 @@ public class PackageVersionApi {
         }
         var coordinate = artifact.split(Constants.mvnCoordinateSeparator);
         switch (KnowledgeBaseConnector.forge) {
-            case "mvn": {
+            case Constants.mvnForge: {
                 var groupId = coordinate[0];
                 var artifactId = coordinate[1];
                 var version = coordinate[2];
@@ -50,14 +50,14 @@ public class PackageVersionApi {
                 artifactId.charAt(0), artifactId, artifactId, groupId, version);
                 break;
             }
-            case "pypi": {
+            case Constants.pypiForge: {
                 var packageName = coordinate[0];
                 var version = coordinate[1];
                 url = String.format("%s/%s/%s/%s/%s/cg.json", KnowledgeBaseConnector.rcgBaseUrl + KnowledgeBaseConnector.forge + "/" + KnowledgeBaseConnector.forge,
                         "callgraphs", packageName.charAt(0), packageName, version).replace("\\/", "/");
                 break;
             }
-            case "debian": {
+            case Constants.debianForge: {
                 var packageName = coordinate[0];
                 var version = coordinate[1];
                 url = String.format("%s/%s/%s/%s/buster/%s/amd64/file.json", KnowledgeBaseConnector.rcgBaseUrl + KnowledgeBaseConnector.forge,

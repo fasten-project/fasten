@@ -20,6 +20,7 @@ package eu.fasten.analyzer.restapiplugin.api;
 
 import eu.fasten.analyzer.restapiplugin.KnowledgeBaseConnector;
 import eu.fasten.analyzer.restapiplugin.RestApplication;
+import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.metadatadb.MetadataDao;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -38,7 +39,7 @@ public class PackageVersionApiTest {
         service = new PackageVersionApi();
         kbDao = Mockito.mock(MetadataDao.class);
         KnowledgeBaseConnector.kbDao = kbDao;
-        KnowledgeBaseConnector.forge = "mvn";
+        KnowledgeBaseConnector.forge = Constants.mvnForge;
     }
 
     @Test

@@ -19,6 +19,7 @@
 package eu.fasten.analyzer.restapiplugin.api;
 
 import eu.fasten.analyzer.restapiplugin.KnowledgeBaseConnector;
+import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.metadatadb.MetadataDao;
 import org.jooq.DSLContext;
 import org.json.JSONObject;
@@ -61,12 +62,12 @@ public class StitchingApiTest {
         map.put(uris.get(0), new JSONObject("{\"hello\":\"world\", \"foo\":8}"));
         var allAttributes = true;
         List<String> attributes = new ArrayList<>();
-        Mockito.when(kbDao.getCallablesMetadataByUri("mvn", "group:artifact", "version", List.of("/namespace/callable_uri"))).thenReturn(map);
+        Mockito.when(kbDao.getCallablesMetadataByUri(Constants.mvnForge, "group:artifact", "version", List.of("/namespace/callable_uri"))).thenReturn(map);
         var expected = new ResponseEntity<>(new JSONObject(map).toString(), HttpStatus.OK);
         var result = service.getCallablesMetadata(uris, allAttributes, attributes);
         assertEquals(expected, result);
 
-        Mockito.verify(kbDao, Mockito.times(1)).getCallablesMetadataByUri("mvn", "group:artifact", "version", List.of("/namespace/callable_uri"));
+        Mockito.verify(kbDao, Mockito.times(1)).getCallablesMetadataByUri(Constants.mvnForge, "group:artifact", "version", List.of("/namespace/callable_uri"));
     }
 
     @Test
@@ -74,14 +75,14 @@ public class StitchingApiTest {
         var uris = List.of("fasten://mvn!group:artifact$version/namespace/callable_uri");
         var map = new HashMap<String, JSONObject>(1);
         map.put(uris.get(0), new JSONObject("{\"hello\":\"world\", \"foo\":8}"));
-        Mockito.when(kbDao.getCallablesMetadataByUri("mvn", "group:artifact", "version", List.of("/namespace/callable_uri"))).thenReturn(map);
+        Mockito.when(kbDao.getCallablesMetadataByUri(Constants.mvnForge, "group:artifact", "version", List.of("/namespace/callable_uri"))).thenReturn(map);
         var allAttributes = false;
         List<String> attributes = List.of("foo");
         var result = service.getCallablesMetadata(uris, allAttributes, attributes);
         var expected = new ResponseEntity<>(new JSONObject("{\"fasten://mvn!group:artifact$version/namespace/callable_uri\":{\"foo\":8}}").toString(), HttpStatus.OK);
         assertEquals(expected, result);
 
-        Mockito.verify(kbDao, Mockito.times(1)).getCallablesMetadataByUri("mvn", "group:artifact", "version", List.of("/namespace/callable_uri"));
+        Mockito.verify(kbDao, Mockito.times(1)).getCallablesMetadataByUri(Constants.mvnForge, "group:artifact", "version", List.of("/namespace/callable_uri"));
     }
 
     @Test

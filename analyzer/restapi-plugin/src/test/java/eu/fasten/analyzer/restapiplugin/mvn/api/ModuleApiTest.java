@@ -20,6 +20,7 @@ package eu.fasten.analyzer.restapiplugin.api;
 
 import eu.fasten.analyzer.restapiplugin.KnowledgeBaseConnector;
 import eu.fasten.analyzer.restapiplugin.RestApplication;
+import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.metadatadb.MetadataDao;
 import eu.fasten.core.maven.data.PackageVersionNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
@@ -41,7 +42,6 @@ public class ModuleApiTest {
         service = new ModuleApi();
         kbDao = Mockito.mock(MetadataDao.class);
         KnowledgeBaseConnector.kbDao = kbDao;
-        KnowledgeBaseConnector.forge = "mvn";
     }
 
     @Test
@@ -142,41 +142,38 @@ public class ModuleApiTest {
 
     @Test
     void getModuleCallablesPositiveTest() {
-        var forge = "mvn";
         var packageName = "group:artifact";
         var version = "version";
         var module = "module";
         var response = "module callables";
-        Mockito.when(kbDao.getModuleCallables(forge, packageName, version, module, offset, limit)).thenReturn(response);
+        Mockito.when(kbDao.getModuleCallables(Constants.mvnForge, packageName, version, module, offset, limit)).thenReturn(response);
         var expected = new ResponseEntity<>(response, HttpStatus.OK);
         var result = service.getModuleCallables(packageName, version, module, offset, limit, null, null);
         assertEquals(expected, result);
-        Mockito.verify(kbDao).getModuleCallables(forge, packageName, version, module, offset, limit);
+        Mockito.verify(kbDao).getModuleCallables(Constants.mvnForge, packageName, version, module, offset, limit);
     }
 
     @Test
     void getModuleCallablesNegativeTest() {
-        var forge = "mvn";
         var packageName = "group:artifact";
         var version = "version";
         var module = "module";
-        Mockito.when(kbDao.getModuleCallables(forge, packageName, version, module, offset, limit)).thenReturn(null);
+        Mockito.when(kbDao.getModuleCallables(Constants.mvnForge, packageName, version, module, offset, limit)).thenReturn(null);
         var result = service.getModuleCallables(packageName, version, module, offset, limit, null, null);
         assertEquals(HttpStatus.NOT_FOUND, result.getStatusCode());
-        Mockito.verify(kbDao).getModuleCallables(forge, packageName, version, module, offset, limit);
+        Mockito.verify(kbDao).getModuleCallables(Constants.mvnForge, packageName, version, module, offset, limit);
     }
 
     @Test
     void getModuleCallablesIngestionTest() {
-        var forge = "mvn";
         var packageName = "junit:junit";
         var version = "4.12";
         var module = "module";
-        Mockito.when(kbDao.getModuleCallables(forge, packageName, version, module, offset, limit)).thenThrow(new PackageVersionNotFoundException("Error"));
+        Mockito.when(kbDao.getModuleCallables(Constants.mvnForge, packageName, version, module, offset, limit)).thenThrow(new PackageVersionNotFoundException("Error"));
         var result = service.getModuleCallables(packageName, version, module, offset, limit, null, null);
         assertEquals(HttpStatus.CREATED, result.getStatusCode());
 
-        Mockito.verify(kbDao).getModuleCallables(forge, packageName, version, module, offset, limit);
+        Mockito.verify(kbDao).getModuleCallables(Constants.mvnForge, packageName, version, module, offset, limit);
     }
 
 }
