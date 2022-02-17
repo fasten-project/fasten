@@ -66,7 +66,7 @@ public class ResolutionApi {
 
     public ResolutionApi() {
         switch(KnowledgeBaseConnector.forge) {
-            case "mvn": {
+            case Constants.mvnForge: {
                 try {
                     var graphMavenResolver = new GraphMavenResolver();
                     graphMavenResolver.buildDependencyGraph(KnowledgeBaseConnector.dbContext, KnowledgeBaseConnector.dependencyGraphPath);
@@ -96,7 +96,7 @@ public class ResolutionApi {
                                                @RequestParam(required = false, defaultValue = "-1") long timestamp,
                                                @RequestParam(required = false, defaultValue = "true") boolean useDepGraph) {
         switch (KnowledgeBaseConnector.forge) {
-            case "mvn": {
+            case Constants.mvnForge: {
                 if (!KnowledgeBaseConnector.kbDao.assertPackageExistence(packageName, packageVersion)) {
                     try {
                         LazyIngestionProvider.ingestArtifactWithDependencies(packageName, packageVersion);
@@ -149,7 +149,7 @@ public class ResolutionApi {
                                              @RequestParam(required = false, defaultValue = "-1") long timestamp) {
         JSONArray jsonArray = new JSONArray();
         switch (KnowledgeBaseConnector.forge) {
-            case "mvn": {
+            case Constants.mvnForge: {
                 var groupId = packageName.split(Constants.mvnCoordinateSeparator)[0];
                 var artifactId = packageName.split(Constants.mvnCoordinateSeparator)[1];
                 var depSet = this.graphMavenResolver.resolveDependents(groupId,
@@ -164,7 +164,7 @@ public class ResolutionApi {
                 }).forEach(jsonArray::put);
                 break;
             }
-            case "pypi": {
+            case Constants.pypiForge: {
                 timestamp = ((timestamp == -1) ? this.graphResolver.getCreatedAt(packageName,packageVersion, KnowledgeBaseConnector.dbContext): timestamp);
                 var depSet = this.graphResolver.resolveDependents(packageName,
                 packageVersion, timestamp, transitive);
@@ -177,7 +177,7 @@ public class ResolutionApi {
                 }).forEach(jsonArray::put);
                 break;
             }
-            case "debian": {
+            case Constants.debianForge: {
                 timestamp = ((timestamp == -1) ? this.graphResolver.getCreatedAt(packageName,packageVersion, KnowledgeBaseConnector.dbContext): timestamp);
                 var depSet = this.graphResolver.resolveDependents(packageName,
                 packageVersion, timestamp, transitive);
@@ -201,7 +201,7 @@ public class ResolutionApi {
     @PostMapping(value = "/resolve_dependencies", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<String> resolveMultipleDependencies(@RequestBody List<String> coordinates) {
         switch (KnowledgeBaseConnector.forge) {
-            case "mvn": {
+            case Constants.mvnForge: {
                 var revisions = coordinates.stream().map(c -> {
                     var groupId = c.split(Constants.mvnCoordinateSeparator)[0];
                     var artifactId = c.split(Constants.mvnCoordinateSeparator)[1];

@@ -1152,17 +1152,17 @@ public class MetadataDao {
                 var partialUri = jObj.getString("fasten_uri");
                 FastenURI uriObj = null;
                 switch (forge) {
-                    case "mvn": {
+                    case Constants.mvnForge: {
                         var fullUri = FastenUriUtils.generateFullFastenUri("mvn", packageName, packageVersion, partialUri);
                         uriObj = new FastenJavaURI(fullUri);
                         break;
                     }
-                    case "pypi": {
+                    case Constants.pypiForge: {
                         var fullUri = FastenUriUtils.generateFullFastenUri("pypi", packageName, packageVersion, partialUri);
                         uriObj = new FastenPythonURI(fullUri);
                         break;
                     }
-                    case "debian": {
+                    case Constants.debianForge: {
                         var fullUri = FastenUriUtils.generateFullFastenUri("debian", packageName, packageVersion, partialUri);
                         uriObj = new FastenCURI(fullUri);
                         break;
