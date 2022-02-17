@@ -131,7 +131,7 @@ public class ResolutionApi {
                 return new ResponseEntity<>(result, HttpStatus.OK);
             }
             default: {
-                var query = "http://"+ KnowledgeBaseConnector.dependencyResolverAddress + "/dependencies/"+ packageName+"/"+packageVersion;
+                var query = KnowledgeBaseConnector.dependencyResolverAddress+"/dependencies/"+packageName+"/"+packageVersion;
                 var result = MavenUtilities.sendGetRequest(query);
                 if (result == null) {
                     return new ResponseEntity<>("Could not find the requested data", HttpStatus.NOT_FOUND);
@@ -229,7 +229,7 @@ public class ResolutionApi {
                 coordinates.forEach(c -> {
                     var packageName = c.split(Constants.mvnCoordinateSeparator)[0];
                     var packageVersion = c.split(Constants.mvnCoordinateSeparator)[1];
-                    var query = "http://"+ KnowledgeBaseConnector.dependencyResolverAddress + "/dependencies/"+ packageName+"/"+packageVersion;
+                    var query = KnowledgeBaseConnector.dependencyResolverAddress+"/dependencies/"+packageName+"/"+packageVersion;
                     var requestResult = MavenUtilities.sendGetRequest(query);
                     var depList = new JSONArray(requestResult);
                      depList.forEach(item -> {
