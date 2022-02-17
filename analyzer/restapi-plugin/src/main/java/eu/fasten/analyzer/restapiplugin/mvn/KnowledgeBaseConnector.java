@@ -69,6 +69,8 @@ public class KnowledgeBaseConnector {
 
     public static String dependencyResolverAddress;
 
+    public static String initDepGraphRequest;
+
     /**
      * KnowledgeBase username, retrieved from the server configuration file.
      */
@@ -117,6 +119,12 @@ public class KnowledgeBaseConnector {
     @Value("${dependency.resolver.address}")
     private String dependencyResolverApiAddress;
 
+    /**
+     * Request url used to initialize the Dependency Graph, retrieved from the server configuration file.
+     */
+
+    @Value("${init.depgraph.request}")
+    private String depgraphRequest;
 
     /**
      * Connects to the KnowledgeBase before starting the REST server.
@@ -176,7 +184,12 @@ public class KnowledgeBaseConnector {
     public void setForge() {
         forge = this.kbForge;
     }
-    
+
+    @PostConstruct
+    public void setInitDepGraphRequest() {
+        initDepGraphRequest = this.depgraphRequest;
+    }
+
     /**
      * Established read-only connection to the graph database.
      */

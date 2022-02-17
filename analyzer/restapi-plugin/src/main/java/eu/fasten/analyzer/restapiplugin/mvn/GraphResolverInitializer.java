@@ -7,9 +7,8 @@ public class GraphResolverInitializer {
 
     public static void sendRequestToInitGraphResolver() {
         RestTemplate restTemplate = new RestTemplate();
-        String url = "http://localhost:8080/packages/package/0/resolve/dependents?transitive=false";
         try {
-            restTemplate.getForObject(url, String.class);
+            restTemplate.getForObject(KnowledgeBaseConnector.initDepGraphRequest, String.class);
         } catch (RestClientException ignored) {}
     }
 }
