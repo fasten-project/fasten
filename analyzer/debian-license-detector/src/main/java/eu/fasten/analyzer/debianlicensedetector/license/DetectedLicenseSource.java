@@ -7,7 +7,7 @@ package eu.fasten.analyzer.licensedetector.license;
 //here probably goes from which file the  outbound license is retrieved.
 public enum DetectedLicenseSource {
 
-    DEBIAN_API("Debian API"),
+    DEBIAN_API("Debian API");
     //MAVEN_CENTRAL("Maven central"),
     //GITHUB("GitHub APIs");
 
