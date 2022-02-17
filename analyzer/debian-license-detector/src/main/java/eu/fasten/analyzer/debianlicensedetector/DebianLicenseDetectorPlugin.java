@@ -362,12 +362,10 @@ public class DebianLicenseDetectorPlugin extends Plugin {
          * @throws IllegalArgumentException in case the function couldn't find the package version.
          */
         protected static String extractPackageVersion(JSONObject json) throws IllegalArgumentException {
-            for (var key : json.keySet()) {
-                if (key.equals("input")) {
-                    for (var key2 : json.keySet()) {
-                        if (key2.equals("version")) {
-                            return json.getString("version");}
-                    }
+            if (json.has("input")) {
+                JSONObject json2 = json.getJSONObject("input");
+                if (json2.has("version")) {
+                    return json2.getString("version");
                 } else {
                     String packageVersionNotFound = "Package version not found";
                     return packageVersionNotFound;
@@ -386,17 +384,15 @@ public class DebianLicenseDetectorPlugin extends Plugin {
          * @return the package name.
          */
         protected static String extractPackageName(JSONObject json) {
-            for (var key : json.keySet()) {
-                if (key.equals("input")) {
-                    for (var key2 : json.keySet()) {
-                        if (key2.equals("product")) {
-                            return json.getString("product");}
-                    }
+            if (json.has("input")) {
+                JSONObject json2 = json.getJSONObject("input");
+                if (json2.has("product")) {
+                    return json2.getString("product");
                 } else {
                     String packageNameNotFound = "Package name not found";
                     return packageNameNotFound;
-                    }
                 }
+            }
             return null;
         }
 
