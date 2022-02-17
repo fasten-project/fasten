@@ -42,6 +42,8 @@ public class ModuleApiTest {
         service = new ModuleApi();
         kbDao = Mockito.mock(MetadataDao.class);
         KnowledgeBaseConnector.kbDao = kbDao;
+        KnowledgeBaseConnector.forge = Constants.mvnForge;
+
     }
 
     @Test
