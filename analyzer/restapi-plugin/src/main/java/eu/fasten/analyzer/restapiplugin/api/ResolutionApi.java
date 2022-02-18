@@ -152,42 +152,52 @@ public class ResolutionApi {
             case Constants.mvnForge: {
                 var groupId = packageName.split(Constants.mvnCoordinateSeparator)[0];
                 var artifactId = packageName.split(Constants.mvnCoordinateSeparator)[1];
-                var depSet = this.graphMavenResolver.resolveDependents(groupId,
+                try {
+                    var depSet = this.graphMavenResolver.resolveDependents(groupId,
                         artifactId, packageVersion, timestamp, transitive);
-                depSet.stream().map(eu.fasten.core.maven.data.Revision::toJSON).peek(json -> {
-                    var group = json.getString("groupId");
-                    var artifact = json.getString("artifactId");
-                    var ver = json.getString("version");
-                    var url = String.format("%smvn/%s/%s/%s_%s_%s.json", KnowledgeBaseConnector.rcgBaseUrl,
-                            artifact.charAt(0), artifact, artifact, group, ver);
-                    json.put("url", url);
-                }).forEach(jsonArray::put);
+                     depSet.stream().map(eu.fasten.core.maven.data.Revision::toJSON).peek(json -> {
+                        var group = json.getString("groupId");
+                        var artifact = json.getString("artifactId");
+                        var ver = json.getString("version");
+                        var url = String.format("%smvn/%s/%s/%s_%s_%s.json", KnowledgeBaseConnector.rcgBaseUrl,
+                                artifact.charAt(0), artifact, artifact, group, ver);
+                        json.put("url", url);
+                    }).forEach(jsonArray::put);
+               } catch (RuntimeException e) {
+                    return new ResponseEntity<>("Failed to resolve dependents for revision "+packageName+":"+ packageVersion , HttpStatus.NOT_FOUND);
+               }
                 break;
             }
             case Constants.pypiForge: {
-                timestamp = ((timestamp == -1) ? this.graphResolver.getCreatedAt(packageName,packageVersion, KnowledgeBaseConnector.dbContext): timestamp);
-                var depSet = this.graphResolver.resolveDependents(packageName,
-                packageVersion, timestamp, transitive);
-                depSet.stream().map(eu.fasten.core.dependents.data.Revision::toJSON).peek(json -> {
-                    var dep_name = json.getString("package");
-                    var ver = json.getString("version");
-                    var url = String.format("%spypi/pypi/callgraphs/%s/%s/%s/cg.json", KnowledgeBaseConnector.rcgBaseUrl,
-                        dep_name.charAt(0), dep_name, ver);
-                    json.put("url", url);
-                }).forEach(jsonArray::put);
+                try {
+                    var depSet = this.graphResolver.resolveDependents(packageName,
+                    packageVersion, timestamp, transitive);
+                    depSet.stream().map(eu.fasten.core.dependents.data.Revision::toJSON).peek(json -> {
+                        var dep_name = json.getString("package");
+                        var ver = json.getString("version");
+                        var url = String.format("%spypi/pypi/callgraphs/%s/%s/%s/cg.json", KnowledgeBaseConnector.rcgBaseUrl,
+                            dep_name.charAt(0), dep_name, ver);
+                        json.put("url", url);
+                    }).forEach(jsonArray::put);
+                } catch (RuntimeException e) {
+                    return new ResponseEntity<>("Failed to resolve dependents for revision "+packageName+":"+ packageVersion , HttpStatus.NOT_FOUND);
+                }
                 break;
             }
             case Constants.debianForge: {
-                timestamp = ((timestamp == -1) ? this.graphResolver.getCreatedAt(packageName,packageVersion, KnowledgeBaseConnector.dbContext): timestamp);
-                var depSet = this.graphResolver.resolveDependents(packageName,
-                packageVersion, timestamp, transitive);
-                depSet.stream().map(eu.fasten.core.dependents.data.Revision::toJSON).peek(json -> {
-                    var dep_name = json.getString("package");
-                    var ver = json.getString("version");
-                    var url = String.format("%sdebian/callgraphs/%s/%s/buster/%s/amd64/file.json", KnowledgeBaseConnector.rcgBaseUrl,
-                            dep_name.charAt(0), dep_name, ver);
-                    json.put("url", url);
-                }).forEach(jsonArray::put);
+                try {
+                    var depSet = this.graphResolver.resolveDependents(packageName,
+                    packageVersion, timestamp, transitive);
+                    depSet.stream().map(eu.fasten.core.dependents.data.Revision::toJSON).peek(json -> {
+                        var dep_name = json.getString("package");
+                        var ver = json.getString("version");
+                        var url = String.format("%sdebian/callgraphs/%s/%s/buster/%s/amd64/file.json", KnowledgeBaseConnector.rcgBaseUrl,
+                                dep_name.charAt(0), dep_name, ver);
+                        json.put("url", url);
+                    }).forEach(jsonArray::put);
+                } catch (RuntimeException e) {
+                    return new ResponseEntity<>("Failed to resolve dependents for revision "+packageName+":"+ packageVersion , HttpStatus.NOT_FOUND);
+                }
                 break;
             }
             default:
