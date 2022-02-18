@@ -1,4 +1,4 @@
-package eu.fasten.analyzer.licensedetector.license;
+package eu.fasten.analyzer.debianlicensedetector.license;
 
 /**
  * Where a certain licenses has been retrieved from.
