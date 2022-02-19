@@ -34,6 +34,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.math3.util.Pair;
+import org.jetbrains.annotations.Nullable;
 import org.jooq.Condition;
 import org.jooq.DSLContext;
 import org.jooq.JSONB;
@@ -43,6 +44,7 @@ import org.jooq.Record1;
 import org.jooq.Record2;
 import org.jooq.Result;
 import org.jooq.SelectField;
+import org.jooq.impl.QOM.Eq;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -66,6 +68,7 @@ import eu.fasten.core.data.metadatadb.codegen.tables.Callables;
 import eu.fasten.core.data.metadatadb.codegen.tables.Dependencies;
 import eu.fasten.core.data.metadatadb.codegen.tables.Files;
 import eu.fasten.core.data.metadatadb.codegen.tables.IngestedArtifacts;
+import eu.fasten.core.data.metadatadb.codegen.tables.IngestionRetries;
 import eu.fasten.core.data.metadatadb.codegen.tables.ModuleContents;
 import eu.fasten.core.data.metadatadb.codegen.tables.ModuleNames;
 import eu.fasten.core.data.metadatadb.codegen.tables.Modules;
@@ -78,7 +81,6 @@ import eu.fasten.core.data.metadatadb.codegen.tables.VulnerabilitiesXCallables;
 import eu.fasten.core.data.metadatadb.codegen.tables.VulnerabilitiesXPackageVersions;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.CallSitesRecord;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.CallablesRecord;
-import eu.fasten.core.data.metadatadb.codegen.tables.records.IngestedArtifactsRecord;
 import eu.fasten.core.maven.data.PackageVersionNotFoundException;
 import eu.fasten.core.utils.FastenUriUtils;
 
@@ -714,6 +716,41 @@ public class MetadataDao {
             insert = insert.values(key, pluginVersion, timestamp);
         }
         insert.execute();
+    }
+
+    public int getIngestionRetryCount(String key) {
+        var res = context.select(IngestionRetries.INGESTION_RETRIES.COUNT) //
+                .from(IngestionRetries.INGESTION_RETRIES) //
+                .where(IngestionRetries.INGESTION_RETRIES.KEY.eq(key)) //
+                .fetchOne();
+        if(res == null) {
+            return 0;
+        } else {
+            return res.value1();
+        }
+    }
+
+    public void registerIngestionRetry(String key) {
+        int count = getIngestionRetryCount(key);
+        if(count == 0) {
+            context.insertInto(IngestionRetries.INGESTION_RETRIES,
+                IngestionRetries.INGESTION_RETRIES.KEY,
+                IngestionRetries.INGESTION_RETRIES.COUNT) //
+                .values(key, Short.valueOf("1")) //
+                .execute();
+        } else {
+            var nextCount = Short.valueOf(String.valueOf(count+1));
+            context.update(IngestionRetries.INGESTION_RETRIES) //
+                .set(IngestionRetries.INGESTION_RETRIES.COUNT, nextCount) //
+                .where(IngestionRetries.INGESTION_RETRIES.KEY.eq(key)) //
+                .execute();
+        }
+    }
+
+    public void pruneIngestionRetries(String key) {
+        context.deleteFrom(IngestionRetries.INGESTION_RETRIES) //
+        .where(IngestionRetries.INGESTION_RETRIES.KEY.eq(key)) //
+        .execute();
     }
 
     public boolean isArtifactIngested(String key) {
