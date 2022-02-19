@@ -12,6 +12,7 @@ import eu.fasten.core.data.metadatadb.codegen.tables.Callables;
 import eu.fasten.core.data.metadatadb.codegen.tables.Dependencies;
 import eu.fasten.core.data.metadatadb.codegen.tables.Files;
 import eu.fasten.core.data.metadatadb.codegen.tables.IngestedArtifacts;
+import eu.fasten.core.data.metadatadb.codegen.tables.IngestionRetries;
 import eu.fasten.core.data.metadatadb.codegen.tables.ModuleContents;
 import eu.fasten.core.data.metadatadb.codegen.tables.ModuleNames;
 import eu.fasten.core.data.metadatadb.codegen.tables.Modules;
@@ -84,6 +85,11 @@ public class Tables {
      * The table <code>public.ingested_artifacts</code>.
      */
     public static final IngestedArtifacts INGESTED_ARTIFACTS = IngestedArtifacts.INGESTED_ARTIFACTS;
+
+    /**
+     * The table <code>public.ingestion_retries</code>.
+     */
+    public static final IngestionRetries INGESTION_RETRIES = IngestionRetries.INGESTION_RETRIES;
 
     /**
      * The table <code>public.module_contents</code>.
