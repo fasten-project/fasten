@@ -165,7 +165,7 @@ public class PackageApi {
                 break;
             }
             case Constants.pypiForge: {
-                url = String.format("%s/%s/%s/%s/%s/cg.json", KnowledgeBaseConnector.rcgBaseUrl + KnowledgeBaseConnector.forge + "/" + KnowledgeBaseConnector.forge,
+                url = String.format("%s/%s/%s/%s/%s/cg.json", KnowledgeBaseConnector.rcgBaseUrl + KnowledgeBaseConnector.forge.toLowerCase() + "/" + KnowledgeBaseConnector.forge.toLowerCase(),
                     "callgraphs", packageName.charAt(0), packageName, version).replace("\\/", "/");
                 break;
             }

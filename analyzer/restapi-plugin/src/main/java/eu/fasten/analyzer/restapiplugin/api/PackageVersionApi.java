@@ -53,7 +53,7 @@ public class PackageVersionApi {
             case Constants.pypiForge: {
                 var packageName = coordinate[0];
                 var version = coordinate[1];
-                url = String.format("%s/%s/%s/%s/%s/cg.json", KnowledgeBaseConnector.rcgBaseUrl + KnowledgeBaseConnector.forge + "/" + KnowledgeBaseConnector.forge,
+                url = String.format("%s/%s/%s/%s/%s/cg.json", KnowledgeBaseConnector.rcgBaseUrl + KnowledgeBaseConnector.forge.toLowerCase() + "/" + KnowledgeBaseConnector.forge.toLowerCase(),
                         "callgraphs", packageName.charAt(0), packageName, version).replace("\\/", "/");
                 break;
             }
