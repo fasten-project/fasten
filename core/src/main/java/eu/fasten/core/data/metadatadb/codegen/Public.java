@@ -12,6 +12,7 @@ import eu.fasten.core.data.metadatadb.codegen.tables.Callables;
 import eu.fasten.core.data.metadatadb.codegen.tables.Dependencies;
 import eu.fasten.core.data.metadatadb.codegen.tables.Files;
 import eu.fasten.core.data.metadatadb.codegen.tables.IngestedArtifacts;
+import eu.fasten.core.data.metadatadb.codegen.tables.IngestionRetries;
 import eu.fasten.core.data.metadatadb.codegen.tables.ModuleContents;
 import eu.fasten.core.data.metadatadb.codegen.tables.ModuleNames;
 import eu.fasten.core.data.metadatadb.codegen.tables.Modules;
@@ -97,6 +98,11 @@ public class Public extends SchemaImpl {
      * The table <code>public.ingested_artifacts</code>.
      */
     public final IngestedArtifacts INGESTED_ARTIFACTS = IngestedArtifacts.INGESTED_ARTIFACTS;
+
+    /**
+     * The table <code>public.ingestion_retries</code>.
+     */
+    public final IngestionRetries INGESTION_RETRIES = IngestionRetries.INGESTION_RETRIES;
 
     /**
      * The table <code>public.module_contents</code>.
@@ -211,6 +217,7 @@ public class Public extends SchemaImpl {
             Dependencies.DEPENDENCIES,
             Files.FILES,
             IngestedArtifacts.INGESTED_ARTIFACTS,
+            IngestionRetries.INGESTION_RETRIES,
             ModuleContents.MODULE_CONTENTS,
             ModuleNames.MODULE_NAMES,
             Modules.MODULES,
