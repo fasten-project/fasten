@@ -18,7 +18,11 @@
 
 package eu.fasten.analyzer.restapiplugin.mvn.api;
 
+import eu.fasten.analyzer.restapiplugin.mvn.KnowledgeBaseConnector;
+import eu.fasten.analyzer.restapiplugin.mvn.LazyIngestionProvider;
 import eu.fasten.analyzer.restapiplugin.mvn.RestApplication;
+import eu.fasten.core.maven.data.PackageVersionNotFoundException;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -26,16 +30,11 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import java.io.IOException;
 
 @RestController
 @RequestMapping("/mvn/packages")
 public class DependencyApi {
-
-    private final DependencyApiService service;
-
-    public DependencyApi(DependencyApiService service) {
-        this.service = service;
-    }
 
     @GetMapping(value = "/{pkg}/{pkg_ver}/deps", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<String> getPackageDependencies(@PathVariable("pkg") String package_name,
@@ -44,6 +43,21 @@ public class DependencyApi {
                                                   @RequestParam(required = false, defaultValue = RestApplication.DEFAULT_PAGE_SIZE) int limit,
                                                   @RequestParam(required = false) String artifactRepository,
                                                   @RequestParam(required = false) Long releaseDate) {
-        return service.getPackageDependencies(package_name, package_version, offset, limit, artifactRepository, releaseDate);
+        String result;
+        try {
+            result = KnowledgeBaseConnector.kbDao.getPackageDependencies(
+                    package_name, package_version, offset, limit);
+        } catch (PackageVersionNotFoundException e) {
+            try {
+                LazyIngestionProvider.ingestArtifactIfNecessary(package_name, package_version, artifactRepository, releaseDate);
+            } catch (IllegalArgumentException ex) {
+                return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST);
+            } catch (IOException ex) {
+                return new ResponseEntity<>(ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+            }
+            return new ResponseEntity<>("Package version not found, but should be processed soon. Try again later", HttpStatus.CREATED);
+        }
+        result = result.replace("\\/", "/");
+        return new ResponseEntity<>(result, HttpStatus.OK);
     }
 }

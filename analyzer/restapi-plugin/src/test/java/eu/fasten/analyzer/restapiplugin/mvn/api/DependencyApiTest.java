@@ -18,36 +18,53 @@
 
 package eu.fasten.analyzer.restapiplugin.mvn.api;
 
+import eu.fasten.analyzer.restapiplugin.mvn.KnowledgeBaseConnector;
 import eu.fasten.analyzer.restapiplugin.mvn.RestApplication;
+import eu.fasten.analyzer.restapiplugin.mvn.api.DependencyApi;
+import eu.fasten.core.data.metadatadb.MetadataDao;
+import eu.fasten.core.maven.data.PackageVersionNotFoundException;
+
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class DependencyApiTest {
 
-    private DependencyApiService service;
-    private DependencyApi api;
+    private DependencyApi service;
+    private MetadataDao kbDao;
     private final int offset = 0;
     private final int limit = Integer.parseInt(RestApplication.DEFAULT_PAGE_SIZE);
 
     @BeforeEach
     void setUp() {
-        service = Mockito.mock(DependencyApiService.class);
-        api = new DependencyApi(service);
+        service = new DependencyApi();
+        kbDao = Mockito.mock(MetadataDao.class);
+        KnowledgeBaseConnector.kbDao = kbDao;
     }
 
     @Test
-    public void getPackageDependenciesTest() {
-        var packageName = "pkg name";
-        var version = "pkg version";
-        var response = new ResponseEntity<>("package version dependencies", HttpStatus.OK);
-        Mockito.when(service.getPackageDependencies(packageName, version, offset, limit, null, null)).thenReturn(response);
-        var result = api.getPackageDependencies(packageName, version, offset, limit, null, null);
-        assertEquals(response, result);
-        Mockito.verify(service).getPackageDependencies(packageName, version, offset, limit, null, null);
+    void getPackageDependenciesPositiveTest() {
+        var packageName = "pkg";
+        var version = "pkg ver";
+        var response = "dependencies";
+        Mockito.when(kbDao.getPackageDependencies(packageName, version, offset, limit)).thenReturn(response);
+        var expected = new ResponseEntity<>(response, HttpStatus.OK);
+        var result = service.getPackageDependencies(packageName, version, offset, limit, null, null);
+        assertEquals(expected, result);
+        Mockito.verify(kbDao).getPackageDependencies(packageName, version, offset, limit);
+    }
+
+    @Test
+    void getPackageDependenciesIngestionTest() {
+        var packageName = "junit:junit";
+        var version = "4.12";
+        Mockito.when(kbDao.getPackageDependencies(packageName, version, offset, limit)).thenThrow(new PackageVersionNotFoundException("Error"));
+        var result = service.getPackageDependencies(packageName, version, offset, limit, null, null);
+        assertEquals(HttpStatus.CREATED, result.getStatusCode());
+        Mockito.verify(kbDao).getPackageDependencies(packageName, version, offset, limit);
     }
 }

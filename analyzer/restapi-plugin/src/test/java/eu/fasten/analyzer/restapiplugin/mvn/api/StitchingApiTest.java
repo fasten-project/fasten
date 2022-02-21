@@ -18,43 +18,85 @@
 
 package eu.fasten.analyzer.restapiplugin.mvn.api;
 
+import eu.fasten.analyzer.restapiplugin.mvn.KnowledgeBaseConnector;
+import eu.fasten.core.data.metadatadb.MetadataDao;
+import org.jooq.DSLContext;
+import org.json.JSONObject;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import java.util.List;
+import java.util.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class StitchingApiTest {
 
-    private StitchingApiService service;
-    private StitchingApi api;
+    private StitchingApi service;
+    private MetadataDao kbDao;
 
     @BeforeEach
     void setUp() {
-        service = Mockito.mock(StitchingApiService.class);
-        api = new StitchingApi(service);
+        service = new StitchingApi();
+        kbDao = Mockito.mock(MetadataDao.class);
+        KnowledgeBaseConnector.kbDao = kbDao;
+        KnowledgeBaseConnector.dbJavaContext = Mockito.mock(DSLContext.class);
     }
 
     @Test
-    void resolveCallablesTest() {
+    void resolveCallablesToUrisTest() {
         var gids = List.of(1L, 2L, 3L);
-        var response = new ResponseEntity<>("callable uri map", HttpStatus.OK);
-        Mockito.when(service.resolveCallablesToUris(gids)).thenReturn(response);
-        var result = api.resolveCallables(gids);
-        assertEquals(response, result);
-        Mockito.verify(service).resolveCallablesToUris(gids);
+        var map = new HashMap<Long, String>(gids.size());
+        gids.forEach(id -> map.put(id, "uri" + id));
+        Mockito.when(kbDao.getFullFastenUris(gids)).thenReturn(map);
+        var expected = new ResponseEntity<>(new JSONObject(map).toString(), HttpStatus.OK);
+        var result = service.resolveCallablesToUris(gids);
+        assertEquals(expected, result);
+        Mockito.verify(kbDao, Mockito.times(1)).getFullFastenUris(gids);
     }
 
     @Test
-    void getCallablesMetadataTest() {
-        var uris = List.of("uri1", "uri2", "uri3");
-        var response = new ResponseEntity<>("callables metadata map", HttpStatus.OK);
-        Mockito.when(service.getCallablesMetadata(uris, true, null)).thenReturn(response);
-        var result = api.getCallablesMetadata(uris, true, null);
-        assertEquals(response, result);
-        Mockito.verify(service).getCallablesMetadata(uris, true, null);
+    void getCallablesMetadataPositiveAllAttributesTest() {
+        var uris = List.of("fasten://mvn!group:artifact$version/namespace/callable_uri");
+        var map = new HashMap<String, JSONObject>(1);
+        map.put(uris.get(0), new JSONObject("{\"hello\":\"world\", \"foo\":8}"));
+        var allAttributes = true;
+        List<String> attributes = new ArrayList<>();
+        Mockito.when(kbDao.getCallablesMetadataByUri("mvn", "group:artifact", "version", List.of("/namespace/callable_uri"))).thenReturn(map);
+        var expected = new ResponseEntity<>(new JSONObject(map).toString(), HttpStatus.OK);
+        var result = service.getCallablesMetadata(uris, allAttributes, attributes);
+        assertEquals(expected, result);
+
+        Mockito.verify(kbDao, Mockito.times(1)).getCallablesMetadataByUri("mvn", "group:artifact", "version", List.of("/namespace/callable_uri"));
     }
 
+    @Test
+    void getCallablesMetadataPositiveNotAllAttributesTest() {
+        var uris = List.of("fasten://mvn!group:artifact$version/namespace/callable_uri");
+        var map = new HashMap<String, JSONObject>(1);
+        map.put(uris.get(0), new JSONObject("{\"hello\":\"world\", \"foo\":8}"));
+        Mockito.when(kbDao.getCallablesMetadataByUri("mvn", "group:artifact", "version", List.of("/namespace/callable_uri"))).thenReturn(map);
+        var allAttributes = false;
+        List<String> attributes = List.of("foo");
+        var result = service.getCallablesMetadata(uris, allAttributes, attributes);
+        var expected = new ResponseEntity<>(new JSONObject("{\"fasten://mvn!group:artifact$version/namespace/callable_uri\":{\"foo\":8}}").toString(), HttpStatus.OK);
+        assertEquals(expected, result);
+
+        Mockito.verify(kbDao, Mockito.times(1)).getCallablesMetadataByUri("mvn", "group:artifact", "version", List.of("/namespace/callable_uri"));
+    }
+
+    @Test
+    void getCallablesMetadataInvalidURITest() {
+        var allAttributes = false;
+        var attributes = List.of("foo");
+        var result = service.getCallablesMetadata(List.of("invalid_uri"), allAttributes, attributes);
+        assertEquals(HttpStatus.BAD_REQUEST, result.getStatusCode());
+    }
+
+    @Test
+    void getCallablesMetadataNegativeTest() {
+        var uris = List.of("fasten://mvn!group:artifact$version/namespace/callable_uri");
+        var result = service.getCallablesMetadata(uris, false, null);
+        assertEquals(HttpStatus.BAD_REQUEST, result.getStatusCode());
+    }
 }
