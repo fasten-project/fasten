@@ -109,6 +109,10 @@ public class TauStats {
 			if (graph == null) continue;
 		
 			final Record2<String, String> record = context.select(Packages.PACKAGES.PACKAGE_NAME, PackageVersions.PACKAGE_VERSIONS.VERSION).from(PackageVersions.PACKAGE_VERSIONS).join(Packages.PACKAGES).on(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.eq(Packages.PACKAGES.ID)).where(PackageVersions.PACKAGE_VERSIONS.ID.eq(Long.valueOf(gid))).fetchOne();
+			if (record == null) {
+				LOGGER.warn("MetaData for GID " + gid + " not found");
+				continue;
+			}
 			final String[] a = record.component1().split(":");
 			final String groupId = a[0];
 			final String artifactId = a[1];
