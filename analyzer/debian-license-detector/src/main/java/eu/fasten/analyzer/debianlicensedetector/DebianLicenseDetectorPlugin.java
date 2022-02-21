@@ -364,11 +364,14 @@ public class DebianLicenseDetectorPlugin extends Plugin {
         protected static String extractPackageVersion(JSONObject json) throws IllegalArgumentException {
             if (json.has("input")) {
                 JSONObject json2 = json.getJSONObject("input");
-                if (json2.has("version")) {
-                    return json2.getString("version");
-                } else {
-                    String packageVersionNotFound = "Package version not found";
-                    return packageVersionNotFound;
+                if (json2.has("input")) {
+                    JSONObject json3 = json2.getJSONObject("input");
+                    if (json3.has("version")) {
+                        return json3.getString("version");
+                    } else {
+                        String packageVersionNotFound = "Package version not found";
+                        return packageVersionNotFound;
+                    }
                 }
             }
             return null;
@@ -386,11 +389,14 @@ public class DebianLicenseDetectorPlugin extends Plugin {
         protected static String extractPackageName(JSONObject json) {
             if (json.has("input")) {
                 JSONObject json2 = json.getJSONObject("input");
-                if (json2.has("product")) {
-                    return json2.getString("product");
-                } else {
-                    String packageNameNotFound = "Package name not found";
-                    return packageNameNotFound;
+                if (json2.has("input")) {
+                    JSONObject json3 = json2.getJSONObject("input");
+                    if (json3.has("package")) {
+                        return json3.getString("package");
+                    } else {
+                        String packageNameNotFound = "Package name not found";
+                        return packageNameNotFound;
+                    }
                 }
             }
             return null;
