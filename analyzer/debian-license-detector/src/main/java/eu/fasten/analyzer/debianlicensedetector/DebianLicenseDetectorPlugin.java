@@ -1,8 +1,8 @@
 package eu.fasten.analyzer.debianlicensedetector;
 
-//import eu.fasten.core.data.metadatadb.license.DetectedLicense;
-//import eu.fasten.core.data.metadatadb.license.DetectedLicenseSource;
-//import eu.fasten.core.data.metadatadb.license.DetectedLicenses;
+import eu.fasten.core.data.metadatadb.license.DetectedLicense;
+import eu.fasten.core.data.metadatadb.license.DetectedLicenseSource;
+import eu.fasten.core.data.metadatadb.license.DetectedLicenses;
 import eu.fasten.core.plugins.KafkaPlugin;
 import org.codehaus.plexus.util.xml.pull.XmlPullParserException;
 import org.json.JSONArray;
@@ -60,7 +60,7 @@ public class DebianLicenseDetectorPlugin extends Plugin {
         /**
          * TODO
          */
-        //protected DetectedLicenses detectedLicenses = new DetectedLicenses();
+        protected DetectedLicenses detectedLicenses = new DetectedLicenses();
 
         @Override
         public Optional<List<String>> consumeTopic() {
@@ -391,8 +391,8 @@ public class DebianLicenseDetectorPlugin extends Plugin {
                 JSONObject json2 = json.getJSONObject("input");
                 if (json2.has("input")) {
                     JSONObject json3 = json2.getJSONObject("input");
-                    if (json3.has("package")) {
-                        return json3.getString("package");
+                    if (json3.has("source")) {
+                        return json3.getString("source");
                     } else {
                         String packageNameNotFound = "Package name not found";
                         return packageNameNotFound;
