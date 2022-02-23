@@ -29,6 +29,7 @@ import org.apache.commons.io.FileUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -229,6 +230,31 @@ public class MavenUtilities {
         } catch (IOException e) {
             return false;
         }
+    }
+
+    /**
+     * Pretty-prints Maven coordinates.
+     *
+     * @param groupId    the maven coordinate's group ID.
+     * @param artifactId the maven coordinate's artifact ID.
+     * @return a pretty String representation of the input Maven coordinate.
+     */
+    public static String getMavenCoordinateName(String groupId, @Nullable String artifactId) {
+        return groupId +
+                (artifactId == null || artifactId.compareTo("") == 0 ?
+                        "" : Constants.mvnCoordinateSeparator + artifactId);
+    }
+
+    /**
+     * Pretty-prints Maven coordinates (with version).
+     *
+     * @param groupId    the maven coordinate's group ID.
+     * @param artifactId the maven coordinate's artifact ID.
+     * @param version    the maven coordinate's version.
+     * @return a pretty String representation of the input Maven coordinate.
+     */
+    public static String getMavenCoordinateName(String groupId, String artifactId, String version) {
+        return getMavenCoordinateName(groupId, artifactId) + Constants.mvnCoordinateSeparator + version;
     }
 
 }
