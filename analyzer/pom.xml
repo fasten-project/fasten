@@ -36,7 +36,7 @@
         <module>callable-index</module>
         <module>repo-cloner-plugin</module>
         <module>quality-analyzer</module>
-        <module>restapi-plugin</module>
+        <!-- <module>restapi-plugin</module> -->
         <module>repo-analyzer</module>
         <module>vulnerability-cache-invalidation-plugin</module>
         <module>parallel-vulnerability-cache-invalidation-plugin</module>
