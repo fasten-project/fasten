@@ -4,6 +4,7 @@ import com.google.common.collect.Sets;
 import eu.fasten.core.data.metadatadb.license.DetectedLicense;
 import eu.fasten.core.data.metadatadb.license.DetectedLicenseSource;
 import eu.fasten.core.data.metadatadb.license.DetectedLicenses;
+import eu.fasten.core.plugins.AbstractKafkaPlugin;
 import eu.fasten.core.plugins.KafkaPlugin;
 import org.apache.maven.model.License;
 import org.apache.maven.model.Model;
@@ -38,31 +39,16 @@ public class LicenseDetectorPlugin extends Plugin {
     }
 
     @Extension
-    public static class LicenseDetector implements KafkaPlugin {
+    public static class LicenseDetector extends AbstractKafkaPlugin {
 
         private final Logger logger = LoggerFactory.getLogger(LicenseDetector.class.getName());
 
         protected Exception pluginError = null;
 
         /**
-         * The topic this plugin consumes.
-         */
-        protected String consumerTopic = "fasten.SyncJava.out";
-
-        /**
          * TODO
          */
         protected DetectedLicenses detectedLicenses = new DetectedLicenses();
-
-        @Override
-        public Optional<List<String>> consumeTopic() {
-            return Optional.of(Collections.singletonList(consumerTopic));
-        }
-
-        @Override
-        public void setTopic(String topicName) {
-            this.consumerTopic = topicName;
-        }
 
         /**
          * Resets the internal state of this plugin.
@@ -73,7 +59,7 @@ public class LicenseDetectorPlugin extends Plugin {
         }
 
         @Override
-        public void consume(String record) {
+        public void consume(String kafkaRecord, ProcessingLane l) {
             try { // Fasten error-handling guidelines
 
                 reset();
@@ -83,10 +69,10 @@ public class LicenseDetectorPlugin extends Plugin {
                 // TODO Checking whether the repository has already been scanned (by querying the KB)
 
                 // Retrieving the repository path on the shared volume
-                String repoPath = extractRepoPath(record);
+                String repoPath = extractRepoPath(kafkaRecord);
 
                 // Retrieving the repo URL
-                String repoUrl = extractRepoURL(record);
+                String repoUrl = extractRepoURL(kafkaRecord);
 
                 // Outbound license detection
                 detectedLicenses.setOutbound(getOutboundLicenses(repoPath, repoUrl));

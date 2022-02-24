@@ -3,6 +3,7 @@ package eu.fasten.analyzer.licensefeeder;
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.metadatadb.MetadataDao;
 import eu.fasten.core.maven.data.Revision;
+import eu.fasten.core.plugins.AbstractKafkaPlugin;
 import eu.fasten.core.plugins.DBConnector;
 import eu.fasten.core.plugins.KafkaPlugin;
 import org.jooq.DSLContext;
@@ -16,10 +17,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.Timestamp;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 public class LicenseFeederPlugin extends Plugin {
 
@@ -34,15 +32,22 @@ public class LicenseFeederPlugin extends Plugin {
 
         protected Exception pluginError = null;
         private static DSLContext dslContext;
-
-        /**
-         * The topic this plugin consumes.
-         */
-        protected String consumerTopic = "fasten.LicenseDetector.out";
+        private List<String> consumeTopics = new LinkedList<>(Collections.singletonList("fasten.LicenseDetector.out"));
 
         @Override
         public void setDBConnection(Map<String, DSLContext> dslContexts) {
             LicenseFeeder.dslContext = dslContexts.get(Constants.mvnForge);
+        }
+
+
+        @Override
+        public Optional<List<String>> consumeTopic() {
+            return Optional.of(consumeTopics);
+        }
+
+        @Override
+        public void setTopics(List<String> consumeTopics) {
+            this.consumeTopics = consumeTopics;
         }
 
         @Override
@@ -185,16 +190,6 @@ public class LicenseFeederPlugin extends Plugin {
 
         @Override
         public void freeResource() {
-        }
-
-        @Override
-        public Optional<List<String>> consumeTopic() {
-            return Optional.of(Collections.singletonList(consumerTopic));
-        }
-
-        @Override
-        public void setTopic(String topicName) {
-            this.consumerTopic = topicName;
         }
 
         @Override
