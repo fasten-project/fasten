@@ -1,0 +1,42 @@
+name: Verify
+
+# no trigger on tags, only `verify` the push, so merged PRs then only need to be `deploy`ed
+on:
+  push:
+    branches: ['**']
+
+jobs:
+  build:
+
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-20.04, windows-2019]
+        jdk: [11]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: actions/setup-java@v2
+        with:
+          java-version: ${{ matrix.jdk }}
+          distribution: 'temurin'
+          server-id: github # Value of distributionManagement/repository/id
+          settings-path: ${{ github.workspace }} # location of settings.xml
+
+      - name: Build Project (Maven)
+        # "install" needed for the build of restapi
+        run: mvn -B -ntp clean install -s ${{ github.workspace }}/settings.xml
+        env:
+          # auth necessary to access GitHub Maven registries
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Build REST API (Maven)
+        run: |
+          cd analyzer/restapi-plugin
+          mvn -B -ntp clean verify spring-boot:repackage -s ${{ github.workspace }}/settings.xml
+        env:
+          # auth necessary to access GitHub Maven registries
+          GITHUB_TOKEN: ${{ github.token }}
