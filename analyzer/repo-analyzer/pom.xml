@@ -8,12 +8,12 @@
     <parent>
         <artifactId>analyzer</artifactId>
         <groupId>eu.fasten</groupId>
-        <version>0.0.2-SNAPSHOT</version>
+        <version>0.0.3-SNAPSHOT</version>
     </parent>
 
     <groupId>eu.fasten.analyzer</groupId>
     <artifactId>repo-analyzer</artifactId>
-    <version>0.0.2-SNAPSHOT</version>
+    <version>0.0.3-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>repo-analyzer</name>
@@ -27,7 +27,7 @@
         <dependency>
             <groupId>eu.fasten</groupId>
             <artifactId>core</artifactId>
-            <version>0.0.2-SNAPSHOT</version>
+            <version>0.0.3-SNAPSHOT</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
