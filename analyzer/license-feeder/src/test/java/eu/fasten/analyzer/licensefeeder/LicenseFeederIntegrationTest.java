@@ -9,9 +9,11 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.containers.wait.strategy.Wait;
+import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.util.Collections;
 
+@Testcontainers(disabledWithoutDocker = true)
 class LicenseFeederIntegrationTest {
 
     protected static final String KB_USERNAME = "fasten";
