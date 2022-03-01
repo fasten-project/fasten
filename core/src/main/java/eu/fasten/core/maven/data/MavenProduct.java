@@ -28,37 +28,37 @@ import org.apache.commons.lang3.builder.ToStringStyle;
  */
 public class MavenProduct {
 
-	public long id;
-	public String groupId;
-	public String artifactId;
+    public transient long id;
 
-	public MavenProduct() {
-	}
+    public String groupId;
+    public String artifactId;
 
-	public MavenProduct(final String groupId, final String artifactId) {
-		this.id = 0;
-		this.groupId = groupId;
-		this.artifactId = artifactId;
-	}
+    public MavenProduct() {}
 
-	public MavenProduct(long id, String groupId, String artifactId) {
-		this.id = id;
-		this.groupId = groupId;
-		this.artifactId = artifactId;
-	}
+    public MavenProduct(final String groupId, final String artifactId) {
+        this.id = 0;
+        this.groupId = groupId;
+        this.artifactId = artifactId;
+    }
 
-	@Override
-	public boolean equals(Object obj) {
-		return EqualsBuilder.reflectionEquals(this, obj);
-	}
+    public MavenProduct(long id, String groupId, String artifactId) {
+        this.id = id;
+        this.groupId = groupId;
+        this.artifactId = artifactId;
+    }
 
-	@Override
-	public int hashCode() {
-		return HashCodeBuilder.reflectionHashCode(this);
-	}
+    @Override
+    public boolean equals(Object obj) {
+        return EqualsBuilder.reflectionEquals(this, obj);
+    }
 
-	@Override
-	public String toString() {
-		return ToStringBuilder.reflectionToString(this, ToStringStyle.MULTI_LINE_STYLE);
-	}
+    @Override
+    public int hashCode() {
+        return HashCodeBuilder.reflectionHashCode(this);
+    }
+
+    @Override
+    public String toString() {
+        return ToStringBuilder.reflectionToString(this, ToStringStyle.MULTI_LINE_STYLE);
+    }
 }
