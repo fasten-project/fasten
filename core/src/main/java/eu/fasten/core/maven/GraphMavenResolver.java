@@ -214,15 +214,6 @@ public class GraphMavenResolver implements Runnable {
         var exclusions = new ArrayList<Pair<Revision, MavenProduct>>();
         var descendants = new HashMap<Revision, Revision>();
 
-        try {
-            var parent = getParentArtifact(groupId, artifactId, version, db);
-            if (parent != null) {
-                allDeps = resolveDependencies(parent, db, false);
-            }
-        } catch (Exception e) {
-            logger.warn("Parent for revision {}:{}:{} not found: {}", groupId, artifactId, version, e.getMessage());
-        }
-
         resultTriples.add(dependencyBFS(groupId, artifactId, version, timestamp, transitive));
         for (var triple : resultTriples) {
             allDeps.addAll(triple.getLeft());
