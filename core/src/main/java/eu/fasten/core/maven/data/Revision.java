@@ -32,6 +32,8 @@ import java.util.Objects;
  */
 public class Revision extends MavenProduct implements Serializable {
 
+    private static final long serialVersionUID = 3096663425693127578L;
+    
     public DefaultArtifactVersion version;
     public Timestamp createdAt;
 
@@ -53,27 +55,7 @@ public class Revision extends MavenProduct implements Serializable {
     }
 
     public MavenProduct product() {
-        return new MavenProduct(this.groupId, this.artifactId);
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        if (!super.equals(o)) return false;
-        Revision revision = (Revision) o;
-        return version.equals(revision.version);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(this.artifactId, this.groupId, version);
-    }
-
-    @Override
-    public String toString() {
-        return String.format("%s%s%s%s%s", groupId, Constants.mvnCoordinateSeparator,
-                artifactId, Constants.mvnCoordinateSeparator, version);
+        return new MavenProduct(groupId, artifactId);
     }
 
     public JSONObject toJSON() {
@@ -84,5 +66,30 @@ public class Revision extends MavenProduct implements Serializable {
         json.put("version", version.toString());
         json.put("createdAt", createdAt.getTime());
         return json;
+    }
+
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = super.hashCode();
+        result = prime * result + ((version == null) ? 0 : version.hashCode());
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (!super.equals(obj))
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        Revision other = (Revision) obj;
+        if (version == null) {
+            if (other.version != null)
+                return false;
+        } else if (!version.equals(other.version))
+            return false;
+        return true;
     }
 }
