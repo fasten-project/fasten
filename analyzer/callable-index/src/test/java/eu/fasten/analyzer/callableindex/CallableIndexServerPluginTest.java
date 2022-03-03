@@ -18,12 +18,20 @@
 
 package eu.fasten.analyzer.callableindex;
 
+import eu.fasten.analyzer.callableindex.CallableIndexServerPlugin.CallableIndexFastenPlugin;
+import eu.fasten.core.data.DirectedGraph;
+import eu.fasten.core.data.FastenJavaURI;
 import eu.fasten.core.data.callableindex.ExtendedGidGraph;
+import eu.fasten.core.data.callableindex.GraphMetadata;
+import eu.fasten.core.data.callableindex.GraphMetadata.ReceiverRecord.CallType;
 import eu.fasten.core.data.callableindex.RocksDao;
+import eu.fasten.core.merge.CallGraphUtils;
+import org.apache.commons.lang.StringUtils;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONTokener;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.rocksdb.RocksDBException;
@@ -34,18 +42,19 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
+import static eu.fasten.core.data.callableindex.GraphMetadata.*;
 import static eu.fasten.core.utils.TestUtils.getTestResource;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class CallableIndexServerPluginTest {
 
-    private CallableIndexServerPlugin.CallableIndexFastenPlugin callableIndexFastenPlugin;
+    private CallableIndexFastenPlugin callableIndexFastenPlugin;
     private final RocksDao rocksDao = Mockito.mock(RocksDao.class);
 
     @BeforeEach
     public void setUp() {
-        callableIndexFastenPlugin = new CallableIndexServerPlugin.CallableIndexFastenPlugin();
+        callableIndexFastenPlugin = new CallableIndexFastenPlugin();
         //callableIndexFastenPlugin.addTopic("fasten.MetadataDBExtension.out");
         callableIndexFastenPlugin.setRocksDao(rocksDao);
     }
@@ -60,14 +69,6 @@ public class CallableIndexServerPluginTest {
         callableIndexFastenPlugin.setRocksDao(rocksDao);
         callableIndexFastenPlugin.consume(json.toString());
         Mockito.verify(rocksDao).saveToRocksDb(graph);
-    }
-
-    @Test
-    public void consumeTest() {
-        var json = new JSONObject("{\"payload\": {}}");
-        var jsonFile = getTestResource("gid_graph_test.json");
-        json.getJSONObject("payload").put("dir", jsonFile.getPath());
-        callableIndexFastenPlugin.consume(json.toString());
     }
 
     @Test
@@ -108,5 +109,61 @@ public class CallableIndexServerPluginTest {
             + "Consumes list of edges (pair of global IDs produced by PostgreSQL from Kafka"
             + " topic and populates graph database (RocksDB) with consumed data";
         assertEquals(description, callableIndexFastenPlugin.description());
+    }
+
+    @Disabled("This test is only for local development and debugging purposes! " +
+        "It needs docker compose up and running with app:0.0.1" +
+        "synthetic jar ingested. Local variable callableIndexPath should also be provided. ")
+    @Test
+    void integrationTestForSavingAGIDJsonToCallableIndex() throws RocksDBException {
+        final var callableIndexPath = "";
+        final var rocksDao = new RocksDao(callableIndexPath, false);
+        final var ci = new CallableIndexFastenPlugin();
+        ci.setRocksDao(rocksDao);
+
+        consumeResource(ci, "app_0.0.1.json");
+
+        NodeMetadata doRoadTripCallSites = getNodeMetadata(rocksDao, 1, 2);
+        assertLine(doRoadTripCallSites, 15, "/lib/MotorVehicle.on()%2Fjava.lang%2FBooleanType",
+            CallType.INTERFACE, List.of("/lib/MotorVehicle"));
+        assertLine(doRoadTripCallSites, 16, "/lib/VehicleWash.wash(MotorVehicle)%2Fjava.lang%2FVoidType",
+            CallType.VIRTUAL,  List.of("/lib/VehicleWash"));
+        assertLine(doRoadTripCallSites, 17,  "/lib/MotorVehicle.off()%2Fjava.lang%2FBooleanType",
+            CallType.INTERFACE, List.of("/lib/MotorVehicle"));
+    }
+
+    private NodeMetadata getNodeMetadata(final RocksDao rocksDao, final int graphId,
+                                         final int nodeId) throws RocksDBException {
+        final var dg = rocksDao.getGraphData(graphId);
+        final var metadata = rocksDao.getGraphMetadata(graphId, dg);
+        return metadata.gid2NodeMetadata.get(nodeId);
+    }
+
+    public void consumeResource(final CallableIndexFastenPlugin ci,
+                                final String resourceName) {
+        var json = new JSONObject("{\"payload\": {}}");
+        var jsonFile = getTestResource(resourceName);
+        json.getJSONObject("payload").put("dir", jsonFile.getPath());
+        ci.consume(json.toString());
+    }
+
+    private void assertLine(final NodeMetadata doRoadTripCallSite, final int line,
+                            final String signature, final CallType callType,
+                              final List<String> receiverTypes) {
+        final var line15 = getReceiverRecordForLine(doRoadTripCallSite, line);
+        assert line15 != null;
+        assertEquals(signature, line15.receiverSignature);
+        assertEquals(callType, line15.callType);
+        assertEquals(receiverTypes, line15.receiverTypes);
+    }
+
+    private ReceiverRecord getReceiverRecordForLine(final NodeMetadata nodeMetadata,
+                                                    final int line){
+        for (final var rec : nodeMetadata.receiverRecords) {
+            if (rec.line == line) {
+                return rec;
+            }
+        }
+        return null;
     }
 }
