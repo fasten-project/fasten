@@ -237,7 +237,7 @@ public class SearchEngine {
 				"\t$and                            The last two filters are substituted by their conjunction (and)\n" +
 				"\t$not                            The last filter is substituted by its negation (not)\n" +
 				"\t$limit <LIMIT>                  Print at most <LIMIT> results (-1 for infinity)\n" +
-				"\t$maxDependents <LIMIT>          Maximum number of dependents considered in coreachable query resolution (-1 for infinity)" +
+				"\t$maxDependents <LIMIT>          Maximum number of dependents considered in coreachable query resolution (-1 for infinity)\n" +
 				"\t±<URI>                          Find reachable (+) or coreachable (-) callables from the given callable <URI> satisfying all filters\n" +
 				"";
 		try {
