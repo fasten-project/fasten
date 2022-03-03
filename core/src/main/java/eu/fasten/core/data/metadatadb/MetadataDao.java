@@ -18,43 +18,9 @@
 
 package eu.fasten.core.data.metadatadb;
 
-import static org.jooq.impl.DSL.and;
-import static org.jooq.impl.DSL.exists;
-import static org.jooq.impl.DSL.field;
-import static org.jooq.impl.DSL.trueCondition;
-
-import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import org.apache.commons.math3.util.Pair;
-import org.jetbrains.annotations.Nullable;
-import org.jooq.Condition;
-import org.jooq.DSLContext;
-import org.jooq.JSONB;
-import org.jooq.JSONFormat;
-import org.jooq.Record;
-import org.jooq.Record1;
-import org.jooq.Record2;
-import org.jooq.Result;
-import org.jooq.SelectField;
-import org.jooq.impl.QOM.Eq;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.github.t9t.jooq.json.JsonbDSL;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
-
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.FastenPythonURI;
 import eu.fasten.core.data.FastenJavaURI;
@@ -85,7 +51,41 @@ import eu.fasten.core.data.metadatadb.codegen.tables.VulnerabilitiesXPackageVers
 import eu.fasten.core.data.metadatadb.codegen.tables.records.CallSitesRecord;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.CallablesRecord;
 import eu.fasten.core.maven.data.PackageVersionNotFoundException;
+import eu.fasten.core.maven.data.Revision;
+import eu.fasten.core.maven.utils.MavenUtilities;
 import eu.fasten.core.utils.FastenUriUtils;
+import org.apache.commons.math3.util.Pair;
+import org.jooq.Condition;
+import org.jooq.DSLContext;
+import org.jooq.JSONB;
+import org.jooq.JSONFormat;
+import org.jooq.Record;
+import org.jooq.Record1;
+import org.jooq.Record2;
+import org.jooq.Result;
+import org.jooq.SelectField;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.annotation.Nullable;
+import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import static org.jooq.impl.DSL.and;
+import static org.jooq.impl.DSL.exists;
+import static org.jooq.impl.DSL.field;
+import static org.jooq.impl.DSL.trueCondition;
+
 
 public class MetadataDao {
     private final Logger logger = LoggerFactory.getLogger(MetadataDao.class.getName());
@@ -216,6 +216,164 @@ public class MetadataDao {
                                 PackageVersions.PACKAGE_VERSIONS.as("excluded").METADATA))
                 .returning(PackageVersions.PACKAGE_VERSIONS.ID).fetchOne();
         return resultRecord.getValue(PackageVersions.PACKAGE_VERSIONS.ID);
+    }
+
+    /**
+     * Inserts outbound licenses at the package version level.
+     *
+     * @param coordinates the coordinates whose outbound licenses are about to be inserted.
+     * @param outboundLicenses the package version's outbound licenses.
+     * @return the updated metadata field.
+     */
+    public String insertPackageOutboundLicenses(Revision coordinates,
+                                                String outboundLicenses) {
+        return insertPackageOutboundLicenses(
+                coordinates.groupId,
+                coordinates.artifactId,
+                coordinates.version.toString(),
+                outboundLicenses);
+    }
+
+    /**
+     * Inserts outbound licenses at the package version level.
+     *
+     * @param groupId          the group ID of the package version whose outbound licenses are about to be inserted.
+     * @param artifactId       the artifact ID of the package version whose outbound licenses are about to be inserted.
+     * @param packageVersion   the package version whose outbound licenses are about to be inserted.
+     * @param outboundLicenses the package version's outbound licenses.
+     * @return the updated metadata field.
+     */
+    public String insertPackageOutboundLicenses(String groupId,
+                                                String artifactId,
+                                                String packageVersion,
+                                                String outboundLicenses) {
+        return insertPackageOutboundLicenses(
+                MavenUtilities.getMavenCoordinateName(groupId, artifactId),
+                packageVersion,
+                outboundLicenses);
+    }
+    /**
+     * Inserts outbound licenses at the package version level.
+     *
+     * @param packageName      the package name whose outbound licenses are about to be inserted.
+     * @param packageVersion   the package version whose outbound licenses are about to be inserted.
+     * @param outboundLicenses the package version's outbound licenses.
+     * @return the updated metadata field.
+     */
+    public String insertPackageOutboundLicenses(String packageName, String packageVersion, String outboundLicenses) {
+
+        logger.debug("Inserting outbound licenses for " + packageName + ":" + packageVersion + ": " + outboundLicenses);
+
+        /*  Warning!
+            The `concat()` method casts the first argument to `VARCHAR`, causing errors!
+            Packages p = Packages.PACKAGES;
+            PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
+            Record updatedMetadata = context.update(pv)
+                    .set(
+                            pv.METADATA,
+                            when(pv.METADATA.isNull(), JSONB.valueOf("{}")).otherwise(pv.METADATA)
+                                    .concat(outboundLicenses).cast(SQLDataType.JSONB)
+                    )
+                    .from(p)
+                    .where(p.ID.eq(pv.PACKAGE_ID).and(packageVersionWhereClause(packageName, packageVersion)))
+                    .returning(pv.METADATA)
+                    .fetchOne();
+        */
+        // Using plain SQL
+        Object updatedMetadata = context.fetchValue("UPDATE package_versions pv\n" +
+                "SET metadata = (CASE WHEN metadata IS NULL THEN '{}'::jsonb ELSE metadata END) || {0}\n" +
+                "    FROM packages p\n" +
+                "WHERE p.id = pv.package_id\n" +
+                "  AND p.package_name = LOWER({1})\n" +
+                "  AND pv.version = LOWER({2})\n" +
+                "    RETURNING pv.metadata;", JSONB.valueOf(outboundLicenses), packageName, packageVersion);
+
+        // Updated metadata field
+        logger.debug("`updatedMetadata`: " + updatedMetadata);
+        assert updatedMetadata != null; // FIXME
+        return updatedMetadata.toString();
+    }
+    /**
+     * Inserts scanned licenses at the file level.
+     *
+     * @param coordinates  the Maven coordinates to which the file belongs.
+     * @param filePath     the path of the file whose scanned licenses are about to be inserte.
+     * @param fileLicenses the scanned licenses of the file.
+     * @return the updated metadata field. Can be `null` in case the file is not present in the DB.
+     */
+    @Nullable
+    public String insertFileLicenses(Revision coordinates,
+                                     String filePath,
+                                     String fileLicenses) {
+        return insertFileLicenses(
+                coordinates.groupId,
+                coordinates.artifactId,
+                coordinates.version.toString(),
+                filePath,
+                fileLicenses);
+    }
+
+    /**
+     * Inserts scanned licenses at the file level.
+     *
+     * @param groupId        the group ID of the package to which the file belongs.
+     * @param artifactId     the artifact ID of the package to which the file belongs.
+     * @param packageVersion the version of the package to which the file belongs.
+     * @param filePath       the path of the file whose scanned licenses are about to be inserte.
+     * @param fileLicenses   the scanned licenses of the file.
+     * @return the updated metadata field. Can be `null` in case the file is not present in the DB.
+     */
+    @Nullable
+    public String insertFileLicenses(String groupId,
+                                     String artifactId,
+                                     String packageVersion,
+                                     String filePath,
+                                     String fileLicenses) {
+        return insertFileLicenses(
+                MavenUtilities.getMavenCoordinateName(groupId, artifactId),
+                packageVersion,
+                filePath,
+                fileLicenses);
+    }
+
+    /**
+     * Inserts scanned licenses at the file level.
+     *
+     * @param packageName    the name of the package to which the file belongs.
+     * @param packageVersion the version of the package to which the file belongs.
+     * @param filePath       the path of the file whose scanned licenses are about to be inserte.
+     * @param fileLicenses   the scanned licenses of the file.
+     * @return the updated metadata field. Can be `null` in case the file is not present in the DB.
+     */
+    @Nullable
+    public String insertFileLicenses(String packageName,
+                                     String packageVersion,
+                                     String filePath,
+                                     String fileLicenses) {
+
+        logger.debug("Inserting file licenses for " + packageName + ":" + packageVersion + ", file" +
+                filePath + ": " + fileLicenses);
+
+        // Can be `null` in case the DB does not have this file
+        @Nullable Object updatedMetadata = context.fetchValue("UPDATE files f\n" +
+                        "SET metadata = (CASE WHEN f.metadata IS NULL THEN '{}'::jsonb ELSE f.metadata END) || {0}\n" +
+                        "    FROM packages p JOIN package_versions pv ON p.id = pv.package_id\n" +
+                        "WHERE f.package_version_id = pv.id\n" +
+                        "  AND p.package_name = LOWER({1})\n" +
+                        "  AND pv.version = LOWER({2})\n" +
+                        "  AND f.path ILIKE '%' || array_to_string(" +
+                        "    (regexp_split_to_array({3}, '/'))[(array_length(regexp_split_to_array({3}, '/'), 1) - 1):],\n" +
+                        "    '/')\n" +
+                        "    RETURNING f.metadata;\n",
+                JSONB.valueOf(fileLicenses),
+                packageName,
+                packageVersion,
+                filePath);
+
+        logger.debug("`updatedMetadata`: " + updatedMetadata);
+
+        // Updated metadata field
+        return updatedMetadata == null ? null : updatedMetadata.toString();
     }
 
     /**

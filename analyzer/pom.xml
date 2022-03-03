@@ -36,13 +36,15 @@
         <module>callable-index</module>
         <module>repo-cloner-plugin</module>
         <module>quality-analyzer</module>
-        <module>restapi-plugin</module>
+        <!-- <module>restapi-plugin</module> -->
         <module>repo-analyzer</module>
         <module>vulnerability-cache-invalidation-plugin</module>
         <module>parallel-vulnerability-cache-invalidation-plugin</module>
         <module>vulnerability-statements-processor</module>
         <module>vulnerability-packages-listener</module>
         <module>dummy-plugin</module>
+        <module>license-detector</module>
+        <module>license-feeder</module>
     </modules>
 
     <build>
