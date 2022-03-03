@@ -1,0 +1,363 @@
+{
+  "callsites_info": {
+    "[11, 1]": {
+      "line": 9,
+      "receiver_type_ids": [
+        2
+      ],
+      "call_type": "special"
+    },
+    "[13, 8]": {
+      "line": 18,
+      "receiver_type_ids": [
+        4
+      ],
+      "call_type": "special"
+    },
+    "[8, 17]": {
+      "line": 8,
+      "receiver_type_ids": [
+        5
+      ],
+      "call_type": "special"
+    },
+    "[8, 15]": {
+      "line": 10,
+      "receiver_type_ids": [
+        1
+      ],
+      "call_type": "special"
+    },
+    "[13, 2]": {
+      "line": 20,
+      "receiver_type_ids": [
+        2
+      ],
+      "call_type": "virtual"
+    },
+    "[10, 25]": {
+      "line": 18,
+      "receiver_type_ids": [
+        11
+      ],
+      "call_type": "interface"
+    },
+    "[3, 17]": {
+      "line": 5,
+      "receiver_type_ids": [
+        5
+      ],
+      "call_type": "special"
+    },
+    "[12, 2]": {
+      "line": 27,
+      "receiver_type_ids": [
+        2
+      ],
+      "call_type": "virtual"
+    },
+    "[11, 19]": {
+      "line": 8,
+      "receiver_type_ids": [
+        8
+      ],
+      "call_type": "special"
+    },
+    "[13, 10]": {
+      "line": 19,
+      "receiver_type_ids": [
+        4
+      ],
+      "call_type": "virtual"
+    },
+    "[2, 21]": {
+      "line": 15,
+      "receiver_type_ids": [
+        9
+      ],
+      "call_type": "interface"
+    },
+    "[14, 11]": {
+      "line": 12,
+      "receiver_type_ids": [
+        6
+      ],
+      "call_type": "special"
+    },
+    "[11, 23]": {
+      "line": 6,
+      "receiver_type_ids": [
+        10
+      ],
+      "call_type": "special"
+    },
+    "[14, 13]": {
+      "line": 13,
+      "receiver_type_ids": [
+        6
+      ],
+      "call_type": "virtual"
+    },
+    "[12, 6]": {
+      "line": 28,
+      "receiver_type_ids": [
+        3
+      ],
+      "call_type": "virtual"
+    },
+    "[13, 9]": {
+      "line": 21,
+      "receiver_type_ids": [
+        4
+      ],
+      "call_type": "virtual"
+    },
+    "[5, 18]": {
+      "line": 8,
+      "receiver_type_ids": [
+        7
+      ],
+      "call_type": "virtual"
+    },
+    "[9, 16]": {
+      "line": 22,
+      "receiver_type_ids": [
+        1
+      ],
+      "call_type": "special"
+    },
+    "[2, 20]": {
+      "line": 16,
+      "receiver_type_ids": [
+        8
+      ],
+      "call_type": "virtual"
+    },
+    "[12, 5]": {
+      "line": 26,
+      "receiver_type_ids": [
+        3
+      ],
+      "call_type": "virtual"
+    },
+    "[12, 3]": {
+      "line": 25,
+      "receiver_type_ids": [
+        3
+      ],
+      "call_type": "special"
+    },
+    "[2, 22]": {
+      "line": 17,
+      "receiver_type_ids": [
+        9
+      ],
+      "call_type": "interface"
+    },
+    "[14, 12]": {
+      "line": 14,
+      "receiver_type_ids": [
+        6
+      ],
+      "call_type": "virtual"
+    },
+    "[1, 23]": {
+      "line": 10,
+      "receiver_type_ids": [
+        10
+      ],
+      "call_type": "special"
+    },
+    "[9, 24]": {
+      "line": 23,
+      "receiver_type_ids": [
+        11
+      ],
+      "call_type": "interface"
+    },
+    "[6, 18]": {
+      "line": 12,
+      "receiver_type_ids": [
+        7
+      ],
+      "call_type": "virtual"
+    }
+  },
+  "product": "eu.fasten-project.tests.syntheticjars:app",
+  "nodes": [
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9,
+    10,
+    11,
+    12,
+    13,
+    14,
+    15,
+    16,
+    17,
+    18,
+    19,
+    20,
+    21,
+    22,
+    23,
+    24,
+    25
+  ],
+  "types_map": {
+    "11": "/java.util/List",
+    "1": "/java.util/LinkedList",
+    "2": "/app/RoadTrip",
+    "3": "/app/MotorCycle",
+    "4": "/app/Car",
+    "5": "/lib/BasicMotorVehicle",
+    "6": "/null/Main",
+    "7": "/java.io/PrintStream",
+    "8": "/lib/VehicleWash",
+    "9": "/lib/MotorVehicle",
+    "10": "/java.lang/Object"
+  },
+  "edges": [
+    [
+      3,
+      17
+    ],
+    [
+      12,
+      5
+    ],
+    [
+      12,
+      6
+    ],
+    [
+      5,
+      18
+    ],
+    [
+      10,
+      25
+    ],
+    [
+      14,
+      11
+    ],
+    [
+      14,
+      12
+    ],
+    [
+      14,
+      13
+    ],
+    [
+      11,
+      1
+    ],
+    [
+      9,
+      16
+    ],
+    [
+      2,
+      20
+    ],
+    [
+      2,
+      21
+    ],
+    [
+      2,
+      22
+    ],
+    [
+      13,
+      2
+    ],
+    [
+      9,
+      24
+    ],
+    [
+      13,
+      8
+    ],
+    [
+      11,
+      19
+    ],
+    [
+      13,
+      9
+    ],
+    [
+      13,
+      10
+    ],
+    [
+      11,
+      23
+    ],
+    [
+      6,
+      18
+    ],
+    [
+      8,
+      15
+    ],
+    [
+      8,
+      17
+    ],
+    [
+      1,
+      23
+    ],
+    [
+      12,
+      2
+    ],
+    [
+      12,
+      3
+    ]
+  ],
+  "index": 1,
+  "gid_to_uri": {
+    "22": "/lib/MotorVehicle.off()%2Fjava.lang%2FBooleanType",
+    "23": "/java.lang/Object.%3Cinit%3E()VoidType",
+    "24": "/java.util/List.clear()%2Fjava.lang%2FVoidType",
+    "25": "/java.util/List.add(%2Fjava.lang%2FObject)%2Fjava.lang%2FBooleanType",
+    "10": "/app/Car.addtoTrunk(%2Fjava.lang%2FString)%2Fjava.lang%2FVoidType",
+    "11": "/null/Main.%3Cinit%3E()%2Fjava.lang%2FVoidType",
+    "12": "/null/Main.doMotorCycleStuff()%2Fjava.lang%2FVoidType",
+    "13": "/null/Main.doCarStuff()%2Fjava.lang%2FVoidType",
+    "14": "/null/Main.main(%2Fjava.lang%2FString%5B%5D)%2Fjava.lang%2FVoidType",
+    "15": "/java.util/LinkedList.%3Cinit%3E()%2Fjava.lang%2FVoidType",
+    "16": "/java.util/LinkedList.%3Cinit%3E(Collection)%2Fjava.lang%2FVoidType",
+    "17": "/lib/BasicMotorVehicle.%3Cinit%3E()%2Fjava.lang%2FVoidType",
+    "18": "/java.io/PrintStream.println(%2Fjava.lang%2FString)%2Fjava.lang%2FVoidType",
+    "19": "/lib/VehicleWash.%3Cinit%3E()%2Fjava.lang%2FVoidType",
+    "1": "/app/RoadTrip.%3Cinit%3E(%2Flib%2FVehicleWash)%2Fjava.lang%2FVoidType",
+    "2": "/app/RoadTrip.doRoadTrip(%2Flib%2FMotorVehicle)%2Fjava.lang%2FVoidType",
+    "3": "/app/MotorCycle.%3Cinit%3E()%2Fjava.lang%2FVoidType",
+    "4": "/app/MotorCycle.getName()%2Fjava.lang%2FString",
+    "5": "/app/MotorCycle.kickStandUp()%2Fjava.lang%2FVoidType",
+    "6": "/app/MotorCycle.kickStandDown()%2Fjava.lang%2FVoidType",
+    "7": "/app/Car.getName()%2Fjava.lang%2FString",
+    "8": "/app/Car.%3Cinit%3E()%2Fjava.lang%2FVoidType",
+    "9": "/app/Car.getTrunk()%2Fjava.util%2FList",
+    "20": "/lib/VehicleWash.wash(MotorVehicle)%2Fjava.lang%2FVoidType",
+    "21": "/lib/MotorVehicle.on()%2Fjava.lang%2FBooleanType"
+  },
+  "version": "0.0.1",
+  "numInternalNodes": 14
+}
