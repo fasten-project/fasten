@@ -174,7 +174,9 @@ public class RocksDao implements Closeable {
         // Gather data by source and store it in lists of GraphMetadata.ReceiverRecord.
         edgesInfo.forEach((pair, record) -> map.compute(pair.getFirst().longValue(), (k, list) -> {
             if (list == null) list = new ArrayList<>();
-            list.add(new ReceiverRecord(record.getLine(), transformCallType(record.getCallType()), gidToUriMap.get(pair.getFirst()), Arrays.stream(record.getReceiverTypeIds()).map(typeMap::get).collect(Collectors.toList())));
+            list.add(new ReceiverRecord(record.getLine(), transformCallType(record.getCallType())
+                , gidToUriMap.get(pair.getSecond()),
+                Arrays.stream(record.getReceiverTypeIds()).map(typeMap::get).collect(Collectors.toList())));
             return list;
         }));
 
