@@ -208,7 +208,7 @@ public class SearchEngine {
 		this.context = context;
 		this.rocksDao = rocksDao;
 		this.scorer = scorer == null ? TrivialScorer.getInstance() : scorer;
-		resolver = new GraphMavenResolver(context, resolverGraph);
+		resolver = GraphMavenResolver.init(context, resolverGraph);
 		resolver.setIgnoreMissing(true);
 		this.predicateFactory = new CachingPredicateFactory(context);
 	}
@@ -501,7 +501,7 @@ public class SearchEngine {
 		final String artifactId = a[1];
 		final String version = record.component2();
 		resolveTime -= System.nanoTime();
-		final Set<Revision> dependencySet = resolver.resolveDependencies(groupId, artifactId, version, -1, context, true);
+		final Set<Revision> dependencySet = resolver.resolveDependencies(groupId, artifactId, version, -1, true);
 		resolveTime += System.nanoTime();
 
 		LOGGER.debug("Found " + dependencySet.size() + " dependencies");
@@ -636,7 +636,7 @@ public class SearchEngine {
 			LOGGER.debug("Analyzing dependent " + groupId + ":" + artifactId + ":" + version);
 
 			resolveTime -= System.nanoTime();
-			final Set<Revision> dependencySet = resolver.resolveDependencies(groupId, artifactId, version, -1, context, true);
+			final Set<Revision> dependencySet = resolver.resolveDependencies(groupId, artifactId, version, -1, true);
 			resolveTime += System.nanoTime();
 
 			LOGGER.debug("Dependent has " + graph.numNodes() + " nodes");

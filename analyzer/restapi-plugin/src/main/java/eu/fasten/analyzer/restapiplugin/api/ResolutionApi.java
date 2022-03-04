@@ -65,7 +65,7 @@ public class ResolutionApi {
         switch(KnowledgeBaseConnector.forge) {
             case Constants.mvnForge: {
                 try {
-                    var graphMavenResolver = new GraphMavenResolver(KnowledgeBaseConnector.dbContext, KnowledgeBaseConnector.dependencyGraphPath);
+                    var graphMavenResolver = GraphMavenResolver.init(KnowledgeBaseConnector.dbContext, KnowledgeBaseConnector.dependencyGraphPath);
                     this.graphMavenResolver = graphMavenResolver;
                 } catch (Exception e) {
                     logger.error("Error constructing dependency graph maven resolver", e);
@@ -108,7 +108,7 @@ public class ResolutionApi {
                 Set<Revision> depSet;
                 if (useDepGraph) {
                     depSet = this.graphMavenResolver.resolveDependencies(groupId,
-                            artifactId, packageVersion, timestamp, KnowledgeBaseConnector.dbContext, transitive);
+                            artifactId, packageVersion, timestamp, transitive);
                 } else {
                     var mavenResolver = new MavenResolver();
                     depSet = mavenResolver.resolveDependencies(groupId + ":" + artifactId + ":" + packageVersion);
@@ -215,7 +215,7 @@ public class ResolutionApi {
                     var id = KnowledgeBaseConnector.kbDao.getPackageVersionID(groupId + Constants.mvnCoordinateSeparator + artifactId, version);
                     return new Revision(id, groupId, artifactId, version, new Timestamp(-1));
                 }).collect(Collectors.toSet());
-                var depSet = this.graphMavenResolver.resolveDependencies(revisions, KnowledgeBaseConnector.dbContext, true);
+                var depSet = this.graphMavenResolver.resolveDependencies(revisions, true);
                 var jsonArray = new JSONArray();
                 depSet.stream().map(r -> {
                     var json = new JSONObject();
@@ -263,7 +263,7 @@ public class ResolutionApi {
             var artifactId = mavenCoordinate.split(Constants.mvnCoordinateSeparator)[1];
             var version = mavenCoordinate.split(Constants.mvnCoordinateSeparator)[2];
             var depSet = this.graphMavenResolver.resolveDependencies(groupId,
-                    artifactId, version, timestamp, KnowledgeBaseConnector.dbContext, true);
+                    artifactId, version, timestamp, true);
             var depIds = depSet.stream().map(r -> r.id).collect(Collectors.toSet());
             var databaseMerger = new CGMerger(depIds, KnowledgeBaseConnector.dbContext, KnowledgeBaseConnector.graphDao);
             graph = databaseMerger.mergeWithCHA(packageVersionId);

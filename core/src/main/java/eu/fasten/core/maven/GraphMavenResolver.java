@@ -37,8 +37,6 @@ import org.apache.commons.lang3.tuple.ImmutableTriple;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.commons.math3.util.Pair;
 import org.jooq.DSLContext;
-import org.json.JSONException;
-import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,14 +55,32 @@ public class GraphMavenResolver {
 
     private boolean ignoreMissing = false;
 
-    public static MavenGraph graph;
-
-    public GraphMavenResolver(DSLContext dbContext, String serializedPath) throws Exception {
-        if (doesDependencyGraphExist(serializedPath)) {
-            graph = loadDependencyGraph(serializedPath);
-        } else {
-            graph = buildDependencyGraphFromScratch(dbContext, serializedPath);
+    private MavenGraph graph;
+    
+    @Deprecated
+    public static GraphMavenResolver init(DSLContext dbContext, String serializedPath) {
+        try {
+            MavenGraph graph;
+            if (doesDependencyGraphExist(serializedPath)) {
+                    graph = loadDependencyGraph(serializedPath);
+            } else {
+                graph = buildDependencyGraphFromScratch(dbContext, serializedPath);
+            }
+            return new GraphMavenResolver(graph);
+        } catch (RuntimeException e) {
+            throw e;
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
+    }
+
+    public GraphMavenResolver(MavenGraph graph) throws Exception {
+        this.graph = graph;
+    }
+
+    @Deprecated
+    public MavenGraph getGraph() {
+        return graph;
     }
 
     public boolean getIgnoreMissing() {
@@ -81,15 +97,10 @@ public class GraphMavenResolver {
      *
      * @return The (transitive) dependency set
      */
-    public Set<Revision> resolveDependencies(String groupId, String artifactId, String version, long timestamp,
-                                                                 DSLContext db, boolean transitive) {
+    public Set<Revision> resolveDependencies(String groupId, String artifactId, String version, long timestamp, boolean transitive) {
 
         if (timestamp == -1) {
-            // TODO why not "now"?
-            var ts = getCreatedAt(groupId, artifactId, version, db);
-            if (ts > 0) {
-                timestamp = ts;
-            }
+            timestamp = new Date().getTime();
         }
 
         var resultTriples = new ArrayList<Triple<Set<Revision>, List<Pair<Revision, MavenProduct>>, Map<Revision, Revision>>>();
@@ -115,9 +126,9 @@ public class GraphMavenResolver {
      *
      * @return The (transitive) dependency set
      */
-    public Set<Revision> resolveDependencies(Revision r, DSLContext db, boolean transitive) {
+    public Set<Revision> resolveDependencies(Revision r, boolean transitive) {
         return resolveDependencies(r.groupId, r.artifactId, r.version.toString(),
-                r.createdAt.getTime(), db, transitive);
+                r.createdAt.getTime(), transitive);
     }
 
 
@@ -424,22 +435,6 @@ public class GraphMavenResolver {
         return result;
     }
 
-    private long getCreatedAt(String groupId, String artifactId, String version, DSLContext context) {
-        var packageName = groupId + Constants.mvnCoordinateSeparator + artifactId;
-        var result = context.select(PackageVersions.PACKAGE_VERSIONS.CREATED_AT)
-                .from(PackageVersions.PACKAGE_VERSIONS)
-                .join(Packages.PACKAGES)
-                .on(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.eq(Packages.PACKAGES.ID))
-                .where(Packages.PACKAGES.PACKAGE_NAME.eq(packageName))
-                .and(PackageVersions.PACKAGE_VERSIONS.VERSION.eq(version))
-                .fetchOne();
-
-        if (result == null || result.component1() == null) {
-            return -1;
-        }
-        return result.component1().getTime();
-    }
-
     public Set<Revision> findAllRevisionsInThePath(Revision source, Revision target) {
         var paths = getPaths(graph, source, target, new ObjectLinkedOpenHashSet<>(), new ArrayList<>(), new ArrayList<>());
         var pathsNodes = new ObjectLinkedOpenHashSet<Revision>();
@@ -471,9 +466,9 @@ public class GraphMavenResolver {
         return vulnerablePaths;
     }
 
-    public Set<Revision>  resolveDependencies(Set<Revision> revisions, DSLContext dbContext, boolean transitive) {
+    public Set<Revision> resolveDependencies(Set<Revision> revisions, boolean transitive) {
         var virtualNode = addVirtualNode(new ObjectLinkedOpenHashSet<>(revisions));
-        var deps = resolveDependencies(virtualNode, dbContext, transitive);
+        var deps = resolveDependencies(virtualNode, transitive);
         // TODO handle crashes
         removeVirtualNode(virtualNode);
         return deps;
