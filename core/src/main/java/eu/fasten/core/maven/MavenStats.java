@@ -10,10 +10,9 @@ public class MavenStats {
 
     public static void main(String[] args) throws Exception {
         var dbContext = PostgresConnector.getDSLContext("jdbc:postgresql://localhost:5432/fasten_java", "fastenro", true);
-        var resolver = new GraphMavenResolver();
-        resolver.buildDependencyGraph(dbContext, args[0]);
-        var dependencies = new HashMap<Revision, Set<Revision>>(GraphMavenResolver.dependencyGraph.vertexSet().size());
-        for (var revision : GraphMavenResolver.dependencyGraph.vertexSet()) {
+        var resolver = new GraphMavenResolver(dbContext, args[0]);
+        var dependencies = new HashMap<Revision, Set<Revision>>(GraphMavenResolver.graph.vertexSet().size());
+        for (var revision : GraphMavenResolver.graph.vertexSet()) {
             try {
                 var depSet = resolver.resolveDependencies(revision, dbContext, true);
                 dependencies.put(revision, depSet);
@@ -24,8 +23,8 @@ public class MavenStats {
         var top10dependencies = new HashMap<Revision, Set<Revision>>(10);
         dependencies.entrySet().stream().sorted(Comparator.comparingInt(e -> -e.getValue().size())).limit(10).forEachOrdered(e -> top10dependencies.put(e.getKey(), e.getValue()));
         dependencies = null;
-        var dependents = new HashMap<Revision, Set<Revision>>(GraphMavenResolver.dependentGraph.vertexSet().size());
-        for (var revision : GraphMavenResolver.dependentGraph.vertexSet()) {
+        var dependents = new HashMap<Revision, Set<Revision>>(GraphMavenResolver.graph.vertexSet().size());
+        for (var revision : GraphMavenResolver.graph.vertexSet()) {
             try {
                 var depSet = resolver.resolveDependents(revision, true);
                 dependents.put(revision, depSet);

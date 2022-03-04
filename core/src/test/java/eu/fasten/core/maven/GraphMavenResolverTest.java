@@ -33,23 +33,15 @@ import java.util.stream.Collectors;
 
 import org.apache.commons.math3.util.Pair;
 import org.jgrapht.graph.DefaultDirectedGraph;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-import eu.fasten.core.maven.data.DependencyEdge;
 import eu.fasten.core.maven.data.MavenProduct;
 import eu.fasten.core.maven.data.Revision;
+import eu.fasten.core.maven.graph.MavenEdge;
 import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenHashSet;
 
 public class GraphMavenResolverTest {
-
-    private GraphMavenResolver graphMavenResolver;
-
-    @BeforeEach
-    public void setup() {
-        graphMavenResolver = new GraphMavenResolver();
-    }
 
     @Test
     public void filterSuccessorsByTimestampTest() {
@@ -65,7 +57,7 @@ public class GraphMavenResolverTest {
                 new Revision("a", "a", "3", new Timestamp(3)),
                 new Revision("b", "b", "3", new Timestamp(3))
         );
-        var actual = graphMavenResolver.filterDependenciesByTimestamp(successors, 3);
+        var actual = GraphMavenResolver.filterDependenciesByTimestamp(successors, 3);
         assertEquals(new HashSet<>(expected), new HashSet<>(actual));
     }
 
@@ -73,12 +65,12 @@ public class GraphMavenResolverTest {
     public void filterDependencyGraphByOptionalTest() {
         var nodeA = new Revision("a", "a", "1", new Timestamp(1));
         var nodeB = new Revision("b", "b", "2", new Timestamp(1));
-        var edgeAB = new DependencyEdge(nodeA, nodeB, "", false, emptySet(), "");
-        var graph = new DefaultDirectedGraph<Revision, DependencyEdge>(DependencyEdge.class);
+        var edgeAB = new MavenEdge(nodeA, nodeB, "", false, emptySet(), "");
+        var graph = new DefaultDirectedGraph<Revision, MavenEdge>(MavenEdge.class);
         var nodeB2 = new Revision("b", "b", "2", new Timestamp(2));
         var nodeC = new Revision("c", "c", "3", new Timestamp(3));
-        var edgeAB2 = new DependencyEdge(nodeA, nodeB2, "", true, emptySet(), "");
-        var edgeB2C = new DependencyEdge(nodeB2, nodeC, "", false, emptySet(), "");
+        var edgeAB2 = new MavenEdge(nodeA, nodeB2, "", true, emptySet(), "");
+        var edgeB2C = new MavenEdge(nodeB2, nodeC, "", false, emptySet(), "");
         graph.addVertex(nodeA);
         graph.addVertex(nodeB);
         graph.addEdge(nodeA, nodeB, edgeAB);
@@ -87,7 +79,7 @@ public class GraphMavenResolverTest {
         graph.addVertex(nodeC);
         graph.addEdge(nodeB2, nodeC, edgeB2C);
         var expected = List.of(nodeB);
-        var actual = graphMavenResolver.filterOptionalSuccessors(new ObjectLinkedOpenHashSet<>(graph.outgoingEdgesOf(nodeA))).stream().map(e -> e.target).collect(Collectors.toList());
+        var actual = GraphMavenResolver.filterOptionalSuccessors(new ObjectLinkedOpenHashSet<>(graph.outgoingEdgesOf(nodeA))).stream().map(e -> e.target).collect(Collectors.toList());
         assertEquals(expected, actual);
     }
 
@@ -95,12 +87,12 @@ public class GraphMavenResolverTest {
     public void filterDependencyGraphByScopeTest() {
         var nodeA = new Revision("a", "a", "1", new Timestamp(1));
         var nodeB = new Revision("b", "b", "2", new Timestamp(1));
-        var edgeAB = new DependencyEdge(nodeA, nodeB, "", false, emptySet(), "");
-        var graph = new DefaultDirectedGraph<Revision, DependencyEdge>(DependencyEdge.class);
+        var edgeAB = new MavenEdge(nodeA, nodeB, "", false, emptySet(), "");
+        var graph = new DefaultDirectedGraph<Revision, MavenEdge>(MavenEdge.class);
         var nodeB2 = new Revision("b", "b", "2", new Timestamp(2));
         var nodeC = new Revision("c", "c", "3", new Timestamp(3));
-        var edgeAB2 = new DependencyEdge(nodeA, nodeB2, "test", false, emptySet(), "");
-        var edgeB2C = new DependencyEdge(nodeB2, nodeC, "compile", false, emptySet(), "");
+        var edgeAB2 = new MavenEdge(nodeA, nodeB2, "test", false, emptySet(), "");
+        var edgeB2C = new MavenEdge(nodeB2, nodeC, "compile", false, emptySet(), "");
         graph.addVertex(nodeA);
         graph.addVertex(nodeB);
         graph.addEdge(nodeA, nodeB, edgeAB);
@@ -109,7 +101,7 @@ public class GraphMavenResolverTest {
         graph.addVertex(nodeC);
         graph.addEdge(nodeB2, nodeC, edgeB2C);
         var expected = List.of(nodeB);
-        var actual = graphMavenResolver.filterSuccessorsByScope(new ObjectLinkedOpenHashSet<>(graph.outgoingEdgesOf(nodeA)), List.of("compile")).stream().map(e -> e.target).collect(Collectors.toList());
+        var actual = GraphMavenResolver.filterSuccessorsByScope(new ObjectLinkedOpenHashSet<>(graph.outgoingEdgesOf(nodeA)), List.of("compile")).stream().map(e -> e.target).collect(Collectors.toList());
         assertEquals(expected, actual);
     }
 
@@ -118,12 +110,12 @@ public class GraphMavenResolverTest {
     public void filterDependencyGraphByTypeTest() {
         var nodeA = new Revision("a", "a", "1", new Timestamp(1));
         var nodeB = new Revision("b", "b", "2", new Timestamp(1));
-        var edgeAB = new DependencyEdge(nodeA, nodeB, "", false, emptySet(), "");
-        var graph = new DefaultDirectedGraph<Revision, DependencyEdge>(DependencyEdge.class);
+        var edgeAB = new MavenEdge(nodeA, nodeB, "", false, emptySet(), "");
+        var graph = new DefaultDirectedGraph<Revision, MavenEdge>(MavenEdge.class);
         var nodeB2 = new Revision("b", "b", "2", new Timestamp(2));
         var nodeC = new Revision("c", "c", "3", new Timestamp(3));
-        var edgeAB2 = new DependencyEdge(nodeA, nodeB2, "compile", false, emptySet(), "pom");
-        var edgeB2C = new DependencyEdge(nodeB2, nodeC, "compile", false, emptySet(), "");
+        var edgeAB2 = new MavenEdge(nodeA, nodeB2, "compile", false, emptySet(), "pom");
+        var edgeB2C = new MavenEdge(nodeB2, nodeC, "compile", false, emptySet(), "");
         graph.addVertex(nodeA);
         graph.addVertex(nodeB);
         graph.addEdge(nodeA, nodeB, edgeAB);
@@ -134,7 +126,7 @@ public class GraphMavenResolverTest {
         var expected = Set.of(nodeB);
         
         var outgoingEdges = new ObjectLinkedOpenHashSet<>(graph.outgoingEdgesOf(nodeA));
-		var filterSuccessorsByScope = graphMavenResolver.filterSuccessorsByScope(outgoingEdges, List.of("compile"));
+		var filterSuccessorsByScope = GraphMavenResolver.filterSuccessorsByScope(outgoingEdges, List.of("compile"));
 		var actual = filterSuccessorsByScope.stream().map(e -> e.target).collect(Collectors.toSet());
         assertEquals(expected, actual);
     }
@@ -151,7 +143,7 @@ public class GraphMavenResolverTest {
                 new Revision("a", "a", "1", new Timestamp(1)),
                 new Revision("b", "b", "2", new Timestamp(1))
         );
-        var actual = graphMavenResolver.resolveConflicts(new ObjectLinkedOpenHashSet<>(depthRevision));
+        var actual = GraphMavenResolver.resolveConflicts(new ObjectLinkedOpenHashSet<>(depthRevision));
         assertEquals(new HashSet<>(expected), new HashSet<>(actual));
     }
 
@@ -169,18 +161,18 @@ public class GraphMavenResolverTest {
         descendants.put(C, B);
         descendants.put(D, A);
         descendants.put(E, D);
-        assertTrue(graphMavenResolver.isDescendantOf(B, A, descendants));
-        assertTrue(graphMavenResolver.isDescendantOf(C, B, descendants));
-        assertTrue(graphMavenResolver.isDescendantOf(C, A, descendants));
-        assertTrue(graphMavenResolver.isDescendantOf(D, A, descendants));
-        assertTrue(graphMavenResolver.isDescendantOf(E, A, descendants));
-        assertTrue(graphMavenResolver.isDescendantOf(E, D, descendants));
-        assertFalse(graphMavenResolver.isDescendantOf(E, B, descendants));
-        assertFalse(graphMavenResolver.isDescendantOf(C, D, descendants));
-        assertFalse(graphMavenResolver.isDescendantOf(C, E, descendants));
-        assertFalse(graphMavenResolver.isDescendantOf(E, C, descendants));
-        assertFalse(graphMavenResolver.isDescendantOf(B, D, descendants));
-        assertFalse(graphMavenResolver.isDescendantOf(B, D, descendants));
+        assertTrue(GraphMavenResolver.isDescendantOf(B, A, descendants));
+        assertTrue(GraphMavenResolver.isDescendantOf(C, B, descendants));
+        assertTrue(GraphMavenResolver.isDescendantOf(C, A, descendants));
+        assertTrue(GraphMavenResolver.isDescendantOf(D, A, descendants));
+        assertTrue(GraphMavenResolver.isDescendantOf(E, A, descendants));
+        assertTrue(GraphMavenResolver.isDescendantOf(E, D, descendants));
+        assertFalse(GraphMavenResolver.isDescendantOf(E, B, descendants));
+        assertFalse(GraphMavenResolver.isDescendantOf(C, D, descendants));
+        assertFalse(GraphMavenResolver.isDescendantOf(C, E, descendants));
+        assertFalse(GraphMavenResolver.isDescendantOf(E, C, descendants));
+        assertFalse(GraphMavenResolver.isDescendantOf(B, D, descendants));
+        assertFalse(GraphMavenResolver.isDescendantOf(B, D, descendants));
     }
 
     @Test
@@ -203,7 +195,7 @@ public class GraphMavenResolverTest {
         var exclusions = List.of(new Pair<>(D, new MavenProduct("c", "c")));
         var dependencies = Set.of(A, B, C1, C2, D);
         var expected = Set.of(A, B, C1, D);
-        var actual = graphMavenResolver.filterDependenciesByExclusions(dependencies, exclusions, descendants);
+        var actual = GraphMavenResolver.filterDependenciesByExclusions(dependencies, exclusions, descendants);
         assertEquals(expected, actual);
     }
 }

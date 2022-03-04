@@ -29,8 +29,6 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
-import org.jgrapht.Graph;
-import org.jgrapht.graph.DefaultDirectedGraph;
 import org.jooq.DSLContext;
 import org.json.JSONObject;
 import org.slf4j.Logger;
@@ -40,61 +38,15 @@ import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.metadatadb.codegen.tables.Dependencies;
 import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
 import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
-import eu.fasten.core.dbconnectors.PostgresConnector;
 import eu.fasten.core.maven.data.Dependency;
-import eu.fasten.core.maven.data.DependencyEdge;
 import eu.fasten.core.maven.data.Revision;
 import eu.fasten.core.maven.data.VersionConstraint;
-import eu.fasten.core.maven.utils.DependencyGraphUtilities;
-import picocli.CommandLine;
+import eu.fasten.core.maven.graph.MavenEdge;
+import eu.fasten.core.maven.graph.MavenGraph;
 
-@CommandLine.Command(name = "DependencyGraphBuilder")
-public class DependencyGraphBuilder implements Runnable {
+public class DependencyGraphBuilder {
 
     private static final Logger logger = LoggerFactory.getLogger(DependencyGraphBuilder.class);
-
-    @CommandLine.Option(names = {"-p", "--serializedPath"},
-            paramLabel = "PATH",
-            description = "Path to load a serialized Maven dependency graph from",
-            required = true)
-    protected String serializedPath;
-
-    @CommandLine.Option(names = {"-d", "--database"},
-            paramLabel = "DB_URL",
-            description = "Database URL for connection",
-            required = true)
-    protected String dbUrl;
-
-    @CommandLine.Option(names = {"-u", "--user"},
-            paramLabel = "DB_USER",
-            description = "Database user name",
-            required = true)
-    protected String dbUser;
-
-    public static void main(String[] args) {
-        final int exitCode = new CommandLine(new DependencyGraphBuilder()).execute(args);
-        System.exit(exitCode);
-    }
-
-     @Override
-    public void run()  {
-
-        DSLContext dbContext;
-        try {
-            dbContext = PostgresConnector.getDSLContext(dbUrl, dbUser, true);
-        } catch (Exception e) {
-            logger.warn("Could not connect to Database", e);
-            return;
-        }
-        try {
-            if (DependencyGraphUtilities.loadDependencyGraph(serializedPath).isEmpty()) {
-                DependencyGraphUtilities.buildDependencyGraphFromScratch(dbContext, serializedPath);
-            }
-        } catch (Exception e) {
-            logger.warn("Could not load serialized dependency graph from {}\n", serializedPath, e);
-            return;
-        }
-    }
 
     public Map<Revision, List<Dependency>> getDependencyListByRevision(DSLContext dbContext) {
         var result = dbContext.select(PackageVersions.PACKAGE_VERSIONS.ID,
@@ -143,24 +95,18 @@ public class DependencyGraphBuilder implements Runnable {
                 ));
     }
 
-    private static String strip(String s) {
-        return s.replaceAll("[\\n\\t ]", "");
-    }
-
     public List<Revision> findMatchingRevisions(List<Revision> revisions, Set<VersionConstraint> constraints) {
         if (revisions == null) {
             return Collections.emptyList();
         }
         return revisions.stream().filter(r -> {
             for (var constraint : constraints) {
-                var spec = constraint.toString();
-                if ((spec.startsWith("[") || spec.startsWith("(")) && (spec.endsWith("]") || spec.endsWith(")"))) {
-                    if (checkVersionLowerBound(constraint, r.version) &&
-                            checkVersionUpperBound(constraint, r.version)) {
+                if (isHardConstraint(constraint)) {
+                    if (checkVersionLowerBound(constraint, r.version) && checkVersionUpperBound(constraint, r.version)) {
                         return true;
                     }
                 } else {
-                    if (constraint.lowerBound.equals(constraint.upperBound) &&
+                    if (isSimpleVersion(constraint) &&
                             new DefaultArtifactVersion(constraint.lowerBound).equals(r.version)) {
                         return true;
                     }
@@ -168,6 +114,16 @@ public class DependencyGraphBuilder implements Runnable {
             }
             return false;
         }).collect(Collectors.toList());
+    }
+
+    private static boolean isSimpleVersion(VersionConstraint constraint) {
+        return constraint.lowerBound.equals(constraint.upperBound);
+    }
+
+    private static boolean isHardConstraint(VersionConstraint constraint) {
+        var spec = constraint.toString();
+        boolean isHardConstraint = (spec.startsWith("[") || spec.startsWith("(")) && (spec.endsWith("]") || spec.endsWith(")"));
+        return isHardConstraint;
     }
 
     private boolean checkVersionLowerBound(VersionConstraint constraint, DefaultArtifactVersion version) {
@@ -192,7 +148,7 @@ public class DependencyGraphBuilder implements Runnable {
         }
     }
 
-    public Graph<Revision, DependencyEdge> buildDependencyGraph(DSLContext dbContext) {
+    public MavenGraph buildDependencyGraph(DSLContext dbContext) {
         var startTs = System.currentTimeMillis();
         var startDepRet = System.currentTimeMillis();
 
@@ -211,44 +167,50 @@ public class DependencyGraphBuilder implements Runnable {
                 })
         );
         logger.debug("Indexed {} products: {} ms", productRevisionMap.size(), msSince(startIdx));
-
-        logger.info("Creating dependency graph");
-        var dependencyGraph = new DefaultDirectedGraph<Revision, DependencyEdge>(DependencyEdge.class);
+        
 
         logger.info("Adding dependency graph nodes");
-        dependencies.keySet().forEach(dependencyGraph::addVertex);
+        var graph = new MavenGraph();
+        dependencies.keySet().forEach(graph::addNode);
 
         logger.info("Generating graph edges");
         var startGenEdgesTs = System.currentTimeMillis();
-        var allEdges = dependencies.entrySet().parallelStream().map(e -> {
-            var source = e.getKey();
-            var edges = new ArrayList<DependencyEdge>();
-            for (var dependency : e.getValue()) {
-                if (dependency.equals(Dependency.empty)) {
-                    continue;
-                }
-                var potentialRevisions = productRevisionMap.get(dependency.product());
-                var matchingRevisions = findMatchingRevisions(potentialRevisions, dependency.versionConstraints);
-                for (var target : matchingRevisions) {
-                    var edge = new DependencyEdge(source, target, dependency.scope, dependency.optional,
-                            dependency.exclusions, dependency.type);
-                    edges.add(edge);
-                }
-            }
-            return edges;
-        }).flatMap(Collection::stream).collect(Collectors.toList());
+        var allEdges = dependencies.entrySet().parallelStream() //
+                .map(e -> {
+                    var source = e.getKey();
+                    var edges = new ArrayList<MavenEdge>();
+                    for (var dependency : e.getValue()) {
+                        if (dependency.equals(Dependency.empty)) {
+                            // TODO an empty dependency? investigate this!
+                            logger.info("an empty dependency? investigate this!");
+                            continue;
+                        }
+                        var potentialRevisions = productRevisionMap.get(dependency.product());
+                        var matchingRevisions = findMatchingRevisions(potentialRevisions, dependency.versionConstraints);
+                        for (var target : matchingRevisions) {
+                            var edge = new MavenEdge(source, target, dependency.scope, dependency.optional,
+                                    dependency.exclusions, dependency.type);
+                            edges.add(edge);
+                        }
+                    }
+                    return edges;
+                }) //
+                .flatMap(Collection::stream) //
+                .collect(Collectors.toList());
         logger.debug("Generated {} edges: {} ms", allEdges.size(), msSince(startGenEdgesTs));
 
         var startAddEdgesTs = System.currentTimeMillis();
-        allEdges.forEach(e -> dependencyGraph.addEdge(e.source, e.target, e));
-        logger.debug("Added {} edges to the graph: {} ms", allEdges.size(),
-                msSince(startAddEdgesTs));
-
+        allEdges.forEach(e -> graph.addDependencyEdge(e));
+        logger.debug("Added {} edges to the graph: {} ms", allEdges.size(), msSince(startAddEdgesTs));
         logger.info("Maven dependency graph generated: {} ms", msSince(startTs));
-        return dependencyGraph;
+        return graph;
     }
 
-    private long msSince(long startDepRet) {
+    private static String strip(String s) {
+        return s.replaceAll("[\\n\\t ]", "");
+    }
+
+    private static long msSince(long startDepRet) {
         return System.currentTimeMillis() - startDepRet;
     }
 }
