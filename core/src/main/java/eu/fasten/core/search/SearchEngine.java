@@ -208,8 +208,7 @@ public class SearchEngine {
 		this.context = context;
 		this.rocksDao = rocksDao;
 		this.scorer = scorer == null ? TrivialScorer.getInstance() : scorer;
-		resolver = new GraphMavenResolver();
-		resolver.buildDependencyGraph(context, resolverGraph);
+		resolver = new GraphMavenResolver(context, resolverGraph);
 		resolver.setIgnoreMissing(true);
 		this.predicateFactory = new CachingPredicateFactory(context);
 	}

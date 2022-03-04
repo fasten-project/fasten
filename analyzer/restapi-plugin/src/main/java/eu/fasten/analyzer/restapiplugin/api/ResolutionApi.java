@@ -18,19 +18,14 @@
 
 package eu.fasten.analyzer.restapiplugin.api;
 
-import eu.fasten.core.data.Constants;
-import eu.fasten.core.data.DirectedGraph;
-import eu.fasten.core.dependents.GraphResolver;
-import eu.fasten.core.maven.GraphMavenResolver;
-import eu.fasten.core.maven.MavenResolver;
-import eu.fasten.core.maven.data.Revision;
-import eu.fasten.core.maven.utils.MavenUtilities;
-import eu.fasten.core.merge.CGMerger;
-import eu.fasten.analyzer.restapiplugin.KnowledgeBaseConnector;
-import eu.fasten.analyzer.restapiplugin.LazyIngestionProvider;
-import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenHashSet;
+import java.io.IOException;
+import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
+
 import org.json.JSONArray;
-import org.json.JSONException;
 import org.json.JSONObject;
 import org.rocksdb.RocksDBException;
 import org.slf4j.Logger;
@@ -46,15 +41,17 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
+import eu.fasten.analyzer.restapiplugin.KnowledgeBaseConnector;
+import eu.fasten.analyzer.restapiplugin.LazyIngestionProvider;
+import eu.fasten.core.data.Constants;
+import eu.fasten.core.data.DirectedGraph;
+import eu.fasten.core.dependents.GraphResolver;
+import eu.fasten.core.maven.GraphMavenResolver;
+import eu.fasten.core.maven.MavenResolver;
+import eu.fasten.core.maven.data.Revision;
+import eu.fasten.core.maven.utils.MavenUtilities;
+import eu.fasten.core.merge.CGMerger;
+import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenHashSet;
 
 @Lazy
 @RestController
@@ -68,8 +65,7 @@ public class ResolutionApi {
         switch(KnowledgeBaseConnector.forge) {
             case Constants.mvnForge: {
                 try {
-                    var graphMavenResolver = new GraphMavenResolver();
-                    graphMavenResolver.buildDependencyGraph(KnowledgeBaseConnector.dbContext, KnowledgeBaseConnector.dependencyGraphPath);
+                    var graphMavenResolver = new GraphMavenResolver(KnowledgeBaseConnector.dbContext, KnowledgeBaseConnector.dependencyGraphPath);
                     this.graphMavenResolver = graphMavenResolver;
                 } catch (Exception e) {
                     logger.error("Error constructing dependency graph maven resolver", e);
@@ -219,9 +215,7 @@ public class ResolutionApi {
                     var id = KnowledgeBaseConnector.kbDao.getPackageVersionID(groupId + Constants.mvnCoordinateSeparator + artifactId, version);
                     return new Revision(id, groupId, artifactId, version, new Timestamp(-1));
                 }).collect(Collectors.toSet());
-                var virtualNode = this.graphMavenResolver.addVirtualNode(new ObjectLinkedOpenHashSet<>(revisions));
-                var depSet = this.graphMavenResolver.resolveDependencies(virtualNode, KnowledgeBaseConnector.dbContext, true);
-                this.graphMavenResolver.removeVirtualNode(virtualNode);
+                var depSet = this.graphMavenResolver.resolveDependencies(revisions, KnowledgeBaseConnector.dbContext, true);
                 var jsonArray = new JSONArray();
                 depSet.stream().map(r -> {
                     var json = new JSONObject();

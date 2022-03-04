@@ -18,27 +18,30 @@
 
 package eu.fasten.core.maven.utils;
 
-import com.esotericsoftware.kryo.Kryo;
-import com.esotericsoftware.kryo.Serializer;
-import com.esotericsoftware.kryo.io.Input;
-import com.esotericsoftware.kryo.io.Output;
-import eu.fasten.core.maven.DependencyGraphBuilder;
-import eu.fasten.core.maven.data.DependencyEdge;
-import eu.fasten.core.maven.data.Exclusion;
-import eu.fasten.core.maven.data.Revision;
-import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
-import org.jgrapht.Graph;
-import org.jgrapht.graph.DefaultDirectedGraph;
-import org.jooq.DSLContext;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static eu.fasten.core.utils.Asserts.assertNotNullOrEmpty;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.security.InvalidParameterException;
 import java.util.HashSet;
-import java.util.Optional;
 import java.util.Set;
+
+import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
+import org.jooq.DSLContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.esotericsoftware.kryo.Kryo;
+import com.esotericsoftware.kryo.Serializer;
+import com.esotericsoftware.kryo.io.Input;
+import com.esotericsoftware.kryo.io.Output;
+
+import eu.fasten.core.maven.DependencyGraphBuilder;
+import eu.fasten.core.maven.data.Exclusion;
+import eu.fasten.core.maven.data.Revision;
+import eu.fasten.core.maven.graph.MavenEdge;
+import eu.fasten.core.maven.graph.MavenGraph;
 
 /**
  * Utility functions to construct and (de-)serialize Maven dependency graphs
@@ -46,36 +49,6 @@ import java.util.Set;
 public final class DependencyGraphUtilities {
 
     private static final Logger logger = LoggerFactory.getLogger(DependencyGraphUtilities.class);
-
-    public static Graph<Revision, DependencyEdge> invertDependencyGraph(Graph<Revision,
-            DependencyEdge> dependencyGraph) {
-        logger.debug("Calculating graph transpose");
-        var startTs = System.currentTimeMillis();
-        var graph = new DefaultDirectedGraph<Revision, DependencyEdge>(DependencyEdge.class);
-        for (var node : dependencyGraph.vertexSet()) {
-            graph.addVertex(node);
-        }
-        for (var edge : dependencyGraph.edgeSet()) {
-            var reversedEdges = new DependencyEdge(edge.target, edge.source, edge.scope, edge.optional, edge.exclusions, edge.type);
-            graph.addEdge(reversedEdges.source, reversedEdges.target, reversedEdges);    // Reverse edges
-        }
-        logger.info("Graph transposed: {} ms", System.currentTimeMillis() - startTs);
-        return graph;
-    }
-
-    public static Graph<Revision, DependencyEdge> cloneDependencyGraph(
-            Graph<Revision, DependencyEdge> dependencyGraph) {
-        var graph = new DefaultDirectedGraph<Revision, DependencyEdge>(DependencyEdge.class);
-        for (var node : dependencyGraph.vertexSet()) {
-            graph.addVertex(node);
-        }
-        for (var edge : dependencyGraph.edgeSet()) {
-            var source = dependencyGraph.getEdgeSource(edge);
-            var target = dependencyGraph.getEdgeTarget(edge);
-            graph.addEdge(source, target, edge);
-        }
-        return graph;
-    }
 
     private static class DefaultArtifactVersionSerializer extends Serializer<DefaultArtifactVersion> {
 
@@ -102,7 +75,7 @@ public final class DependencyGraphUtilities {
         kryo.register(Set.class);
         kryo.register(HashSet.class);
         kryo.register(Revision.class);
-        kryo.register(DependencyEdge.class);
+        kryo.register(MavenEdge.class);
         kryo.register(Exclusion.class);
         kryo.register(Class.forName("eu.fasten.core.maven.data.Exclusion"));
         kryo.register(java.sql.Timestamp.class);
@@ -124,17 +97,15 @@ public final class DependencyGraphUtilities {
      *
      * @throws Exception When the files that hold the serialized data cannot be created.
      */
-    public static void serializeDependencyGraph(Graph<Revision, DependencyEdge> graph, String path) throws Exception {
+    public static void serializeDependencyGraph(MavenGraph graph, String path) throws Exception {
         var kryo = setupKryo();
 
-        var nodes = new Output(new FileOutputStream(path + ".nodes"));
-        var edges = new Output(new FileOutputStream(path + ".edges"));
-
-        kryo.writeObject(nodes, graph.vertexSet());
-        nodes.close();
-
-        kryo.writeObject(edges, graph.edgeSet());
-        edges.close();
+        try(var nodes = new Output(new FileOutputStream(path + ".nodes"))) {
+            kryo.writeObject(nodes, graph.vertexSet());
+        }
+        try(var edges = new Output(new FileOutputStream(path + ".edges"))) {
+            kryo.writeObject(edges, graph.edgeSet());
+        }
     }
 
     /**
@@ -142,41 +113,56 @@ public final class DependencyGraphUtilities {
      *
      * @throws Exception When the files that hold the serialized graph cannot be opened.
      */
-    public static Graph<Revision, DependencyEdge> deserializeDependencyGraph(String path) throws Exception {
+    public static MavenGraph deserializeDependencyGraph(String path) throws Exception {
         var startTs = System.currentTimeMillis();
         var kryo = setupKryo();
 
         var nodesInput = new Input(new FileInputStream(path + ".nodes"));
         var edgesInput = new Input(new FileInputStream(path + ".edges"));
 
-        Set<Revision> nodes = kryo.readObject(nodesInput, HashSet.class);
-        Set<DependencyEdge> edges = kryo.readObject(edgesInput, HashSet.class);
+        Set<Revision> nodes = kryo.readObject(nodesInput, HashSet.class);//SetOfRevision.class);
+        Set<MavenEdge> edges = kryo.readObject(edgesInput, HashSet.class);//SetOfMavenEdge.class);
 
         logger.debug("Loaded {} nodes and {} edges", nodes.size(), edges.size());
 
-        var dependencyGraph = new DefaultDirectedGraph<Revision, DependencyEdge>(DependencyEdge.class);
+        var dependencyGraph = new MavenGraph();
 
-        nodes.forEach(dependencyGraph::addVertex);
-        edges.forEach(e -> dependencyGraph.addEdge(e.source, e.target, e));
+        nodes.forEach(dependencyGraph::addNode);
+        edges.forEach(e -> dependencyGraph.addDependencyEdge(e));
 
         logger.info("Deserialized graph at {}: {} ms", path, System.currentTimeMillis() - startTs);
         return dependencyGraph;
     }
+    
+    public static boolean doesDependencyGraphExist(String path) {
+        return fileNodes(path).exists() && fileEdges(path).exists();
+    }
+    
+    @SuppressWarnings("serial")
+    private static class SetOfRevision extends HashSet<Revision> {}
+    @SuppressWarnings("serial")
+    private static class SetOfMavenEdge extends HashSet<MavenEdge> {}
+    
 
     /**
      * Load a dependency graph from a path. Both the nodes and edges files need to be present.
      *
      * @throws Exception When deserialization fails.
      */
-    public static Optional<Graph<Revision, DependencyEdge>> loadDependencyGraph(String path) throws Exception {
-        if ((new File(path + ".nodes")).exists() &&
-                (new File(path + ".edges")).exists()) {
-            logger.info("Found serialized dependency graph at {}. Deserializing.", path);
-            return Optional.of(DependencyGraphUtilities.deserializeDependencyGraph(path));
-        } else {
-            logger.warn("Graph at {} is incomplete", path);
-            return Optional.empty();
+    public static MavenGraph loadDependencyGraph(String path) throws Exception {
+        if (!doesDependencyGraphExist(path)) {
+            throw new InvalidParameterException("graph does not exist or is incomplete: " + path);
         }
+        logger.info("Found serialized dependency graph at {}. Deserializing.", path);
+        return DependencyGraphUtilities.deserializeDependencyGraph(path);
+    }
+
+    private static File fileEdges(String path) {
+        return new File(path + ".edges");
+    }
+
+    private static File fileNodes(String path) {
+        return new File(path + ".nodes");
     }
 
     /**
@@ -184,18 +170,19 @@ public final class DependencyGraphUtilities {
      *
      * @throws Exception When serialization fails.
      */
-    public static Graph<Revision, DependencyEdge> buildDependencyGraphFromScratch(DSLContext dbContext, String path)
+    public static MavenGraph buildDependencyGraphFromScratch(DSLContext dbContext, String path)
             throws Exception {
+        assertNotNullOrEmpty(path);
         var tsStart = System.currentTimeMillis();
         var graphBuilder = new DependencyGraphBuilder();
         var graph = graphBuilder.buildDependencyGraph(dbContext);
         var tsEnd = System.currentTimeMillis();
-        logger.info("Graph has {} nodes and {} edges ({} ms)", graph.vertexSet().size(),
-                graph.edgeSet().size(), tsEnd - tsStart);
+        logger.info("Graph has {} nodes and {} edges ({} ms)", graph.numVertices(),
+                graph.numEdges(), tsEnd - tsStart);
 
         tsStart = System.currentTimeMillis();
         logger.info("Serializing graph to {}", path);
-        DependencyGraphUtilities.serializeDependencyGraph(graph, path == null ? "mavengraph.bin" : path);
+        DependencyGraphUtilities.serializeDependencyGraph(graph, path);
         logger.info("Finished serializing graph ({} ms)", System.currentTimeMillis() - tsStart);
 
         return graph;
