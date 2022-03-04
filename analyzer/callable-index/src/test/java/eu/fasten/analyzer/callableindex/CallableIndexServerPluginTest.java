@@ -19,14 +19,12 @@
 package eu.fasten.analyzer.callableindex;
 
 import eu.fasten.analyzer.callableindex.CallableIndexServerPlugin.CallableIndexFastenPlugin;
-import eu.fasten.core.data.DirectedGraph;
-import eu.fasten.core.data.FastenJavaURI;
 import eu.fasten.core.data.callableindex.ExtendedGidGraph;
-import eu.fasten.core.data.callableindex.GraphMetadata;
+import eu.fasten.core.data.callableindex.GraphMetadata.NodeMetadata;
+import eu.fasten.core.data.callableindex.GraphMetadata.ReceiverRecord;
 import eu.fasten.core.data.callableindex.GraphMetadata.ReceiverRecord.CallType;
 import eu.fasten.core.data.callableindex.RocksDao;
-import eu.fasten.core.merge.CallGraphUtils;
-import org.apache.commons.lang.StringUtils;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.json.JSONTokener;
@@ -42,7 +40,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-import static eu.fasten.core.data.callableindex.GraphMetadata.*;
 import static eu.fasten.core.utils.TestUtils.getTestResource;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -83,14 +80,15 @@ public class CallableIndexServerPluginTest {
 
     @Test
     public void consumerTopicsTest() {
-        var topics = Optional.of(List.of("fasten.MetadataDBJavaExtension.priority.out","fasten" +
+        var topics = Optional.of(List.of("fasten.MetadataDBJavaExtension.priority.out", "fasten" +
             ".MetadataDBExtension.out"));
         assertEquals(topics, callableIndexFastenPlugin.consumeTopic());
     }
 
     @Test
     public void consumerTopicChangeTest() {
-        var topics1 = Optional.of(List.of("fasten.MetadataDBJavaExtension.priority.out","fasten.MetadataDBExtension.out"));
+        var topics1 = Optional.of(List.of("fasten.MetadataDBJavaExtension.priority.out",
+            "fasten.MetadataDBExtension.out"));
         assertEquals(topics1, callableIndexFastenPlugin.consumeTopic());
         var differentTopic = Collections.singletonList("DifferentKafkaTopic");
         callableIndexFastenPlugin.setTopics(differentTopic);
@@ -126,9 +124,10 @@ public class CallableIndexServerPluginTest {
         NodeMetadata doRoadTripCallSites = getNodeMetadata(rocksDao, 1, 2);
         assertLine(doRoadTripCallSites, 15, "/lib/MotorVehicle.on()%2Fjava.lang%2FBooleanType",
             CallType.INTERFACE, List.of("/lib/MotorVehicle"));
-        assertLine(doRoadTripCallSites, 16, "/lib/VehicleWash.wash(MotorVehicle)%2Fjava.lang%2FVoidType",
-            CallType.VIRTUAL,  List.of("/lib/VehicleWash"));
-        assertLine(doRoadTripCallSites, 17,  "/lib/MotorVehicle.off()%2Fjava.lang%2FBooleanType",
+        assertLine(doRoadTripCallSites, 16,
+            "/lib/VehicleWash.wash(MotorVehicle)%2Fjava.lang%2FVoidType",
+            CallType.VIRTUAL, List.of("/lib/VehicleWash"));
+        assertLine(doRoadTripCallSites, 17, "/lib/MotorVehicle.off()%2Fjava.lang%2FBooleanType",
             CallType.INTERFACE, List.of("/lib/MotorVehicle"));
     }
 
@@ -149,7 +148,7 @@ public class CallableIndexServerPluginTest {
 
     private void assertLine(final NodeMetadata doRoadTripCallSite, final int line,
                             final String signature, final CallType callType,
-                              final List<String> receiverTypes) {
+                            final List<String> receiverTypes) {
         final var line15 = getReceiverRecordForLine(doRoadTripCallSite, line);
         assert line15 != null;
         assertEquals(signature, line15.receiverSignature);
@@ -158,7 +157,7 @@ public class CallableIndexServerPluginTest {
     }
 
     private ReceiverRecord getReceiverRecordForLine(final NodeMetadata nodeMetadata,
-                                                    final int line){
+                                                    final int line) {
         for (final var rec : nodeMetadata.receiverRecords) {
             if (rec.line == line) {
                 return rec;
