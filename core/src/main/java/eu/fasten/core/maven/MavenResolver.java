@@ -36,6 +36,7 @@ import java.sql.Timestamp;
 import java.util.*;
 import java.util.regex.Pattern;
 
+// TODO refactor: split from executable part
 @CommandLine.Command(name = "MavenResolver")
 public class MavenResolver implements Runnable {
 

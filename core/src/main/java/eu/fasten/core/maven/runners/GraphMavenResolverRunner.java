@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package eu.fasten.core.maven;
+package eu.fasten.core.maven.runners;
 
 import java.sql.SQLException;
 import java.util.Comparator;
@@ -26,6 +26,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import eu.fasten.core.dbconnectors.PostgresConnector;
+import eu.fasten.core.maven.GraphMavenResolver;
 import eu.fasten.core.maven.data.Revision;
 import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenHashSet;
 import picocli.CommandLine;
