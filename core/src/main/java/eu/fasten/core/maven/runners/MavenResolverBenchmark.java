@@ -79,7 +79,7 @@ public class MavenResolverBenchmark implements Runnable {
         var mavenResolver = new MavenResolver();
         GraphMavenResolver graphResolver;
         try {
-            graphResolver = new GraphMavenResolver(dbContext, graphPath);
+            graphResolver = GraphMavenResolver.init(dbContext, graphPath);
         } catch (Exception e1) {
             throw new RuntimeException(e1);
         }
@@ -98,7 +98,7 @@ public class MavenResolverBenchmark implements Runnable {
             try {
                 dbCount++;
                 Set<Revision> dbDependencySet;
-                dbDependencySet = graphResolver.resolveDependencies(groupId, artifactId, version, -1, dbContext, true);
+                dbDependencySet = graphResolver.resolveDependencies(groupId, artifactId, version, -1, true);
                 dbResolutionSuccess++;
                 onlineCount++;
                 var onlineDependencySet = mavenResolver.resolveDependencies(artifactId + ":" + groupId + ":" + version);

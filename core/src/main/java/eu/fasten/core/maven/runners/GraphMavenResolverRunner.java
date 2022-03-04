@@ -28,7 +28,6 @@ import org.slf4j.LoggerFactory;
 import eu.fasten.core.dbconnectors.PostgresConnector;
 import eu.fasten.core.maven.GraphMavenResolver;
 import eu.fasten.core.maven.data.Revision;
-import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenHashSet;
 import picocli.CommandLine;
 
 @CommandLine.Command(name = "GraphMavenResolverRunner")
@@ -74,7 +73,7 @@ public class GraphMavenResolverRunner implements Runnable {
         }
 
         try {
-            graphResolver = new GraphMavenResolver(dbContext, serializedPath);
+            graphResolver = GraphMavenResolver.init(dbContext, serializedPath);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -119,7 +118,7 @@ public class GraphMavenResolverRunner implements Runnable {
                         parts[0] = parts[0].substring(1);
                         revisions = graphResolver.resolveDependents(parts[0], parts[1], parts[2], timestamp, true);
                     } else {
-                        revisions = graphResolver.resolveDependencies(parts[0], parts[1], parts[2], timestamp, db, true);
+                        revisions = graphResolver.resolveDependencies(parts[0], parts[1], parts[2], timestamp, true);
                     }
                 } catch (Exception e) {
                     System.err.println("Error retrieving revisions: " + e.getMessage());

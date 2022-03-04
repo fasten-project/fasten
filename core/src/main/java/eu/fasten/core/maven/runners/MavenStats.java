@@ -1,21 +1,24 @@
 package eu.fasten.core.maven.runners;
 
-import eu.fasten.core.dbconnectors.PostgresConnector;
-import eu.fasten.core.maven.GraphMavenResolver;
-import eu.fasten.core.maven.data.Revision;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Set;
+
+import eu.fasten.core.dbconnectors.PostgresConnector;
+import eu.fasten.core.maven.GraphMavenResolver;
+import eu.fasten.core.maven.data.Revision;
+import eu.fasten.core.maven.graph.MavenGraph;
 
 public class MavenStats {
 
     public static void main(String[] args) throws Exception {
         var dbContext = PostgresConnector.getDSLContext("jdbc:postgresql://localhost:5432/fasten_java", "fastenro", true);
-        var resolver = new GraphMavenResolver(dbContext, args[0]);
-        var dependencies = new HashMap<Revision, Set<Revision>>(GraphMavenResolver.graph.vertexSet().size());
-        for (var revision : GraphMavenResolver.graph.vertexSet()) {
+        var resolver = GraphMavenResolver.init(dbContext, args[0]);
+        MavenGraph graph = resolver.getGraph();
+        var dependencies = new HashMap<Revision, Set<Revision>>(graph.vertexSet().size());
+        for (var revision : graph.vertexSet()) {
             try {
-                var depSet = resolver.resolveDependencies(revision, dbContext, true);
+                var depSet = resolver.resolveDependencies(revision, true);
                 dependencies.put(revision, depSet);
             } catch (Exception e) {
                 System.err.println(e.getMessage());
@@ -24,8 +27,8 @@ public class MavenStats {
         var top10dependencies = new HashMap<Revision, Set<Revision>>(10);
         dependencies.entrySet().stream().sorted(Comparator.comparingInt(e -> -e.getValue().size())).limit(10).forEachOrdered(e -> top10dependencies.put(e.getKey(), e.getValue()));
         dependencies = null;
-        var dependents = new HashMap<Revision, Set<Revision>>(GraphMavenResolver.graph.vertexSet().size());
-        for (var revision : GraphMavenResolver.graph.vertexSet()) {
+        var dependents = new HashMap<Revision, Set<Revision>>(graph.vertexSet().size());
+        for (var revision : graph.vertexSet()) {
             try {
                 var depSet = resolver.resolveDependents(revision, true);
                 dependents.put(revision, depSet);
