@@ -1,6 +1,7 @@
-package eu.fasten.core.maven;
+package eu.fasten.core.maven.runners;
 
 import eu.fasten.core.dbconnectors.PostgresConnector;
+import eu.fasten.core.maven.GraphMavenResolver;
 import eu.fasten.core.maven.data.Revision;
 import java.util.Comparator;
 import java.util.HashMap;

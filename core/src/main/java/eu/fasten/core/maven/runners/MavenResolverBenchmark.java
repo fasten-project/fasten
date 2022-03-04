@@ -1,7 +1,9 @@
-package eu.fasten.core.maven;
+package eu.fasten.core.maven.runners;
 
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.dbconnectors.PostgresConnector;
+import eu.fasten.core.maven.GraphMavenResolver;
+import eu.fasten.core.maven.MavenResolver;
 import eu.fasten.core.maven.data.Dependency;
 import eu.fasten.core.maven.data.Revision;
 import org.jooq.DSLContext;
