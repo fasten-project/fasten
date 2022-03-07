@@ -18,23 +18,11 @@
 
 package eu.fasten.server.plugins.kafka;
 
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
-import java.time.Duration;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Properties;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
-
+import eu.fasten.core.exceptions.UnrecoverableError;
+import eu.fasten.core.plugins.KafkaPlugin;
+import eu.fasten.core.plugins.KafkaPlugin.ProcessingLane;
+import eu.fasten.core.plugins.KafkaPlugin.SingleRecord;
+import eu.fasten.server.plugins.FastenServerPlugin;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
@@ -51,11 +39,22 @@ import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import eu.fasten.core.exceptions.UnrecoverableError;
-import eu.fasten.core.plugins.KafkaPlugin;
-import eu.fasten.core.plugins.KafkaPlugin.ProcessingLane;
-import eu.fasten.core.plugins.KafkaPlugin.SingleRecord;
-import eu.fasten.server.plugins.FastenServerPlugin;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.UnknownHostException;
+import java.time.Duration;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Properties;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
 
 public class FastenKafkaPlugin implements FastenServerPlugin {
 
@@ -364,25 +363,23 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
         } else {
             outputTopicName = String.format("fasten.%s.out", outputTopic);
         }
-        try {
-            if (plugin.getPluginError() != null) {
-                throw plugin.getPluginError();
-            }
-
+        if (plugin.getPluginError() != null) {
+            emitMessage(this.producer, String.format("fasten.%s.err", outputTopic),
+                    getStdErrMsg(input, plugin.getPluginError(), consumeTimestamp));
+        } else {
             var results = plugin.produceMultiple(lane);
-
             for (var res : results) {
                 String payload = res.payload;
                 if (writeDirectory != null && !writeDirectory.equals("")) {
                     // replace payload with file link in case it is written
-                    payload = writeToFile(res);
+                    try {
+                        payload = writeToFile(res);
+                    } catch (IOException e) {
+                        throw new RuntimeException("Failed to write the file " + this.writeDirectory + res.outputPath + "because" + e.getMessage());
+                    }
                 }
                 emitMessage(this.producer, outputTopicName, getStdOutMsg(input, payload, consumeTimestamp));
             }
-
-        } catch (Exception e) {
-            emitMessage(this.producer, String.format("fasten.%s.err", outputTopic),
-                    getStdErrMsg(input, e, consumeTimestamp));
         }
     }
 
@@ -414,13 +411,13 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
      * @param result message to write
      * @return Path to a newly written JSON file
      */
-    private String writeToFile(SingleRecord result) throws IOException, NullPointerException {
+    private String writeToFile(SingleRecord result) throws NullPointerException, IOException {
         var path = result.outputPath;
         var pathWithoutFilename = path.substring(0, path.lastIndexOf(File.separator));
 
         File directory = new File(this.writeDirectory + pathWithoutFilename);
         if (!directory.exists() && !directory.mkdirs()) {
-            throw new IOException("Failed to create parent directories");
+            throw new RuntimeException("Failed to create parent directories at " + this.writeDirectory + pathWithoutFilename);
         }
 
         File file = new File(this.writeDirectory + path);
