@@ -13,7 +13,7 @@
 </p>
 <br/>
 
-# Part of the pipeline antecedent to this plugin
+# Part of the pipeline antecedent to this plugin (to be updated to the Debian/C use case)
 
 ```
 +------------+             +-----------+                +------------------+   +----------------+   +--------------+
