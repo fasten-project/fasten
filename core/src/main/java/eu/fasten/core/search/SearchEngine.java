@@ -30,13 +30,22 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import eu.fasten.core.merge.CGMerger;
+
+import org.apache.commons.lang3.SerializationUtils;
 import org.jooq.DSLContext;
 import org.jooq.Record2;
 import org.jooq.conf.ParseUnknownFunctions;
+import org.rocksdb.ColumnFamilyDescriptor;
+import org.rocksdb.ColumnFamilyHandle;
+import org.rocksdb.ColumnFamilyOptions;
+import org.rocksdb.CompressionType;
+import org.rocksdb.DBOptions;
+import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.primitives.Longs;
 import com.martiansoftware.jsap.JSAP;
 import com.martiansoftware.jsap.JSAPResult;
 import com.martiansoftware.jsap.Parameter;
@@ -46,6 +55,7 @@ import com.martiansoftware.jsap.UnflaggedOption;
 import eu.fasten.core.data.DirectedGraph;
 import eu.fasten.core.data.FastenJavaURI;
 import eu.fasten.core.data.FastenURI;
+import eu.fasten.core.data.MergedDirectedGraph;
 import eu.fasten.core.data.callableindex.RocksDao;
 import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
 import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
@@ -56,6 +66,8 @@ import eu.fasten.core.search.predicate.CachingPredicateFactory;
 import eu.fasten.core.search.predicate.PredicateFactory;
 import eu.fasten.core.search.predicate.PredicateFactory.MetadataSource;
 import it.unimi.dsi.fastutil.HashCommon;
+import it.unimi.dsi.fastutil.io.BinIO;
+import it.unimi.dsi.fastutil.io.FastByteArrayInputStream;
 import it.unimi.dsi.fastutil.longs.Long2ObjectLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongArrayFIFOQueue;
 import it.unimi.dsi.fastutil.longs.LongCollection;
@@ -82,7 +94,7 @@ import it.unimi.dsi.lang.ObjectParser;
  * instance. Please use the command-line help for more information.
  */
 
-public class SearchEngine {
+public class SearchEngine implements AutoCloseable {
 	private static final Logger LOGGER = LoggerFactory.getLogger(SearchEngine.class);
 
 	private static final int DEFAULT_LIMIT = 10;
@@ -119,7 +131,7 @@ public class SearchEngine {
 			this.score = score;
 		}
 
- 		@Override
+		@Override
 		public String toString() {
 			return gid + " (" + score + ")";
 		}
@@ -146,6 +158,10 @@ public class SearchEngine {
 	private final RocksDao rocksDao;
 	/** The resolver. */
 	private final GraphMavenResolver resolver;
+	/** The persistent cache. */
+	private final RocksDB cache;
+	/** The handle for merged graphs in the persistent cache. */
+	private ColumnFamilyHandle mergedHandle;
 	/** The predicate factory to be used to create predicates for this search engine. */
 	private final PredicateFactory predicateFactory;
 	/** The scorer that will be used to rank results. */
@@ -155,12 +171,17 @@ public class SearchEngine {
 	private int limit = DEFAULT_LIMIT;
 	/** Maximum number of dependents used by {@link #to}. */
 	private long maxDependents = Long.MAX_VALUE;
-	/** The filters whose conjunction will be applied by default when executing a query, unless otherwise
-	 *  specified (compare, e.g., {@link #fromCallable(long)} and {@link #fromCallable(long, LongPredicate)}). */
+	/**
+	 * The filters whose conjunction will be applied by default when executing a query, unless otherwise
+	 * specified (compare, e.g., {@link #fromCallable(long)} and
+	 * {@link #fromCallable(long, LongPredicate)}).
+	 */
 	private final ObjectArrayList<LongPredicate> predicateFilters = new ObjectArrayList<>();
-	/** A list parallel to {@link #predicateFilters} that contains the filter specs (readable format of the filters). */
+	/**
+	 * A list parallel to {@link #predicateFilters} that contains the filter specs (readable format of
+	 * the filters).
+	 */
 	private final ObjectArrayList<String> predicateFiltersSpec = new ObjectArrayList<>();
-
 
 	/** LRU cache of stitched graphs. */
 	private final Long2ObjectLinkedOpenHashMap<DirectedGraph> stitchedGraphCache = new Long2ObjectLinkedOpenHashMap<>();
@@ -174,23 +195,49 @@ public class SearchEngine {
 	/** Throwables thrown by mergeWithCHA(). */
 	private final List<Throwable> throwables = new ArrayList<>();
 
+	private static final class RocksDBData {
+		public final RocksDB cache;
+		public final List<ColumnFamilyHandle> columnFamilyHandles;
+		public RocksDBData(RocksDB cache, List<ColumnFamilyHandle> columnFamilyHandles) {
+			this.cache = cache;
+			this.columnFamilyHandles = columnFamilyHandles;
+		}
+	}
+	
+	/** Utility method to open the persistent cache.
+	 * 
+	 * @param cacheDir the path to the persistent cache.
+	 * @return a RocksDB handle.
+	 */
+	private static final RocksDBData openCache(final String cacheDir) throws RocksDBException {
+		RocksDB.loadLibrary();
+		final ColumnFamilyOptions defaultOptions = new ColumnFamilyOptions();
+		@SuppressWarnings("resource")
+		final DBOptions dbOptions = new DBOptions().setCreateIfMissing(true).setCreateMissingColumnFamilies(true);
+		final List<ColumnFamilyDescriptor> cfDescriptors = List.of(new ColumnFamilyDescriptor("merged".getBytes(), defaultOptions));
+		final List<ColumnFamilyHandle> columnFamilyHandles = new ArrayList<>();
+		return new RocksDBData(RocksDB.open(dbOptions, cacheDir, cfDescriptors, columnFamilyHandles), columnFamilyHandles); 
+	}
+	
 	/**
 	 * Creates a new search engine using a given JDBC URI, database name and path to RocksDB.
 	 *
 	 * @implNote This method creates a {@linkplain DSLContext context}, {@linkplain RocksDao RocksDB
-	 *           DAO}, and {@linkplain Scorer scorer} using the given parameters and delegates to
+	 *           DAO}, opens a {@linkplain #openCache(String) persistent cache} 
+	 *           and instantiates {@linkplain Scorer scorer} using the given parameters; then, it delegates to
 	 *           {@link #SearchEngine(DSLContext, RocksDao, String, Scorer)}.
 	 *
 	 * @param jdbcURI the JDBC URI.
 	 * @param database the database name.
 	 * @param rocksDb the path to the RocksDB database of revision call graphs.
+	 * @param cacheDir the path to the persistent cache.
 	 * @param resolverGraph the path to a serialized resolver graph (will be created if it does not
 	 *            exist).
 	 * @param scorer an {@link ObjectParser} specification providing a scorer; if {@code null}, a
 	 *            {@link TrivialScorer} will be used instead.
 	 */
-	public SearchEngine(final String jdbcURI, final String database, final String rocksDb, final String resolverGraph, final String scorer) throws Exception {
-		this(PostgresConnector.getDSLContext(jdbcURI, database, false), new RocksDao(rocksDb, true), resolverGraph, scorer == null ? TrivialScorer.getInstance() : ObjectParser.fromSpec(scorer, Scorer.class));
+	public SearchEngine(final String jdbcURI, final String database, final String rocksDb, final String cacheDir, final String resolverGraph, final String scorer) throws Exception {
+		this(PostgresConnector.getDSLContext(jdbcURI, database, false), new RocksDao(rocksDb, true), openCache(cacheDir), resolverGraph, scorer == null ? TrivialScorer.getInstance() : ObjectParser.fromSpec(scorer, Scorer.class));
 	}
 
 	/**
@@ -204,44 +251,28 @@ public class SearchEngine {
 	 *            {@link TrivialScorer} will be used instead.
 	 */
 
-	public SearchEngine(final DSLContext context, final RocksDao rocksDao, final String resolverGraph, final Scorer scorer) throws Exception {
+	public SearchEngine(final DSLContext context, final RocksDao rocksDao, final RocksDBData rocksDBData, final String resolverGraph, final Scorer scorer) throws Exception {
 		this.context = context;
 		this.rocksDao = rocksDao;
+		this.cache = rocksDBData.cache;
 		this.scorer = scorer == null ? TrivialScorer.getInstance() : scorer;
 		resolver = new GraphMavenResolver();
 		resolver.buildDependencyGraph(context, resolverGraph);
 		resolver.setIgnoreMissing(true);
 		this.predicateFactory = new CachingPredicateFactory(context);
+		mergedHandle = rocksDBData.columnFamilyHandles.get(0);
 	}
 
-	/** Executes a given command.
+	/**
+	 * Executes a given command.
 	 *
 	 * @param command the command.
 	 */
 	private void executeCommand(final String command) {
 		final String[] commandAndArgs = command.split("\\s"); // Split command on whitespace
-		final String help =
-				"\t$help                           Help on commands\n" +
-				"\t$clear                          Clear filters\n" +
-				"\t$f ?                            Print the current filter\n" +
-				"\t$f pmatches <REGEXP>            Add filter: package (a.k.a. product) matches <REGEXP>\n" +
-				"\t$f vmatches <REGEXP>            Add filter: version matches <REGEXP>\n" +
-				"\t$f xmatches <REGEXP>            Add filter: path (namespace + entity) matches <REGEXP>\n" +
-				"\t$f cmd <KEY> [<REGEXP>]         Add filter: callable metadata contains key <KEY> (satisfying <REGEXP>)\n" +
-				"\t$f mmd <KEY> [<REGEXP>]         Add filter: module metadata contains key <KEY> (satisfying <REGEXP>)\n" +
-				"\t$f pmd <KEY> [<REGEXP>]         Add filter: package+version metadata contains key <KEY> (satisfying <REGEXP>)\n" +
-				"\t$f cmdjp <JP> <REGEXP>          Add filter: callable metadata queried with the JSONPointer <JP> has a value satisfying <REGEXP>\n" +
-				"\t$f mmdjp <JP> <REGEXP>          Add filter: module metadata queried with the JSONPointer <JP> has a value satisfying <REGEXP>\n" +
-				"\t$f pmdjp <JP> <REGEXP>          Add filter: package+version metadata queried with the JSONPointer <JP> has a value satisfying <REGEXP>\n" +
-				"\t$or                             The last two filters are substituted by their disjunction (or)\n" +
-				"\t$and                            The last two filters are substituted by their conjunction (and)\n" +
-				"\t$not                            The last filter is substituted by its negation (not)\n" +
-				"\t$limit <LIMIT>                  Print at most <LIMIT> results (-1 for infinity)\n" +
-				"\t$maxDependents <LIMIT>          Maximum number of dependents considered in coreachable query resolution (-1 for infinity)\n" +
-				"\t±<URI>                          Find reachable (+) or coreachable (-) callables from the given callable <URI> satisfying all filters\n" +
-				"";
+		final String help = "\t$help                           Help on commands\n" + "\t$clear                          Clear filters\n" + "\t$f ?                            Print the current filter\n" + "\t$f pmatches <REGEXP>            Add filter: package (a.k.a. product) matches <REGEXP>\n" + "\t$f vmatches <REGEXP>            Add filter: version matches <REGEXP>\n" + "\t$f xmatches <REGEXP>            Add filter: path (namespace + entity) matches <REGEXP>\n" + "\t$f cmd <KEY> [<REGEXP>]         Add filter: callable metadata contains key <KEY> (satisfying <REGEXP>)\n" + "\t$f mmd <KEY> [<REGEXP>]         Add filter: module metadata contains key <KEY> (satisfying <REGEXP>)\n" + "\t$f pmd <KEY> [<REGEXP>]         Add filter: package+version metadata contains key <KEY> (satisfying <REGEXP>)\n" + "\t$f cmdjp <JP> <REGEXP>          Add filter: callable metadata queried with the JSONPointer <JP> has a value satisfying <REGEXP>\n" + "\t$f mmdjp <JP> <REGEXP>          Add filter: module metadata queried with the JSONPointer <JP> has a value satisfying <REGEXP>\n" + "\t$f pmdjp <JP> <REGEXP>          Add filter: package+version metadata queried with the JSONPointer <JP> has a value satisfying <REGEXP>\n" + "\t$or                             The last two filters are substituted by their disjunction (or)\n" + "\t$and                            The last two filters are substituted by their conjunction (and)\n" + "\t$not                            The last filter is substituted by its negation (not)\n" + "\t$limit <LIMIT>                  Print at most <LIMIT> results (-1 for infinity)\n" + "\t$maxDependents <LIMIT>          Maximum number of dependents considered in coreachable query resolution (-1 for infinity)" + "\t±<URI>                          Find reachable (+) or coreachable (-) callables from the given callable <URI> satisfying all filters\n" + "";
 		try {
-			switch(commandAndArgs[0].toLowerCase()) {
+			switch (commandAndArgs[0].toLowerCase()) {
 
 			case "help":
 				System.err.println(help);
@@ -265,7 +296,7 @@ public class SearchEngine {
 				LongPredicate predicate = null;
 				Pattern regExp;
 				MetadataSource mds;
-				switch(commandAndArgs[1].toLowerCase()) {
+				switch (commandAndArgs[1].toLowerCase()) {
 				case "pmatches":
 					regExp = Pattern.compile(commandAndArgs[2]);
 					predicate = predicateFactory.fastenURIMatches(uri -> matchRegexp(uri.getProduct(), regExp));
@@ -278,33 +309,51 @@ public class SearchEngine {
 					regExp = Pattern.compile(commandAndArgs[2]);
 					predicate = predicateFactory.fastenURIMatches(uri -> matchRegexp(uri.getPath(), regExp));
 					break;
-				case "cmd": case "mmd": case "pmd":
+				case "cmd":
+				case "mmd":
+				case "pmd":
 					final String key = commandAndArgs[2];
 					mds = null;
 					switch (commandAndArgs[1].toLowerCase().charAt(0)) {
-					case 'c':  mds = MetadataSource.CALLABLE; break;
-					case 'm':  mds = MetadataSource.MODULE; break;
-					case 'p':  mds = MetadataSource.PACKAGE_VERSION; break;
-					default: throw new RuntimeException("Cannot happen");
+					case 'c':
+						mds = MetadataSource.CALLABLE;
+						break;
+					case 'm':
+						mds = MetadataSource.MODULE;
+						break;
+					case 'p':
+						mds = MetadataSource.PACKAGE_VERSION;
+						break;
+					default:
+						throw new RuntimeException("Cannot happen");
 					}
-				 	if (commandAndArgs.length == 3) predicate = predicateFactory.metadataContains(mds, key);
-				 	else {
-				 		regExp = Pattern.compile(commandAndArgs[3]);
-				 		predicate = predicateFactory.metadataContains(mds, key, s -> matchRegexp(s, regExp));
-				 	}
-				 	break;
-				case "cmdjp": case "mmdjp": case "pmdjp":
+					if (commandAndArgs.length == 3) predicate = predicateFactory.metadataContains(mds, key);
+					else {
+						regExp = Pattern.compile(commandAndArgs[3]);
+						predicate = predicateFactory.metadataContains(mds, key, s -> matchRegexp(s, regExp));
+					}
+					break;
+				case "cmdjp":
+				case "mmdjp":
+				case "pmdjp":
 					final String jsonPointer = commandAndArgs[2];
 					mds = null;
 					switch (commandAndArgs[1].toLowerCase().charAt(0)) {
-					case 'c':  mds = MetadataSource.CALLABLE; break;
-					case 'm':  mds = MetadataSource.MODULE; break;
-					case 'p':  mds = MetadataSource.PACKAGE_VERSION; break;
-					default: throw new RuntimeException("Cannot happen");
+					case 'c':
+						mds = MetadataSource.CALLABLE;
+						break;
+					case 'm':
+						mds = MetadataSource.MODULE;
+						break;
+					case 'p':
+						mds = MetadataSource.PACKAGE_VERSION;
+						break;
+					default:
+						throw new RuntimeException("Cannot happen");
 					}
-				 	regExp = Pattern.compile(commandAndArgs[3]);
-				 	predicate = predicateFactory.metadataQueryJSONPointer(mds, jsonPointer, s -> matchRegexp(s, regExp));
-				 	break;
+					regExp = Pattern.compile(commandAndArgs[3]);
+					predicate = predicateFactory.metadataQueryJSONPointer(mds, jsonPointer, s -> matchRegexp(s, regExp));
+					break;
 				case "?":
 					System.err.println(String.join(" && ", predicateFiltersSpec));
 					break;
@@ -317,7 +366,8 @@ public class SearchEngine {
 				}
 				break;
 
-			case "and": case "or":
+			case "and":
+			case "or":
 				if (predicateFilters.size() < 2) throw new RuntimeException("At least two predicates must be present");
 				if ("and".equals(commandAndArgs[0].toLowerCase())) {
 					predicateFilters.push(predicateFilters.pop().and(predicateFilters.pop()));
@@ -345,7 +395,9 @@ public class SearchEngine {
 		}
 	}
 
-	/** Returns true if the given string fully matches the given regular expression (i.e., it matches it from start to end).
+	/**
+	 * Returns true if the given string fully matches the given regular expression (i.e., it matches it
+	 * from start to end).
 	 *
 	 * @param s the string.
 	 * @param regExp the regular expression.
@@ -363,18 +415,25 @@ public class SearchEngine {
 	 * @param dm the {@link CGMerger} to be used.
 	 * @param id the database identifier of a revision.
 	 * @return the stitched graph for the revision with database identifier {@code id}, or {@code null}
-	 *         if {@link CGMerger#mergeWithCHA(long)} returns {@code null} (usually because the
-	 *         provided artifact is not present in the graph database).
+	 *         if {@link CGMerger#mergeWithCHA(long)} returns {@code null} (usually because the provided
+	 *         artifact is not present in the graph database).
 	 */
-	private DirectedGraph getStitchedGraph(final CGMerger dm, final long id) {
+	private DirectedGraph getStitchedGraph(final CGMerger dm, final long id) throws RocksDBException {
 		DirectedGraph result = stitchedGraphCache.getAndMoveToFirst(id);
 		if (result == null) {
-			result = dm.mergeWithCHA(id);
-			if (result != null) {
-				LOGGER.info("Graph id: " + id + " stitched graph nodes: " + result.numNodes() + " stitched graph arcs: " + result.numArcs());
-				stitchedGraphCache.putAndMoveToFirst(id, result);
-				if (stitchedGraphCache.size() > STITCHED_MAX_SIZE) stitchedGraphCache.removeLast();
+			final byte[] array = cache.get(Longs.toByteArray(id));
+			if ( array == null) {
+				result = dm.mergeWithCHA(id);
+				if (result != null) {
+					cache.put(Longs.toByteArray(id), SerializationUtils.serialize((MergedDirectedGraph)result));
+					LOGGER.info("Graph id: " + id + " stitched graph nodes: " + result.numNodes() + " stitched graph arcs: " + result.numArcs());
+				}
+				else return null;
 			}
+			else result = SerializationUtils.deserialize(array);
+
+			stitchedGraphCache.putAndMoveToFirst(id, result);
+			if (stitchedGraphCache.size() > STITCHED_MAX_SIZE) stitchedGraphCache.removeLast();
 		}
 		return result;
 	}
@@ -604,7 +663,7 @@ public class SearchEngine {
 
 		// Temporary reduction in size to circumvent mergeWithCHA() crashes
 		long m = 0;
-		for(final var r: s) {
+		for (final var r : s) {
 			if (m++ == maxDependents) break;
 			dependentSet.add(r);
 		}
@@ -658,7 +717,7 @@ public class SearchEngine {
 			DirectedGraph stitchedGraph = null;
 			try {
 				stitchedGraph = getStitchedGraph(dm, dependentId);
-			} catch(final Throwable t) {
+			} catch (final Throwable t) {
 				throwables.add(t);
 				LOGGER.error("mergeWithCHA threw an exception", t);
 			}
@@ -684,12 +743,20 @@ public class SearchEngine {
 		return Arrays.asList(array);
 	}
 
+
+	@Override
+	public void close() throws Exception {
+		cache.close();
+		rocksDao.close();
+	}
+
 	@SuppressWarnings("boxing")
 	public static void main(final String args[]) throws Exception {
 		final SimpleJSAP jsap = new SimpleJSAP(SearchEngine.class.getName(), "Creates an instance of SearchEngine and answers queries from the command line (rlwrap recommended).", new Parameter[] {
 				new UnflaggedOption("jdbcURI", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.REQUIRED, JSAP.NOT_GREEDY, "The JDBC URI."),
 				new UnflaggedOption("database", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, JSAP.NOT_GREEDY, "The database name."),
 				new UnflaggedOption("rocksDb", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, JSAP.NOT_GREEDY, "The path to the RocksDB database of revision call graphs."),
+				new UnflaggedOption("cache", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, JSAP.NOT_GREEDY, "The RocksDB cache."),
 				new UnflaggedOption("resolverGraph", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, JSAP.NOT_GREEDY, "The path to a resolver graph (will be created if it does not exist)."), });
 
 		final JSAPResult jsapResult = jsap.parse(args);
@@ -698,62 +765,63 @@ public class SearchEngine {
 		final String jdbcURI = jsapResult.getString("jdbcURI");
 		final String database = jsapResult.getString("database");
 		final String rocksDb = jsapResult.getString("rocksDb");
+		final String cacheDir = jsapResult.getString("cache");
 		final String resolverGraph = jsapResult.getString("resolverGraph");
 
-		final SearchEngine searchEngine = new SearchEngine(jdbcURI, database, rocksDb, resolverGraph, null);
-		if (new java.util.Random().nextLong() == 0) System.out.println(rocksDb);
-		final DSLContext context = searchEngine.context;
-		context.settings().withParseUnknownFunctions(ParseUnknownFunctions.IGNORE);
+		try (SearchEngine searchEngine = new SearchEngine(jdbcURI, database, rocksDb, cacheDir, resolverGraph, null)) {
 
-		@SuppressWarnings("resource")
-		final Scanner scanner = new Scanner(System.in);
-		for(;;) {
-			System.out.print("[$help for help]>");
-			System.out.flush();
-			if (!scanner.hasNextLine()) break;
-			String line = scanner.nextLine();
-			if (line.length() == 0) continue;
-			final Matcher matcher = COMMAND_REGEXP.matcher(line);
-			if (matcher.matches()) {
-				searchEngine.executeCommand(matcher.group(1));
-				continue;
-			}
-			try {
-				final char dir = line.charAt(0);
-				if (dir != '+' && dir != '-') {
-					if (dir != '#') System.err.println("First character must be '+', '-', or '#'");
+			final DSLContext context = searchEngine.context;
+			context.settings().withParseUnknownFunctions(ParseUnknownFunctions.IGNORE);
+
+			@SuppressWarnings("resource")
+			final Scanner scanner = new Scanner(System.in);
+			for (;;) {
+				System.out.print("[$help for help]>");
+				System.out.flush();
+				if (!scanner.hasNextLine()) break;
+				String line = scanner.nextLine();
+				if (line.length() == 0) continue;
+				final Matcher matcher = COMMAND_REGEXP.matcher(line);
+				if (matcher.matches()) {
+					searchEngine.executeCommand(matcher.group(1));
 					continue;
 				}
-				line = line.substring(1);
-				final FastenJavaURI uri = FastenJavaURI.create(line);
-
-				final long start = -System.nanoTime();
-				searchEngine.stitchingTime = searchEngine.resolveTime = searchEngine.visitTime = 0;
-
-				final List<Result> r;
-
-				if (uri.getPath() == null) {
-					r = dir == '+' ? searchEngine.fromRevision(uri) : searchEngine.toRevision(uri);
-					for (int i = 0; i < Math.min(searchEngine.limit, r.size()); i++) System.out.println(r.get(i).gid + "\t" + Util.getCallableName(r.get(i).gid, context) + "\t" + r.get(i).score);
-				} else {
-					final long gid = Util.getCallableGID(uri, context);
-					if (gid == -1) {
-						System.err.println("Unknown URI " + uri);
+				try {
+					final char dir = line.charAt(0);
+					if (dir != '+' && dir != '-') {
+						if (dir != '#') System.err.println("First character must be '+', '-', or '#'");
 						continue;
 					}
-					r = dir == '+' ? searchEngine.fromCallable(gid) : searchEngine.toCallable(gid);
-					for (int i = 0; i < Math.min(searchEngine.limit, r.size()); i++) System.out.println(r.get(i).gid + "\t" + Util.getCallableName(r.get(i).gid, context) + "\t" + r.get(i).score);
-				}
+					line = line.substring(1);
+					final FastenJavaURI uri = FastenJavaURI.create(line);
 
-				for(final var t: searchEngine.throwables) {
-					System.err.println(t);
-					System.err.println("\t" + t.getStackTrace()[0]);
+					final long start = -System.nanoTime();
+					searchEngine.stitchingTime = searchEngine.resolveTime = searchEngine.visitTime = 0;
+
+					final List<Result> r;
+
+					if (uri.getPath() == null) {
+						r = dir == '+' ? searchEngine.fromRevision(uri) : searchEngine.toRevision(uri);
+						for (int i = 0; i < Math.min(searchEngine.limit, r.size()); i++) System.out.println(r.get(i).gid + "\t" + Util.getCallableName(r.get(i).gid, context) + "\t" + r.get(i).score);
+					} else {
+						final long gid = Util.getCallableGID(uri, context);
+						if (gid == -1) {
+							System.err.println("Unknown URI " + uri);
+							continue;
+						}
+						r = dir == '+' ? searchEngine.fromCallable(gid) : searchEngine.toCallable(gid);
+						for (int i = 0; i < Math.min(searchEngine.limit, r.size()); i++) System.out.println(r.get(i).gid + "\t" + Util.getCallableName(r.get(i).gid, context) + "\t" + r.get(i).score);
+					}
+
+					for (final var t : searchEngine.throwables) {
+						System.err.println(t);
+						System.err.println("\t" + t.getStackTrace()[0]);
+					}
+					System.err.printf("\n%d results \nTotal time: %.3fs Resolve time: %.3fs Stitching time: %.3fs Visit time %.3fs\n", r.size(), (System.nanoTime() + start) * 1E-9, searchEngine.resolveTime * 1E-9, searchEngine.stitchingTime * 1E-9, searchEngine.visitTime * 1E-9);
+				} catch (final Exception e) {
+					e.printStackTrace();
 				}
-				System.err.printf("\n%d results \nTotal time: %.3fs Resolve time: %.3fs Stitching time: %.3fs Visit time %.3fs\n", r.size(), (System.nanoTime() + start) * 1E-9, searchEngine.resolveTime * 1E-9, searchEngine.stitchingTime * 1E-9, searchEngine.visitTime * 1E-9);
-			} catch (final Exception e) {
-				e.printStackTrace();
 			}
 		}
 	}
-
 }
