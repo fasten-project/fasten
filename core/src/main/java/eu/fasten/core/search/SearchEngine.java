@@ -571,7 +571,7 @@ public class SearchEngine implements AutoCloseable {
 			stitchedGraph = getStitchedGraph(dm, rev);
 			stitchingTime += System.nanoTime();
 	
-			if (stitchedGraph == null) throw new NullPointerException("mergeWithCHA() returned null");
+			if (stitchedGraph == null) LOGGER.error("mergeWithCHA returned null");
 			else cache.put(mergedHandle, Longs.toByteArray(rev), SerializationUtils.serialize((MergedDirectedGraph)stitchedGraph));
 		}
 
@@ -728,7 +728,7 @@ public class SearchEngine implements AutoCloseable {
 				}
 				stitchingTime += System.nanoTime();
 	
-				if (stitchedGraph == null) continue;
+				if (stitchedGraph == null) LOGGER.error("mergeWithCHA returned null");
 				else  cache.put(mergedHandle, Longs.toByteArray(dependentId), SerializationUtils.serialize((MergedDirectedGraph)stitchedGraph));
 			}
 
