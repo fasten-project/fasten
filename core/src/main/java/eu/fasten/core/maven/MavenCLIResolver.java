@@ -36,11 +36,10 @@ import java.sql.Timestamp;
 import java.util.*;
 import java.util.regex.Pattern;
 
-// TODO refactor: split from executable part
 @CommandLine.Command(name = "MavenResolver")
-public class MavenResolver implements Runnable {
+public class MavenCLIResolver implements Runnable {
 
-    private static final Logger logger = LoggerFactory.getLogger(MavenResolver.class);
+    private static final Logger logger = LoggerFactory.getLogger(MavenCLIResolver.class);
 
     @CommandLine.Option(names = {"-c", "--coordinate"},
             required = true,
@@ -55,7 +54,7 @@ public class MavenResolver implements Runnable {
     protected boolean onlyDirectDependencies;
 
     public static void main(String[] args) {
-        final int exitCode = new CommandLine(new MavenResolver()).execute(args);
+        final int exitCode = new CommandLine(new MavenCLIResolver()).execute(args);
         System.exit(exitCode);
     }
 
