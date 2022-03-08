@@ -80,7 +80,7 @@ public class DebianLicenseDetectorPlugin extends Plugin {
          */
         protected void reset() {
             pluginError = null;
-            //detectedLicenses = new DetectedLicenses();
+            detectedLicenses = new DetectedLicenses();
         }
 
         @Override
@@ -184,7 +184,15 @@ public class DebianLicenseDetectorPlugin extends Plugin {
 
         @Override
         public Optional<String> produce() {
-            return Optional.empty();
+            if (detectedLicenses == null ||
+                    (detectedLicenses.getOutbound().isEmpty() && detectedLicenses.getFiles().isEmpty())
+            ) {
+                System.out.println("Detected licenses is empty.");
+                return Optional.empty();
+            } else {
+                System.out.println("Producing the payload with the produce method.");
+                return Optional.of(new JSONObject(detectedLicenses).toString());
+            }
         }
 
         // this method first get the license from one of the copyrights files (copyright, license or readme), if
@@ -599,7 +607,6 @@ public class DebianLicenseDetectorPlugin extends Plugin {
                     }
                 }
             }
-
             return licenseAndFilePath;
         }
 
