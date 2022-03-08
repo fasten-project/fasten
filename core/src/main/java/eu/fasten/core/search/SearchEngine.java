@@ -29,8 +29,6 @@ import java.util.function.LongPredicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import eu.fasten.core.merge.CGMerger;
-
 import org.apache.commons.lang3.SerializationUtils;
 import org.jooq.DSLContext;
 import org.jooq.Record2;
@@ -38,7 +36,6 @@ import org.jooq.conf.ParseUnknownFunctions;
 import org.rocksdb.ColumnFamilyDescriptor;
 import org.rocksdb.ColumnFamilyHandle;
 import org.rocksdb.ColumnFamilyOptions;
-import org.rocksdb.CompressionType;
 import org.rocksdb.DBOptions;
 import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
@@ -62,12 +59,11 @@ import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
 import eu.fasten.core.dbconnectors.PostgresConnector;
 import eu.fasten.core.maven.GraphMavenResolver;
 import eu.fasten.core.maven.data.Revision;
+import eu.fasten.core.merge.CGMerger;
 import eu.fasten.core.search.predicate.CachingPredicateFactory;
 import eu.fasten.core.search.predicate.PredicateFactory;
 import eu.fasten.core.search.predicate.PredicateFactory.MetadataSource;
 import it.unimi.dsi.fastutil.HashCommon;
-import it.unimi.dsi.fastutil.io.BinIO;
-import it.unimi.dsi.fastutil.io.FastByteArrayInputStream;
 import it.unimi.dsi.fastutil.longs.Long2ObjectLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongArrayFIFOQueue;
 import it.unimi.dsi.fastutil.longs.LongCollection;
@@ -214,7 +210,7 @@ public class SearchEngine implements AutoCloseable {
 		final ColumnFamilyOptions defaultOptions = new ColumnFamilyOptions();
 		@SuppressWarnings("resource")
 		final DBOptions dbOptions = new DBOptions().setCreateIfMissing(true).setCreateMissingColumnFamilies(true);
-		final List<ColumnFamilyDescriptor> cfDescriptors = List.of(new ColumnFamilyDescriptor("merged".getBytes(), defaultOptions));
+		final List<ColumnFamilyDescriptor> cfDescriptors = List.of(new ColumnFamilyDescriptor(RocksDB.DEFAULT_COLUMN_FAMILY, defaultOptions), new ColumnFamilyDescriptor("merged".getBytes(), defaultOptions));
 		final List<ColumnFamilyHandle> columnFamilyHandles = new ArrayList<>();
 		return new RocksDBData(RocksDB.open(dbOptions, cacheDir, cfDescriptors, columnFamilyHandles), columnFamilyHandles); 
 	}
@@ -421,11 +417,11 @@ public class SearchEngine implements AutoCloseable {
 	private DirectedGraph getStitchedGraph(final CGMerger dm, final long id) throws RocksDBException {
 		DirectedGraph result = stitchedGraphCache.getAndMoveToFirst(id);
 		if (result == null) {
-			final byte[] array = cache.get(Longs.toByteArray(id));
+			final byte[] array = cache.get(mergedHandle, Longs.toByteArray(id));
 			if ( array == null) {
 				result = dm.mergeWithCHA(id);
 				if (result != null) {
-					cache.put(Longs.toByteArray(id), SerializationUtils.serialize((MergedDirectedGraph)result));
+					cache.put(mergedHandle, Longs.toByteArray(id), SerializationUtils.serialize((MergedDirectedGraph)result));
 					LOGGER.info("Graph id: " + id + " stitched graph nodes: " + result.numNodes() + " stitched graph arcs: " + result.numArcs());
 				}
 				else return null;
@@ -754,10 +750,10 @@ public class SearchEngine implements AutoCloseable {
 	public static void main(final String args[]) throws Exception {
 		final SimpleJSAP jsap = new SimpleJSAP(SearchEngine.class.getName(), "Creates an instance of SearchEngine and answers queries from the command line (rlwrap recommended).", new Parameter[] {
 				new UnflaggedOption("jdbcURI", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.REQUIRED, JSAP.NOT_GREEDY, "The JDBC URI."),
-				new UnflaggedOption("database", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, JSAP.NOT_GREEDY, "The database name."),
-				new UnflaggedOption("rocksDb", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, JSAP.NOT_GREEDY, "The path to the RocksDB database of revision call graphs."),
-				new UnflaggedOption("cache", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, JSAP.NOT_GREEDY, "The RocksDB cache."),
-				new UnflaggedOption("resolverGraph", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, JSAP.NOT_GREEDY, "The path to a resolver graph (will be created if it does not exist)."), });
+				new UnflaggedOption("database", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.REQUIRED, JSAP.NOT_GREEDY, "The database name."),
+				new UnflaggedOption("rocksDb", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.REQUIRED, JSAP.NOT_GREEDY, "The path to the RocksDB database of revision call graphs."),
+				new UnflaggedOption("cache", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.REQUIRED, JSAP.NOT_GREEDY, "The RocksDB cache."),
+				new UnflaggedOption("resolverGraph", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.REQUIRED, JSAP.NOT_GREEDY, "The path to a resolver graph (will be created if it does not exist)."), });
 
 		final JSAPResult jsapResult = jsap.parse(args);
 		if (jsap.messagePrinted()) System.exit(1);
