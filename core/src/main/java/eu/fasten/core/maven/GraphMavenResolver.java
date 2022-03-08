@@ -25,12 +25,15 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import org.apache.commons.lang3.tuple.ImmutableTriple;
 import org.apache.commons.lang3.tuple.Triple;
@@ -367,37 +370,29 @@ public class GraphMavenResolver implements Runnable {
             throw new RuntimeException("Revision " + artifact + " is not in the dependents graph.");
         }
 
-        var workQueue = new ArrayDeque<>(filterDependentsByTimestamp(Graphs.successorListOf(dependentGraph, artifact), timestamp));
+        var workQueue = new ArrayDeque<Revision>();
+        filterDependentsByTimestamp(StreamSupport.stream(dependentGraph.iterables().outgoingEdgesOf(artifact).spliterator(), false).map(edge -> edge.target), timestamp).forEach(s -> workQueue.add(s));
 
         var result = new ObjectLinkedOpenHashSet<>(workQueue);
+        if (!transitive) return result;
 
-        if (!transitive) {
-            return new ObjectLinkedOpenHashSet<>(workQueue);
-        }
+		while (!workQueue.isEmpty()) {
+			var rev = workQueue.poll();
+			if (rev != null) {
+				result.add(rev);
+				logger.debug("Successors for {}:{}:{}: deps: {}, queue: {} items", rev.groupId, rev.artifactId, rev.version, workQueue.size(), workQueue.size());
+			}
+			if (!dependentGraph.containsVertex(rev)) {
+				if (ignoreMissing) {
+					continue;
+				} else {
+					throw new RuntimeException("Revision " + rev + " is not in the dependents graph.");
+				}
+			}
 
-        while (!workQueue.isEmpty()) {
-            var rev = workQueue.poll();
-            if (rev != null) {
-                result.add(rev);
-                logger.debug("Successors for {}:{}:{}: deps: {}, queue: {} items",
-                        rev.groupId, rev.artifactId, rev.version,
-                        workQueue.size(), workQueue.size());
-            }
-            if (!dependentGraph.containsVertex(rev)) {
-                if (ignoreMissing) {
-                    continue;
-                } else {
-                    throw new RuntimeException("Revision " + rev + " is not in the dependents graph.");
-                }
-            }
-            var dependents = filterDependentsByTimestamp(Graphs.successorListOf(dependentGraph, rev), timestamp);
-            for (var dependent : dependents) {
-                if (!result.contains(dependent)) {
-                    workQueue.add(dependent);
-                }
-            }
-        }
-        return result;
+			filterDependentsByTimestamp(StreamSupport.stream(dependentGraph.iterables().outgoingEdgesOf(rev).spliterator(), false).map(edge -> edge.target), timestamp).filter(dependent -> !result.contains(dependent)).forEach(dependent -> workQueue.add(dependent));
+		}
+		return result;
     }
 
     public ObjectLinkedOpenHashSet<Revision> filterDependenciesByExclusions(Set<Revision> dependencies,
@@ -460,10 +455,9 @@ public class GraphMavenResolver implements Runnable {
                 collect(Collectors.toList());
     }
 
-    protected List<Revision> filterDependentsByTimestamp(List<Revision> successors, long timestamp) {
-        return successors.stream().
-                filter(revision -> revision.createdAt.getTime() >= timestamp).
-                collect(Collectors.toList());
+    protected Stream<Revision> filterDependentsByTimestamp(Stream<Revision> successors, long timestamp) {
+        return successors.
+                filter(revision -> revision.createdAt.getTime() >= timestamp);
     }
 
     protected ObjectLinkedOpenHashSet<DependencyEdge> filterOptionalSuccessors(ObjectLinkedOpenHashSet<DependencyEdge> outgoingEdges) {
