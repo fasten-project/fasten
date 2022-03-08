@@ -75,11 +75,6 @@ public class DebianLicenseDetectorPlugin extends Plugin {
 
         }
 
-        /*
-        @Override
-        public void setTopic(String topicName) {
-            this.consumerTopic = topicName;
-        }*/
         /**
          * Resets the internal state of this plugin.
          */
@@ -96,10 +91,10 @@ public class DebianLicenseDetectorPlugin extends Plugin {
                 logger.info("Debian license detector started.");
 
                 // Retrieving the package name
-                String packageName = extractPackageName(json);
+                packageName = extractPackageName(json);
                 logger.info("The package to analyze is:"+packageName+".");
                 // Retrieving the package version
-                String packageVersion = extractPackageVersion(json);
+                packageVersion = extractPackageVersion(json);
                 logger.info("The package version is:"+packageVersion+".");
 
                 // these logs should be saved in some shared directory, and a policy of log deletion should be implemented
@@ -185,10 +180,6 @@ public class DebianLicenseDetectorPlugin extends Plugin {
             } catch (TimeoutException ex) {
                 ex.printStackTrace();
             }
-        /*} catch (Exception e) { // Fasten error-handling guidelines
-                logger.error(e.getMessage(), e.getCause());
-                setPluginError(e);
-            }*/
         }
 
         @Override
