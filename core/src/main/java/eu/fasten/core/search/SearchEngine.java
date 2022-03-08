@@ -556,8 +556,11 @@ public class SearchEngine implements AutoCloseable {
 
 		final DirectedGraph stitchedGraph;
 		byte[] revAsByteArray = Longs.toByteArray(rev);
-		byte[] stichedFromCache = cache.get(mergedHandle, revAsByteArray);
-		if (stichedFromCache != null) stitchedGraph = SerializationUtils.deserialize(stichedFromCache);
+		byte[] stitchedFromCache = cache.get(mergedHandle, revAsByteArray);
+		if (stitchedFromCache != null) {
+			if (stitchedFromCache.length != 0) stitchedGraph = SerializationUtils.deserialize(stitchedFromCache);
+			else throw new NullPointerException("Cached returned null");
+		}
 		else {
 			final Record2<String, String> record = context.select(Packages.PACKAGES.PACKAGE_NAME, PackageVersions.PACKAGE_VERSIONS.VERSION).from(PackageVersions.PACKAGE_VERSIONS).join(Packages.PACKAGES).on(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.eq(Packages.PACKAGES.ID)).where(PackageVersions.PACKAGE_VERSIONS.ID.eq(Long.valueOf(rev))).fetchOne();
 			final String[] a = record.component1().split(":");
@@ -583,8 +586,11 @@ public class SearchEngine implements AutoCloseable {
 			stitchedGraph = getStitchedGraph(dm, rev);
 			stitchingTime += System.nanoTime();
 	
-			if (stitchedGraph == null) LOGGER.error("mergeWithCHA returned null");
-			else cache.put(mergedHandle, revAsByteArray, SerializationUtils.serialize((MergedDirectedGraph)stitchedGraph));
+			if (stitchedGraph == null) {
+				cache.put(mergedHandle, Longs.toByteArray(rev), new byte[0]);
+				throw new NullPointerException("mergeWithCHA() returned null");
+			}
+			else cache.put(mergedHandle, Longs.toByteArray(rev), SerializationUtils.serialize((MergedDirectedGraph)stitchedGraph));
 		}
 
 		LOGGER.debug("Stiched graph has " + stitchedGraph.numNodes() + " nodes");
@@ -704,9 +710,13 @@ public class SearchEngine implements AutoCloseable {
 			}
 
 			DirectedGraph stitchedGraph = null;
+
 			byte[] dependentIdAsByteArray = Longs.toByteArray(dependentId);
 			byte[] stitchedFromCache = cache.get(mergedHandle, dependentIdAsByteArray);
-			if (stitchedFromCache != null) stitchedGraph = SerializationUtils.deserialize(stitchedFromCache);
+			if (stitchedFromCache != null) {
+				if (stitchedFromCache.length != 0) stitchedGraph = SerializationUtils.deserialize(stitchedFromCache);
+				else continue;
+			}
 			else {
 				groupId = data[0];
 				artifactId = data[1];
@@ -748,8 +758,13 @@ public class SearchEngine implements AutoCloseable {
 				}
 				stitchingTime += System.nanoTime();
 	
-				if (stitchedGraph == null) LOGGER.error("mergeWithCHA returned null");
-				else  cache.put(mergedHandle, dependentIdAsByteArray, SerializationUtils.serialize((MergedDirectedGraph)stitchedGraph));
+				if (stitchedGraph == null) {
+					// Marker
+					cache.put(mergedHandle, Longs.toByteArray(dependentId), new byte[0]);
+					LOGGER.error("mergeWithCHA returned null");
+					continue;
+				}
+				else cache.put(mergedHandle, Longs.toByteArray(dependentId), SerializationUtils.serialize((MergedDirectedGraph)stitchedGraph));
 			}
 
 			LOGGER.debug("Stiched graph has " + stitchedGraph.numNodes() + " nodes");
