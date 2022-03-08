@@ -158,6 +158,8 @@ public class SearchEngine implements AutoCloseable {
 	private final RocksDB cache;
 	/** The handle for merged graphs in the persistent cache. */
 	private ColumnFamilyHandle mergedHandle;
+	/** The handle for dependencies in the persistent cache. */
+	private ColumnFamilyHandle dependenciesHandle;
 	/** The predicate factory to be used to create predicates for this search engine. */
 	private final PredicateFactory predicateFactory;
 	/** The scorer that will be used to rank results. */
@@ -210,7 +212,7 @@ public class SearchEngine implements AutoCloseable {
 		final ColumnFamilyOptions defaultOptions = new ColumnFamilyOptions();
 		@SuppressWarnings("resource")
 		final DBOptions dbOptions = new DBOptions().setCreateIfMissing(true).setCreateMissingColumnFamilies(true);
-		final List<ColumnFamilyDescriptor> cfDescriptors = List.of(new ColumnFamilyDescriptor(RocksDB.DEFAULT_COLUMN_FAMILY, defaultOptions), new ColumnFamilyDescriptor("merged".getBytes(), defaultOptions));
+		final List<ColumnFamilyDescriptor> cfDescriptors = List.of(new ColumnFamilyDescriptor(RocksDB.DEFAULT_COLUMN_FAMILY, defaultOptions), new ColumnFamilyDescriptor("merged".getBytes(), defaultOptions), new ColumnFamilyDescriptor("dependencies".getBytes(), defaultOptions));
 		final List<ColumnFamilyHandle> columnFamilyHandles = new ArrayList<>();
 		return new RocksDBData(RocksDB.open(dbOptions, cacheDir, cfDescriptors, columnFamilyHandles), columnFamilyHandles); 
 	}
@@ -257,6 +259,7 @@ public class SearchEngine implements AutoCloseable {
 		resolver.setIgnoreMissing(true);
 		this.predicateFactory = new CachingPredicateFactory(context);
 		mergedHandle = rocksDBData.columnFamilyHandles.get(0);
+		dependenciesHandle = rocksDBData.columnFamilyHandles.get(1);
 	}
 
 	/**
@@ -552,18 +555,27 @@ public class SearchEngine implements AutoCloseable {
 		LOGGER.debug("Revision call graph has " + graph.numNodes() + " nodes");
 
 		final DirectedGraph stitchedGraph;
-		byte[] fromCache = cache.get(mergedHandle, Longs.toByteArray(rev));
-		if (fromCache != null) stitchedGraph = SerializationUtils.deserialize(fromCache);
+		byte[] revAsByteArray = Longs.toByteArray(rev);
+		byte[] stichedFromCache = cache.get(mergedHandle, revAsByteArray);
+		if (stichedFromCache != null) stitchedGraph = SerializationUtils.deserialize(stichedFromCache);
 		else {
 			final Record2<String, String> record = context.select(Packages.PACKAGES.PACKAGE_NAME, PackageVersions.PACKAGE_VERSIONS.VERSION).from(PackageVersions.PACKAGE_VERSIONS).join(Packages.PACKAGES).on(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.eq(Packages.PACKAGES.ID)).where(PackageVersions.PACKAGE_VERSIONS.ID.eq(Long.valueOf(rev))).fetchOne();
 			final String[] a = record.component1().split(":");
 			final String groupId = a[0];
 			final String artifactId = a[1];
 			final String version = record.component2();
-			resolveTime -= System.nanoTime();
-			final Set<Revision> dependencySet = resolver.resolveDependencies(groupId, artifactId, version, -1, context, true);
-			resolveTime += System.nanoTime();
-	
+
+			final byte[] depFromCache  = cache.get(dependenciesHandle, revAsByteArray);
+			
+			final Set<Revision> dependencySet;  
+			if (depFromCache == null) {
+				resolveTime -= System.nanoTime();
+				dependencySet = resolver.resolveDependencies(groupId, artifactId, version, -1, context, true);
+				resolveTime += System.nanoTime();
+				cache.put(dependenciesHandle, revAsByteArray, SerializationUtils.serialize(new ObjectOpenHashSet<>(dependencySet)));
+			}
+			else dependencySet = SerializationUtils.deserialize(depFromCache);
+
 			LOGGER.debug("Found " + dependencySet.size() + " dependencies");
 	
 			stitchingTime -= System.nanoTime();
@@ -572,7 +584,7 @@ public class SearchEngine implements AutoCloseable {
 			stitchingTime += System.nanoTime();
 	
 			if (stitchedGraph == null) LOGGER.error("mergeWithCHA returned null");
-			else cache.put(mergedHandle, Longs.toByteArray(rev), SerializationUtils.serialize((MergedDirectedGraph)stitchedGraph));
+			else cache.put(mergedHandle, revAsByteArray, SerializationUtils.serialize((MergedDirectedGraph)stitchedGraph));
 		}
 
 		LOGGER.debug("Stiched graph has " + stitchedGraph.numNodes() + " nodes");
@@ -692,8 +704,9 @@ public class SearchEngine implements AutoCloseable {
 			}
 
 			DirectedGraph stitchedGraph = null;
-			byte[] fromCache = cache.get(mergedHandle, Longs.toByteArray(dependentId));
-			if (fromCache != null) stitchedGraph = SerializationUtils.deserialize(fromCache);
+			byte[] dependentIdAsByteArray = Longs.toByteArray(dependentId);
+			byte[] stitchedFromCache = cache.get(mergedHandle, dependentIdAsByteArray);
+			if (stitchedFromCache != null) stitchedGraph = SerializationUtils.deserialize(stitchedFromCache);
 			else {
 				groupId = data[0];
 				artifactId = data[1];
@@ -701,9 +714,16 @@ public class SearchEngine implements AutoCloseable {
 	
 				LOGGER.debug("Analyzing dependent " + groupId + ":" + artifactId + ":" + version);
 	
-				resolveTime -= System.nanoTime();
-				final Set<Revision> dependencySet = resolver.resolveDependencies(groupId, artifactId, version, -1, context, true);
-				resolveTime += System.nanoTime();
+				final byte[] depFromCache  = cache.get(dependenciesHandle, dependentIdAsByteArray);
+				
+				final Set<Revision> dependencySet;  
+				if (depFromCache == null) {
+					resolveTime -= System.nanoTime();
+					dependencySet = resolver.resolveDependencies(groupId, artifactId, version, -1, context, true);
+					resolveTime += System.nanoTime();
+					cache.put(dependenciesHandle, dependentIdAsByteArray, SerializationUtils.serialize(new ObjectOpenHashSet<>(dependencySet)));
+				}
+				else dependencySet = SerializationUtils.deserialize(depFromCache);
 	
 				LOGGER.debug("Dependent has " + graph.numNodes() + " nodes");
 	
@@ -729,7 +749,7 @@ public class SearchEngine implements AutoCloseable {
 				stitchingTime += System.nanoTime();
 	
 				if (stitchedGraph == null) LOGGER.error("mergeWithCHA returned null");
-				else  cache.put(mergedHandle, Longs.toByteArray(dependentId), SerializationUtils.serialize((MergedDirectedGraph)stitchedGraph));
+				else  cache.put(mergedHandle, dependentIdAsByteArray, SerializationUtils.serialize((MergedDirectedGraph)stitchedGraph));
 			}
 
 			LOGGER.debug("Stiched graph has " + stitchedGraph.numNodes() + " nodes");
