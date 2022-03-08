@@ -49,6 +49,7 @@ import com.martiansoftware.jsap.Parameter;
 import com.martiansoftware.jsap.SimpleJSAP;
 import com.martiansoftware.jsap.UnflaggedOption;
 
+import eu.fasten.core.data.ArrayImmutableDirectedGraph;
 import eu.fasten.core.data.DirectedGraph;
 import eu.fasten.core.data.FastenJavaURI;
 import eu.fasten.core.data.FastenURI;
@@ -187,7 +188,7 @@ public class SearchEngine implements AutoCloseable {
 	/** Throwables thrown by mergeWithCHA(). */
 	private final List<Throwable> throwables = new ArrayList<>();
 
-	private static final class RocksDBData {
+	public static final class RocksDBData {
 		public final RocksDB cache;
 		public final List<ColumnFamilyHandle> columnFamilyHandles;
 		public RocksDBData(RocksDB cache, List<ColumnFamilyHandle> columnFamilyHandles) {
@@ -201,7 +202,7 @@ public class SearchEngine implements AutoCloseable {
 	 * @param cacheDir the path to the persistent cache.
 	 * @return a RocksDB handle.
 	 */
-	private static final RocksDBData openCache(final String cacheDir) throws RocksDBException {
+	public static final RocksDBData openCache(final String cacheDir) throws RocksDBException {
 		RocksDB.loadLibrary();
 		final ColumnFamilyOptions defaultOptions = new ColumnFamilyOptions();
 		@SuppressWarnings("resource")
@@ -537,7 +538,7 @@ public class SearchEngine implements AutoCloseable {
 
 		LOGGER.debug("Revision call graph has " + graph.numNodes() + " nodes");
 
-		final DirectedGraph stitchedGraph;
+		DirectedGraph stitchedGraph;
 		byte[] revAsByteArray = Longs.toByteArray(rev);
 		byte[] stitchedFromCache = cache.get(mergedHandle, revAsByteArray);
 		if (stitchedFromCache != null) {
@@ -575,7 +576,10 @@ public class SearchEngine implements AutoCloseable {
 				cache.put(mergedHandle, Longs.toByteArray(rev), new byte[0]);
 				throw new NullPointerException("mergeWithCHA() returned null");
 			}
-			else cache.put(mergedHandle, Longs.toByteArray(rev), SerializationUtils.serialize((MergedDirectedGraph)stitchedGraph));
+			else {
+				stitchedGraph = ArrayImmutableDirectedGraph.copyOf(stitchedGraph, false);
+				cache.put(mergedHandle, Longs.toByteArray(rev), SerializationUtils.serialize((ArrayImmutableDirectedGraph)stitchedGraph));
+			}
 		}
 
 		LOGGER.debug("Stiched graph has " + stitchedGraph.numNodes() + " nodes");
@@ -749,7 +753,10 @@ public class SearchEngine implements AutoCloseable {
 					LOGGER.error("mergeWithCHA returned null");
 					continue;
 				}
-				else cache.put(mergedHandle, dependentIdAsByteArray, SerializationUtils.serialize((MergedDirectedGraph)stitchedGraph));
+				else {
+					stitchedGraph = ArrayImmutableDirectedGraph.copyOf(stitchedGraph, false);
+					cache.put(mergedHandle, dependentIdAsByteArray, SerializationUtils.serialize((ArrayImmutableDirectedGraph)stitchedGraph));
+				}
 			}
 
 			LOGGER.debug("Stiched graph has " + stitchedGraph.numNodes() + " nodes");

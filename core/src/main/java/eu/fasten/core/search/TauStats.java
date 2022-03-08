@@ -21,11 +21,13 @@ package eu.fasten.core.search;
 import java.util.Scanner;
 import java.util.Set;
 
+import org.apache.commons.lang3.SerializationUtils;
 import org.jooq.DSLContext;
 import org.jooq.Record2;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.primitives.Longs;
 import com.martiansoftware.jsap.JSAP;
 import com.martiansoftware.jsap.JSAPResult;
 import com.martiansoftware.jsap.Parameter;
@@ -35,6 +37,8 @@ import com.martiansoftware.jsap.UnflaggedOption;
 
 import eu.fasten.core.data.ArrayImmutableDirectedGraph;
 import eu.fasten.core.data.Centralities;
+import eu.fasten.core.data.DirectedGraph;
+import eu.fasten.core.data.MergedDirectedGraph;
 import eu.fasten.core.data.callableindex.RocksDao;
 import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
 import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
@@ -42,6 +46,7 @@ import eu.fasten.core.dbconnectors.PostgresConnector;
 import eu.fasten.core.maven.GraphMavenResolver;
 import eu.fasten.core.maven.data.Revision;
 import eu.fasten.core.merge.CGMerger;
+import eu.fasten.core.search.SearchEngine.RocksDBData;
 import eu.fasten.core.search.predicate.CachingPredicateFactory;
 import it.unimi.dsi.fastutil.doubles.DoubleArrayList;
 import it.unimi.dsi.fastutil.longs.Long2DoubleFunction;
@@ -86,6 +91,7 @@ public class TauStats {
 				new UnflaggedOption("jdbcURI", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.REQUIRED, JSAP.NOT_GREEDY, "The JDBC URI."),
 				new UnflaggedOption("database", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, JSAP.NOT_GREEDY, "The database name."),
 				new UnflaggedOption("rocksDb", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, JSAP.NOT_GREEDY, "The path to the RocksDB database of revision call graphs."),
+				new UnflaggedOption("cache", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.REQUIRED, JSAP.NOT_GREEDY, "The RocksDB cache."),
 				new UnflaggedOption("resolverGraph", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, JSAP.NOT_GREEDY, "The path to a resolver graph (will be created if it does not exist)."), });
 
 		final JSAPResult jsapResult = jsap.parse(args);
@@ -96,8 +102,14 @@ public class TauStats {
 		final String jdbcURI = jsapResult.getString("jdbcURI");
 		final String database = jsapResult.getString("database");
 		final String rocksDb = jsapResult.getString("rocksDb");
+		final String cacheDir = jsapResult.getString("cache");
 		final String resolverGraph = jsapResult.getString("resolverGraph");
 
+		RocksDBData cacheData = SearchEngine.openCache(cacheDir);
+		var cache = cacheData.cache;
+		var mergedHandle = cacheData.columnFamilyHandles.get(0);
+		var dependenciesHandle = cacheData.columnFamilyHandles.get(1);
+		
 		final TauStats tauStats = new TauStats(jdbcURI, database, rocksDb, resolverGraph);
 		final DSLContext context = tauStats.context;
 
@@ -117,19 +129,42 @@ public class TauStats {
 			final String groupId = a[0];
 			final String artifactId = a[1];
 			final String version = record.component2();
-			
-			
-			final Set<Revision> dependencySet = tauStats.resolver.resolveDependencies(groupId, artifactId, version, -1, context, true);
+
+			final byte[] gidAsByteArray = Longs.toByteArray(gid);
+			final byte[] depFromCache  = cache.get(dependenciesHandle, gidAsByteArray);
+
+			final LongLinkedOpenHashSet dependencyIds; 
+			if (depFromCache == null) {
+				final Set<Revision> dependencySet = tauStats.resolver.resolveDependencies(groupId, artifactId, version, -1, context, true);
+				dependencyIds = LongLinkedOpenHashSet.toSet(dependencySet.stream().mapToLong(x -> x.id));
+				dependencyIds.addAndMoveToFirst(gid);
+				cache.put(dependenciesHandle, gidAsByteArray, SerializationUtils.serialize(dependencyIds));
+			}
+			else dependencyIds = SerializationUtils.deserialize(depFromCache);
+
+			final DirectedGraph stitchedGraph;
 			final String name = groupId + ":" + artifactId + "$" + version;
-			LOGGER.info("Analyzing graph " + name  + " with id " + gid);
-			LOGGER.info("Dependencies: " + dependencySet);
 
+			byte[] stitchedFromCache = cache.get(mergedHandle, gidAsByteArray);
+			if (stitchedFromCache != null) {
+				if (stitchedFromCache.length != 0) stitchedGraph = ArrayImmutableDirectedGraph.copyOf(SerializationUtils.deserialize(stitchedFromCache), false);
+				else {
+					LOGGER.warn("Cached returned null on id " + gid);
+					continue;
+				}
+			}
+			else {
+				LOGGER.info("Analyzing graph " + name  + " with id " + gid);
+				LOGGER.info("Dependencies: " + dependencyIds);
 
-			var deps = LongLinkedOpenHashSet.toSet(dependencySet.stream().mapToLong(x -> x.id));
-			deps.addAndMoveToFirst(gid);
-			final var dm = new CGMerger(deps, context, tauStats.rocksDao);
-			final var stitchedGraph = ArrayImmutableDirectedGraph.copyOf(dm.mergeAllDeps(), false);
+				final var dm = new CGMerger(dependencyIds, context, tauStats.rocksDao);
+				stitchedGraph = ArrayImmutableDirectedGraph.copyOf(dm.mergeAllDeps(), false);
+				
+				if (stitchedGraph == null) throw new NullPointerException("mergeWithCHA() returned null");
+				else cache.put(mergedHandle, gidAsByteArray, SerializationUtils.serialize((ArrayImmutableDirectedGraph)stitchedGraph));
 
+			}
+			
 			Long2DoubleFunction globalRankForward = null;
 			Long2DoubleFunction globalRankBackward = null;
 			switch(centrality) {
@@ -145,7 +180,7 @@ public class TauStats {
 			
 			System.out.println(gid + "\t" + name);
 			
-			for(long r: deps) {
+			for(long r: dependencyIds) {
 				LOGGER.info("Comparing with graph " + r);
 				var depTemp = tauStats.rocksDao.getGraphData(r);
 				if (depTemp == null) continue;
