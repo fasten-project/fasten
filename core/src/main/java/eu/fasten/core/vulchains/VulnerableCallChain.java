@@ -29,6 +29,14 @@ public class VulnerableCallChain {
     List<Vulnerability> vulnerabilities;
     List<FastenURI> chain;
 
+    public List<Vulnerability> getVulnerabilities() {
+        return vulnerabilities;
+    }
+
+    public List<FastenURI> getChain() {
+        return chain;
+    }
+
     public VulnerableCallChain(List<Vulnerability> vulnerabilities, List<FastenURI> chain) {
         this.vulnerabilities = vulnerabilities;
         this.chain = chain;

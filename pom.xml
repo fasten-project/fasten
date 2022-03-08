@@ -6,7 +6,7 @@
 
     <groupId>eu.fasten</groupId>
     <artifactId>parent</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>0.0.3-SNAPSHOT</version>
     <packaging>pom</packaging>
 
 
@@ -64,6 +64,13 @@
             <organization>Endocode AG</organization>
             <organizationUrl>https://endocode.com</organizationUrl>
             <url>http://marcomicera.github.io</url>
+            <timezone>Europe/Berlin</timezone>
+        </contributor>
+        <contributor>
+            <name>Michele Scarlato</name>
+            <email>michele.scarlato@endocode.com</email>
+            <organization>Endocode AG</organization>
+            <organizationUrl>https://endocode.com</organizationUrl>
             <timezone>Europe/Berlin</timezone>
         </contributor>
         <contributor>

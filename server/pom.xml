@@ -7,16 +7,12 @@
     <parent>
         <groupId>eu.fasten</groupId>
         <artifactId>parent</artifactId>
-        <version>0.0.1-SNAPSHOT</version>
+        <version>0.0.3-SNAPSHOT</version>
     </parent>
 
     <artifactId>server</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>0.0.3-SNAPSHOT</version>
     <packaging>jar</packaging>
-
-    <properties>
-        <maven.deploy.skip>true</maven.deploy.skip>
-    </properties>
 
     <description>Implements a publicly accessible knowledge base for FASTEN.</description>
 
@@ -24,7 +20,7 @@
         <dependency>
             <groupId>eu.fasten</groupId>
             <artifactId>core</artifactId>
-            <version>0.0.1-SNAPSHOT</version>
+            <version>0.0.3-SNAPSHOT</version>
         </dependency>
     </dependencies>
 

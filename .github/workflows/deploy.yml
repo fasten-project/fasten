@@ -1,0 +1,71 @@
+name: Deploy
+
+# only trigger on tags, `verify` has already been triggered by push to PR
+on:
+  push:
+    tags: ["v[0-9]+.[0-9]+.[0-9]+"]
+
+jobs:
+  build:
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Parse version info from tag
+        run: |
+          # GITHUB_REF is like refs/tags/v2.3.5, so strip the first 11 chars
+          VERSION=${GITHUB_REF:11}
+          MAJOR=`echo "$VERSION" | cut -d . -f 1`
+          MINOR=`echo "$VERSION" | cut -d . -f 2`
+          PATCH=`echo "$VERSION" | cut -d . -f 3`
+          echo "version=$VERSION" >> $GITHUB_ENV
+          echo "version_major=$MAJOR" >> $GITHUB_ENV
+          echo "version_minor=$MINOR" >> $GITHUB_ENV
+          echo "version_patch=$PATCH" >> $GITHUB_ENV
+
+      - uses: actions/setup-java@v2
+        with:
+          java-version: '11'
+          distribution: 'temurin'
+          server-id: github # Value of distributionManagement/repository/id
+          settings-path: ${{ github.workspace }} # location of settings.xml
+
+      - name: Updating versions in all projects
+        run: mvn -B -ntp versions:set -DnewVersion=${{ env.version }}
+
+      - name: Deploy Maven packages
+        run: mvn -B -ntp clean deploy -s ${{ github.workspace }}/settings.xml
+        env:
+          # auth necessary to access GitHub Maven registries
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Registry Login (ghcr.io)
+        run: echo "${{ github.token }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Build and Push Docker Image (Pipeline)
+        run: |
+          IMG=ghcr.io/${{ github.repository }}.pipeline
+          cd docker
+          docker build -f server/Dockerfile \
+            --tag $IMG:${{ env.version }} \
+            --tag $IMG:${{ env.version_major }}.${{ env.version_minor }}.latest \
+            --tag $IMG:${{ env.version_major }}.latest \
+            --tag $IMG:latest \
+            .
+          docker push --all-tags $IMG
+
+      - name: Build and Push Docker Image (REST API)
+        run: |
+          IMG=ghcr.io/${{ github.repository }}.restapi
+          cd analyzer/restapi-plugin
+          mvn -B -ntp clean verify spring-boot:repackage -s ${{ github.workspace }}/settings.xml
+          docker build \
+            --tag $IMG:${{ env.version }} \
+            --tag $IMG:${{ env.version_major }}.${{ env.version_minor }}.latest \
+            --tag $IMG:${{ env.version_major }}.latest \
+            --tag $IMG:latest \
+            .
+          docker push --all-tags $IMG
+        env:
+          # auth necessary to access GitHub Maven registries
+          GITHUB_TOKEN: ${{ github.token }}

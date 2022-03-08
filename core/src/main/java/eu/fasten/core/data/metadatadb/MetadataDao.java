@@ -18,21 +18,42 @@
 
 package eu.fasten.core.data.metadatadb;
 
-import static org.jooq.impl.DSL.and;
-import static org.jooq.impl.DSL.exists;
-import static org.jooq.impl.DSL.field;
-import static org.jooq.impl.DSL.trueCondition;
-
-import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
+import com.github.t9t.jooq.json.JsonbDSL;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import eu.fasten.core.data.Constants;
+import eu.fasten.core.data.FastenPythonURI;
+import eu.fasten.core.data.FastenJavaURI;
+import eu.fasten.core.data.FastenCURI;
+import eu.fasten.core.data.FastenURI;
+import eu.fasten.core.data.metadatadb.codegen.Keys;
+import eu.fasten.core.data.metadatadb.codegen.enums.Access;
+import eu.fasten.core.data.metadatadb.codegen.enums.CallableType;
+import eu.fasten.core.data.metadatadb.codegen.tables.ArtifactRepositories;
+import eu.fasten.core.data.metadatadb.codegen.tables.BinaryModuleContents;
+import eu.fasten.core.data.metadatadb.codegen.tables.BinaryModules;
+import eu.fasten.core.data.metadatadb.codegen.tables.CallSites;
+import eu.fasten.core.data.metadatadb.codegen.tables.Callables;
+import eu.fasten.core.data.metadatadb.codegen.tables.Dependencies;
+import eu.fasten.core.data.metadatadb.codegen.tables.Files;
+import eu.fasten.core.data.metadatadb.codegen.tables.IngestedArtifacts;
+import eu.fasten.core.data.metadatadb.codegen.tables.IngestionRetries;
+import eu.fasten.core.data.metadatadb.codegen.tables.ModuleContents;
+import eu.fasten.core.data.metadatadb.codegen.tables.ModuleNames;
+import eu.fasten.core.data.metadatadb.codegen.tables.Modules;
+import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
+import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
+import eu.fasten.core.data.metadatadb.codegen.tables.VirtualImplementations;
+import eu.fasten.core.data.metadatadb.codegen.tables.Vulnerabilities;
+import eu.fasten.core.data.metadatadb.codegen.tables.VulnerabilitiesPurls;
+import eu.fasten.core.data.metadatadb.codegen.tables.VulnerabilitiesXCallables;
+import eu.fasten.core.data.metadatadb.codegen.tables.VulnerabilitiesXPackageVersions;
+import eu.fasten.core.data.metadatadb.codegen.tables.records.CallSitesRecord;
+import eu.fasten.core.data.metadatadb.codegen.tables.records.CallablesRecord;
+import eu.fasten.core.maven.data.PackageVersionNotFoundException;
+import eu.fasten.core.maven.data.Revision;
+import eu.fasten.core.maven.utils.MavenUtilities;
+import eu.fasten.core.utils.FastenUriUtils;
 import org.apache.commons.math3.util.Pair;
 import org.jooq.Condition;
 import org.jooq.DSLContext;
@@ -49,38 +70,22 @@ import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.github.t9t.jooq.json.JsonbDSL;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
+import javax.annotation.Nullable;
+import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
-import eu.fasten.core.data.Constants;
-import eu.fasten.core.data.FastenJavaURI;
-import eu.fasten.core.data.metadatadb.codegen.Keys;
-import eu.fasten.core.data.metadatadb.codegen.enums.Access;
-import eu.fasten.core.data.metadatadb.codegen.enums.CallableType;
-import eu.fasten.core.data.metadatadb.codegen.tables.ArtifactRepositories;
-import eu.fasten.core.data.metadatadb.codegen.tables.BinaryModuleContents;
-import eu.fasten.core.data.metadatadb.codegen.tables.BinaryModules;
-import eu.fasten.core.data.metadatadb.codegen.tables.CallSites;
-import eu.fasten.core.data.metadatadb.codegen.tables.Callables;
-import eu.fasten.core.data.metadatadb.codegen.tables.Dependencies;
-import eu.fasten.core.data.metadatadb.codegen.tables.Files;
-import eu.fasten.core.data.metadatadb.codegen.tables.IngestedArtifacts;
-import eu.fasten.core.data.metadatadb.codegen.tables.ModuleContents;
-import eu.fasten.core.data.metadatadb.codegen.tables.ModuleNames;
-import eu.fasten.core.data.metadatadb.codegen.tables.Modules;
-import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
-import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
-import eu.fasten.core.data.metadatadb.codegen.tables.VirtualImplementations;
-import eu.fasten.core.data.metadatadb.codegen.tables.Vulnerabilities;
-import eu.fasten.core.data.metadatadb.codegen.tables.VulnerabilitiesPurls;
-import eu.fasten.core.data.metadatadb.codegen.tables.VulnerabilitiesXCallables;
-import eu.fasten.core.data.metadatadb.codegen.tables.VulnerabilitiesXPackageVersions;
-import eu.fasten.core.data.metadatadb.codegen.tables.records.CallSitesRecord;
-import eu.fasten.core.data.metadatadb.codegen.tables.records.CallablesRecord;
-import eu.fasten.core.data.metadatadb.codegen.tables.records.IngestedArtifactsRecord;
-import eu.fasten.core.maven.data.PackageVersionNotFoundException;
-import eu.fasten.core.utils.FastenUriUtils;
+import static org.jooq.impl.DSL.and;
+import static org.jooq.impl.DSL.exists;
+import static org.jooq.impl.DSL.field;
+import static org.jooq.impl.DSL.trueCondition;
+
 
 public class MetadataDao {
     private final Logger logger = LoggerFactory.getLogger(MetadataDao.class.getName());
@@ -211,6 +216,164 @@ public class MetadataDao {
                                 PackageVersions.PACKAGE_VERSIONS.as("excluded").METADATA))
                 .returning(PackageVersions.PACKAGE_VERSIONS.ID).fetchOne();
         return resultRecord.getValue(PackageVersions.PACKAGE_VERSIONS.ID);
+    }
+
+    /**
+     * Inserts outbound licenses at the package version level.
+     *
+     * @param coordinates the coordinates whose outbound licenses are about to be inserted.
+     * @param outboundLicenses the package version's outbound licenses.
+     * @return the updated metadata field.
+     */
+    public String insertPackageOutboundLicenses(Revision coordinates,
+                                                String outboundLicenses) {
+        return insertPackageOutboundLicenses(
+                coordinates.groupId,
+                coordinates.artifactId,
+                coordinates.version.toString(),
+                outboundLicenses);
+    }
+
+    /**
+     * Inserts outbound licenses at the package version level.
+     *
+     * @param groupId          the group ID of the package version whose outbound licenses are about to be inserted.
+     * @param artifactId       the artifact ID of the package version whose outbound licenses are about to be inserted.
+     * @param packageVersion   the package version whose outbound licenses are about to be inserted.
+     * @param outboundLicenses the package version's outbound licenses.
+     * @return the updated metadata field.
+     */
+    public String insertPackageOutboundLicenses(String groupId,
+                                                String artifactId,
+                                                String packageVersion,
+                                                String outboundLicenses) {
+        return insertPackageOutboundLicenses(
+                MavenUtilities.getMavenCoordinateName(groupId, artifactId),
+                packageVersion,
+                outboundLicenses);
+    }
+    /**
+     * Inserts outbound licenses at the package version level.
+     *
+     * @param packageName      the package name whose outbound licenses are about to be inserted.
+     * @param packageVersion   the package version whose outbound licenses are about to be inserted.
+     * @param outboundLicenses the package version's outbound licenses.
+     * @return the updated metadata field.
+     */
+    public String insertPackageOutboundLicenses(String packageName, String packageVersion, String outboundLicenses) {
+
+        logger.debug("Inserting outbound licenses for " + packageName + ":" + packageVersion + ": " + outboundLicenses);
+
+        /*  Warning!
+            The `concat()` method casts the first argument to `VARCHAR`, causing errors!
+            Packages p = Packages.PACKAGES;
+            PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
+            Record updatedMetadata = context.update(pv)
+                    .set(
+                            pv.METADATA,
+                            when(pv.METADATA.isNull(), JSONB.valueOf("{}")).otherwise(pv.METADATA)
+                                    .concat(outboundLicenses).cast(SQLDataType.JSONB)
+                    )
+                    .from(p)
+                    .where(p.ID.eq(pv.PACKAGE_ID).and(packageVersionWhereClause(packageName, packageVersion)))
+                    .returning(pv.METADATA)
+                    .fetchOne();
+        */
+        // Using plain SQL
+        Object updatedMetadata = context.fetchValue("UPDATE package_versions pv\n" +
+                "SET metadata = (CASE WHEN metadata IS NULL THEN '{}'::jsonb ELSE metadata END) || {0}\n" +
+                "    FROM packages p\n" +
+                "WHERE p.id = pv.package_id\n" +
+                "  AND p.package_name = LOWER({1})\n" +
+                "  AND pv.version = LOWER({2})\n" +
+                "    RETURNING pv.metadata;", JSONB.valueOf(outboundLicenses), packageName, packageVersion);
+
+        // Updated metadata field
+        logger.debug("`updatedMetadata`: " + updatedMetadata);
+        assert updatedMetadata != null; // FIXME
+        return updatedMetadata.toString();
+    }
+    /**
+     * Inserts scanned licenses at the file level.
+     *
+     * @param coordinates  the Maven coordinates to which the file belongs.
+     * @param filePath     the path of the file whose scanned licenses are about to be inserte.
+     * @param fileLicenses the scanned licenses of the file.
+     * @return the updated metadata field. Can be `null` in case the file is not present in the DB.
+     */
+    @Nullable
+    public String insertFileLicenses(Revision coordinates,
+                                     String filePath,
+                                     String fileLicenses) {
+        return insertFileLicenses(
+                coordinates.groupId,
+                coordinates.artifactId,
+                coordinates.version.toString(),
+                filePath,
+                fileLicenses);
+    }
+
+    /**
+     * Inserts scanned licenses at the file level.
+     *
+     * @param groupId        the group ID of the package to which the file belongs.
+     * @param artifactId     the artifact ID of the package to which the file belongs.
+     * @param packageVersion the version of the package to which the file belongs.
+     * @param filePath       the path of the file whose scanned licenses are about to be inserte.
+     * @param fileLicenses   the scanned licenses of the file.
+     * @return the updated metadata field. Can be `null` in case the file is not present in the DB.
+     */
+    @Nullable
+    public String insertFileLicenses(String groupId,
+                                     String artifactId,
+                                     String packageVersion,
+                                     String filePath,
+                                     String fileLicenses) {
+        return insertFileLicenses(
+                MavenUtilities.getMavenCoordinateName(groupId, artifactId),
+                packageVersion,
+                filePath,
+                fileLicenses);
+    }
+
+    /**
+     * Inserts scanned licenses at the file level.
+     *
+     * @param packageName    the name of the package to which the file belongs.
+     * @param packageVersion the version of the package to which the file belongs.
+     * @param filePath       the path of the file whose scanned licenses are about to be inserte.
+     * @param fileLicenses   the scanned licenses of the file.
+     * @return the updated metadata field. Can be `null` in case the file is not present in the DB.
+     */
+    @Nullable
+    public String insertFileLicenses(String packageName,
+                                     String packageVersion,
+                                     String filePath,
+                                     String fileLicenses) {
+
+        logger.debug("Inserting file licenses for " + packageName + ":" + packageVersion + ", file" +
+                filePath + ": " + fileLicenses);
+
+        // Can be `null` in case the DB does not have this file
+        @Nullable Object updatedMetadata = context.fetchValue("UPDATE files f\n" +
+                        "SET metadata = (CASE WHEN f.metadata IS NULL THEN '{}'::jsonb ELSE f.metadata END) || {0}\n" +
+                        "    FROM packages p JOIN package_versions pv ON p.id = pv.package_id\n" +
+                        "WHERE f.package_version_id = pv.id\n" +
+                        "  AND p.package_name = LOWER({1})\n" +
+                        "  AND pv.version = LOWER({2})\n" +
+                        "  AND f.path ILIKE '%' || array_to_string(" +
+                        "    (regexp_split_to_array({3}, '/'))[(array_length(regexp_split_to_array({3}, '/'), 1) - 1):],\n" +
+                        "    '/')\n" +
+                        "    RETURNING f.metadata;\n",
+                JSONB.valueOf(fileLicenses),
+                packageName,
+                packageVersion,
+                filePath);
+
+        logger.debug("`updatedMetadata`: " + updatedMetadata);
+
+        // Updated metadata field
+        return updatedMetadata == null ? null : updatedMetadata.toString();
     }
 
     /**
@@ -716,6 +879,41 @@ public class MetadataDao {
         insert.execute();
     }
 
+    public int getIngestionRetryCount(String key) {
+        var res = context.select(IngestionRetries.INGESTION_RETRIES.COUNT) //
+                .from(IngestionRetries.INGESTION_RETRIES) //
+                .where(IngestionRetries.INGESTION_RETRIES.KEY.eq(key)) //
+                .fetchOne();
+        if(res == null) {
+            return 0;
+        } else {
+            return res.value1();
+        }
+    }
+
+    public void registerIngestionRetry(String key) {
+        int count = getIngestionRetryCount(key);
+        if(count == 0) {
+            context.insertInto(IngestionRetries.INGESTION_RETRIES,
+                IngestionRetries.INGESTION_RETRIES.KEY,
+                IngestionRetries.INGESTION_RETRIES.COUNT) //
+                .values(key, Short.valueOf("1")) //
+                .execute();
+        } else {
+            var nextCount = Short.valueOf(String.valueOf(count+1));
+            context.update(IngestionRetries.INGESTION_RETRIES) //
+                .set(IngestionRetries.INGESTION_RETRIES.COUNT, nextCount) //
+                .where(IngestionRetries.INGESTION_RETRIES.KEY.eq(key)) //
+                .execute();
+        }
+    }
+
+    public void pruneIngestionRetries(String key) {
+        context.deleteFrom(IngestionRetries.INGESTION_RETRIES) //
+        .where(IngestionRetries.INGESTION_RETRIES.KEY.eq(key)) //
+        .execute();
+    }
+
     public boolean isArtifactIngested(String key) {
         var result = context
                 .select(IngestedArtifacts.INGESTED_ARTIFACTS.TIMESTAMP)
@@ -883,18 +1081,16 @@ public class MetadataDao {
         Packages p = Packages.PACKAGES;
         PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
         ArtifactRepositories ar = ArtifactRepositories.ARTIFACT_REPOSITORIES;
-
         // Query
         var queryResult = context
                 .select(pv.ID, pv.PACKAGE_ID, pv.CG_GENERATOR, pv.VERSION, ar.REPOSITORY_BASE_URL, pv.ARCHITECTURE, pv.CREATED_AT)
                 .from(p)
                 .innerJoin(pv).on(p.ID.eq(pv.PACKAGE_ID))
-                .innerJoin(ar).on(pv.ARTIFACT_REPOSITORY_ID.eq(ar.ID))
+                .leftJoin(ar).on(pv.ARTIFACT_REPOSITORY_ID.eq(ar.ID))
                 .where(p.PACKAGE_NAME.equalIgnoreCase(packageName))
                 .offset(offset)
                 .limit(limit)
                 .fetch();
-
         // Returning the result
         logger.debug("Total rows: " + queryResult.size());
         return queryResult.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
@@ -1055,7 +1251,8 @@ public class MetadataDao {
         return queryResult.formatJSON(new JSONFormat().format(true).header(false).recordFormat(JSONFormat.RecordFormat.OBJECT).quoteNested(false));
     }
 
-    public String getModuleCallables(String packageName,
+    public String getModuleCallables(String forge,
+                                     String packageName,
                                      String packageVersion,
                                      String moduleNamespace,
                                      int offset,
@@ -1107,13 +1304,28 @@ public class MetadataDao {
         // The result array that will be returned.
         JSONArray result = new JSONArray();
 
-        // Go through each callable, convert raw fasten uri into parsed object, write down to result array.
         for (Object j : json) {
             try {
                 JSONObject jObj = (JSONObject) j;
                 var partialUri = jObj.getString("fasten_uri");
-                var fullUri = FastenUriUtils.generateFullFastenUri("mvn", packageName, packageVersion, partialUri);
-                var uriObj = new FastenJavaURI(fullUri);
+                FastenURI uriObj = null;
+                switch (forge) {
+                    case Constants.mvnForge: {
+                        var fullUri = FastenUriUtils.generateFullFastenUri("mvn", packageName, packageVersion, partialUri);
+                        uriObj = new FastenJavaURI(fullUri);
+                        break;
+                    }
+                    case Constants.pypiForge: {
+                        var fullUri = FastenUriUtils.generateFullFastenUri("pypi", packageName, packageVersion, partialUri);
+                        uriObj = new FastenPythonURI(fullUri);
+                        break;
+                    }
+                    case Constants.debianForge: {
+                        var fullUri = FastenUriUtils.generateFullFastenUri("debian", packageName, packageVersion, partialUri);
+                        uriObj = new FastenCURI(fullUri);
+                        break;
+                    }
+                }
                 var js =  gson.toJson(uriObj);
                 jObj.put("fasten_uri", new JSONObject(js));
                 result.put(jObj);
@@ -1121,7 +1333,6 @@ public class MetadataDao {
                 logger.warn("Error FASTEN URI Parser: " + err.toString());
             }
         }
-
         return result.toString();
     }
 

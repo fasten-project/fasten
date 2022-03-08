@@ -8,7 +8,7 @@
     <parent>
         <artifactId>analyzer</artifactId>
         <groupId>eu.fasten</groupId>
-        <version>0.0.1-SNAPSHOT</version>
+        <version>0.0.3-SNAPSHOT</version>
     </parent>
 
     <groupId>eu.fasten.analyzer</groupId>
@@ -28,7 +28,7 @@
         <dependency>
             <groupId>eu.fasten</groupId>
             <artifactId>core</artifactId>
-            <version>0.0.1-SNAPSHOT</version>
+            <version>0.0.3-SNAPSHOT</version>
         </dependency>
 
         <!-- Spring Boot runtime dependencies -->
@@ -62,7 +62,7 @@
                 <artifactId>spring-boot-maven-plugin</artifactId>
                 <version>2.3.6.RELEASE</version>
                 <configuration>
-                    <mainClass>eu.fasten.analyzer.restapiplugin.mvn.RestApplication</mainClass>
+                    <mainClass>eu.fasten.analyzer.restapiplugin.RestApplication</mainClass>
                 </configuration>
             </plugin>
 
@@ -73,7 +73,7 @@
                 <artifactId>exec-maven-plugin</artifactId>
                 <version>1.5.0</version>
                 <configuration>
-                    <mainClass>eu.fasten.analyzer.restapiplugin.mvn.RestApplication</mainClass>
+                    <mainClass>eu.fasten.analyzer.restapiplugin.RestApplication</mainClass>
                 </configuration>
             </plugin>
 
@@ -110,7 +110,7 @@
                                         implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
                                 <transformer
                                         implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>eu.fasten.analyzer.restapiplugin.mvn.RestApplication</mainClass>
+                                    <mainClass>eu.fasten.analyzer.restapiplugin.RestApplication</mainClass>
                                 </transformer>
                             </transformers>
                             <!-- Note that this works when maven is ran in the root directory of the project  -->

@@ -19,18 +19,14 @@
         </dependency>
     </dependencies>
 
-    <properties>
-        <maven.deploy.skip>true</maven.deploy.skip>
-    </properties>
-
     <parent>
         <groupId>eu.fasten</groupId>
         <artifactId>parent</artifactId>
-        <version>0.0.1-SNAPSHOT</version>
+        <version>0.0.3-SNAPSHOT</version>
     </parent>
 
     <artifactId>analyzer</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>0.0.3-SNAPSHOT</version>
     <packaging>pom</packaging>
     <description>Collection of FASTEN-specific graph analyses.</description>
 
@@ -47,6 +43,8 @@
         <module>vulnerability-statements-processor</module>
         <module>vulnerability-packages-listener</module>
         <module>dummy-plugin</module>
+        <module>license-detector</module>
+        <module>license-feeder</module>
     </modules>
 
     <build>
