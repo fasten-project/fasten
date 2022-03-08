@@ -214,15 +214,6 @@ public class GraphMavenResolver implements Runnable {
         var exclusions = new ArrayList<Pair<Revision, MavenProduct>>();
         var descendants = new HashMap<Revision, Revision>();
 
-        try {
-            var parent = getParentArtifact(groupId, artifactId, version, db);
-            if (parent != null) {
-                allDeps = resolveDependencies(parent, db, false);
-            }
-        } catch (Exception e) {
-            logger.warn("Parent for revision {}:{}:{} not found: {}", groupId, artifactId, version, e.getMessage());
-        }
-
         resultTriples.add(dependencyBFS(groupId, artifactId, version, timestamp, transitive));
         for (var triple : resultTriples) {
             allDeps.addAll(triple.getLeft());
@@ -289,7 +280,7 @@ public class GraphMavenResolver implements Runnable {
                 map(x -> new Pair<>(x, 1)).collect(Collectors.toCollection(ArrayDeque::new));
 
         logger.debug("Obtaining first level successors: {} items, {} ms", workQueue.size(),
-                System.currentTimeMillis() - startTS);
+                msSince(startTS));
         var result = new ObjectLinkedOpenHashSet<Revision>();
         workQueue.stream().map(Pair::getFirst).forEachOrdered(result::add);
 
@@ -338,6 +329,10 @@ public class GraphMavenResolver implements Runnable {
         return new ImmutableTriple<>(depSet, excludeProducts, descendantsMap);
     }
 
+    private long msSince(long start) {
+        return System.currentTimeMillis() - start;
+    }
+
     /**
      * Resolves the dependents of the provided {@link Revision}, as specified by the provided revision details. The
      * provided timestamp determines which nodes will be ignored when traversing dependent nodes. Effectively, the
@@ -369,7 +364,7 @@ public class GraphMavenResolver implements Runnable {
         var artifact = new Revision(groupId, artifactId, version, new Timestamp(timestamp));
 
         if (!dependentGraph.containsVertex(artifact)) {
-            throw new RuntimeException("Revision " + artifact + " is not in the dependents graph. Probably it is missing in the database");
+            throw new RuntimeException("Revision " + artifact + " is not in the dependents graph.");
         }
 
         var workQueue = new ArrayDeque<>(filterDependentsByTimestamp(Graphs.successorListOf(dependentGraph, artifact), timestamp));
@@ -392,7 +387,7 @@ public class GraphMavenResolver implements Runnable {
                 if (ignoreMissing) {
                     continue;
                 } else {
-                    throw new RuntimeException("Revision " + rev + " is not in the dependents graph. Probably it is missing in the database");
+                    throw new RuntimeException("Revision " + rev + " is not in the dependents graph.");
                 }
             }
             var dependents = filterDependentsByTimestamp(Graphs.successorListOf(dependentGraph, rev), timestamp);
@@ -555,8 +550,7 @@ public class GraphMavenResolver implements Runnable {
         return result.component1().getTime();
     }
 
-    private Revision getParentArtifact(String groupId, String artifactId, String version,
-                                       DSLContext context) {
+    private Revision getParentArtifact(String groupId, String artifactId, String version, DSLContext context) {
         var packageName = groupId + Constants.mvnCoordinateSeparator + artifactId;
         var result = context.select(PackageVersions.PACKAGE_VERSIONS.METADATA,
                 PackageVersions.PACKAGE_VERSIONS.CREATED_AT)

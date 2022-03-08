@@ -28,7 +28,7 @@ import org.apache.commons.lang3.builder.ToStringStyle;
  */
 public class MavenProduct {
 
-    public transient long id;
+    public long id;
 
     public String groupId;
     public String artifactId;
@@ -48,13 +48,34 @@ public class MavenProduct {
     }
 
     @Override
-    public boolean equals(Object obj) {
-        return EqualsBuilder.reflectionEquals(this, obj);
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ((artifactId == null) ? 0 : artifactId.hashCode());
+        result = prime * result + ((groupId == null) ? 0 : groupId.hashCode());
+        return result;
     }
 
     @Override
-    public int hashCode() {
-        return HashCodeBuilder.reflectionHashCode(this);
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        MavenProduct other = (MavenProduct) obj;
+        if (artifactId == null) {
+            if (other.artifactId != null)
+                return false;
+        } else if (!artifactId.equals(other.artifactId))
+            return false;
+        if (groupId == null) {
+            if (other.groupId != null)
+                return false;
+        } else if (!groupId.equals(other.groupId))
+            return false;
+        return true;
     }
 
     @Override
