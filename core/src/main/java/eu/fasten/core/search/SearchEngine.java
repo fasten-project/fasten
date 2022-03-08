@@ -67,6 +67,7 @@ import it.unimi.dsi.fastutil.HashCommon;
 import it.unimi.dsi.fastutil.longs.LongArrayFIFOQueue;
 import it.unimi.dsi.fastutil.longs.LongCollection;
 import it.unimi.dsi.fastutil.longs.LongIterator;
+import it.unimi.dsi.fastutil.longs.LongLinkedOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.fastutil.longs.LongSets;
@@ -411,7 +412,7 @@ public class SearchEngine implements AutoCloseable {
 	 *         artifact is not present in the graph database).
 	 */
 	private DirectedGraph getStitchedGraph(final CGMerger dm, final long id) {
-		final DirectedGraph result = dm.mergeWithCHA(id);
+		final DirectedGraph result = dm.mergeAllDeps();
 		if (result != null) {
 			LOGGER.info("Graph id: " + id + " stitched graph nodes: " + result.numNodes() + " stitched graph arcs: " + result.numArcs());
 			return result;
@@ -552,11 +553,12 @@ public class SearchEngine implements AutoCloseable {
 
 			final byte[] depFromCache  = cache.get(dependenciesHandle, revAsByteArray);
 			
-			final LongOpenHashSet dependencyIds; 
+			final LongLinkedOpenHashSet dependencyIds; 
 			if (depFromCache == null) {
 				resolveTime -= System.nanoTime();
 				final Set<Revision> dependencySet = resolver.resolveDependencies(groupId, artifactId, version, -1, context, true);
-				dependencyIds = LongOpenHashSet.toSet(dependencySet.stream().mapToLong(x -> x.id));
+				dependencyIds = LongLinkedOpenHashSet.toSet(dependencySet.stream().mapToLong(x -> x.id));
+				dependencyIds.addAndMoveToFirst(rev);
 				resolveTime += System.nanoTime();
 				cache.put(dependenciesHandle, revAsByteArray, SerializationUtils.serialize(dependencyIds));
 			}
@@ -709,11 +711,12 @@ public class SearchEngine implements AutoCloseable {
 	
 				final byte[] depFromCache  = cache.get(dependenciesHandle, dependentIdAsByteArray);
 				
-				final LongOpenHashSet dependencyIds; 
+				final LongLinkedOpenHashSet dependencyIds; 
 				if (depFromCache == null) {
 					resolveTime -= System.nanoTime();
 					final Set<Revision> dependencySet = resolver.resolveDependencies(groupId, artifactId, version, -1, context, true);
-					dependencyIds = LongOpenHashSet.toSet(dependencySet.stream().mapToLong(x -> x.id));
+					dependencyIds = LongLinkedOpenHashSet.toSet(dependencySet.stream().mapToLong(x -> x.id));
+					dependencyIds.addAndMoveToFirst(dependentId);
 					resolveTime += System.nanoTime();
 					cache.put(dependenciesHandle, dependentIdAsByteArray, SerializationUtils.serialize(dependencyIds));
 				}

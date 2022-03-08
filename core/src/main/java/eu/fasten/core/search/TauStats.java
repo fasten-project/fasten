@@ -117,10 +117,13 @@ public class TauStats {
 			final String groupId = a[0];
 			final String artifactId = a[1];
 			final String version = record.component2();
+			
+			
 			final Set<Revision> dependencySet = tauStats.resolver.resolveDependencies(groupId, artifactId, version, -1, context, true);
 			final String name = groupId + ":" + artifactId + "$" + version;
 			LOGGER.info("Analyzing graph " + name  + " with id " + gid);
 			LOGGER.info("Dependencies: " + dependencySet);
+
 
 			var deps = LongLinkedOpenHashSet.toSet(dependencySet.stream().mapToLong(x -> x.id));
 			deps.addAndMoveToFirst(gid);
