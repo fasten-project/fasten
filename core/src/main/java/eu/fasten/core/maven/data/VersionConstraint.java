@@ -15,103 +15,148 @@
  */
 package eu.fasten.core.maven.data;
 
+import static eu.fasten.core.utils.Asserts.assertNotNull;
+import static eu.fasten.core.utils.Asserts.assertTrue;
+
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
+import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 
 public class VersionConstraint {
 
-	public String lowerBound;
-	public boolean isLowerHardRequirement;
-	public String upperBound;
-	public boolean isUpperHardRequirement;
+    public String spec;
 
-	public String spec;
+    public boolean isRange;
+    public boolean isHard;
+
+    public String lowerBound;
+    public boolean isLowerBoundInclusive;
+    public String upperBound;
+    public boolean isUpperBoundInclusive;
 
     @SuppressWarnings("unused")
     private VersionConstraint() {
         // exists for JSON object mappers
     }
 
-	/**
-	 * Constructs a VersionConstraint object from specification. (From
-	 * https://maven.apache.org/pom.html#Dependency_Version_Requirement_Specification)
-	 *
-	 * @param spec String specification of version constraint
-	 */
-	public VersionConstraint(final String spec) {
-		this.spec = spec;
-		this.isLowerHardRequirement = spec.startsWith("[");
-		this.isUpperHardRequirement = spec.endsWith("]");
-		if (!spec.contains(",")) {
-			var version = spec;
-			if (version.startsWith("[") && version.endsWith("]")) {
-				version = version.substring(1, spec.length() - 1);
-			}
-			this.upperBound = version;
-			this.lowerBound = version;
+    /**
+     * Constructs a VersionConstraint object from specification. (From
+     * https://maven.apache.org/pom.html#Dependency_Version_Requirement_Specification)
+     *
+     * @param spec String specification of version constraint
+     */
+    public VersionConstraint(String spec) {
+        this.spec = spec;
 
-		} else {
-			final var versionSplit = startsAndEndsWithBracket(spec) ? spec.substring(1, spec.length() - 1).split(",")
-					: spec.split(",");
-			this.lowerBound = versionSplit[0];
-			this.upperBound = (versionSplit.length > 1) ? versionSplit[1] : "";
-		}
-	}
+        isHard = spec.startsWith("[") || spec.startsWith("(");
+        isRange = spec.contains(",");
+        isLowerBoundInclusive = !isHard || spec.startsWith("[");
+        isUpperBoundInclusive = !isHard || spec.endsWith("]");
 
-	private boolean startsAndEndsWithBracket(String str) {
-		return (str.startsWith("(") || str.startsWith("[")) && (str.endsWith(")") || str.endsWith("]"));
-	}
+        if (isRange) {
+            String asd = spec.substring(1, spec.length() - 1);
+            var parts = asd.split(",", -1);
+            lowerBound = parts[0].isEmpty() ? "0" : parts[0];
+            upperBound = parts[1].isEmpty() ? "999" : parts[1];
 
-	@Override
-	public boolean equals(Object obj) {
-		return EqualsBuilder.reflectionEquals(this, obj);
-	}
+        } else {
+            if (isHard) {
+                upperBound = spec.substring(1, spec.length() - 1);
+            } else {
+                upperBound = spec;
+            }
+            lowerBound = upperBound;
+        }
+    }
 
-	@Override
-	public int hashCode() {
-		return HashCodeBuilder.reflectionHashCode(this);
-	}
+    public boolean matches(String version) {
 
-	@Override
-	public String toString() {
-		return spec;
-	}
+        var v = new DefaultArtifactVersion(version);
 
-	/**
-	 * Creates full list of version constraints from specification. (From
-	 * https://maven.apache.org/pom.html#Dependency_Version_Requirement_Specification)
-	 *
-	 * @param spec String specification of version constraints
-	 * @return List of Version Constraints
-	 */
-	public static Set<VersionConstraint> resolveMultipleVersionConstraints(String spec) {
-		if (spec == null) {
-			return Set.of(new VersionConstraint("*"));
-		}
-		if (spec.startsWith("$")) {
-			return Set.of(new VersionConstraint(spec));
-		}
-		final var versionRangesCount = (StringUtils.countMatches(spec, ",") + 1) / 2;
-		var versionConstraints = new LinkedHashSet<VersionConstraint>(versionRangesCount);
-		int count = 0;
-		for (int i = 0; i < spec.length(); i++) {
-			if (spec.charAt(i) == ',') {
-				count++;
-				if (count % 2 == 0) {
-					var specBuilder = new StringBuilder(spec);
-					specBuilder.setCharAt(i, ';');
-					spec = specBuilder.toString();
-				}
-			}
-		}
-		var versionRanges = spec.split(";");
-		for (var versionRange : versionRanges) {
-			versionConstraints.add(new VersionConstraint(versionRange));
-		}
-		return versionConstraints;
-	}
+        var lower = new DefaultArtifactVersion(lowerBound);
+        var upper = new DefaultArtifactVersion(upperBound);
+
+        if (v.equals(lower) && isLowerBoundInclusive) {
+            return true;
+        }
+        if (v.equals(upper) && isUpperBoundInclusive) {
+            return true;
+        }
+        if (v.compareTo(lower) > 0 && v.compareTo(upper) < 0) {
+            return true;
+        }
+
+        return false;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        return EqualsBuilder.reflectionEquals(this, obj);
+    }
+
+    @Override
+    public int hashCode() {
+        return HashCodeBuilder.reflectionHashCode(this);
+    }
+
+    @Override
+    public String toString() {
+        return spec;
+    }
+
+    /**
+     * Creates full list of version constraints from specification. (From
+     * https://maven.apache.org/pom.html#Dependency_Version_Requirement_Specification)
+     *
+     * @param spec String specification of version constraints
+     * @return List of Version Constraints
+     */
+    public static Set<VersionConstraint> parseVersionSpec(String spec) {
+        assertNotNull(spec);
+        spec = spec.replaceAll(" ", "").replaceAll("\n", "").replaceAll("\t", "");
+        assertTrue(!spec.startsWith("$"));
+
+        if (!spec.startsWith("[") && !spec.startsWith("(")) {
+            // has to be soft constraint
+            assertTrue(!spec.contains(","));
+            assertTrue(!spec.contains("["));
+            assertTrue(!spec.contains("]"));
+            assertTrue(!spec.contains("("));
+            assertTrue(!spec.contains(")"));
+            return Set.of(new VersionConstraint(spec));
+        }
+
+        // has to be hard constraint
+        var charZero = spec.charAt(0);
+        assertTrue(charZero == '[' || charZero == '(');
+
+        var constraints = new LinkedHashSet<VersionConstraint>();
+
+        var idxOpen = 0;
+        while (idxOpen != -1) {
+            var idxClose = find(spec, idxOpen + 1, ')', ']');
+            var vcSpec = spec.substring(idxOpen, idxClose + 1);
+            constraints.add(new VersionConstraint(vcSpec));
+            idxOpen = find(spec, idxClose, '(', '[');
+        }
+
+        return constraints;
+    }
+
+    private static int find(String hay, int idx, char... needles) {
+        var found = false;
+        while (!found && idx < hay.length()) {
+            char cur = hay.charAt(idx);
+            for (var needle : needles) {
+                if (cur == needle) {
+                    return idx;
+                }
+            }
+            idx++;
+        }
+        return -1;
+    }
 }
