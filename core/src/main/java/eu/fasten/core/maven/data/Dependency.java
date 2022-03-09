@@ -15,7 +15,6 @@
  */
 package eu.fasten.core.maven.data;
 
-import static eu.fasten.core.utils.Asserts.assertContains;
 import static eu.fasten.core.utils.Asserts.assertNotNullOrEmpty;
 
 import java.util.HashSet;
@@ -39,16 +38,10 @@ public class Dependency extends MavenProduct {
 
 	public Set<VersionConstraint> versionConstraints;
 	public Set<Exclusion> exclusions;
-	public String scope;
+	public Scope scope = Scope.COMPILE;
 	public boolean optional;
 	public String type;
 	public String classifier;
-
-	/**
-	 * Valid dependency scopes. Defined by maven. Learn more:
-	 * http://maven.apache.org/pom.html
-	 */
-	public static final String[] SCOPES = getScopes();
 
 	@SuppressWarnings("unused")
 	private Dependency() {
@@ -69,32 +62,27 @@ public class Dependency extends MavenProduct {
 	 * @param classifier         Classifier for dependency
 	 */
 	public Dependency(final String groupId, final String artifactId, final Set<VersionConstraint> versionConstraints,
-			final Set<Exclusion> exclusions, final String scope, final boolean optional, final String type,
+			final Set<Exclusion> exclusions, final Scope scope, final boolean optional, final String type,
 			final String classifier) {
 		super(groupId, artifactId);
 		this.versionConstraints = versionConstraints;
 		this.exclusions = exclusions;
-		this.scope = scope.toLowerCase();
-		assertContains(getScopes(), this.scope);
+		this.scope = scope;
 		this.optional = optional;
 		this.type = type.toLowerCase();
 		assertNotNullOrEmpty(this.type);
 		this.classifier = classifier.toLowerCase();
 	}
 
-	private static String[] getScopes() {
-		return new String[] { "compile", "provided", "runtime", "test", "system", "import" };
-	}
-
 	public Dependency(final String groupId, final String artifactId, final String version,
-			final Set<Exclusion> exclusions, final String scope, final boolean optional, final String type,
+			final Set<Exclusion> exclusions, final Scope scope, final boolean optional, final String type,
 			final String classifier) {
-		this(groupId, artifactId, VersionConstraint.resolveMultipleVersionConstraints(version), exclusions, scope,
+		this(groupId, artifactId, VersionConstraint.parseVersionSpec(version), exclusions, scope,
 				optional, type, classifier);
 	}
 
 	public Dependency(final String groupId, final String artifactId, final String version) {
-		this(groupId, artifactId, version, new HashSet<>(), "compile", false, "jar", "");
+		this(groupId, artifactId, version, new HashSet<>(), Scope.COMPILE, false, "jar", "");
 	}
 
 	public MavenProduct product() {
@@ -194,11 +182,7 @@ public class Dependency extends MavenProduct {
 		}
 		builder.append(this.getVersion());
 		builder.append(Constants.mvnCoordinateSeparator);
-		if (!this.scope.isEmpty()) {
-			builder.append(this.scope);
-		} else {
-			builder.append("compile");
-		}
+		builder.append(this.scope);
 		return builder.toString();
 	}
 
@@ -225,7 +209,13 @@ public class Dependency extends MavenProduct {
 				exclusions.add(Exclusion.fromJSON(exclJson));
 			}
 		}
-		var scope = json.optString("scope");
+		Scope scope;
+		var scopeStr = json.optString("scope").strip();
+		if(scopeStr == null || scopeStr.isEmpty()) {
+		    scope = Scope.COMPILE;
+		} else {
+		    scope = Scope.valueOf(scopeStr.toUpperCase());
+		}
 		var optional = json.optBoolean("optional", false);
 		var type = json.optString("type");
 		var classifier = json.optString("classifier");
