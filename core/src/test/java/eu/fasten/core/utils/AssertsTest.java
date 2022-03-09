@@ -15,57 +15,84 @@
  */
 package eu.fasten.core.utils;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import org.junit.jupiter.api.Test;
 
 public class AssertsTest {
 
-	@Test
-	public void assertNotNull_fail() {
-		assertThrows(IllegalStateException.class, () -> {
-			Asserts.assertNotNull(null);
-		});
-	}
+    @Test
+    public void assertNotNull_fail() {
+        assertThrows(IllegalStateException.class, () -> {
+            Asserts.assertNotNull(null);
+        });
+    }
 
-	@Test
-	public void assertNotNull_ok() {
-		Asserts.assertNotNull("");
-	}
+    @Test
+    public void assertNotNull_ok() {
+        Asserts.assertNotNull("");
+    }
 
-	@Test
-	public void assertContains_fail() {
-		assertThrows(IllegalStateException.class, () -> {
-			Asserts.assertContains(new String[] { "a", "b", "c" }, "x");
-		});
-	}
+    @Test
+    public void assertContains_fail() {
+        assertThrows(IllegalStateException.class, () -> {
+            Asserts.assertContains(new String[] { "a", "b", "c" }, "x");
+        });
+    }
 
-	@Test
-	public void assertContains_ok() {
-		Asserts.assertContains(new String[] { "a", "b", "c" }, "a");
-	}
+    @Test
+    public void assertContains_ok() {
+        Asserts.assertContains(new String[] { "a", "b", "c" }, "a");
+    }
 
-	@Test
-	public void assertContains_okForNull() {
-		Asserts.assertContains(new String[] { "a", null }, null);
-	}
+    @Test
+    public void assertContains_okForNull() {
+        Asserts.assertContains(new String[] { "a", null }, null);
+    }
 
-	@Test
-	public void assertNotNullOrEmpty_failNull() {
-		assertThrows(IllegalStateException.class, () -> {
-			Asserts.assertNotNullOrEmpty(null);
-		});
-	}
+    @Test
+    public void assertNotNullOrEmpty_failNull() {
+        assertThrows(IllegalStateException.class, () -> {
+            Asserts.assertNotNullOrEmpty(null);
+        });
+    }
 
-	@Test
-	public void assertNotNullOrEmpty_failEmpty() {
-		assertThrows(IllegalStateException.class, () -> {
-			Asserts.assertNotNullOrEmpty("");
-		});
-	}
+    @Test
+    public void assertNotNullOrEmpty_failEmpty() {
+        assertThrows(IllegalStateException.class, () -> {
+            Asserts.assertNotNullOrEmpty("");
+        });
+    }
 
-	@Test
-	public void assertNotNullOrEmpty_ok() {
-		Asserts.assertNotNullOrEmpty("...");
-	}
+    @Test
+    public void assertNotNullOrEmpty_ok() {
+        Asserts.assertNotNullOrEmpty("...");
+    }
+
+    @Test
+    public void assertTrue_okStd() {
+        Asserts.assertTrue(true);
+    }
+
+    @Test
+    public void assertTrue_okCustom() {
+        Asserts.assertTrue(true, "...");
+    }
+
+    @Test
+    public void assertTrue_failStd() {
+        var e = assertThrows(IllegalStateException.class, () -> {
+            Asserts.assertTrue(false);
+        });
+        assertEquals("Expected condition not met.", e.getMessage());
+    }
+
+    @Test
+    public void assertTrue_failCustom() {
+        var e = assertThrows(IllegalStateException.class, () -> {
+            Asserts.assertTrue(false, "abc");
+        });
+        assertEquals("abc", e.getMessage());
+    }
 }
