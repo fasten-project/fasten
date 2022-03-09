@@ -17,37 +17,53 @@ package eu.fasten.core.utils;
 
 public class Asserts {
 
-	public static void assertNotNull(Object o) {
-		if (o == null) {
-			throw $("Should not be null.");
-		}
-	}
+    private Asserts() {
+        // do not initialize this class
+    }
 
-	public static <T> void assertContains(T[] ts, T e) {
-		for (T a : ts) {
-			if (a == null) {
-				if (e == null) {
-					return;
-				}
-			} else {
-				if (a.equals(e)) {
-					return;
-				}
-			}
-		}
-		throw $("Expected element '%s' not contained in array.", e);
-	}
+    public static void assertNotNull(Object o) {
+        if (o == null) {
+            throw $("Should not be null.");
+        }
+    }
 
-	public static void assertNotNullOrEmpty(String s) {
-		if (s == null || s.isEmpty()) {
-			throw $("String is null or empty.");
-		}
-	}
+    public static <T> void assertContains(T[] ts, T e) {
+        for (T a : ts) {
+            if (a == null) {
+                if (e == null) {
+                    return;
+                }
+            } else {
+                if (a.equals(e)) {
+                    return;
+                }
+            }
+        }
+        throw $("Expected element '%s' not contained in array.", e);
+    }
 
-	// TODO add more assertions as we go
+    public static void assertNotNullOrEmpty(String s) {
+        if (s == null || s.isEmpty()) {
+            throw $("String is null or empty.");
+        }
+    }
 
-	private static IllegalStateException $(String msg, Object... args) {
-		String s = String.format(msg, args);
-		return new IllegalStateException(s);
-	}
+    public static void assertTrue(boolean condition, String failMsg) {
+        if (!condition) {
+            throw $(failMsg);
+        }
+    }
+
+    public static void assertTrue(boolean condition) {
+        if (!condition) {
+            throw $("Expected condition not met.");
+        }
+    }
+
+    // TODO add more assertions as we go
+
+    private static IllegalStateException $(String msg, Object... args) {
+        String s = String.format(msg, args);
+        return new IllegalStateException(s);
+    }
 }
