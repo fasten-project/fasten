@@ -18,6 +18,9 @@
 
 package eu.fasten.core.search;
 
+import static eu.fasten.core.maven.resolution.ResolverConfig.resolve;
+import static eu.fasten.core.maven.resolution.ResolverDepth.TRANSITIVE;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -29,7 +32,6 @@ import java.util.function.LongPredicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import eu.fasten.core.merge.CGMerger;
 import org.jooq.DSLContext;
 import org.jooq.Record2;
 import org.jooq.conf.ParseUnknownFunctions;
@@ -50,8 +52,10 @@ import eu.fasten.core.data.callableindex.RocksDao;
 import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
 import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
 import eu.fasten.core.dbconnectors.PostgresConnector;
-import eu.fasten.core.maven.GraphMavenResolver;
 import eu.fasten.core.maven.data.Revision;
+import eu.fasten.core.maven.resolution.DependencyGraphBuilder;
+import eu.fasten.core.maven.resolution.IMavenResolver;
+import eu.fasten.core.merge.CGMerger;
 import eu.fasten.core.search.predicate.CachingPredicateFactory;
 import eu.fasten.core.search.predicate.PredicateFactory;
 import eu.fasten.core.search.predicate.PredicateFactory.MetadataSource;
@@ -145,7 +149,7 @@ public class SearchEngine {
 	/** The handle to the RocksDB DAO. */
 	private final RocksDao rocksDao;
 	/** The resolver. */
-	private final GraphMavenResolver resolver;
+	private final IMavenResolver resolver;
 	/** The predicate factory to be used to create predicates for this search engine. */
 	private final PredicateFactory predicateFactory;
 	/** The scorer that will be used to rank results. */
@@ -208,8 +212,7 @@ public class SearchEngine {
 		this.context = context;
 		this.rocksDao = rocksDao;
 		this.scorer = scorer == null ? TrivialScorer.getInstance() : scorer;
-		resolver = GraphMavenResolver.init(context, resolverGraph);
-		resolver.setIgnoreMissing(true);
+		resolver = DependencyGraphBuilder.init(context, resolverGraph);
 		this.predicateFactory = new CachingPredicateFactory(context);
 	}
 
@@ -501,7 +504,7 @@ public class SearchEngine {
 		final String artifactId = a[1];
 		final String version = record.component2();
 		resolveTime -= System.nanoTime();
-		final Set<Revision> dependencySet = resolver.resolveDependencies(groupId, artifactId, version, -1, true);
+		final Set<Revision> dependencySet = resolver.resolveDependencies(groupId, artifactId, version, resolve().depth(TRANSITIVE));
 		resolveTime += System.nanoTime();
 
 		LOGGER.debug("Found " + dependencySet.size() + " dependencies");
@@ -598,7 +601,7 @@ public class SearchEngine {
 		String artifactId = data[1];
 		String version = data[2];
 		resolveTime -= System.nanoTime();
-		final Set<Revision> s = resolver.resolveDependents(groupId, artifactId, version, -1, true);
+		final Set<Revision> s = resolver.resolveDependents(groupId, artifactId, version, resolve().depth(TRANSITIVE));
 		final Set<Revision> dependentSet = new ObjectOpenHashSet<>();
 
 		// Temporary reduction in size to circumvent mergeWithCHA() crashes
@@ -636,7 +639,7 @@ public class SearchEngine {
 			LOGGER.debug("Analyzing dependent " + groupId + ":" + artifactId + ":" + version);
 
 			resolveTime -= System.nanoTime();
-			final Set<Revision> dependencySet = resolver.resolveDependencies(groupId, artifactId, version, -1, true);
+			final Set<Revision> dependencySet = resolver.resolveDependencies(groupId, artifactId, version, resolve().depth(TRANSITIVE));
 			resolveTime += System.nanoTime();
 
 			LOGGER.debug("Dependent has " + graph.numNodes() + " nodes");
@@ -754,5 +757,4 @@ public class SearchEngine {
 			}
 		}
 	}
-
 }

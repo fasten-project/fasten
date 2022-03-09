@@ -46,9 +46,13 @@ import eu.fasten.analyzer.restapiplugin.LazyIngestionProvider;
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.DirectedGraph;
 import eu.fasten.core.dependents.GraphResolver;
-import eu.fasten.core.maven.GraphMavenResolver;
-import eu.fasten.core.maven.MavenResolver;
 import eu.fasten.core.maven.data.Revision;
+import eu.fasten.core.maven.resolution.DependencyGraphBuilder;
+import eu.fasten.core.maven.resolution.IMavenResolver;
+import eu.fasten.core.maven.resolution.MavenResolver;
+import eu.fasten.core.maven.resolution.NativeMavenResolver;
+import eu.fasten.core.maven.resolution.ResolverConfig;
+import eu.fasten.core.maven.resolution.ResolverDepth;
 import eu.fasten.core.maven.utils.MavenUtilities;
 import eu.fasten.core.merge.CGMerger;
 import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenHashSet;
@@ -58,14 +62,14 @@ import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenHashSet;
 public class ResolutionApi {
 
     private static final Logger logger = LoggerFactory.getLogger(ResolutionApi.class);
-    private GraphMavenResolver graphMavenResolver;
+    private IMavenResolver graphMavenResolver;
     private GraphResolver graphResolver ;
 
     public ResolutionApi() {
         switch(KnowledgeBaseConnector.forge) {
             case Constants.mvnForge: {
                 try {
-                    var graphMavenResolver = GraphMavenResolver.init(KnowledgeBaseConnector.dbContext, KnowledgeBaseConnector.dependencyGraphPath);
+                    var graphMavenResolver = DependencyGraphBuilder.init(KnowledgeBaseConnector.dbContext, KnowledgeBaseConnector.dependencyGraphPath);
                     this.graphMavenResolver = graphMavenResolver;
                 } catch (Exception e) {
                     logger.error("Error constructing dependency graph maven resolver", e);
@@ -107,10 +111,10 @@ public class ResolutionApi {
                 var artifactId = packageName.split(Constants.mvnCoordinateSeparator)[1];
                 Set<Revision> depSet;
                 if (useDepGraph) {
-                    depSet = this.graphMavenResolver.resolveDependencies(groupId,
-                            artifactId, packageVersion, timestamp, transitive);
+                    var cfg = getConfig(transitive, timestamp);
+                    depSet = this.graphMavenResolver.resolveDependencies(groupId, artifactId, packageVersion, cfg);
                 } else {
-                    var mavenResolver = new MavenResolver();
+                    var mavenResolver = new NativeMavenResolver();
                     depSet = mavenResolver.resolveDependencies(groupId + ":" + artifactId + ":" + packageVersion);
                 }
                 var jsonArray = new JSONArray();
@@ -137,6 +141,14 @@ public class ResolutionApi {
             }
         }
     }
+    private static ResolverConfig getConfig(boolean transitive, long timestamp) {
+        var cfg = new ResolverConfig();
+        cfg.depth = transitive ? ResolverDepth.TRANSITIVE : ResolverDepth.DIRECT;
+        if(timestamp != -1) {
+            cfg.timestamp = timestamp;
+        }
+        return cfg;
+    }
 
     @GetMapping(value = "/packages/{pkg}/{pkg_ver}/resolve/dependents", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<String> resolveDependents(@PathVariable("pkg") String packageName,
@@ -149,8 +161,8 @@ public class ResolutionApi {
                 var groupId = packageName.split(Constants.mvnCoordinateSeparator)[0];
                 var artifactId = packageName.split(Constants.mvnCoordinateSeparator)[1];
                 try {
-                    var depSet = this.graphMavenResolver.resolveDependents(groupId,
-                        artifactId, packageVersion, timestamp, transitive);
+                    var cfg = getConfig(transitive, timestamp);
+                    var depSet = this.graphMavenResolver.resolveDependents(groupId, artifactId, packageVersion, cfg);
                      depSet.stream().map(eu.fasten.core.maven.data.Revision::toJSON).peek(json -> {
                         var group = json.getString("groupId");
                         var artifact = json.getString("artifactId");
@@ -208,14 +220,7 @@ public class ResolutionApi {
     ResponseEntity<String> resolveMultipleDependencies(@RequestBody List<String> coordinates) {
         switch (KnowledgeBaseConnector.forge) {
             case Constants.mvnForge: {
-                var revisions = coordinates.stream().map(c -> {
-                    var groupId = c.split(Constants.mvnCoordinateSeparator)[0];
-                    var artifactId = c.split(Constants.mvnCoordinateSeparator)[1];
-                    var version = c.split(Constants.mvnCoordinateSeparator)[2];
-                    var id = KnowledgeBaseConnector.kbDao.getPackageVersionID(groupId + Constants.mvnCoordinateSeparator + artifactId, version);
-                    return new Revision(id, groupId, artifactId, version, new Timestamp(-1));
-                }).collect(Collectors.toSet());
-                var depSet = this.graphMavenResolver.resolveDependencies(revisions, true);
+                var depSet = this.graphMavenResolver.resolveDependencies(coordinates);
                 var jsonArray = new JSONArray();
                 depSet.stream().map(r -> {
                     var json = new JSONObject();
@@ -262,8 +267,11 @@ public class ResolutionApi {
             var groupId = mavenCoordinate.split(Constants.mvnCoordinateSeparator)[0];
             var artifactId = mavenCoordinate.split(Constants.mvnCoordinateSeparator)[1];
             var version = mavenCoordinate.split(Constants.mvnCoordinateSeparator)[2];
-            var depSet = this.graphMavenResolver.resolveDependencies(groupId,
-                    artifactId, version, timestamp, true);
+            var cfg = new ResolverConfig();
+            if(timestamp != -1) {
+                cfg.timestamp = timestamp;
+            }
+            var depSet = this.graphMavenResolver.resolveDependencies(groupId, artifactId, version, cfg);
             var depIds = depSet.stream().map(r -> r.id).collect(Collectors.toSet());
             var databaseMerger = new CGMerger(depIds, KnowledgeBaseConnector.dbContext, KnowledgeBaseConnector.graphDao);
             graph = databaseMerger.mergeWithCHA(packageVersionId);
