@@ -16,10 +16,20 @@
  * limitations under the License.
  */
 
-package eu.fasten.core.maven;
+package eu.fasten.core.maven.resolution;
 
-import eu.fasten.core.maven.data.Revision;
-import eu.fasten.core.maven.utils.MavenUtilities;
+import java.io.File;
+import java.io.IOException;
+import java.io.PrintStream;
+import java.nio.file.Files;
+import java.sql.Timestamp;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Properties;
+import java.util.Scanner;
+import java.util.Set;
+import java.util.regex.Pattern;
+
 import org.apache.maven.shared.invoker.DefaultInvocationRequest;
 import org.apache.maven.shared.invoker.DefaultInvoker;
 import org.apache.maven.shared.invoker.InvocationResult;
@@ -27,45 +37,13 @@ import org.apache.maven.shared.invoker.MavenInvocationException;
 import org.apache.maven.shared.invoker.PrintStreamHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import picocli.CommandLine;
-import java.io.File;
-import java.io.IOException;
-import java.io.PrintStream;
-import java.nio.file.Files;
-import java.sql.Timestamp;
-import java.util.*;
-import java.util.regex.Pattern;
 
-@CommandLine.Command(name = "MavenResolver")
-public class MavenCLIResolver implements Runnable {
+import eu.fasten.core.maven.data.Revision;
+import eu.fasten.core.maven.utils.MavenUtilities;
 
-    private static final Logger logger = LoggerFactory.getLogger(MavenCLIResolver.class);
+public class MavenNativeResolver {
 
-    @CommandLine.Option(names = {"-c", "--coordinate"},
-            required = true,
-            paramLabel = "Maven coordinate",
-            description = "Maven coordinate for resolution")
-    protected String coordinate;
-
-    @CommandLine.Option(names = {"-d", "--direct-deps-only"},
-            paramLabel = "Only direct dependencies",
-            description = "Do not resolve transitive dependencies if set",
-            defaultValue = "false")
-    protected boolean onlyDirectDependencies;
-
-    public static void main(String[] args) {
-        final int exitCode = new CommandLine(new MavenCLIResolver()).execute(args);
-        System.exit(exitCode);
-    }
-
-    @Override
-    public void run() {
-        var deps = resolveDependencies(this.coordinate, this.onlyDirectDependencies);
-        if (deps != null) {
-            System.out.println("The dependencies of " + this.coordinate + " are:");
-            deps.forEach(System.out::println);
-        }
-    }
+    private static final Logger logger = LoggerFactory.getLogger(MavenNativeResolver.class);
 
     public Set<Revision> resolveDependencies(String mavenCoordinate) {
         return this.resolveDependencies(mavenCoordinate, false);
@@ -86,7 +64,8 @@ public class MavenCLIResolver implements Runnable {
         }
     }
 
-    public Set<Revision> getDependencies(File pomFile, boolean onlyDirectDependencies) throws MavenInvocationException, IOException {
+    public Set<Revision> getDependencies(File pomFile, boolean onlyDirectDependencies)
+            throws MavenInvocationException, IOException {
         Set<Revision> deps;
         File outputFile = Files.createTempFile("deps", ".txt").toFile();
         Properties properties = new Properties();
@@ -95,15 +74,14 @@ public class MavenCLIResolver implements Runnable {
         properties.setProperty("excludeReactor", "false");
         InvocationResult mvnInvocation = invokeMavenDependencyList(pomFile, outputFile, properties);
         try {
-            if(mvnInvocation.getExitCode() == 0) {
+            if (mvnInvocation.getExitCode() == 0) {
                 deps = new HashSet<>(parseMavenDependencyList(outputFile));
+            } else {
+                throw new MavenInvocationException(
+                        "Maven dependency:list failed with exit code " + mvnInvocation.getExitCode(),
+                        mvnInvocation.getExecutionException());
             }
-            else {
-                throw new MavenInvocationException("Maven dependency:list failed with exit code " +
-                        mvnInvocation.getExitCode(), mvnInvocation.getExecutionException());
-            }
-        }
-        finally {
+        } finally {
             MavenUtilities.forceDeleteFile(outputFile);
         }
         return deps;
@@ -129,14 +107,10 @@ public class MavenCLIResolver implements Runnable {
     private Set<Revision> parseMavenDependencyList(File outputFile) throws IOException {
         Set<Revision> deps = new HashSet<>();
         var scanner = new Scanner(outputFile);
-        var pat = Pattern.compile(
-                "\\[INFO]\\s*(?<groupId>[\\w.\\-]+):" +
-                        "(?<artifactId>[\\w.\\-]+):" +
-                        "(?<artifactType>[\\w.\\-]+):" +
-                        "(?<version>[\\w.\\-]+):" +
-                        "(?<scope>[\\w.\\-]+)\\s*");
-        scanner.findAll(pat).forEach((m) ->
-                deps.add(new Revision(m.group(1), m.group(2), m.group(4), new Timestamp(-1))));
+        var pat = Pattern.compile("\\[INFO]\\s*(?<groupId>[\\w.\\-]+):" + "(?<artifactId>[\\w.\\-]+):"
+                + "(?<artifactType>[\\w.\\-]+):" + "(?<version>[\\w.\\-]+):" + "(?<scope>[\\w.\\-]+)\\s*");
+        scanner.findAll(pat)
+                .forEach((m) -> deps.add(new Revision(m.group(1), m.group(2), m.group(4), new Timestamp(-1))));
         scanner.close();
         return deps;
     }
