@@ -18,18 +18,16 @@
 
 package eu.fasten.analyzer.restapiplugin;
 
-import eu.fasten.core.data.Constants;
-import eu.fasten.core.maven.MavenResolver;
-import eu.fasten.core.maven.utils.MavenUtilities;
-import org.json.JSONObject;
-
 import java.io.IOException;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toSet;
+import org.json.JSONObject;
+
+import eu.fasten.core.data.Constants;
+import eu.fasten.core.maven.resolution.NativeMavenResolver;
+import eu.fasten.core.maven.utils.MavenUtilities;
 
 public class LazyIngestionProvider {
 
@@ -74,7 +72,7 @@ public class LazyIngestionProvider {
         var groupId = packageName.split(Constants.mvnCoordinateSeparator)[0];
         var artifactId = packageName.split(Constants.mvnCoordinateSeparator)[0];
         ingestArtifactIfNecessary(packageName, version, null, null);
-        var mavenResolver = new MavenResolver();
+        var mavenResolver = new NativeMavenResolver();
         var dependencies = mavenResolver.resolveDependencies(groupId + ":" + artifactId + ":" + version);
         ingestArtifactIfNecessary(packageName, version, null, null);
         dependencies.forEach(d -> {
