@@ -15,6 +15,7 @@
  */
 package eu.fasten.core.maven.data;
 
+import static eu.fasten.core.maven.data.Scope.COMPILE;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -32,7 +33,7 @@ import org.junit.jupiter.api.Test;
 public class DependencyTest {
 
     private static final Dependency SOME_DEPENDENCY = new Dependency("gid", "aid",
-            Set.of(new VersionConstraint("(1.2.3,2.3.4]")), Set.of(new Exclusion("gid2", "aid2")), "compile", false,
+            Set.of(new VersionConstraint("(1.2.3,2.3.4]")), Set.of(new Exclusion("gid2", "aid2")), COMPILE, false,
             "jar", "sources");
 
     @Test
@@ -47,20 +48,13 @@ public class DependencyTest {
     public void equalsTest() {
         Assertions.assertEquals( //
                 new Dependency("junit", "junit", "4.12"), //
-                new Dependency("junit", "junit", "4.12", new HashSet<>(), "compile", false, "jar", ""));
-    }
-
-    @Test
-    public void cannotUseInvalidScope() {
-        assertThrows(IllegalStateException.class, () -> {
-            new Dependency("junit", "junit", "4.12", new HashSet<>(), "", false, "jar", "");
-        });
+                new Dependency("junit", "junit", "4.12", new HashSet<>(), COMPILE, false, "jar", ""));
     }
 
     @Test
     public void cannotUseEmptyPackagingType() {
         assertThrows(IllegalStateException.class, () -> {
-            new Dependency("junit", "junit", "4.12", new HashSet<>(), "", false, "", "");
+            new Dependency("junit", "junit", "4.12", new HashSet<>(), COMPILE, false, "", "");
         });
     }
 
@@ -92,7 +86,7 @@ public class DependencyTest {
         expected.put("type", String.class);
         expected.put("versionConstraints", JSONArray.class);
         expected.put("exclusions", JSONArray.class);
-        expected.put("scope", String.class);
+        expected.put("scope", Scope.class);
         expected.put("classifier", String.class);
         expected.put("optional", Boolean.class);
 
@@ -125,6 +119,6 @@ public class DependencyTest {
         vcs.add(new VersionConstraint("(,1.0]"));
         vcs.add(new VersionConstraint("[1.2)"));
         var excls = new HashSet<Exclusion>();
-        return new Dependency("g", "a", vcs, excls, "compile", true, "jar", "c");
+        return new Dependency("g", "a", vcs, excls, COMPILE, true, "jar", "c");
     }
 }
