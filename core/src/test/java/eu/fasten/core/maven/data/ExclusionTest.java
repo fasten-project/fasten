@@ -28,4 +28,6 @@ public class ExclusionTest {
 		var actual = Exclusion.fromJSON(json);
 		assertEquals(expected, actual);
 	}
+	
+	// TODO add more tests, esp. equality!
 }

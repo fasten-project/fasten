@@ -15,6 +15,9 @@
  */
 package eu.fasten.core.maven.runners;
 
+import static eu.fasten.core.maven.resolution.ResolverConfig.resolve;
+import static eu.fasten.core.maven.resolution.ResolverDepth.TRANSITIVE;
+
 import java.sql.SQLException;
 import java.util.Comparator;
 import java.util.Scanner;
@@ -26,14 +29,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import eu.fasten.core.dbconnectors.PostgresConnector;
-import eu.fasten.core.maven.GraphMavenResolver;
 import eu.fasten.core.maven.data.Revision;
+import eu.fasten.core.maven.resolution.DependencyGraphBuilder;
+import eu.fasten.core.maven.resolution.IMavenResolver;
+import eu.fasten.core.maven.resolution.MavenResolver;
+import eu.fasten.core.maven.resolution.ResolverConfig;
+import eu.fasten.core.maven.resolution.ResolverDepth;
 import picocli.CommandLine;
 
 @CommandLine.Command(name = "GraphMavenResolverRunner")
 public class GraphMavenResolverRunner implements Runnable {
 
-    private static final Logger logger = LoggerFactory.getLogger(GraphMavenResolver.class);
+    private static final Logger logger = LoggerFactory.getLogger(MavenResolver.class);
 
     public static void main(String[] args) {
         final int exitCode = new CommandLine(new GraphMavenResolverRunner()).execute(args);
@@ -58,7 +65,7 @@ public class GraphMavenResolverRunner implements Runnable {
             defaultValue = "postgres")
     protected String dbUser;
 
-    private GraphMavenResolver graphResolver;
+    private IMavenResolver graphResolver;
     
     @Override
     public void run() {
@@ -73,7 +80,7 @@ public class GraphMavenResolverRunner implements Runnable {
         }
 
         try {
-            graphResolver = GraphMavenResolver.init(dbContext, serializedPath);
+            graphResolver = DependencyGraphBuilder.init(dbContext, serializedPath);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -113,12 +120,12 @@ public class GraphMavenResolverRunner implements Runnable {
                 Set<Revision> revisions;
                 var startTS = System.currentTimeMillis();
                 try {
-
+                    var cfg = resolve().at(timestamp).depth(TRANSITIVE);
                     if (parts[0].startsWith("!")) {
                         parts[0] = parts[0].substring(1);
-                        revisions = graphResolver.resolveDependents(parts[0], parts[1], parts[2], timestamp, true);
+                        revisions = graphResolver.resolveDependents(parts[0], parts[1], parts[2], cfg);
                     } else {
-                        revisions = graphResolver.resolveDependencies(parts[0], parts[1], parts[2], timestamp, true);
+                        revisions = graphResolver.resolveDependencies(parts[0], parts[1], parts[2], cfg);
                     }
                 } catch (Exception e) {
                     System.err.println("Error retrieving revisions: " + e.getMessage());

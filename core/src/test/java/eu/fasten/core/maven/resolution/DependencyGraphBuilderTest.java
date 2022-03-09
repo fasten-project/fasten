@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package eu.fasten.core.maven;
+package eu.fasten.core.maven.resolution;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -27,8 +27,9 @@ import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import eu.fasten.core.maven.data.Revision;
+import eu.fasten.core.maven.data.PomAnalysisResultX;
 import eu.fasten.core.maven.data.VersionConstraint;
+import eu.fasten.core.maven.resolution.DependencyGraphBuilder;
 
 public class DependencyGraphBuilderTest {
 
@@ -42,16 +43,16 @@ public class DependencyGraphBuilderTest {
     @Test
     public void findMatchingRevisionsTest() {
         var revisions = List.of(
-                new Revision("a", "a", "1.0", new Timestamp(1)),
-                new Revision("a", "a", "2.0", new Timestamp(2)),
-                new Revision("a", "a", "3.0", new Timestamp(3))
+                newRevision("a", "a", "1.0", new Timestamp(1)),
+                newRevision("a", "a", "2.0", new Timestamp(2)),
+                newRevision("a", "a", "3.0", new Timestamp(3))
         );
         var constraints = Set.of(
                 new VersionConstraint("(1.0,3.0]")
         );
         var expected = List.of(
-                new Revision("a", "a", "2.0", new Timestamp(2)),
-                new Revision("a", "a", "3.0", new Timestamp(3))
+                newRevision("a", "a", "2.0", new Timestamp(2)),
+                newRevision("a", "a", "3.0", new Timestamp(3))
         );
         var actual = graphBuilder.findMatchingRevisions(revisions, constraints);
         assertEquals(expected, actual);
@@ -63,20 +64,29 @@ public class DependencyGraphBuilderTest {
         assertEquals(expected, actual);
     }
 
+    private PomAnalysisResultX newRevision(String g, String a, String v, Timestamp timestamp) {
+        var par = new PomAnalysisResultX();
+        par.groupId = g;
+        par.artifactId = a;
+        par.version = v;
+        par.releaseDate = timestamp.getTime();
+        return par;
+    }
+
     @Test
     public void findMatchingRevisionsMultipleConstraintsTest() {
         var revisions = List.of(
-                new Revision("a", "a", "1.0", new Timestamp(1)),
-                new Revision("a", "a", "2.0", new Timestamp(2)),
-                new Revision("a", "a", "3.0", new Timestamp(3))
+                newRevision("a", "a", "1.0", new Timestamp(1)),
+                newRevision("a", "a", "2.0", new Timestamp(2)),
+                newRevision("a", "a", "3.0", new Timestamp(3))
         );
         var constraints = Set.of(
                 new VersionConstraint("[1.0,2.0)"),
                 new VersionConstraint("(2.0,3.0]")
         );
         var expected = List.of(
-                new Revision("a", "a", "1.0", new Timestamp(1)),
-                new Revision("a", "a", "3.0", new Timestamp(3))
+                newRevision("a", "a", "1.0", new Timestamp(1)),
+                newRevision("a", "a", "3.0", new Timestamp(3))
         );
         var actual = graphBuilder.findMatchingRevisions(revisions, constraints);
         assertEquals(expected, actual);
@@ -85,12 +95,12 @@ public class DependencyGraphBuilderTest {
     @Test
     public void findMatchingRevisionsSimpleTest() {
         var revisions = List.of(
-                new Revision("a", "a", "1.0", new Timestamp(1)),
-                new Revision("a", "a", "2.0", new Timestamp(2)),
-                new Revision("a", "a", "3.0", new Timestamp(3))
+                newRevision("a", "a", "1.0", new Timestamp(1)),
+                newRevision("a", "a", "2.0", new Timestamp(2)),
+                newRevision("a", "a", "3.0", new Timestamp(3))
         );
         var constraints = Set.of(new VersionConstraint("1.0"));
-        var expected = List.of(new Revision("a", "a", "1.0", new Timestamp(1)));
+        var expected = List.of(newRevision("a", "a", "1.0", new Timestamp(1)));
         var actual = graphBuilder.findMatchingRevisions(revisions, constraints);
         assertEquals(expected, actual);
 
@@ -102,22 +112,22 @@ public class DependencyGraphBuilderTest {
     @Test
     public void findMatchingRevisionsWithoutLowerOrUpperBoundTest() {
         var revisions = List.of(
-                new Revision("a", "a", "1.0", new Timestamp(1)),
-                new Revision("a", "a", "2.0", new Timestamp(2)),
-                new Revision("a", "a", "3.0", new Timestamp(3))
+                newRevision("a", "a", "1.0", new Timestamp(1)),
+                newRevision("a", "a", "2.0", new Timestamp(2)),
+                newRevision("a", "a", "3.0", new Timestamp(3))
         );
         var constraints = Set.of(new VersionConstraint("(,2.0]"));
         var expected = List.of(
-                new Revision("a", "a", "1.0", new Timestamp(1)),
-                new Revision("a", "a", "2.0", new Timestamp(2))
+                newRevision("a", "a", "1.0", new Timestamp(1)),
+                newRevision("a", "a", "2.0", new Timestamp(2))
         );
         var actual = graphBuilder.findMatchingRevisions(revisions, constraints);
         assertEquals(expected, actual);
 
         constraints = Set.of(new VersionConstraint("[2.0,]"));
         expected = List.of(
-                new Revision("a", "a", "2.0", new Timestamp(2)),
-                new Revision("a", "a", "3.0", new Timestamp(3))
+                newRevision("a", "a", "2.0", new Timestamp(2)),
+                newRevision("a", "a", "3.0", new Timestamp(3))
         );
         actual = graphBuilder.findMatchingRevisions(revisions, constraints);
         assertEquals(expected, actual);
@@ -126,19 +136,19 @@ public class DependencyGraphBuilderTest {
     @Test
     public void findMatchingRevisionsRangesWithRequirementsTest() {
         var revisions = List.of(
-                new Revision("a", "a", "1.0", new Timestamp(1)),
-                new Revision("a", "a", "2.0", new Timestamp(2)),
-                new Revision("a", "a", "3.0", new Timestamp(3)),
-                new Revision("a", "a", "4.0", new Timestamp(4))
+                newRevision("a", "a", "1.0", new Timestamp(1)),
+                newRevision("a", "a", "2.0", new Timestamp(2)),
+                newRevision("a", "a", "3.0", new Timestamp(3)),
+                newRevision("a", "a", "4.0", new Timestamp(4))
         );
         var constraints = Set.of(
                 new VersionConstraint("(,1.0]"),
                 new VersionConstraint("[3.0,)")
         );
         var expected = List.of(
-                new Revision("a", "a", "1.0", new Timestamp(1)),
-                new Revision("a", "a", "3.0", new Timestamp(3)),
-                new Revision("a", "a", "4.0", new Timestamp(4))
+                newRevision("a", "a", "1.0", new Timestamp(1)),
+                newRevision("a", "a", "3.0", new Timestamp(3)),
+                newRevision("a", "a", "4.0", new Timestamp(4))
         );
         var actual = graphBuilder.findMatchingRevisions(revisions, constraints);
         assertEquals(expected, actual);

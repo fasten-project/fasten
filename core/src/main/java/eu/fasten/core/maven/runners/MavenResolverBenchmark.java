@@ -2,14 +2,23 @@ package eu.fasten.core.maven.runners;
 
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.dbconnectors.PostgresConnector;
-import eu.fasten.core.maven.GraphMavenResolver;
-import eu.fasten.core.maven.MavenResolver;
 import eu.fasten.core.maven.data.Dependency;
 import eu.fasten.core.maven.data.Revision;
+import eu.fasten.core.maven.resolution.DependencyGraphBuilder;
+import eu.fasten.core.maven.resolution.IMavenResolver;
+import eu.fasten.core.maven.resolution.MavenResolver;
+import eu.fasten.core.maven.resolution.NativeMavenResolver;
+import eu.fasten.core.maven.resolution.ResolverConfig;
+import eu.fasten.core.maven.resolution.ResolverDepth;
+
 import org.jooq.DSLContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
+
+import static eu.fasten.core.maven.resolution.ResolverConfig.resolve;
+import static eu.fasten.core.maven.resolution.ResolverDepth.TRANSITIVE;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.sql.SQLException;
@@ -76,13 +85,8 @@ public class MavenResolverBenchmark implements Runnable {
             return;
         }
         logger.info("Starting benchmark - " + new Date());
-        var mavenResolver = new MavenResolver();
-        GraphMavenResolver graphResolver;
-        try {
-            graphResolver = GraphMavenResolver.init(dbContext, graphPath);
-        } catch (Exception e1) {
-            throw new RuntimeException(e1);
-        }
+        var mavenResolver = new NativeMavenResolver();
+        var graphResolver = DependencyGraphBuilder.init(dbContext, graphPath);
         var artifactCount = 0;
         var dbCount = 0;
         var onlineCount = 0;
@@ -98,7 +102,8 @@ public class MavenResolverBenchmark implements Runnable {
             try {
                 dbCount++;
                 Set<Revision> dbDependencySet;
-                dbDependencySet = graphResolver.resolveDependencies(groupId, artifactId, version, -1, true);
+                var cfg = resolve().depth(TRANSITIVE);
+                dbDependencySet = graphResolver.resolveDependencies(groupId, artifactId, version, cfg);
                 dbResolutionSuccess++;
                 onlineCount++;
                 var onlineDependencySet = mavenResolver.resolveDependencies(artifactId + ":" + groupId + ":" + version);
