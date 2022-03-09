@@ -1,5 +1,5 @@
 /*
- * Copyright 2021 Delft University of Technology
+ * Copyright 2022 Delft University of Technology
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,13 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package eu.fasten.core.maven.data;
+package eu.fasten.core.maven.resolution;
 
-public class PackageVersionNotFoundException extends RuntimeException {
+public class MavenDependentsResolverTest {
 
-    private static final long serialVersionUID = 4776812947859392189L;
-
-    public PackageVersionNotFoundException(String message) {
-        super(message);
-    }
 }

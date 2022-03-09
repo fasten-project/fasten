@@ -41,9 +41,9 @@ import org.slf4j.LoggerFactory;
 import eu.fasten.core.maven.data.Revision;
 import eu.fasten.core.maven.utils.MavenUtilities;
 
-public class MavenNativeResolver {
+public class NativeMavenResolver {
 
-    private static final Logger logger = LoggerFactory.getLogger(MavenNativeResolver.class);
+    private static final Logger logger = LoggerFactory.getLogger(NativeMavenResolver.class);
 
     public Set<Revision> resolveDependencies(String mavenCoordinate) {
         return this.resolveDependencies(mavenCoordinate, false);
