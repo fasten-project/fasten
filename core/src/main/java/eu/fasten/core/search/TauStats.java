@@ -38,7 +38,6 @@ import com.martiansoftware.jsap.UnflaggedOption;
 import eu.fasten.core.data.ArrayImmutableDirectedGraph;
 import eu.fasten.core.data.Centralities;
 import eu.fasten.core.data.DirectedGraph;
-import eu.fasten.core.data.MergedDirectedGraph;
 import eu.fasten.core.data.callableindex.RocksDao;
 import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
 import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
@@ -50,12 +49,10 @@ import eu.fasten.core.search.SearchEngine.RocksDBData;
 import eu.fasten.core.search.predicate.CachingPredicateFactory;
 import it.unimi.dsi.fastutil.doubles.DoubleArrayList;
 import it.unimi.dsi.fastutil.longs.Long2DoubleFunction;
-import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongLinkedOpenHashSet;
-import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.lang.EnumStringParser;
-import it.unimi.dsi.law.stat.WeightedTau;
 import it.unimi.dsi.law.stat.KendallTau;
+import it.unimi.dsi.law.stat.WeightedTau;
 
 public class TauStats {
 	private static final Logger LOGGER = LoggerFactory.getLogger(TauStats.class);
@@ -80,6 +77,12 @@ public class TauStats {
 		new CachingPredicateFactory(context);
 	}
 
+	public TauStats(final String rocksDb) throws Exception {
+		this.context = null;
+		this.rocksDao = new RocksDao(rocksDb, true);
+		resolver = null;
+	}
+
 	public enum Centrality {
 		DEGREE, PAGERANK, HARMONIC
 	}
@@ -88,10 +91,10 @@ public class TauStats {
 		final SimpleJSAP jsap = new SimpleJSAP(TauStats.class.getName(), "Creates an instance of SearchEngine and answers queries from the command line (rlwrap recommended).", new Parameter[] {
 				new Switch("weighted", 'w', "weighted", "Use the hyperbolic weighted tau."),
 				new UnflaggedOption("centrality", EnumStringParser.getParser(Centrality.class, true), JSAP.NO_DEFAULT, JSAP.REQUIRED, JSAP.NOT_GREEDY, "The centrality (one of " + java.util.Arrays.toString(Centrality.values()) + ")."),
-				new UnflaggedOption("jdbcURI", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.REQUIRED, JSAP.NOT_GREEDY, "The JDBC URI."),
+				new UnflaggedOption("rocksDb", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.REQUIRED, JSAP.NOT_GREEDY, "The path to the RocksDB database of revision call graphs."),
+				new UnflaggedOption("cache", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, JSAP.NOT_GREEDY, "The RocksDB cache."),
+				new UnflaggedOption("jdbcURI", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, JSAP.NOT_GREEDY, "The JDBC URI."),
 				new UnflaggedOption("database", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, JSAP.NOT_GREEDY, "The database name."),
-				new UnflaggedOption("rocksDb", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, JSAP.NOT_GREEDY, "The path to the RocksDB database of revision call graphs."),
-				new UnflaggedOption("cache", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.REQUIRED, JSAP.NOT_GREEDY, "The RocksDB cache."),
 				new UnflaggedOption("resolverGraph", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, JSAP.NOT_GREEDY, "The path to a resolver graph (will be created if it does not exist)."), });
 
 		final JSAPResult jsapResult = jsap.parse(args);
@@ -110,7 +113,7 @@ public class TauStats {
 		var mergedHandle = cacheData.columnFamilyHandles.get(0);
 		var dependenciesHandle = cacheData.columnFamilyHandles.get(1);
 		
-		final TauStats tauStats = new TauStats(jdbcURI, database, rocksDb, resolverGraph);
+		final TauStats tauStats = database != null ? new TauStats(jdbcURI, database, rocksDb, resolverGraph) : new TauStats(rocksDb);
 		final DSLContext context = tauStats.context;
 
 		@SuppressWarnings("resource")
@@ -164,6 +167,7 @@ public class TauStats {
 				else cache.put(mergedHandle, gidAsByteArray, SerializationUtils.serialize((ArrayImmutableDirectedGraph)stitchedGraph));
 
 			}
+			
 			Long2DoubleFunction globalRankForward = null;
 			Long2DoubleFunction globalRankBackward = null;
 			switch(centrality) {
@@ -220,11 +224,11 @@ public class TauStats {
 					}
 				}
 
-				if (localForward.size() == 0) continue;
-
 				double[] lf = localForward.toDoubleArray(), lb = localBackward.toDoubleArray(), gf = globalForward.toDoubleArray(), gb = globalBackward.toDoubleArray(); 
 				double t;
 
+				if (lf.length == 0) continue;
+				
 				t = weighted ? WeightedTau.HYPERBOLIC.compute(lf, gf) : KendallTau.INSTANCE.compute(lf, gf);
 				if (Double.isNaN(t)) t = 0;
 				System.out.print("\t++ " + r + ":" + t + " \t" + localForward.size());
