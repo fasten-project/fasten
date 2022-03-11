@@ -176,8 +176,8 @@ public class TauStats {
 				globalRankBackward = Centralities.pageRankParallel(stitchedGraph, 0.85);
 				break;
 			case HARMONIC:
-				globalRankForward = Centralities.harmonicExact(stitchedGraph.transpose());
-				globalRankBackward = Centralities.harmonicExact(stitchedGraph);
+				globalRankForward = Centralities.harmonicApproximateParallel(stitchedGraph.transpose(), 1E-2);
+				globalRankBackward = Centralities.harmonicApproximateParallel(stitchedGraph, 1E-2);
 				break;
 			}
 			
