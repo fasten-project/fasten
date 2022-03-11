@@ -164,7 +164,6 @@ public class TauStats {
 				else cache.put(mergedHandle, gidAsByteArray, SerializationUtils.serialize((ArrayImmutableDirectedGraph)stitchedGraph));
 
 			}
-			
 			Long2DoubleFunction globalRankForward = null;
 			Long2DoubleFunction globalRankBackward = null;
 			switch(centrality) {
@@ -220,6 +219,8 @@ public class TauStats {
 						}
 					}
 				}
+
+				if (localForward.size() == 0) continue;
 
 				double[] lf = localForward.toDoubleArray(), lb = localBackward.toDoubleArray(), gf = globalForward.toDoubleArray(), gb = globalBackward.toDoubleArray(); 
 				double t;
