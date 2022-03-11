@@ -164,6 +164,11 @@ public class DebianLicenseDetectorPlugin extends Plugin {
                             "The five files detected with a double entry are :" + FileDoubleEntered + ".\n"
                     );
                 }
+
+                fileJson.delete();
+                file.delete();
+                System.out.println("Json files deleted.");
+
                 packageVersion = "latest";
                 HttpGetCount = 0;
                 FilesCount = 0;
