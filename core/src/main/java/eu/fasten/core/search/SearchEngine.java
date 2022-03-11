@@ -202,14 +202,16 @@ public class SearchEngine implements AutoCloseable {
 	 * @param cacheDir the path to the persistent cache.
 	 * @return a RocksDB handle.
 	 */
-	public static final RocksDBData openCache(final String cacheDir) throws RocksDBException {
+	public static final RocksDBData openCache(final String cacheDir, final boolean readOnly) throws RocksDBException {
 		RocksDB.loadLibrary();
 		final ColumnFamilyOptions defaultOptions = new ColumnFamilyOptions();
 		@SuppressWarnings("resource")
 		final DBOptions dbOptions = new DBOptions().setCreateIfMissing(true).setCreateMissingColumnFamilies(true);
 		final List<ColumnFamilyDescriptor> cfDescriptors = List.of(new ColumnFamilyDescriptor(RocksDB.DEFAULT_COLUMN_FAMILY, defaultOptions), new ColumnFamilyDescriptor("merged".getBytes(), defaultOptions), new ColumnFamilyDescriptor("dependencies".getBytes(), defaultOptions));
 		final List<ColumnFamilyHandle> columnFamilyHandles = new ArrayList<>();
-		return new RocksDBData(RocksDB.open(dbOptions, cacheDir, cfDescriptors, columnFamilyHandles), columnFamilyHandles); 
+		return new RocksDBData(readOnly ?
+				RocksDB.openReadOnly(dbOptions, cacheDir, cfDescriptors, columnFamilyHandles) :
+				RocksDB.open(dbOptions, cacheDir, cfDescriptors, columnFamilyHandles), columnFamilyHandles); 
 	}
 	
 	/**
@@ -230,7 +232,7 @@ public class SearchEngine implements AutoCloseable {
 	 *            {@link TrivialScorer} will be used instead.
 	 */
 	public SearchEngine(final String jdbcURI, final String database, final String rocksDb, final String cacheDir, final String resolverGraph, final String scorer) throws Exception {
-		this(PostgresConnector.getDSLContext(jdbcURI, database, false), new RocksDao(rocksDb, true), openCache(cacheDir), resolverGraph, scorer == null ? TrivialScorer.getInstance() : ObjectParser.fromSpec(scorer, Scorer.class));
+		this(PostgresConnector.getDSLContext(jdbcURI, database, false), new RocksDao(rocksDb, true), openCache(cacheDir, false), resolverGraph, scorer == null ? TrivialScorer.getInstance() : ObjectParser.fromSpec(scorer, Scorer.class));
 	}
 
 	/**

@@ -108,7 +108,7 @@ public class TauStats {
 		final String cacheDir = jsapResult.getString("cache");
 		final String resolverGraph = jsapResult.getString("resolverGraph");
 
-		RocksDBData cacheData = SearchEngine.openCache(cacheDir);
+		final RocksDBData cacheData = SearchEngine.openCache(cacheDir, database == null);
 		var cache = cacheData.cache;
 		var mergedHandle = cacheData.columnFamilyHandles.get(0);
 		var dependenciesHandle = cacheData.columnFamilyHandles.get(1);
