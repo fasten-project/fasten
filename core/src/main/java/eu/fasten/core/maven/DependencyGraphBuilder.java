@@ -96,8 +96,8 @@ public class DependencyGraphBuilder implements Runnable {
         }
     }
 
-    public Map<Revision, List<Dependency>> getDependencyList(DSLContext dbContext) {
-        return dbContext.select(PackageVersions.PACKAGE_VERSIONS.ID,
+    public Map<Revision, List<Dependency>> getDependencyListByRevision(DSLContext dbContext) {
+        var result = dbContext.select(PackageVersions.PACKAGE_VERSIONS.ID,
                 Packages.PACKAGES.PACKAGE_NAME,
                 PackageVersions.PACKAGE_VERSIONS.VERSION,
                 Dependencies.DEPENDENCIES.METADATA,
@@ -109,27 +109,28 @@ public class DependencyGraphBuilder implements Runnable {
                 .on(Dependencies.DEPENDENCIES.PACKAGE_VERSION_ID.eq(PackageVersions.PACKAGE_VERSIONS.ID))
                 .where(Packages.PACKAGES.FORGE.eq(Constants.mvnForge))
                 .and(PackageVersions.PACKAGE_VERSIONS.CREATED_AT.isNotNull())
-                .fetch()
-                .parallelStream()
+                .fetch();
+        return result.parallelStream() //
                 .map(x -> {
-                    if (x.component2().split(Constants.mvnCoordinateSeparator).length < 2) {
+                    if (x.component2().split(":").length < 2) {
                         logger.warn("Skipping invalid coordinate: {}", x.component2());
                         return null;
                     }
 
-                    var artifact = x.component2().split(Constants.mvnCoordinateSeparator)[0].replaceAll("[\\n\\t ]", "");
-                    var group = x.component2().split(Constants.mvnCoordinateSeparator)[1].replaceAll("[\\n\\t ]", "");
+                    var artifact = strip(x.component2().split(":")[0]);
+                    var group = strip(x.component2().split(":")[1]);
 
                     if (x.component4() != null) {
                         return new AbstractMap.SimpleEntry<>(new Revision(x.component1(), artifact, group,
-                                x.component3().replaceAll("[\\n\\t ]", ""),
+                                strip(x.component3()),
                                 x.component5()), Dependency.fromJSON(new JSONObject(x.component4().data())));
                     } else {
                         return new AbstractMap.SimpleEntry<>(new Revision(x.component1(), artifact, group,
-                                x.component3().replaceAll("[\\n\\t ]", ""),
+                                strip(x.component3()),
                                 x.component5()), Dependency.empty);
                     }
-                }).filter(Objects::nonNull)
+                }) //
+                .filter(Objects::nonNull)
                 .collect(Collectors.toConcurrentMap(
                         AbstractMap.SimpleEntry::getKey,
                         x -> List.of(x.getValue()),
@@ -142,15 +143,18 @@ public class DependencyGraphBuilder implements Runnable {
                 ));
     }
 
-    public List<Revision> findMatchingRevisions(List<Revision> revisions,
-                                                Set<VersionConstraint> constraints) {
+    private static String strip(String s) {
+        return s.replaceAll("[\\n\\t ]", "");
+    }
+
+    public List<Revision> findMatchingRevisions(List<Revision> revisions, Set<VersionConstraint> constraints) {
         if (revisions == null) {
             return Collections.emptyList();
         }
         return revisions.stream().filter(r -> {
             for (var constraint : constraints) {
-                if ((constraint.toString().startsWith("[") || constraint.toString().startsWith("("))
-                        && (constraint.toString().endsWith("]") || constraint.toString().endsWith(")"))) {
+                var spec = constraint.toString();
+                if ((spec.startsWith("[") || spec.startsWith("(")) && (spec.endsWith("]") || spec.endsWith(")"))) {
                     if (checkVersionLowerBound(constraint, r.version) &&
                             checkVersionUpperBound(constraint, r.version)) {
                         return true;
@@ -192,22 +196,21 @@ public class DependencyGraphBuilder implements Runnable {
         var startTs = System.currentTimeMillis();
         var startDepRet = System.currentTimeMillis();
 
-        var dependencies = getDependencyList(dbContext);
-        logger.info("Retrieved {} package versions: {} ms", dependencies.size(),
-                System.currentTimeMillis() - startDepRet);
+        var dependencies = getDependencyListByRevision(dbContext);
+        logger.info("Retrieved {} package versions: {} ms", dependencies.size(), msSince(startDepRet));
 
         var startIdx = System.currentTimeMillis();
         var productRevisionMap = dependencies.keySet().stream().collect(Collectors.toConcurrentMap(
-                Revision::product,
-                List::of,
-                (x, y) -> {
+                r -> r.product(), // key map
+                r -> List.of(r), // value map
+                (x, y) -> { // merge values with same key
                     var z = new ArrayList<Revision>();
                     z.addAll(x);
                     z.addAll(y);
                     return z;
                 })
         );
-        logger.debug("Indexed {} products: {} ms", productRevisionMap.size(), System.currentTimeMillis() - startIdx);
+        logger.debug("Indexed {} products: {} ms", productRevisionMap.size(), msSince(startIdx));
 
         logger.info("Creating dependency graph");
         var dependencyGraph = new DefaultDirectedGraph<Revision, DependencyEdge>(DependencyEdge.class);
@@ -234,14 +237,18 @@ public class DependencyGraphBuilder implements Runnable {
             }
             return edges;
         }).flatMap(Collection::stream).collect(Collectors.toList());
-        logger.debug("Generated {} edges: {} ms", allEdges.size(), System.currentTimeMillis() - startGenEdgesTs);
+        logger.debug("Generated {} edges: {} ms", allEdges.size(), msSince(startGenEdgesTs));
 
         var startAddEdgesTs = System.currentTimeMillis();
         allEdges.forEach(e -> dependencyGraph.addEdge(e.source, e.target, e));
         logger.debug("Added {} edges to the graph: {} ms", allEdges.size(),
-                System.currentTimeMillis() - startAddEdgesTs);
+                msSince(startAddEdgesTs));
 
-        logger.info("Maven dependency graph generated: {} ms", System.currentTimeMillis() - startTs);
+        logger.info("Maven dependency graph generated: {} ms", msSince(startTs));
         return dependencyGraph;
+    }
+
+    private long msSince(long startDepRet) {
+        return System.currentTimeMillis() - startDepRet;
     }
 }
