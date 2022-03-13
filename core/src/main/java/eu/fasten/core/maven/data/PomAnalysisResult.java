@@ -18,6 +18,7 @@ package eu.fasten.core.maven.data;
 import static java.lang.String.format;
 import static org.apache.commons.lang3.builder.ToStringStyle.MULTI_LINE_STYLE;
 
+import java.sql.Timestamp;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -30,6 +31,8 @@ import eu.fasten.core.data.Constants;
 
 public class PomAnalysisResult implements Cloneable {
 
+    public transient long id;
+    
     public String forge = Constants.mvnForge;
 
     public String artifactId = null;
@@ -55,6 +58,14 @@ public class PomAnalysisResult implements Cloneable {
     /** gid:aid:packaging:version */
     public String toCoordinate() {
         return format("%s:%s:%s:%s", groupId, artifactId, packagingType, version);
+    }
+
+    public MavenProduct toProduct() {
+        return new MavenProduct(id, groupId, artifactId);
+    }
+
+    public Revision toRevision() {
+        return new Revision(id, groupId, artifactId, version, new Timestamp(releaseDate));
     }
 
     @Override

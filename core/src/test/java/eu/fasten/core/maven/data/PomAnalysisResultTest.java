@@ -23,13 +23,13 @@ import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.sql.Timestamp;
+
 import org.junit.jupiter.api.Test;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
-import eu.fasten.core.json.CoreMavenDataModule;
 import eu.fasten.core.json.ObjectMapperBuilder;
 
 public class PomAnalysisResultTest {
@@ -258,6 +258,20 @@ public class PomAnalysisResultTest {
     public void toCoordinate() {
         var actual = somePomAnalysisResult().toCoordinate();
         var expected = "g:a:h:n";
+        assertEquals(expected, actual);
+    }
+
+    @Test
+    public void toProduct() {
+        var actual = somePomAnalysisResult().toProduct();
+        var expected = new MavenProduct("g", "a");
+        assertEquals(expected, actual);
+    }
+
+    @Test
+    public void toRevision() {
+        var actual = somePomAnalysisResult().toRevision();
+        var expected = new Revision("g", "a", "n", new Timestamp(123));
         assertEquals(expected, actual);
     }
 

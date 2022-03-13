@@ -25,7 +25,7 @@ import org.slf4j.Logger;
 
 import eu.fasten.core.maven.data.Dependency;
 import eu.fasten.core.maven.data.MavenProduct;
-import eu.fasten.core.maven.data.PomAnalysisResultX;
+import eu.fasten.core.maven.data.PomAnalysisResult;
 import eu.fasten.core.maven.data.Revision;
 
 public class MavenDependentsResolver {
@@ -44,7 +44,7 @@ public class MavenDependentsResolver {
         return resolve(pom, config, new HashSet<>());
     }
 
-    private HashSet<Revision> resolve(PomAnalysisResultX dependency, ResolverConfig config, Set<Object> visited) {
+    private HashSet<Revision> resolve(PomAnalysisResult dependency, ResolverConfig config, Set<Object> visited) {
         assertTrue(dependency.releaseDate <= config.timestamp, "provided revision is newer than resolution date");
 
         if (visited.contains(dependency)) {
@@ -77,7 +77,7 @@ public class MavenDependentsResolver {
         return dependents;
     }
 
-    private boolean doesVersionMatch(Dependency dep, PomAnalysisResultX pom) {
+    private boolean doesVersionMatch(Dependency dep, PomAnalysisResult pom) {
         for (var vc : dep.versionConstraints) {
             if (vc.matches(pom.version)) {
                 return true;

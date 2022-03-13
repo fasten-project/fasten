@@ -34,7 +34,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import eu.fasten.core.maven.data.Dependency;
-import eu.fasten.core.maven.data.PomAnalysisResultX;
+import eu.fasten.core.maven.data.PomAnalysisResult;
 import eu.fasten.core.maven.data.VersionConstraint;
 
 public class DependencyGraphBuilder {
@@ -77,7 +77,7 @@ public class DependencyGraphBuilder {
         return dependents;
     }
     
-    public Set<PomAnalysisResultX> getPomAnalysisResults(DSLContext dbContext) {
+    public Set<PomAnalysisResult> getPomAnalysisResults(DSLContext dbContext) {
 
         var dbRes = dbContext.select( //
                 PACKAGE_VERSIONS.METADATA, //
@@ -90,7 +90,7 @@ public class DependencyGraphBuilder {
                 .map(x -> {
                     var json = new JSONObject(x.component1().data());
 
-                    var par = new PomAnalysisResultX();
+                    var par = new PomAnalysisResult();
                     par.id = x.component2();
                     par.groupId = json.getString("groupId");
                     par.artifactId = json.getString("artifactId");
@@ -115,7 +115,7 @@ public class DependencyGraphBuilder {
         return pars;
     }
 
-    public List<PomAnalysisResultX> findMatchingRevisions(Collection<PomAnalysisResultX> revisions,
+    public List<PomAnalysisResult> findMatchingRevisions(Collection<PomAnalysisResult> revisions,
             Set<VersionConstraint> constraints) {
         if (revisions == null) {
             return Collections.emptyList();
@@ -125,7 +125,7 @@ public class DependencyGraphBuilder {
                 .collect(Collectors.toList());
     }
 
-    private static boolean isMatch(PomAnalysisResultX r, Set<VersionConstraint> constraints) {
+    private static boolean isMatch(PomAnalysisResult r, Set<VersionConstraint> constraints) {
         var version = new DefaultArtifactVersion(r.version);
         for (var constraint : constraints) {
             if (isHardConstraint(constraint)) {
