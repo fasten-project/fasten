@@ -19,6 +19,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.Set;
 
+import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.skyscreamer.jsonassert.JSONAssert;
@@ -65,6 +66,14 @@ public class CoreMavenDataModuleTest {
     public void testExclusion() {
         var e = new Exclusion("gid", "aid");
         test(e, "\"gid:aid\"");
+    }
+
+    @Test
+    public void testDefaultArtifactVersion() {
+        test(new DefaultArtifactVersion("1.2.3"), "\"1.2.3\"");
+        test(new DefaultArtifactVersion("2.3.4-classifier"), "\"2.3.4-classifier\"");
+        test(new DefaultArtifactVersion("3"), "\"3\"");
+        test(new DefaultArtifactVersion("4.5"), "\"4.5\"");
     }
 
     private void test(Object in, String expectedJson) {

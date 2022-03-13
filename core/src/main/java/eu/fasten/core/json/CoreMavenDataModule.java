@@ -18,6 +18,8 @@ package eu.fasten.core.json;
 import java.io.IOException;
 import java.util.LinkedHashSet;
 
+import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
+
 import com.fasterxml.jackson.core.JacksonException;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
@@ -126,6 +128,21 @@ public class CoreMavenDataModule extends SimpleModule {
                     throws IOException, JacksonException {
                 String[] parts = p.getValueAsString().split(":");
                 return new Exclusion(parts[0], parts[1]);
+            }
+        });
+
+        addSerializer(DefaultArtifactVersion.class, new JsonSerializer<DefaultArtifactVersion>() {
+            @Override
+            public void serialize(DefaultArtifactVersion value, JsonGenerator gen, SerializerProvider serializers)
+                    throws IOException {
+                gen.writeString(value.toString());
+            }
+        });
+        addDeserializer(DefaultArtifactVersion.class, new JsonDeserializer<DefaultArtifactVersion>() {
+            @Override
+            public DefaultArtifactVersion deserialize(JsonParser p, DeserializationContext ctxt)
+                    throws IOException, JacksonException {
+                return new DefaultArtifactVersion(p.getValueAsString());
             }
         });
     }
