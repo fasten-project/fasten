@@ -18,14 +18,11 @@
 
 package eu.fasten.core.maven.data;
 
-import eu.fasten.core.data.Constants;
-import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
-import org.json.JSONObject;
-
 import java.io.Serializable;
 import java.sql.Timestamp;
-import java.time.format.DateTimeFormatter;
-import java.util.Objects;
+
+import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
+import org.json.JSONObject;
 
 /**
  * An artifact released in Maven Central.
