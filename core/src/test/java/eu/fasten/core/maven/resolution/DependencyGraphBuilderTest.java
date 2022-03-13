@@ -27,9 +27,8 @@ import java.util.Set;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import eu.fasten.core.maven.data.PomAnalysisResultX;
+import eu.fasten.core.maven.data.PomAnalysisResult;
 import eu.fasten.core.maven.data.VersionConstraint;
-import eu.fasten.core.maven.resolution.DependencyGraphBuilder;
 
 public class DependencyGraphBuilderTest {
 
@@ -64,8 +63,8 @@ public class DependencyGraphBuilderTest {
         assertEquals(expected, actual);
     }
 
-    private PomAnalysisResultX newRevision(String g, String a, String v, Timestamp timestamp) {
-        var par = new PomAnalysisResultX();
+    private PomAnalysisResult newRevision(String g, String a, String v, Timestamp timestamp) {
+        var par = new PomAnalysisResult();
         par.groupId = g;
         par.artifactId = a;
         par.version = v;
