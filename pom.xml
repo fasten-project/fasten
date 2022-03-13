@@ -178,6 +178,8 @@
                 <version>${maven.compiler.plugin.version}</version>
                 <configuration>
                     <release>11</release>
+                    <compilerArgument>-g:vars</compilerArgument>
+                    <testCompilerArgument>-g:vars</testCompilerArgument>
                 </configuration>
             </plugin>
 
