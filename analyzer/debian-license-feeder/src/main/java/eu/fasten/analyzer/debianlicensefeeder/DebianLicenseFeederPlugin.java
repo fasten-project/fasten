@@ -1,8 +1,8 @@
 package eu.fasten.analyzer.debianlicensefeeder;
 
 import eu.fasten.core.data.Constants;
-//This import should probably be different
 import eu.fasten.core.data.metadatadb.MetadataDao;
+//This import should probably be different
 import eu.fasten.core.maven.data.Revision;
 import eu.fasten.core.plugins.AbstractKafkaPlugin;
 import eu.fasten.core.plugins.DBConnector;
@@ -29,7 +29,7 @@ public class DebianLicenseFeederPlugin extends Plugin {
     @Extension
     public static class DebianLicenseFeeder implements KafkaPlugin, DBConnector {
 
-        private final Logger logger = LoggerFactory.getLogger(LicenseFeeder.class.getName());
+        private final Logger logger = LoggerFactory.getLogger(DebianLicenseFeeder.class.getName());
 
         protected Exception pluginError = null;
         private static DSLContext dslContext;
@@ -37,7 +37,7 @@ public class DebianLicenseFeederPlugin extends Plugin {
 
         @Override
         public void setDBConnection(Map<String, DSLContext> dslContexts) {
-            LicenseFeeder.dslContext = dslContexts.get(Constants.mvnForge);
+            DebianLicenseFeeder.dslContext = dslContexts.get(Constants.debianForge);
         }
 
 
