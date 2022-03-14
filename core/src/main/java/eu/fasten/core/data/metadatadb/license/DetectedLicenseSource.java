@@ -7,7 +7,8 @@ public enum DetectedLicenseSource {
 
     LOCAL_POM("Local pom file"),
     MAVEN_CENTRAL("Maven central"),
-    GITHUB("GitHub APIs");
+    GITHUB("GitHub APIs"),
+    DEBIAN_PACKAGES("Debian packages");
 
     private final String description;
 
