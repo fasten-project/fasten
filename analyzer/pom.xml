@@ -44,6 +44,7 @@
         <module>vulnerability-packages-listener</module>
         <module>dummy-plugin</module>
         <module>debian-license-detector</module>
+        <!-- <module>debian-license-feeder</module>-->
         <module>license-detector</module>
         <module>license-feeder</module>
     </modules>
