@@ -92,8 +92,8 @@ public class TauStats {
 				new Switch("weighted", 'w', "weighted", "Use the hyperbolic weighted tau."),
 				new UnflaggedOption("centrality", EnumStringParser.getParser(Centrality.class, true), JSAP.NO_DEFAULT, JSAP.REQUIRED, JSAP.NOT_GREEDY, "The centrality (one of " + java.util.Arrays.toString(Centrality.values()) + ")."),
 				new UnflaggedOption("rocksDb", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.REQUIRED, JSAP.NOT_GREEDY, "The path to the RocksDB database of revision call graphs."),
-				new UnflaggedOption("cache", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, JSAP.NOT_GREEDY, "The RocksDB cache."),
-				new UnflaggedOption("jdbcURI", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, JSAP.NOT_GREEDY, "The JDBC URI."),
+				new UnflaggedOption("cache", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.REQUIRED, JSAP.NOT_GREEDY, "The RocksDB cache."),
+				new UnflaggedOption("jdbcURI", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, JSAP.NOT_GREEDY, "The JDBC URI; if missing, all data will be retrieved from the cache."),
 				new UnflaggedOption("database", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, JSAP.NOT_GREEDY, "The database name."),
 				new UnflaggedOption("resolverGraph", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, JSAP.NOT_GREEDY, "The path to a resolver graph (will be created if it does not exist)."), });
 
@@ -108,7 +108,7 @@ public class TauStats {
 		final String cacheDir = jsapResult.getString("cache");
 		final String resolverGraph = jsapResult.getString("resolverGraph");
 
-		final RocksDBData cacheData = SearchEngine.openCache(cacheDir, database == null);
+		RocksDBData cacheData = SearchEngine.openCache(cacheDir, database == null);
 		var cache = cacheData.cache;
 		var mergedHandle = cacheData.columnFamilyHandles.get(0);
 		var dependenciesHandle = cacheData.columnFamilyHandles.get(1);
@@ -123,21 +123,26 @@ public class TauStats {
 			final var graph = tauStats.rocksDao.getGraphData(gid);
 			if (graph == null) continue;
 		
-			final Record2<String, String> record = context.select(Packages.PACKAGES.PACKAGE_NAME, PackageVersions.PACKAGE_VERSIONS.VERSION).from(PackageVersions.PACKAGE_VERSIONS).join(Packages.PACKAGES).on(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.eq(Packages.PACKAGES.ID)).where(PackageVersions.PACKAGE_VERSIONS.ID.eq(Long.valueOf(gid))).fetchOne();
-			if (record == null) {
-				LOGGER.warn("MetaData for GID " + gid + " not found");
-				continue;
-			}
-			final String[] a = record.component1().split(":");
-			final String groupId = a[0];
-			final String artifactId = a[1];
-			final String version = record.component2();
+			String name = null, groupId = null, artifactId = null, version = null;
+			if (database != null) {
+				final Record2<String, String> record = context.select(Packages.PACKAGES.PACKAGE_NAME, PackageVersions.PACKAGE_VERSIONS.VERSION).from(PackageVersions.PACKAGE_VERSIONS).join(Packages.PACKAGES).on(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.eq(Packages.PACKAGES.ID)).where(PackageVersions.PACKAGE_VERSIONS.ID.eq(Long.valueOf(gid))).fetchOne();
+				if (record == null) {
+					LOGGER.warn("MetaData for GID " + gid + " not found");
+					continue;
+				}
+				final String[] a = record.component1().split(":");
+				groupId = a[0];
+				artifactId = a[1];
+				version = record.component2();
+				name = groupId + ":" + artifactId + "$" + version;
 
+			}
 			final byte[] gidAsByteArray = Longs.toByteArray(gid);
 			final byte[] depFromCache  = cache.get(dependenciesHandle, gidAsByteArray);
 
 			final LongLinkedOpenHashSet dependencyIds; 
 			if (depFromCache == null) {
+				if (database == null) throw new IllegalStateException();
 				final Set<Revision> dependencySet = tauStats.resolver.resolveDependencies(groupId, artifactId, version, -1, context, true);
 				dependencyIds = LongLinkedOpenHashSet.toSet(dependencySet.stream().mapToLong(x -> x.id));
 				dependencyIds.addAndMoveToFirst(gid);
@@ -146,18 +151,17 @@ public class TauStats {
 			else dependencyIds = SerializationUtils.deserialize(depFromCache);
 
 			final DirectedGraph stitchedGraph;
-			final String name = groupId + ":" + artifactId + "$" + version;
 
 			byte[] stitchedFromCache = cache.get(mergedHandle, gidAsByteArray);
 			if (stitchedFromCache != null) {
-				if (stitchedFromCache.length != 0) stitchedGraph = ArrayImmutableDirectedGraph.copyOf(SerializationUtils.deserialize(stitchedFromCache), false);
+				if (stitchedFromCache.length != 0) stitchedGraph = SerializationUtils.deserialize(stitchedFromCache);
 				else {
 					LOGGER.warn("Cached returned null on id " + gid);
 					continue;
 				}
 			}
 			else {
-				LOGGER.info("Analyzing graph " + name  + " with id " + gid);
+				LOGGER.info("Analyzing graph with id " + gid + (name != null ? " (" + name + ")" : ""));
 				LOGGER.info("Dependencies: " + dependencyIds);
 
 				final var dm = new CGMerger(dependencyIds, context, tauStats.rocksDao);
@@ -181,7 +185,8 @@ public class TauStats {
 				break;
 			}
 			
-			System.out.println(gid + "\t" + name);
+			System.out.println(gid + (name != null ? "\t" + name : ""));
+			System.err.println(gid + (name != null ? "\t" + name : ""));
 			
 			for(long r: dependencyIds) {
 				LOGGER.info("Comparing with graph " + r);
@@ -229,31 +234,57 @@ public class TauStats {
 
 				if (lf.length == 0) continue;
 				
-				t = weighted ? WeightedTau.HYPERBOLIC.compute(lf, gf) : KendallTau.INSTANCE.compute(lf, gf);
+				t = KendallTau.INSTANCE.compute(lf, gf);
 				if (Double.isNaN(t)) t = 0;
 				System.out.print("\t++ " + r + ":" + t + " \t" + localForward.size());
 
-				t = weighted ? WeightedTau.HYPERBOLIC.compute(lf, gb) : KendallTau.INSTANCE.compute(lf, gb);
+				t = KendallTau.INSTANCE.compute(lf, gb);
 				if (Double.isNaN(t)) t = 0;
 				System.out.print("\t+- " + r + ":" + t + " \t" + localForward.size());
 
-				t = weighted ? WeightedTau.HYPERBOLIC.compute(lb, gb) : KendallTau.INSTANCE.compute(lb, gb);
+				t = KendallTau.INSTANCE.compute(lb, gb);
 				if (Double.isNaN(t)) t = 0;
 				System.out.print("\t-- " + r + ":" + t + " \t" + localForward.size());
 
-				t = weighted ? WeightedTau.HYPERBOLIC.compute(lb, gf) : KendallTau.INSTANCE.compute(lb, gf);
+				t = KendallTau.INSTANCE.compute(lb, gf);
 				if (Double.isNaN(t)) t = 0;
 				System.out.print("\t-+ " + r + ":" + t + " \t" + localForward.size());
 
-				t = weighted ? WeightedTau.HYPERBOLIC.compute(lb, lf) : KendallTau.INSTANCE.compute(lb, lf);
+				t = KendallTau.INSTANCE.compute(lb, lf);
 				if (Double.isNaN(t)) t = 0;
 				System.out.print("\tl+- " + r + ":" + t + " \t" + localForward.size());
 
-				t = weighted ? WeightedTau.HYPERBOLIC.compute(gb, gf) : KendallTau.INSTANCE.compute(gb, gf);
+				t = KendallTau.INSTANCE.compute(gb, gf);
 				if (Double.isNaN(t)) t = 0;
 				System.out.print("\tg+- " + r + ":" + t + " \t" + localForward.size());
 
 				System.out.println();
+
+				t = WeightedTau.HYPERBOLIC.compute(lf, gf);
+				if (Double.isNaN(t)) t = 0;
+				System.err.print("\t++ " + r + ":" + t + " \t" + localForward.size());
+
+				t = WeightedTau.HYPERBOLIC.compute(lf, gb);
+				if (Double.isNaN(t)) t = 0;
+				System.err.print("\t+- " + r + ":" + t + " \t" + localForward.size());
+
+				t = WeightedTau.HYPERBOLIC.compute(lb, gb);
+				if (Double.isNaN(t)) t = 0;
+				System.err.print("\t-- " + r + ":" + t + " \t" + localForward.size());
+
+				t = WeightedTau.HYPERBOLIC.compute(lb, gf);
+				if (Double.isNaN(t)) t = 0;
+				System.err.print("\t-+ " + r + ":" + t + " \t" + localForward.size());
+
+				t = WeightedTau.HYPERBOLIC.compute(lb, lf);
+				if (Double.isNaN(t)) t = 0;
+				System.err.print("\tl+- " + r + ":" + t + " \t" + localForward.size());
+
+				t = WeightedTau.HYPERBOLIC.compute(gb, gf);
+				if (Double.isNaN(t)) t = 0;
+				System.err.print("\tg+- " + r + ":" + t + " \t" + localForward.size());
+
+				System.err.println();
 			}
 		}
 	}
