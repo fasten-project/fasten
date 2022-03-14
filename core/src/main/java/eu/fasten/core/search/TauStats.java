@@ -18,6 +18,8 @@
 
 package eu.fasten.core.search;
 
+import java.io.FileOutputStream;
+import java.io.PrintStream;
 import java.util.Scanner;
 import java.util.Set;
 
@@ -49,6 +51,7 @@ import eu.fasten.core.merge.CGMerger;
 import eu.fasten.core.search.SearchEngine.RocksDBData;
 import eu.fasten.core.search.predicate.CachingPredicateFactory;
 import it.unimi.dsi.fastutil.doubles.DoubleArrayList;
+import it.unimi.dsi.fastutil.io.FastBufferedOutputStream;
 import it.unimi.dsi.fastutil.io.TextIO;
 import it.unimi.dsi.fastutil.longs.Long2DoubleFunction;
 import it.unimi.dsi.fastutil.longs.LongLinkedOpenHashSet;
@@ -120,7 +123,17 @@ public class TauStats {
 		
 		final TauStats tauStats = database != null ? new TauStats(jdbcURI, database, rocksDb, resolverGraph) : new TauStats(rocksDb);
 		final DSLContext context = tauStats.context;
+		final PrintStream lbs, lfs, gbs, gfs;
 
+		if (saveBasename != null) {
+			lbs = new PrintStream(new FastBufferedOutputStream(new FileOutputStream(saveBasename + ".lb"))); 
+			lfs = new PrintStream(new FastBufferedOutputStream(new FileOutputStream(saveBasename + ".lf"))); 
+			gbs = new PrintStream(new FastBufferedOutputStream(new FileOutputStream(saveBasename + ".gb"))); 
+			gfs = new PrintStream(new FastBufferedOutputStream(new FileOutputStream(saveBasename + ".gf"))); 
+		} else {
+			lbs = lfs = gbs = gfs = null;
+		}
+		
 		@SuppressWarnings("resource")
 		Scanner scanner = new Scanner(System.in);
 		while(scanner.hasNextLong()) {
@@ -239,11 +252,11 @@ public class TauStats {
 
 				if (lf.length == 0) continue;
 				
-				if (saveBasename != null) {
-					TextIO.storeDoubles(lf, saveBasename + "-" + gid + "-" + r + ".lf");
-					TextIO.storeDoubles(lb, saveBasename + "-" + gid + "-" + r + ".lb");
-					TextIO.storeDoubles(gf, saveBasename + "-" + gid + "-" + r + ".gf");
-					TextIO.storeDoubles(gb, saveBasename + "-" + gid + "-" + r + ".gb");
+				if (saveBasename != null) {					
+					TextIO.storeDoubles(lb, lbs);
+					TextIO.storeDoubles(lf, lfs);
+					TextIO.storeDoubles(gb, gbs);
+					TextIO.storeDoubles(gf, gfs);
 				}
 				
 				t = KendallTau.INSTANCE.compute(lf, gf);
@@ -298,6 +311,13 @@ public class TauStats {
 
 				System.err.println();
 			}
+		}
+		
+		if (saveBasename != null) {
+			lbs.close();
+			lfs.close();
+			gbs.close();
+			gfs.close();
 		}
 	}
 }
