@@ -28,6 +28,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.common.primitives.Longs;
+import com.martiansoftware.jsap.FlaggedOption;
 import com.martiansoftware.jsap.JSAP;
 import com.martiansoftware.jsap.JSAPResult;
 import com.martiansoftware.jsap.Parameter;
@@ -48,6 +49,7 @@ import eu.fasten.core.merge.CGMerger;
 import eu.fasten.core.search.SearchEngine.RocksDBData;
 import eu.fasten.core.search.predicate.CachingPredicateFactory;
 import it.unimi.dsi.fastutil.doubles.DoubleArrayList;
+import it.unimi.dsi.fastutil.io.TextIO;
 import it.unimi.dsi.fastutil.longs.Long2DoubleFunction;
 import it.unimi.dsi.fastutil.longs.LongLinkedOpenHashSet;
 import it.unimi.dsi.lang.EnumStringParser;
@@ -90,17 +92,20 @@ public class TauStats {
 	public static void main(final String args[]) throws Exception {
 		final SimpleJSAP jsap = new SimpleJSAP(TauStats.class.getName(), "Creates an instance of SearchEngine and answers queries from the command line (rlwrap recommended).", new Parameter[] {
 				new Switch("weighted", 'w', "weighted", "Use the hyperbolic weighted tau."),
+				new FlaggedOption("save", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, 's', "save", "Save the score files with the given basename."),
 				new UnflaggedOption("centrality", EnumStringParser.getParser(Centrality.class, true), JSAP.NO_DEFAULT, JSAP.REQUIRED, JSAP.NOT_GREEDY, "The centrality (one of " + java.util.Arrays.toString(Centrality.values()) + ")."),
 				new UnflaggedOption("rocksDb", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.REQUIRED, JSAP.NOT_GREEDY, "The path to the RocksDB database of revision call graphs."),
 				new UnflaggedOption("cache", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.REQUIRED, JSAP.NOT_GREEDY, "The RocksDB cache."),
 				new UnflaggedOption("jdbcURI", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, JSAP.NOT_GREEDY, "The JDBC URI; if missing, all data will be retrieved from the cache."),
 				new UnflaggedOption("database", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, JSAP.NOT_GREEDY, "The database name."),
-				new UnflaggedOption("resolverGraph", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, JSAP.NOT_GREEDY, "The path to a resolver graph (will be created if it does not exist)."), });
+				new UnflaggedOption("resolverGraph", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, JSAP.NOT_GREEDY, "The path to a resolver graph (will be created if it does not exist)."),
+			});
 
 		final JSAPResult jsapResult = jsap.parse(args);
 		if (jsap.messagePrinted()) System.exit(1);
 
 		final boolean weighted = jsapResult.getBoolean("weighted");
+		final String saveBasename = jsapResult.getString("save");
 		final Centrality centrality = (Centrality)jsapResult.getObject("centrality");
 		final String jdbcURI = jsapResult.getString("jdbcURI");
 		final String database = jsapResult.getString("database");
@@ -233,6 +238,13 @@ public class TauStats {
 				double t;
 
 				if (lf.length == 0) continue;
+				
+				if (saveBasename != null) {
+					TextIO.storeDoubles(lf, saveBasename + "-" + gid + "-" + r + ".lf");
+					TextIO.storeDoubles(lb, saveBasename + "-" + gid + "-" + r + ".lb");
+					TextIO.storeDoubles(gf, saveBasename + "-" + gid + "-" + r + ".gf");
+					TextIO.storeDoubles(gb, saveBasename + "-" + gid + "-" + r + ".gb");
+				}
 				
 				t = KendallTau.INSTANCE.compute(lf, gf);
 				if (Double.isNaN(t)) t = 0;
