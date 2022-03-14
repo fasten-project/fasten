@@ -1,5 +1,6 @@
 package eu.fasten.analyzer.debianlicensedetector;
 
+import com.google.common.collect.Sets;
 import eu.fasten.core.data.metadatadb.license.DetectedLicense;
 import eu.fasten.core.data.metadatadb.license.DetectedLicenseSource;
 import eu.fasten.core.data.metadatadb.license.DetectedLicenses;
@@ -97,7 +98,18 @@ public class DebianLicenseDetectorPlugin extends Plugin {
                 packageVersion = extractPackageVersion(json);
                 logger.info("The package version is:"+packageVersion+".");
 
-                // these logs should be saved in some shared directory, and a policy of log deletion should be implemented
+                // Outbound license detection: adding outbound licenses to the JSON object.
+                detectedLicenses.setOutbound(DebianOutboundLicenses(packageName,packageVersion));
+                if (detectedLicenses.getOutbound() == null || detectedLicenses.getOutbound().isEmpty()) {
+                    logger.warn("No outbound licenses were detected.");
+                } else {
+                    logger.info(
+                            detectedLicenses.getOutbound().size() + " outbound license" +
+                                    (detectedLicenses.getOutbound().size() == 1 ? "" : "s") + " detected: " +
+                                    detectedLicenses.getOutbound()
+                    );
+                }
+
                 String directoryName = "logs";
                 File directory = new File(directoryName);
                 if (!directory.exists()) {
@@ -124,8 +136,6 @@ public class DebianLicenseDetectorPlugin extends Plugin {
                     logger.info("Analyzing: " + packageName + " version : " + packageVersion);
                     AnalyzeDirectory(jsonOutputPayload, packageName, packageVersion);
                 }
-                System.out.println("Object created with files:");
-                System.out.println(object.toString());
 
                 // Creating a json pretty printed in the jsons directory
                 String directoryNameJson = "jsons";
@@ -139,6 +149,7 @@ public class DebianLicenseDetectorPlugin extends Plugin {
                 // here is missing the control upon jsons already created
                 writer.write(object.toString(4));
                 writer.close();
+
 
                 JSONArray fileLicenses = parseScanResult(String.valueOf(fileJson));
                 if (fileLicenses != null && !fileLicenses.isEmpty()) {
@@ -209,97 +220,21 @@ public class DebianLicenseDetectorPlugin extends Plugin {
          * @param packageVersion the version of the package to be scanned.
          * @return the set of detected outbound licenses.
          */
-        /* protected Set<DetectedLicense> getDebianOutboundLicenses(String packageName, String packageVersion, String repoUrl) {
-
-            try {
-                // Retrieving the outbound license(s) from one of the copyright files (copyright, license or readme)
-                // TODO passing also the path as SOURCE
-                JSONObject FileAndPath = retrieveCopyrightFile(packageName,packageVersion)
-                if (FileAndPath.getString("license")!= null){
-                    String license = FileAndPath.getString("license");
-                    return license;
-                }
-
-
-            } catch (FileNotFoundException | RuntimeException | XmlPullParserException e) {
-
-                // In case retrieving the outbound license from the copights  files was not possible
-                logger.warn(e.getMessage(), e.getCause()); // why wasn't it possible
-                logger.info("Retrieving outbound license from GitHub...");
-                if ((detectedLicenses.getOutbound() == null || detectedLicenses.getOutbound().isEmpty())
-                        && repoUrl != null) {
-
-                    // Retrieving licenses from the GitHub API
-                    try {
-                        DetectedLicense licenseFromGitHub = getDebianLicenseFromGitHub(repoUrl);
-                        if (licenseFromGitHub != null) {
-                            return Sets.newHashSet(licenseFromGitHub);
-                        } else {
-                            logger.warn("Couldn't retrieve the outbound license from GitHub.");
-                        }
-                    } catch (IllegalArgumentException | IOException ex) { // not a valid GitHub repo URL
-                        logger.warn(e.getMessage(), e.getCause());
-                    } catch (@SuppressWarnings({"TryWithIdenticalCatches", "RedundantSuppression"})
-                            RuntimeException ex) {
-                        logger.warn(e.getMessage(), e.getCause()); // could not contact GitHub API
-                    }
-                }
+        protected Set<DetectedLicense> DebianOutboundLicenses(String packageName, String packageVersion) throws IOException, TimeoutException {
+            // Retrieving the outbound license(s) from one of the copyright files (copyright, license or readme)
+            JSONObject FileAndPath = retrieveCopyrightFile(packageName,packageVersion);
+            System.out.println("Inside DebianOutboundLicenses function.");
+            System.out.println(FileAndPath);
+            if (FileAndPath.getString("license")!= null){
+                DetectedLicense licenseFromDebianAPI;
+                licenseFromDebianAPI = new DetectedLicense(FileAndPath.getString("license"), DetectedLicenseSource.DEBIAN_PACKAGES);
+                return Sets.newHashSet(licenseFromDebianAPI);
+                //return FileAndPath;
             }
 
             return Collections.emptySet();
-        }*/
+        }
 
-        // TODO
-        /**
-         * Retrieves the licenses declared in the files: `copyright`, `license`, `readme` .
-         *
-         * @param packageName the package name to be analyzed.
-         * @param packageVersion the package version to be analyzed.
-         * @return the detected licenses.
-         * @throws XmlPullParserException in case the `pom.xml` file couldn't be parsed as an XML file.
-         */
-        /*protected Set<DetectedLicense> getLicensesFromCopyrightFile(String packageName, String packageVersion) throws XmlPullParserException {
-
-            // Result
-            List<License> licenses;
-
-            // Maven `pom.xml` file parser
-            MavenXpp3Reader reader = new MavenXpp3Reader();
-            try (FileReader fileReader = new FileReader(pomFile)) {
-
-                // Parsing and retrieving the `licenses` XML tag
-                Model model = reader.read(fileReader);
-                licenses = model.getLicenses();
-
-                // If the pom file contains at least a license tag
-                if (!licenses.isEmpty()) {
-
-                    // Logging
-                    logger.trace("Found " + licenses.size() + " outbound license" + (licenses.size() == 1 ? "" : "s") +
-                            " in " + pomFile.getAbsolutePath() + ":");
-                    for (int i = 0; i < licenses.size(); i++) {
-                        logger.trace("License number " + i + ": " + licenses.get(i).getName());
-                    }
-
-                    // Returning the set of discovered licenses
-                    Set<DetectedLicense> result = new HashSet<>(Collections.emptySet());
-                    licenses.forEach(license -> result.add(new DetectedLicense(
-                            license.getName(),
-                            DetectedLicenseSource.LOCAL_POM)));
-
-                    return result;
-                }
-            } catch (IOException e) {
-                throw new RuntimeException("Pom file " + pomFile.getAbsolutePath() +
-                        " exists but couldn't instantiate a FileReader object..", e.getCause());
-            } catch (XmlPullParserException e) {
-                throw new XmlPullParserException("Pom file " + pomFile.getAbsolutePath() +
-                        " exists but couldn't be parsed as a Maven pom XML file: " + e.getMessage());
-            }
-
-            // No licenses were detected
-            return Collections.emptySet();
-        }*/
 
 
         /**
@@ -488,6 +423,9 @@ public class DebianLicenseDetectorPlugin extends Plugin {
                             LicenseAndPath = RetrieveLicenseAndPathJSON(checksum, packageName, packageVersion);
                             if (LicenseAndPath.getString("license")!= null){
                                 license = LicenseAndPath.getString("license");
+                                System.out.println("Inside retrieveCopyright function.");
+                                System.out.println(LicenseAndPath);
+                                System.out.println(license);
                             }
                             if (license != null) {
                                 System.out.println("The license retrieved is: "+license);
