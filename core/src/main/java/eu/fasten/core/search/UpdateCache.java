@@ -102,6 +102,7 @@ public class UpdateCache {
 
 		int cached = 0, all = 0;
 		ProgressLogger pl = new ProgressLogger();
+		pl.start();
 		for(byte[] key: update.rocksDao) {
 			all++;
 			pl.update();
