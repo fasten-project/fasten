@@ -97,8 +97,10 @@ public class UpdateCache {
 		final UpdateCache update = new UpdateCache(jdbcURI, database, rocksDb, resolverGraph);
 		final DSLContext context = update.context;
 
+		int cached = 0, all = 0;
 		ProgressLogger pl = new ProgressLogger();
 		for(byte[] key: update.rocksDao) {
+			all++;
 			pl.update();
 			final long gid = Longs.fromByteArray(key);
 			final var graph = update.rocksDao.getGraphData(gid);
@@ -154,8 +156,11 @@ public class UpdateCache {
 			
 			cache.put(dependenciesHandle, key, SerializationUtils.serialize(dependencyIds));
 			cache.put(mergedHandle, key, SerializationUtils.serialize(ArrayImmutableDirectedGraph.copyOf(stitchedGraph, false)));
+			cached++;
 		}
 		
 		pl.done();
+		
+		LOGGER.info("Cached " + cached + " out of " + all + " (" + 100.0 * cached / all + "%)");
 	}
 }
