@@ -132,7 +132,7 @@ public class UpdateCache {
 			MutableInt c = new MutableInt();
 			dependencyIds.forEach(depId -> {
 				try {
-					if (update.rocksDao.getGraphData(c.longValue()) != null && update.rocksDao.getGraphData(c.longValue()) != null) c.increment();
+					if (update.rocksDao.getGraphData(depId) != null && update.rocksDao.getGraphData(depId) != null) c.increment();
 				} catch (RocksDBException e) {
 					throw new RuntimeException(e);
 				}
