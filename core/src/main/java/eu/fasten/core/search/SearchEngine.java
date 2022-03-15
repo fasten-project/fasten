@@ -207,7 +207,11 @@ public class SearchEngine implements AutoCloseable {
 		final ColumnFamilyOptions defaultOptions = new ColumnFamilyOptions();
 		@SuppressWarnings("resource")
 		final DBOptions dbOptions = new DBOptions().setCreateIfMissing(true).setCreateMissingColumnFamilies(true);
-		final List<ColumnFamilyDescriptor> cfDescriptors = List.of(new ColumnFamilyDescriptor(RocksDB.DEFAULT_COLUMN_FAMILY, defaultOptions), new ColumnFamilyDescriptor("merged".getBytes(), defaultOptions), new ColumnFamilyDescriptor("dependencies".getBytes(), defaultOptions));
+		final List<ColumnFamilyDescriptor> cfDescriptors = List.of(new ColumnFamilyDescriptor(
+				RocksDB.DEFAULT_COLUMN_FAMILY, defaultOptions), 
+				new ColumnFamilyDescriptor("merged".getBytes(), defaultOptions), 
+				new ColumnFamilyDescriptor("dependencies".getBytes(), defaultOptions),
+				new ColumnFamilyDescriptor("components".getBytes(), defaultOptions));
 		final List<ColumnFamilyHandle> columnFamilyHandles = new ArrayList<>();
 		return new RocksDBData(readOnly ?
 				RocksDB.openReadOnly(dbOptions, cacheDir, cfDescriptors, columnFamilyHandles) :

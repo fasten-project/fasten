@@ -28,6 +28,7 @@ import org.rocksdb.RocksDBException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import com.martiansoftware.jsap.JSAP;
 import com.martiansoftware.jsap.JSAPResult;
@@ -47,6 +48,7 @@ import eu.fasten.core.merge.CGMerger;
 import eu.fasten.core.search.SearchEngine.RocksDBData;
 import eu.fasten.core.search.predicate.CachingPredicateFactory;
 import it.unimi.dsi.fastutil.longs.LongLinkedOpenHashSet;
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.logging.ProgressLogger;
 
 public class UpdateCache {
@@ -93,6 +95,7 @@ public class UpdateCache {
 		var cache = cacheData.cache;
 		var mergedHandle = cacheData.columnFamilyHandles.get(0);
 		var dependenciesHandle = cacheData.columnFamilyHandles.get(1);
+		var componentsHandle = cacheData.columnFamilyHandles.get(2);
 		
 		final UpdateCache update = new UpdateCache(jdbcURI, database, rocksDb, resolverGraph);
 		final DSLContext context = update.context;
@@ -129,17 +132,23 @@ public class UpdateCache {
 			var dependencyIds = LongLinkedOpenHashSet.toSet(dependencySet.stream().mapToLong(x -> x.id));
 			dependencyIds.addAndMoveToFirst(gid);
 
-			MutableInt c = new MutableInt();
+			final LongOpenHashSet availableIds = new LongOpenHashSet();
 			dependencyIds.forEach(depId -> {
 				try {
-					if (update.rocksDao.getGraphData(depId) != null && update.rocksDao.getGraphData(depId) != null) c.increment();
+					if (update.rocksDao.getGraphData(depId) != null && update.rocksDao.getGraphData(depId) != null) availableIds.add(depId);
 				} catch (RocksDBException e) {
 					throw new RuntimeException(e);
 				}
 			});
 
-			if (c.doubleValue() / dependencyIds.size() < 0.9) {
-				LOGGER.warn("Not enough dependency graphs for gid " + gid + " (" + name + ")");
+			var prevAvailableIds = cache.get(componentsHandle, key);
+			if (prevAvailableIds != null && availableIds.equals(SerializationUtils.deserialize(prevAvailableIds))) {
+				LOGGER.info("Unchanged available dependencies for gid " + gid + " (" + name + ")");
+				continue;
+			}
+			
+			if (availableIds.size() < 0.9 * dependencyIds.size()) {
+				LOGGER.warn("Not enough dependencies for gid " + gid + " (" + name + ")");
 				continue;
 			}
 			
@@ -154,6 +163,8 @@ public class UpdateCache {
 				continue;
 			}
 			
+
+			cache.put(componentsHandle, key, SerializationUtils.serialize(availableIds));
 			cache.put(dependenciesHandle, key, SerializationUtils.serialize(dependencyIds));
 			cache.put(mergedHandle, key, SerializationUtils.serialize(ArrayImmutableDirectedGraph.copyOf(stitchedGraph, false)));
 			cached++;
