@@ -40,6 +40,7 @@ import org.rocksdb.CompressionType;
 import org.rocksdb.DBOptions;
 import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
+import org.rocksdb.RocksIterator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -82,7 +83,7 @@ import it.unimi.dsi.webgraph.BVGraph;
 import it.unimi.dsi.webgraph.ImmutableGraph;
 import it.unimi.dsi.webgraph.Transform;
 
-public class RocksDao implements Closeable {
+public class RocksDao implements Closeable, Iterable<byte[]> {
 
     private final static byte[] METADATA_COLUMN_FAMILY = "metadata".getBytes();
     private final RocksDB rocksDb;
@@ -125,6 +126,27 @@ public class RocksDao implements Closeable {
         initKryo();
     }
 
+    public Iterator<byte[]> iterator() {
+    	final RocksIterator i = rocksDb.newIterator();
+    	i.seekToFirst();
+    	
+    	return new Iterator<>() {
+			
+			@Override
+			public byte[] next() {
+				if (! hasNext()) throw new NoSuchElementException();
+				byte[] result = i.key();
+				i.next();
+				return result;
+			}
+			
+			@Override
+			public boolean hasNext() {
+				return i.isValid();
+			}
+		};
+    }
+    
     private void initKryo() {
         kryo = new Kryo();
         kryo.register(BVGraph.class, new BVGraphSerializer(kryo));
