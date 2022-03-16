@@ -376,6 +376,7 @@ public class DebianLicenseDetectorPlugin extends Plugin {
          * @param packageVersion the package version to be analyzed.
          */
         protected JSONObject retrieveCopyrightFile(String packageName, String packageVersion) throws IOException, TimeoutException {
+            JSONObject result = new JSONObject();
             URL url = new URL("https://sources.debian.org/api/src/" + packageName + "/" + packageVersion + "/");
             JSONObject LicenseAndPath = new JSONObject();
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
@@ -408,42 +409,24 @@ public class DebianLicenseDetectorPlugin extends Plugin {
                         if (checksum != null) {
                             // the following String should be modified in a JSONObject, and then parsing the license key
                             LicenseAndPath = RetrieveLicenseAndPathJSON(checksum, packageName, packageVersion);
-                            if (LicenseAndPath.getString("license")!= null){
-                                license = LicenseAndPath.getString("license");
-                            }
-                            if (license != null) {
-                                System.out.println("The license retrieved is: "+license);
-                                return LicenseAndPath;
-                            }
+                            result = ElaborateCopyrightFileJSON(LicenseAndPath);
+                            return result;
                         }
                     }
                     if (name.toLowerCase().contains(licenseStr)) {
                         String checksum = RetrieveChecksum(name, packageName, packageVersion);
                         if (checksum != null) {
                             LicenseAndPath = RetrieveLicenseAndPathJSON(checksum, packageName, packageVersion);
-                            if (LicenseAndPath.getString("license")!= null){
-                                license = LicenseAndPath.getString("license");
-                                System.out.println("Inside retrieveCopyright function.");
-                                System.out.println(LicenseAndPath);
-                                System.out.println(license);
-                            }
-                            if (license != null) {
-                                System.out.println("The license retrieved is: "+license);
-                                return LicenseAndPath;
-                            }
+                            result = ElaborateCopyrightFileJSON(LicenseAndPath);
+                            return result;
                         }
                     }
                     if (name.toLowerCase().contains(readme)) {
                         String checksum = RetrieveChecksum(name, packageName, packageVersion);
                         if (checksum != null) {
                             LicenseAndPath = RetrieveLicenseAndPathJSON(checksum, packageName, packageVersion);
-                            if (LicenseAndPath.getString("license") != null) {
-                                license = LicenseAndPath.getString("license");
-                            }
-                            if (license != null) {
-                                System.out.println("The license retrieved is: " + license);
-                                return LicenseAndPath;
-                            }
+                            result = ElaborateCopyrightFileJSON(LicenseAndPath);
+                            return result;
                         }
                     }
                 }
@@ -453,7 +436,36 @@ public class DebianLicenseDetectorPlugin extends Plugin {
             }
             return LicenseAndPath;
         }
-
+        protected JSONObject ElaborateCopyrightFileJSON(JSONObject LicenseAndPath) {
+            //JSONObject LicenseAndPath = new JSONObject();
+            String license = null;
+            if (LicenseAndPath.has("result")){
+                JSONObject obj1 = LicenseAndPath.getJSONObject("result");
+                if (obj1.has("copyright")){
+                    System.out.println(obj1);
+                    JSONArray array1 = obj1.getJSONArray("copyright");
+                    for (int j = 0; j < array1.length(); j++) {
+                        JSONObject obj2 = array1.getJSONObject(j);
+                        System.out.println(obj2);
+                        String version = obj2.getString("version");
+                        if (version.equals(packageVersion)) {
+                            if (obj2.has("license")) {
+                                license = obj2.getString("license");
+                                String path = obj2.getString("path");
+                                System.out.println("Inside retrieveCopyright function.");
+                                System.out.println(LicenseAndPath);
+                                System.out.println(license);
+                                JSONObject obj3 = new JSONObject();
+                                obj3.put("license", license);
+                                obj3.put("path", path);
+                                return obj3;
+                            }
+                        }
+                    }
+                }
+            }
+            return null;
+        }
         // retrieve checksum for a given file
         protected String RetrieveChecksum(String fileName, String packageName, String packageVersion) throws IOException {
             URL url = new URL("https://sources.debian.org/api/src/" + packageName + "/" + packageVersion + "/" + "/" + fileName + "/");
