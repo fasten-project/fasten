@@ -108,6 +108,11 @@ public class UpdateCache {
 			pl.update();
 			final long gid = Longs.fromByteArray(key);
 
+			if (gid == 76535) {
+				LOGGER.info("Skipping potential OOM caused by graph with gid " + gid);
+				continue;
+			}
+
 			LOGGER.info("Analyzing graph with gid " + gid);
 			final var graph = update.rocksDao.getGraphData(gid);
 			// No graph, we don't save
