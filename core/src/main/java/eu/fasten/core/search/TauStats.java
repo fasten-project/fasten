@@ -54,6 +54,7 @@ import it.unimi.dsi.fastutil.doubles.DoubleArrayList;
 import it.unimi.dsi.fastutil.io.FastBufferedOutputStream;
 import it.unimi.dsi.fastutil.io.TextIO;
 import it.unimi.dsi.fastutil.longs.Long2DoubleFunction;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.longs.LongLinkedOpenHashSet;
 import it.unimi.dsi.lang.EnumStringParser;
 import it.unimi.dsi.law.stat.KendallTau;
@@ -123,15 +124,16 @@ public class TauStats {
 		
 		final TauStats tauStats = database != null ? new TauStats(jdbcURI, database, rocksDb, resolverGraph) : new TauStats(rocksDb);
 		final DSLContext context = tauStats.context;
-		final PrintStream lbs, lfs, gbs, gfs;
+		final PrintStream lbs, lfs, gbs, gfs, gids;
 
 		if (saveBasename != null) {
+			gids = new PrintStream(new FastBufferedOutputStream(new FileOutputStream(saveBasename + ".gid")));
 			lbs = new PrintStream(new FastBufferedOutputStream(new FileOutputStream(saveBasename + ".lb"))); 
 			lfs = new PrintStream(new FastBufferedOutputStream(new FileOutputStream(saveBasename + ".lf"))); 
 			gbs = new PrintStream(new FastBufferedOutputStream(new FileOutputStream(saveBasename + ".gb"))); 
 			gfs = new PrintStream(new FastBufferedOutputStream(new FileOutputStream(saveBasename + ".gf"))); 
 		} else {
-			lbs = lfs = gbs = gfs = null;
+			gids = lbs = lfs = gbs = gfs = null;
 		}
 		
 		@SuppressWarnings("resource")
@@ -226,9 +228,11 @@ public class TauStats {
 				}
 				
 				DoubleArrayList localForward = new DoubleArrayList(), localBackward = new DoubleArrayList(), globalForward =  new DoubleArrayList(), globalBackward =  new DoubleArrayList();
+				LongArrayList gidList = new LongArrayList();
 
 				for(long x : dep.nodes()) {
 					if (stitchedGraph.containsVertex(x)) {
+						gidList.add(x);
 						switch(centrality) {
 						case PAGERANK:
 						case HARMONIC:
@@ -252,7 +256,8 @@ public class TauStats {
 
 				if (lf.length == 0) continue;
 				
-				if (saveBasename != null) {					
+				if (saveBasename != null) {
+					TextIO.storeLongs(gidList.toLongArray(), gids);
 					TextIO.storeDoubles(lb, lbs);
 					TextIO.storeDoubles(lf, lfs);
 					TextIO.storeDoubles(gb, gbs);
@@ -314,6 +319,7 @@ public class TauStats {
 		}
 		
 		if (saveBasename != null) {
+			gids.close();
 			lbs.close();
 			lfs.close();
 			gbs.close();
