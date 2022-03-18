@@ -60,15 +60,20 @@ public class DebianLicenseFeederPlugin extends Plugin {
                 logger.info("License feeder started.");
 
                 // Retrieving coordinates of the input record
-                Revision coordinates = extractDebianCoordinates(record);
-                logger.info("Input coordinates: " + coordinates + ".");
+
+                packageName = extractPackageName(record);
+                packageVersion = extractPackageVersion(record);
+
+                //Revision coordinates = extractDebianCoordinates(record);
+                logger.info("Package name: " + packageName + ".");
+                logger.info("Package version: " + packageVersion + ".");
 
                 // Inserting detected outbound into the database
                 var metadataDao = new MetadataDao(dslContext);
                 dslContext.transaction(transaction -> {
                     metadataDao.setContext(DSL.using(transaction));
-                    insertOutboundLicenses(coordinates, record, metadataDao);
-                    insertFileLicenses(coordinates, record, metadataDao);
+                    insertOutboundLicenses(packageName, packageVersion, record, metadataDao);
+                    insertFileLicenses(packageName, packageVersion, record, metadataDao);
                 });
 
                 // TODO Inserting licenses in files
@@ -120,6 +125,13 @@ public class DebianLicenseFeederPlugin extends Plugin {
             return new Revision(product, version, new Timestamp(createdAt));
         }
 
+
+        public static String extractPackageName(String record) {
+        }
+
+        public static String extractPackageVersion(String record) {
+        }
+
         /**
          * Inserts outbound licenses at the package version level.
          *
@@ -127,25 +139,28 @@ public class DebianLicenseFeederPlugin extends Plugin {
          * @param record      the input record containing outbound license findings.
          * @param metadataDao Data Access Object to insert records in the database.
          */
-        protected void insertOutboundLicenses(Revision coordinates, String record, MetadataDao metadataDao) {
+        protected void insertOutboundLicenses(String packageName, String packageVersion, String record, MetadataDao metadataDao) {
             var payload = new JSONObject(record);
             if (payload.has("payload")) {
                 payload = payload.getJSONObject("payload");
             }
+
             JSONArray outboundLicenses = payload.getJSONArray("outbound");
             logger.info("About to insert outbound licenses...");
             metadataDao.insertPackageOutboundLicenses(
-                    coordinates,
+                    packageName,
+                    packageVersion,
                     new JSONObject().put("licenses", outboundLicenses).toString()
             );
             logger.info("...outbound licenses inserted.");
         }
 
-        protected void insertFileLicenses(Revision coordinates, String record, MetadataDao metadataDao) {
+        protected void insertFileLicenses(String packageName, String packageVersion, String record, MetadataDao metadataDao) {
             var payload = new JSONObject(record);
             if (payload.has("payload")) {
                 payload = payload.getJSONObject("payload");
             }
+
             JSONArray fileLicenses = payload.getJSONArray("files");
             logger.info("About to insert file licenses...");
             fileLicenses.forEach(f -> {
@@ -156,7 +171,8 @@ public class DebianLicenseFeederPlugin extends Plugin {
                         (file.has("licenses") ? file.getJSONArray("licenses").length() : "no") + " licenses.");
                 if (file.has("path") && file.has("licenses")) {
                     metadataDao.insertFileLicenses(
-                            coordinates,
+                            packageName,
+                            packageVersion,
                             file.getString("path"),
                             new JSONObject().put("licenses", file.getJSONArray("licenses")).toString()
                     );
