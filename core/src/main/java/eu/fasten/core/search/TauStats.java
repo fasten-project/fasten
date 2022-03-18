@@ -258,7 +258,7 @@ public class TauStats {
 				if (lf.length == 0) continue;
 				
 				if (saveBasename != null) {
-					resids.println(gid + "\t" + gidList.size());
+					resids.println(gid + "\t" + r + "\t" + gidList.size());
 					TextIO.storeLongs(gidList.toLongArray(), gids);
 					TextIO.storeDoubles(lb, lbs);
 					TextIO.storeDoubles(lf, lfs);
