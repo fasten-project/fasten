@@ -124,16 +124,17 @@ public class TauStats {
 		
 		final TauStats tauStats = database != null ? new TauStats(jdbcURI, database, rocksDb, resolverGraph) : new TauStats(rocksDb);
 		final DSLContext context = tauStats.context;
-		final PrintStream lbs, lfs, gbs, gfs, gids;
+		final PrintStream lbs, lfs, gbs, gfs, gids, resids;
 
 		if (saveBasename != null) {
+			resids = new PrintStream(new FastBufferedOutputStream(new FileOutputStream(saveBasename + ".resid")));
 			gids = new PrintStream(new FastBufferedOutputStream(new FileOutputStream(saveBasename + ".gid")));
 			lbs = new PrintStream(new FastBufferedOutputStream(new FileOutputStream(saveBasename + ".lb"))); 
 			lfs = new PrintStream(new FastBufferedOutputStream(new FileOutputStream(saveBasename + ".lf"))); 
 			gbs = new PrintStream(new FastBufferedOutputStream(new FileOutputStream(saveBasename + ".gb"))); 
 			gfs = new PrintStream(new FastBufferedOutputStream(new FileOutputStream(saveBasename + ".gf"))); 
 		} else {
-			gids = lbs = lfs = gbs = gfs = null;
+			resids = gids = lbs = lfs = gbs = gfs = null;
 		}
 		
 		@SuppressWarnings("resource")
@@ -257,6 +258,7 @@ public class TauStats {
 				if (lf.length == 0) continue;
 				
 				if (saveBasename != null) {
+					resids.println(gid + "\t" + gidList.size());
 					TextIO.storeLongs(gidList.toLongArray(), gids);
 					TextIO.storeDoubles(lb, lbs);
 					TextIO.storeDoubles(lf, lfs);
@@ -319,6 +321,7 @@ public class TauStats {
 		}
 		
 		if (saveBasename != null) {
+			resids.close();
 			gids.close();
 			lbs.close();
 			lfs.close();
