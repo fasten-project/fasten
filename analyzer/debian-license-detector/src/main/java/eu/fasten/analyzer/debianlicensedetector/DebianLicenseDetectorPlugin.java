@@ -98,6 +98,13 @@ public class DebianLicenseDetectorPlugin extends Plugin {
                 packageVersion = extractPackageVersion(json);
                 logger.info("The package version is:"+packageVersion+".");
 
+                //Adding packageName and packageVersion to the out message (object).
+                JSONObject packageInfo = new JSONObject();
+                packageInfo.put("packageName", packageName);
+                packageInfo.put("packageVersion", packageVersion);
+                object.accumulate("packageInfo", packageInfo);
+
+
                 // Outbound license detection: adding outbound licenses to the JSON object.
                 detectedLicenses.setOutbound(DebianOutboundLicenses(packageName,packageVersion));
                 if (detectedLicenses.getOutbound() == null || detectedLicenses.getOutbound().isEmpty()) {
@@ -176,7 +183,7 @@ public class DebianLicenseDetectorPlugin extends Plugin {
                     );
                 }
 
-                fileJson.delete();
+                //fileJson.delete();
                 file.delete();
                 System.out.println("Json files deleted.");
 
