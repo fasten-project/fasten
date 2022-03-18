@@ -107,6 +107,8 @@ public class UpdateCache {
 			all++;
 			pl.update();
 			final long gid = Longs.fromByteArray(key);
+
+			LOGGER.info("Analyzing graph with gid " + gid);
 			final var graph = update.rocksDao.getGraphData(gid);
 			// No graph, we don't save
 			if (graph == null) continue;
@@ -129,7 +131,14 @@ public class UpdateCache {
 				LOGGER.warn("No graph metadata for gid " + gid + " (" + name + ")");
 			}
 		
-			final Set<Revision> dependencySet = update.resolver.resolveDependencies(groupId, artifactId, version, -1, context, true);
+			final Set<Revision> dependencySet;
+			try {
+				dependencySet = update.resolver.resolveDependencies(groupId, artifactId, version, -1, context, true);
+			} catch(Exception e) {
+				LOGGER.error("GraphMavenResolver threw an exception", e);
+				continue;
+			}
+
 			var dependencyIds = LongLinkedOpenHashSet.toSet(dependencySet.stream().mapToLong(x -> x.id));
 			dependencyIds.addAndMoveToFirst(gid);
 
