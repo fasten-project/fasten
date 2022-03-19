@@ -102,7 +102,8 @@ public class DebianLicenseDetectorPlugin extends Plugin {
                 JSONObject packageInfo = new JSONObject();
                 packageInfo.put("packageName", packageName);
                 packageInfo.put("packageVersion", packageVersion);
-                object.accumulate("packageInfo", packageInfo);
+                // forcing the packageName and packageVersion information into the files JSONArray
+                object.accumulate("files", packageInfo);
 
 
                 // Outbound license detection: adding outbound licenses to the JSON object.
