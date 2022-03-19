@@ -19,42 +19,26 @@
 package eu.fasten.core.maven.resolution;
 
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.Set;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import javax.inject.Inject;
 
 import eu.fasten.core.maven.data.Revision;
 
 public class MavenResolver implements IMavenResolver {
 
-    private static final Logger LOG = LoggerFactory.getLogger(MavenResolver.class);
+    private final MavenDependentsResolver dependentsResolver;
+    private final MavenDependencyResolver dependencyResolver;
 
-    private ResolverConfig config;
-
-    public final MavenDependentsGraph dependents;
-    private MavenDependentsResolver dependentsResolver;
-
-    private NativeMavenResolver dependencyResolver = new NativeMavenResolver();
-
-    public MavenResolver(MavenDependentsGraph dependents) {
-        this.dependents = dependents;
-        this.dependentsResolver = new MavenDependentsResolver(this.dependents);
+    @Inject
+    public MavenResolver(MavenDependentsResolver dependentsResolver, MavenDependencyResolver dependencyResolver) {
+        this.dependentsResolver = dependentsResolver;
+        this.dependencyResolver = dependencyResolver;
     }
 
     @Override
     public Set<Revision> resolveDependencies(Collection<String> gavs, ResolverConfig config) {
-        LOG.warn("For now, timestamp is ignored during resolution and all results of multiple "
-                + "input coordinates are just merged.");
-
-        // TODO urgently improve handling!
-        var revs = new HashSet<Revision>();
-        for (var gav : gavs) {
-            revs.addAll(dependencyResolver.resolveDependencies(gav));
-        }
-
-        return revs;
+        return dependencyResolver.resolve(gavs, config);
     }
 
     @Override
