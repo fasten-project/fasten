@@ -32,6 +32,7 @@ public class ResolverConfig {
     public long timestamp = new Date().getTime();
     public ResolverDepth depth = TRANSITIVE;
     public Scope scope = RUNTIME;
+    public boolean includeOptional;
 
     public ResolverConfig at(long timestamp) {
         this.timestamp = timestamp;
@@ -45,6 +46,11 @@ public class ResolverConfig {
 
     public ResolverConfig scope(Scope scope) {
         this.scope = scope;
+        return this;
+    }
+
+    public ResolverConfig includeOptional(boolean includeOptional) {
+        this.includeOptional = includeOptional;
         return this;
     }
 

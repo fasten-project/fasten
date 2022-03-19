@@ -16,6 +16,7 @@
 package eu.fasten.core.maven.resolution;
 
 import static eu.fasten.core.maven.resolution.ResolverConfig.resolve;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -25,8 +26,6 @@ import java.util.Date;
 import org.junit.jupiter.api.Test;
 
 import eu.fasten.core.maven.data.Scope;
-import eu.fasten.core.maven.resolution.ResolverConfig;
-import eu.fasten.core.maven.resolution.ResolverDepth;
 
 public class ResolverConfigTest {
 
@@ -35,6 +34,7 @@ public class ResolverConfigTest {
         var sut = new ResolverConfig();
         assertEquals(ResolverDepth.TRANSITIVE, sut.depth);
         assertEquals(Scope.RUNTIME, sut.scope);
+        assertFalse(sut.includeOptional);
         var diff = new Date().getTime() - sut.timestamp;
         assertTrue("Difference should be <100ms, but is " + diff, diff < 100);
     }
@@ -83,6 +83,15 @@ public class ResolverConfigTest {
     }
 
     @Test
+    public void equalityDifferentOptional() {
+        var a = new ResolverConfig();
+        var b = new ResolverConfig();
+        b.includeOptional = true;
+        assertNotEquals(a, b);
+        assertNotEquals(a.hashCode(), b.hashCode());
+    }
+
+    @Test
     public void hasToString() {
         var actual = new ResolverConfig().toString();
         assertTrue(actual.contains("\n"));
@@ -117,11 +126,18 @@ public class ResolverConfigTest {
         assertEquals(sut.scope, Scope.COMPILE);
     }
 
+    @Test
+    public void builderSetsOptional() {
+        var sut = resolve().includeOptional(true);
+        assertTrue(sut.includeOptional);
+    }
+
     private static ResolverConfig getSomeConfig() {
         var cfg = new ResolverConfig();
         cfg.depth = ResolverDepth.DIRECT;
         cfg.scope = Scope.COMPILE;
         cfg.timestamp = 1234567890000L;
+        cfg.includeOptional = true;
         return cfg;
     }
 }
