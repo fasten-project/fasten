@@ -61,8 +61,8 @@ public class DebianLicenseFeederPlugin extends Plugin {
 
                 // Retrieving coordinates of the input record
 
-                packageName = extractPackageName(record);
-                packageVersion = extractPackageVersion(record);
+                String packageName = extractPackageName(record);
+                String packageVersion = extractPackageVersion(record);
 
                 //Revision coordinates = extractDebianCoordinates(record);
                 logger.info("Package name: " + packageName + ".");
@@ -94,42 +94,48 @@ public class DebianLicenseFeederPlugin extends Plugin {
          *                                  in the input record.
          */
         // To check if Revision is still an acceptable type of data
-        public static Revision extractDebianCoordinates(String record) {
+
+
+
+        protected String extractPackageName(String record) {
             var payload = new JSONObject(record);
-            if (payload.has("input")) {
-                payload = payload.getJSONObject("input");
-            }
-            if (payload.has("fasten.MetadataDBCExtension.out")) {
-                payload = payload.getJSONObject("fasten.MetadataDBCExtension.out");
-            }
             if (payload.has("payload")) {
                 payload = payload.getJSONObject("payload");
             }
-            // In C/Debian the groupId is missing
-            /*String groupId = payload.getString("groupId");
-            if (groupId == null) {
-                throw new IllegalArgumentException("Invalid repository information: missing coordinate group ID.");
-            }*/
-
-            //To double check if product or not [I opened an issue asking about naming in C/Debian]
-            String product = payload.getString("product");
-            if (product == null) {
-                throw new IllegalArgumentException("Invalid repository information: missing coordinate artifact ID.");
+            JSONArray array1 = payload.getJSONArray("files");
+            logger.info("Package name:");
+            for (int j = 0; j < array1.length(); j++) {
+                JSONObject obj2 = array1.getJSONObject(j);
+                //System.out.println(obj2);
+                if (obj2.has("packageName")){
+                    String packageName = obj2.getString("packageName");
+                    System.out.println(packageName);
+                    return packageName;
+                }
             }
-            String version = payload.getString("version");
-            if (version == null) {
-                throw new IllegalArgumentException("Invalid repository information: missing coordinate version.");
-            }
-            long createdAt = payload.getLong("date");
-            // TODO Is the timestamp conversion right?
-            return new Revision(product, version, new Timestamp(createdAt));
+            System.out.println("Package version not retrieved.");
+            return null;
         }
 
-
-        public static String extractPackageName(String record) {
-        }
-
-        public static String extractPackageVersion(String record) {
+        protected String extractPackageVersion(String record) {
+            var payload = new JSONObject(record);
+            if (payload.has("payload")) {
+                payload = payload.getJSONObject("payload");
+            }
+            JSONArray array1 = new JSONArray();
+            array1 = payload.getJSONArray("files");
+            logger.info("Package version:");
+            for (int j = 0; j < array1.length(); j++) {
+                JSONObject obj2 = array1.getJSONObject(j);
+                //System.out.println(obj2);
+                if (obj2.has("packageVersion")){
+                    String packageVersion = obj2.getString("packageVersion");
+                    System.out.println(packageVersion);
+                    return packageVersion;
+                }
+            }
+            System.out.println("Package version not retrieved.");
+            return null;
         }
 
         /**
