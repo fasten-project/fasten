@@ -56,7 +56,6 @@ public class RestMavenResolver implements IMavenResolver {
     public Set<Revision> resolveDependencies(Collection<String> gavs, ResolverConfig config) {
         return getBase("dependencies", config) //
                 .request(APPLICATION_JSON) //
-                .accept(APPLICATION_JSON) //
                 .post(Entity.entity(gavs, APPLICATION_JSON), SET_OF_REV);
     }
 
@@ -65,7 +64,6 @@ public class RestMavenResolver implements IMavenResolver {
         return getBase("dependents", config) //
                 .path(gid).path(aid).path(version) //
                 .request(APPLICATION_JSON) //
-                .accept(APPLICATION_JSON) //
                 .get(SET_OF_REV);
     }
 
@@ -78,6 +76,9 @@ public class RestMavenResolver implements IMavenResolver {
         }
         if (config.scope != Scope.RUNTIME) {
             base = base.queryParam("scope", config.scope);
+        }
+        if (config.includeOptional) {
+            base = base.queryParam("includeOptional", true);
         }
         return base;
     }
