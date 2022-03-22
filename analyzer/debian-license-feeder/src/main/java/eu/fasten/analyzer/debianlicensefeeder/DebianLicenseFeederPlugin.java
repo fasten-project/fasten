@@ -27,17 +27,17 @@ public class DebianLicenseFeederPlugin extends Plugin {
     }
 
     @Extension
-    public static class DebianLicenseFeeder implements KafkaPlugin, DBConnector {
+    public static class DebianLicenseFeederExtension implements KafkaPlugin, DBConnector {
 
-        private final Logger logger = LoggerFactory.getLogger(DebianLicenseFeeder.class.getName());
+        private final Logger logger = LoggerFactory.getLogger(DebianLicenseFeederExtension.class.getName());
 
         protected Exception pluginError = null;
         private static DSLContext dslContext;
-        private List<String> consumeTopics = new LinkedList<>(Collections.singletonList("fasten.DebianLicenseDetector.out"));
+        private List<String> consumeTopics = new LinkedList<>(Collections.singletonList("fasten.DebianLicenseDetectorExtension.out"));
 
         @Override
         public void setDBConnection(Map<String, DSLContext> dslContexts) {
-            DebianLicenseFeeder.dslContext = dslContexts.get(Constants.debianForge);
+            DebianLicenseFeederExtension.dslContext = dslContexts.get(Constants.debianForge);
         }
 
 
