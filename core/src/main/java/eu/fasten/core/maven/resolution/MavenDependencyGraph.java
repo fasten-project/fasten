@@ -20,6 +20,8 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
+
 import eu.fasten.core.maven.data.PomAnalysisResult;
 import eu.fasten.core.maven.data.VersionConstraint;
 
@@ -43,15 +45,29 @@ public class MavenDependencyGraph {
         }
     }
 
-    public PomAnalysisResult find(String ga, Set<VersionConstraint> vcs) {
+    public PomAnalysisResult find(String ga, Set<VersionConstraint> vcs, long timestamp) {
+
+        DefaultArtifactVersion highest = null;
+        PomAnalysisResult highestPom = null;
+
         for (var pom : pomForGa.getOrDefault(ga, Set.of())) {
+            System.out.println(pom.version);
             for (var vc : vcs) {
                 if (vc.matches(pom.version)) {
-                    return pom;
+                    var cur = new DefaultArtifactVersion(pom.version);
+                    if (highest == null) {
+                        highest = cur;
+                        highestPom = pom;
+                    } else {
+                        if (cur.compareTo(highest) > 0) {
+                            highest = cur;
+                            highestPom = pom;
+                        }
+                    }
                 }
             }
         }
-        return null;
+        return highestPom;
     }
 
     private static String toGA(PomAnalysisResult pom) {
