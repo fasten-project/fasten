@@ -15,6 +15,8 @@
  */
 package eu.fasten.core.maven.resolution;
 
+import java.security.InvalidParameterException;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -27,12 +29,21 @@ import eu.fasten.core.maven.data.VersionConstraint;
 
 public class MavenDependencyGraph {
 
-    public Map<String, Set<PomAnalysisResult>> pomForGa = new HashMap<>();
-    public Map<String, PomAnalysisResult> pomForGav = new HashMap<>();
+    private Map<String, Set<PomAnalysisResult>> pomsForGa = new HashMap<>();
+    private Map<String, PomAnalysisResult> pomForGav = new HashMap<>();
 
-    public void add(PomAnalysisResult pom) {
-        put(pomForGa, toGA(pom), pom);
-        pomForGav.put(toGAV(pom), pom);
+    public synchronized void add(PomAnalysisResult pom) {
+        var gav = toGAV(pom);
+        if (hasGAV(gav)) {
+            // TODO might be too strict for practice (e.g., same GAV in multiple repos )
+            throw new InvalidParameterException("GAV exists");
+        }
+        pomForGav.put(gav, pom);
+        put(pomsForGa, toGA(pom), pom);
+    }
+
+    public synchronized boolean hasGAV(String gav) {
+        return pomForGav.containsKey(gav);
     }
 
     private static <K, V> void put(Map<K, Set<V>> map, K key, V value) {
@@ -50,8 +61,7 @@ public class MavenDependencyGraph {
         DefaultArtifactVersion highest = null;
         PomAnalysisResult highestPom = null;
 
-        for (var pom : pomForGa.getOrDefault(ga, Set.of())) {
-            System.out.println(pom.version);
+        for (var pom : findGA(ga)) {
             for (var vc : vcs) {
                 if (vc.matches(pom.version)) {
                     var cur = new DefaultArtifactVersion(pom.version);
@@ -68,6 +78,17 @@ public class MavenDependencyGraph {
             }
         }
         return highestPom;
+    }
+
+    private synchronized Set<PomAnalysisResult> findGA(String ga) {
+        return pomsForGa.getOrDefault(ga, Set.of());
+    }
+
+    public PomAnalysisResult find(String gav) {
+        var parts = gav.split(":");
+        var ga = parts[0] + ":" + parts[1];
+        var vc = new VersionConstraint(parts[2]);
+        return find(ga, Set.of(vc), new Date().getTime());
     }
 
     private static String toGA(PomAnalysisResult pom) {
