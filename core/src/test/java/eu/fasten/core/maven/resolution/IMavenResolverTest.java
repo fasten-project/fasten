@@ -31,8 +31,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import eu.fasten.core.maven.data.Revision;
-import eu.fasten.core.maven.resolution.IMavenResolver;
-import eu.fasten.core.maven.resolution.ResolverConfig;
 
 public class IMavenResolverTest {
 

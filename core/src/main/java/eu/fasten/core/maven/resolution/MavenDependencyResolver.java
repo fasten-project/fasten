@@ -44,25 +44,23 @@ public class MavenDependencyResolver {
         if (gavs.size() == 1) {
             var gav = gavs.iterator().next();
 
-            var data = new QueueData();
-            data.pom = this.graph.pomForGav.get(gav);
-            if (data.pom == null) {
+            var pom = this.graph.find(gav);
+            if (pom == null) {
                 return Set.of();
             } else {
-                return resolve(config, new HashSet<>(), data);
+                return resolve(config, new HashSet<>(), QueueData.startFrom(pom));
             }
         }
 
-        var data = new QueueData();
-        data.pom = new PomAnalysisResult();
-        data.pom.groupId = "virtual-file";
-        data.pom.artifactId = "pom";
-        data.pom.version = "0.0.1";
-        data.pom.releaseDate = config.timestamp;
-        data.pom.dependencies.addAll(toDeps(gavs));
+        var pom = new PomAnalysisResult();
+        pom.groupId = "virtual-file";
+        pom.artifactId = "pom";
+        pom.version = "0.0.1";
+        pom.releaseDate = config.timestamp;
+        pom.dependencies.addAll(toDeps(gavs));
 
-        var depSet = resolve(config, new HashSet<>(), data);
-        depSet.remove(data.pom.toRevision());
+        var depSet = resolve(config, new HashSet<>(), QueueData.startFrom(pom));
+        depSet.remove(pom.toRevision());
         return depSet;
     }
 
@@ -91,6 +89,7 @@ public class MavenDependencyResolver {
                 }
 
                 // TODO check for scope
+                // TODO check for time
 
                 var depData = QueueData.nest(data);
                 // TODO just check for isTrans to support depth
@@ -99,19 +98,31 @@ public class MavenDependencyResolver {
                     depData.exclusions.add(String.format("%s:%s", excl.groupId, excl.artifactId));
                 }
 
-                if (depData.depMgmt.containsKey(depGA)) {
-                    System.err.println("TODO: Handle depMgmt sections");
-                }
+                var couldBeManaged = !hasVersion(dep) || depData.isTransitiveDep();
+                var vcs = couldBeManaged && depData.depMgmt.containsKey(depGA) //
+                        ? depData.depMgmt.get(depGA) //
+                        : dep.versionConstraints;
 
-                var vcs = dep.versionConstraints;
-                depData.pom = graph.find(depGA, vcs, config.timestamp);
-                if (depData.pom != null) {
+                var depPom = graph.find(depGA, vcs, config.timestamp);
+
+                if (depPom != null) {
+                    depData.setPom(depPom);
                     queue.add(depData);
                 }
             }
         }
 
         return depSet;
+    }
+
+    private static boolean hasVersion(Dependency dep) {
+        if (dep.versionConstraints.isEmpty()) {
+            return false;
+        }
+        if (dep.versionConstraints.size() == 1) {
+            return !dep.versionConstraints.iterator().next().spec.isEmpty();
+        }
+        return true;
     }
 
     private static Set<Dependency> toDeps(Collection<String> gavs) {
@@ -133,12 +144,26 @@ public class MavenDependencyResolver {
             return depth > 1;
         }
 
+        public void setPom(PomAnalysisResult pom) {
+            this.pom = pom;
+            for (var dm : pom.dependencyManagement) {
+                var ga = String.format("%s:%s", dm.groupId, dm.artifactId);
+                depMgmt.put(ga, dm.versionConstraints);
+            }
+        }
+
         public static QueueData nest(QueueData outer) {
             var inner = new QueueData();
             inner.exclusions.addAll(outer.exclusions);
             inner.depth = outer.depth + 1;
-
+            inner.depMgmt.putAll(outer.depMgmt);
             return inner;
+        }
+
+        private static QueueData startFrom(PomAnalysisResult pom) {
+            var data = new QueueData();
+            data.setPom(pom);
+            return data;
         }
     }
 }
