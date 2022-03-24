@@ -18,6 +18,8 @@
 
 package eu.fasten.analyzer.repoclonerplugin;
 
+import eu.fasten.analyzer.repoclonerplugin.exceptions.CloneFailedException;
+import eu.fasten.analyzer.repoclonerplugin.exceptions.RepoUrlNotFoundException;
 import eu.fasten.analyzer.repoclonerplugin.utils.GitCloner;
 import eu.fasten.analyzer.repoclonerplugin.utils.HgCloner;
 import eu.fasten.analyzer.repoclonerplugin.utils.SvnCloner;
@@ -138,14 +140,16 @@ public class RepoClonerPlugin extends Plugin {
                     logger.info("Successfully cloned the repository for " + group + ":" + artifact + ":" + version + " from " + repoUrl);
                 } else if (result.getSecond() != null) {
                     var errorTriple = result.getSecond();
-                    logger.error("Could not clone the repository for " + group + ":" + artifact + ":" + version + " from " + repoUrl
+                    var errMsg = "Could not clone the repository for " + group + ":" + artifact + ":" + version + " from " + repoUrl
                             + "; GitCloner: " + (errorTriple.getLeft() != null ? errorTriple.getLeft().getMessage() : "null")
                             + "; SvnCloner: " + (errorTriple.getMiddle() != null ? errorTriple.getMiddle().getMessage() : "null")
-                            + "; HgCloner: " + (errorTriple.getRight() != null ? errorTriple.getRight().getMessage() : "null")
-                    );
+                            + "; HgCloner: " + (errorTriple.getRight() != null ? errorTriple.getRight().getMessage() : "null");
+                    logger.error(errMsg);
+                    this.pluginError = new CloneFailedException(errMsg);
                 }
             } else {
                 logger.info("Repository URL not found");
+                this.pluginError = new RepoUrlNotFoundException("Repository URL not found");
             }
         }
 
@@ -169,6 +173,7 @@ public class RepoClonerPlugin extends Plugin {
                     this.repoType = "git";
                     return new Pair<>(repo, new ImmutableTriple<>(null, null, null));
                 } catch (Exception ignored) {
+                    logger.error("Could not clone " + repoUrl + "using the Git cloner");
                 }
             }
             var triedSvn = false;
@@ -180,6 +185,7 @@ public class RepoClonerPlugin extends Plugin {
                     this.repoType = "svn";
                     return new Pair<>(repo, new ImmutableTriple<>(null, null, null));
                 } catch (Exception ignored) {
+                    logger.error("Could not clone " + repoUrl + "using the SVN cloner");
                 }
             }
             // If reached here then we don't really know what type of repository it is.
@@ -190,6 +196,7 @@ public class RepoClonerPlugin extends Plugin {
                 return new Pair<>(repo, new ImmutableTriple<>(null, null, null));
             } catch (Exception e) {
                 hgError = e;
+                logger.error("Could not clone " + repoUrl + "using the HG cloner");
             }
             if (!triedGit) {
                 try {
