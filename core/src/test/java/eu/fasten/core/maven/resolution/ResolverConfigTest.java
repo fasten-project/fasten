@@ -17,6 +17,7 @@ package eu.fasten.core.maven.resolution;
 
 import static eu.fasten.core.maven.resolution.ResolverConfig.resolve;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -34,7 +35,8 @@ public class ResolverConfigTest {
         var sut = new ResolverConfig();
         assertEquals(ResolverDepth.TRANSITIVE, sut.depth);
         assertEquals(Scope.RUNTIME, sut.scope);
-        assertFalse(sut.includeOptional);
+        assertFalse(sut.alwaysIncludeProvided);
+        assertFalse(sut.alwaysIncludeOptional);
         var diff = new Date().getTime() - sut.timestamp;
         assertTrue("Difference should be <100ms, but is " + diff, diff < 100);
     }
@@ -83,10 +85,19 @@ public class ResolverConfigTest {
     }
 
     @Test
+    public void equalityDifferentProvided() {
+        var a = new ResolverConfig();
+        var b = new ResolverConfig();
+        b.alwaysIncludeProvided = true;
+        assertNotEquals(a, b);
+        assertNotEquals(a.hashCode(), b.hashCode());
+    }
+
+    @Test
     public void equalityDifferentOptional() {
         var a = new ResolverConfig();
         var b = new ResolverConfig();
-        b.includeOptional = true;
+        b.alwaysIncludeOptional = true;
         assertNotEquals(a, b);
         assertNotEquals(a.hashCode(), b.hashCode());
     }
@@ -110,26 +121,37 @@ public class ResolverConfigTest {
 
     @Test
     public void builderSetsTime() {
-        var sut = resolve().at(23456);
+        var sut = resolve();
+        assertSame(sut, sut.at(23456));
         assertEquals(sut.timestamp, 23456);
     }
 
     @Test
     public void builderSetsDepth() {
-        var sut = resolve().depth(ResolverDepth.DIRECT);
+        var sut = resolve();
+        assertSame(sut, sut.depth(ResolverDepth.DIRECT));
         assertEquals(sut.depth, ResolverDepth.DIRECT);
     }
 
     @Test
     public void builderSetsScope() {
-        var sut = resolve().scope(Scope.COMPILE);
+        var sut = resolve();
+        assertSame(sut, sut.scope(Scope.COMPILE));
         assertEquals(sut.scope, Scope.COMPILE);
     }
 
     @Test
+    public void builderSetsProvided() {
+        var sut = resolve();
+        assertSame(sut, sut.alwaysIncludeProvided(true));
+        assertTrue(sut.alwaysIncludeProvided);
+    }
+
+    @Test
     public void builderSetsOptional() {
-        var sut = resolve().includeOptional(true);
-        assertTrue(sut.includeOptional);
+        var sut = resolve();
+        assertSame(sut, sut.alwaysIncludeOptional(true));
+        assertTrue(sut.alwaysIncludeOptional);
     }
 
     private static ResolverConfig getSomeConfig() {
@@ -137,7 +159,8 @@ public class ResolverConfigTest {
         cfg.depth = ResolverDepth.DIRECT;
         cfg.scope = Scope.COMPILE;
         cfg.timestamp = 1234567890000L;
-        cfg.includeOptional = true;
+        cfg.alwaysIncludeProvided = true;
+        cfg.alwaysIncludeOptional = true;
         return cfg;
     }
 }
