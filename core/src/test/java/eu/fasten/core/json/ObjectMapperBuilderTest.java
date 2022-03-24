@@ -73,8 +73,7 @@ public class ObjectMapperBuilderTest {
     public void jsr310() throws JsonProcessingException {
         // will crash with missing import
         var ldt = LocalDateTime.now();
-        var json = sut.writeValueAsString(ldt);
-        System.out.println(json);
+        sut.writeValueAsString(ldt);
     }
 
     @Test
