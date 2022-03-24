@@ -34,6 +34,11 @@ public class VersionConstraintTest {
     // https://maven.apache.org/pom.html#dependency-version-requirement-specification
 
     @Test
+    public void parsing0() {
+        assertEquals(Set.of(), parseVersionSpec(""));
+    }
+
+    @Test
     public void parsing1() {
         validate("1.0", //
                 vc(false, false, "+1.0", "+1.0"));

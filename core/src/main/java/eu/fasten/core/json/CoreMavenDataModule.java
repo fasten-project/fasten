@@ -87,9 +87,13 @@ public class CoreMavenDataModule extends SimpleModule {
                 var t = node.get("type").asText();
 
                 var vs = new LinkedHashSet<VersionConstraint>();
-                node.get("versionConstraints").forEach(vc -> {
+                node.get("versionConstraints").forEach(vcjson -> {
                     try {
-                        vs.add(ctxt.readTreeAsValue(vc, VersionConstraint.class));
+                        var vc = ctxt.readTreeAsValue(vcjson, VersionConstraint.class);
+                        // TODO this check/fix will become irrelevant after the next pipeline reset
+                        if (!vc.spec.isEmpty()) {
+                            vs.add(vc);
+                        }
                     } catch (IOException exception) {
                         throw new RuntimeException(exception);
                     }
