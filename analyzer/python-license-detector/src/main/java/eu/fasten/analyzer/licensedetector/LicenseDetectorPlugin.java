@@ -19,6 +19,10 @@ import org.pf4j.PluginWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.HttpURLConnection;
+import java.net.SocketTimeoutException;
+import java.net.URL;
+
 import javax.annotation.Nullable;
 import java.io.*;
 import java.net.HttpURLConnection;
@@ -30,6 +34,7 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.concurrent.TimeoutException;
 
 
 public class PythonLicenseDetectorPlugin extends Plugin {
@@ -70,7 +75,7 @@ public class PythonLicenseDetectorPlugin extends Plugin {
         public void consume(String kafkaRecord, ProcessingLane l) {
             try { // Fasten error-handling guidelines
                 reset();
-                JSONObject json = new JSONObject(record);
+                JSONObject json = new JSONObject(kafkaRecord);
                 logger.info("Python license detector started.");
 
                 // Retrieving the package name
@@ -88,7 +93,7 @@ public class PythonLicenseDetectorPlugin extends Plugin {
                 object.accumulate("files", packageInfo);
 
                 // Outbound license detection
-                detectedLicenses.setOutbound(getOutboundLicenses(repoPath, repoUrl));
+                detectedLicenses.setOutbound(getOutboundLicenses(packageName, packageVersion));
                 if (detectedLicenses.getOutbound() == null || detectedLicenses.getOutbound().isEmpty()) {
                     logger.warn("No outbound licenses were detected.");
                 } else {
@@ -171,93 +176,64 @@ public class PythonLicenseDetectorPlugin extends Plugin {
          * @param repoUrl  the input repository URL. Might be `null`.
          * @return the set of detected outbound licenses.
          */
-        protected Set<DetectedLicense> getOutboundLicenses(String repoPath, @Nullable String repoUrl) {
-
+        protected Set<DetectedLicense> getOutboundLicenses(String packageName, String packageVersion) throws IOException, TimeoutException {
+            //currently excluded the GitHub outbound license detection
             try {
 
-                // Retrieving the `pom.xml` file
-                File pomFile = retrievePomFile(repoPath);
-
-                // Retrieving the outbound license(s) from the `pom.xml` file
-                return getLicensesFromPomFile(pomFile);
-
-            } catch (FileNotFoundException | RuntimeException | XmlPullParserException e) {
-
-                // In case retrieving the outbound license from the local `pom.xml` file was not possible
-                logger.warn(e.getMessage(), e.getCause()); // why wasn't it possible
-                logger.info("Retrieving outbound license from GitHub...");
-                if ((detectedLicenses.getOutbound() == null || detectedLicenses.getOutbound().isEmpty())
-                        && repoUrl != null) {
-
-                    // Retrieving licenses from the GitHub API
-                    try {
-                        DetectedLicense licenseFromGitHub = getLicenseFromGitHub(repoUrl);
-                        if (licenseFromGitHub != null) {
-                            return Sets.newHashSet(licenseFromGitHub);
-                        } else {
-                            logger.warn("Couldn't retrieve the outbound license from GitHub.");
-                        }
-                    } catch (IllegalArgumentException | IOException ex) { // not a valid GitHub repo URL
-                        logger.warn(e.getMessage(), e.getCause());
-                    } catch (@SuppressWarnings({"TryWithIdenticalCatches", "RedundantSuppression"})
-                            RuntimeException ex) {
-                        logger.warn(e.getMessage(), e.getCause()); // could not contact GitHub API
-                    }
+                DetectedLicense licenseFromPypi = getLicenseFromPypi(packageName,packageVersion);
+                if (licenseFromPypi != null) {
+                    return Sets.newHashSet(licenseFromGitHub);
+                } else {
+                    logger.warn("Couldn't retrieve the outbound license from Pypi.");
                 }
+            } catch (IllegalArgumentException | IOException ex) { // not a valid GitHub repo URL
+                    logger.warn(e.getMessage(), e.getCause());
+            } catch (@SuppressWarnings({"TryWithIdenticalCatches", "RedundantSuppression"})
+                    RuntimeException ex) {
+                logger.warn(e.getMessage(), e.getCause()); // could not contact GitHub API
             }
 
             return Collections.emptySet();
         }
 
         /**
-         * Retrieves all licenses declared in a `pom.xml` file.
+         * Retrieves the outbound license of a Pypi package using its API.
          *
-         * @param pomFile the `pom.xml` file to be analyzed.
-         * @return the detected licenses.
-         * @throws XmlPullParserException in case the `pom.xml` file couldn't be parsed as an XML file.
+         * @param repoUrl the repository URL whose license is of interest.
+         * @return the outbound license retrieved from GitHub's API.
+         * @throws TimeoutException in case there was a connection timeout.
+         * @throws IOException in case there was a problem contacting the GitHub API.
          */
-        protected Set<DetectedLicense> getLicensesFromPomFile(File pomFile) throws XmlPullParserException {
 
-            // Result
-            List<License> licenses;
-
-            // Maven `pom.xml` file parser
-            MavenXpp3Reader reader = new MavenXpp3Reader();
-            try (FileReader fileReader = new FileReader(pomFile)) {
-
-                // Parsing and retrieving the `licenses` XML tag
-                Model model = reader.read(fileReader);
-                licenses = model.getLicenses();
-
-                // If the pom file contains at least a license tag
-                if (!licenses.isEmpty()) {
-
-                    // Logging
-                    logger.trace("Found " + licenses.size() + " outbound license" + (licenses.size() == 1 ? "" : "s") +
-                            " in " + pomFile.getAbsolutePath() + ":");
-                    for (int i = 0; i < licenses.size(); i++) {
-                        logger.trace("License number " + i + ": " + licenses.get(i).getName());
-                    }
-
-                    // Returning the set of discovered licenses
-                    Set<DetectedLicense> result = new HashSet<>(Collections.emptySet());
-                    licenses.forEach(license -> result.add(new DetectedLicense(
-                            license.getName(),
-                            DetectedLicenseSource.LOCAL_POM)));
-
-                    return result;
-                }
-            } catch (IOException e) {
-                throw new RuntimeException("Pom file " + pomFile.getAbsolutePath() +
-                        " exists but couldn't instantiate a FileReader object..", e.getCause());
-            } catch (XmlPullParserException e) {
-                throw new XmlPullParserException("Pom file " + pomFile.getAbsolutePath() +
-                        " exists but couldn't be parsed as a Maven pom XML file: " + e.getMessage());
+        protected DetectedLicense getLicenseFromPypi(String packageName, String packageVersion) throws IOException, TimeoutException {
+            JSONObject result = new JSONObject();
+            //response = requests.get("https://pypi.org/pypi/"+packageName+"/"+packageVersion+"/json")
+            URL url = new URL("https://pypi.org/pypi/"+packageName+"/"+packageVersion+"/json");
+            JSONObject LicenseAndPath = new JSONObject();
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("GET");
+            conn.setRequestProperty("Accept", "application/json");
+            if (conn.getResponseCode() != 200) {
+                throw new RuntimeException("HTTP query failed. Error code: " + conn.getResponseCode());
             }
-
-            // No licenses were detected
-            return Collections.emptySet();
+            InputStreamReader in = new InputStreamReader(conn.getInputStream());
+            BufferedReader br = new BufferedReader(in);
+            String jsonOutput = br.lines().collect(Collectors.joining());
+            // searching for the copyright files in the JSON response
+            var jsonOutputPayload = new JSONObject(jsonOutput);
+            if (jsonOutputPayload.has("info")) {
+                JSONObject json2 = jsonOutputPayload.getJSONObject("info");
+                if (json2.has("license")) {
+                    return json2.getString("license");
+                } else {
+                    String licenseNotFound = "License not declared";
+                    return licenseNotFound;
+                    }
+                }
+            }
+            return null;
         }
+
 
         /**
          * Retrieves the outbound license of a GitHub project using its API.
