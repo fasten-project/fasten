@@ -32,7 +32,16 @@ public class ResolverConfig {
     public long timestamp = new Date().getTime();
     public ResolverDepth depth = TRANSITIVE;
     public Scope scope = RUNTIME;
-    public boolean includeOptional;
+
+    /**
+     * if false, include only direct dependencies
+     */
+    public boolean alwaysIncludeProvided;
+
+    /**
+     * if false, include only direct dependencies
+     */
+    public boolean alwaysIncludeOptional;
 
     public ResolverConfig at(long timestamp) {
         this.timestamp = timestamp;
@@ -49,8 +58,19 @@ public class ResolverConfig {
         return this;
     }
 
-    public ResolverConfig includeOptional(boolean includeOptional) {
-        this.includeOptional = includeOptional;
+    /**
+     * if false, include only direct dependencies
+     */
+    public ResolverConfig alwaysIncludeProvided(boolean alwaysIncludeProvided) {
+        this.alwaysIncludeProvided = alwaysIncludeProvided;
+        return this;
+    }
+
+    /**
+     * if false, include only direct dependencies
+     */
+    public ResolverConfig alwaysIncludeOptional(boolean alwaysIncludeOptional) {
+        this.alwaysIncludeOptional = alwaysIncludeOptional;
         return this;
     }
 

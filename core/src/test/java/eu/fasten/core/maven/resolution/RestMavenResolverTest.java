@@ -93,7 +93,7 @@ public class RestMavenResolverTest {
         var cfg = new ResolverConfig();
         var r = resolveSomeDependencies(cfg);
         Map<String, String> expected = Map.of("timestamp", Long.toString(cfg.timestamp));
-        assertEquals(r.queryParams, expected);
+        assertEquals(expected, r.queryParams);
     }
 
     @Test
@@ -101,7 +101,7 @@ public class RestMavenResolverTest {
         var cfg = new ResolverConfig().at(1234567);
         var r = resolveSomeDependencies(cfg);
         Map<String, String> expected = Map.of("timestamp", Long.toString(1234567));
-        assertEquals(r.queryParams, expected);
+        assertEquals(expected, r.queryParams);
     }
 
     @Test
@@ -111,7 +111,7 @@ public class RestMavenResolverTest {
         Map<String, String> expected = Map.of( //
                 "timestamp", Long.toString(123), //
                 "scope", "TEST");
-        assertEquals(r.queryParams, expected);
+        assertEquals(expected, r.queryParams);
     }
 
     @Test
@@ -121,17 +121,27 @@ public class RestMavenResolverTest {
         Map<String, String> expected = Map.of( //
                 "timestamp", Long.toString(123), //
                 "depth", "DIRECT");
-        assertEquals(r.queryParams, expected);
+        assertEquals(expected, r.queryParams);
+    }
+
+    @Test
+    public void dependenciesCorrectIncludeProvided() {
+        var cfg = new ResolverConfig().at(123).alwaysIncludeProvided(true);
+        var r = resolveSomeDependencies(cfg);
+        Map<String, String> expected = Map.of( //
+                "timestamp", Long.toString(123), //
+                "alwaysIncludeProvided", "true");
+        assertEquals(expected, r.queryParams);
     }
 
     @Test
     public void dependenciesCorrectIncludeOptional() {
-        var cfg = new ResolverConfig().at(123).includeOptional(true);
+        var cfg = new ResolverConfig().at(123).alwaysIncludeOptional(true);
         var r = resolveSomeDependencies(cfg);
         Map<String, String> expected = Map.of( //
                 "timestamp", Long.toString(123), //
-                "includeOptional", "true");
-        assertEquals(r.queryParams, expected);
+                "alwaysIncludeOptional", "true");
+        assertEquals(expected, r.queryParams);
     }
 
     @Test
@@ -173,7 +183,7 @@ public class RestMavenResolverTest {
         var cfg = new ResolverConfig();
         var r = resolveSomeDependents(cfg);
         Map<String, String> expected = Map.of("timestamp", Long.toString(cfg.timestamp));
-        assertEquals(r.queryParams, expected);
+        assertEquals(expected, r.queryParams);
     }
 
     @Test
@@ -181,7 +191,7 @@ public class RestMavenResolverTest {
         var cfg = new ResolverConfig().at(1234567);
         var r = resolveSomeDependents(cfg);
         Map<String, String> expected = Map.of("timestamp", Long.toString(1234567));
-        assertEquals(r.queryParams, expected);
+        assertEquals(expected, r.queryParams);
     }
 
     @Test
@@ -191,7 +201,7 @@ public class RestMavenResolverTest {
         Map<String, String> expected = Map.of( //
                 "timestamp", Long.toString(123), //
                 "scope", "TEST");
-        assertEquals(r.queryParams, expected);
+        assertEquals(expected, r.queryParams);
     }
 
     @Test
@@ -201,17 +211,27 @@ public class RestMavenResolverTest {
         Map<String, String> expected = Map.of( //
                 "timestamp", Long.toString(123), //
                 "depth", "DIRECT");
-        assertEquals(r.queryParams, expected);
+        assertEquals(expected, r.queryParams);
+    }
+
+    @Test
+    public void dependentsCorrectIncludeProvided() {
+        var cfg = new ResolverConfig().at(123).alwaysIncludeProvided(true);
+        var r = resolveSomeDependents(cfg);
+        Map<String, String> expected = Map.of( //
+                "timestamp", Long.toString(123), //
+                "alwaysIncludeProvided", "true");
+        assertEquals(expected, r.queryParams);
     }
 
     @Test
     public void dependentsCorrectIncludeOptional() {
-        var cfg = new ResolverConfig().at(123).includeOptional(true);
+        var cfg = new ResolverConfig().at(123).alwaysIncludeOptional(true);
         var r = resolveSomeDependents(cfg);
         Map<String, String> expected = Map.of( //
                 "timestamp", Long.toString(123), //
-                "includeOptional", "true");
-        assertEquals(r.queryParams, expected);
+                "alwaysIncludeOptional", "true");
+        assertEquals(expected, r.queryParams);
     }
 
     @Test

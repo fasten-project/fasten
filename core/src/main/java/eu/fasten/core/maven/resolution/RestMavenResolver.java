@@ -77,8 +77,11 @@ public class RestMavenResolver implements IMavenResolver {
         if (config.scope != Scope.RUNTIME) {
             base = base.queryParam("scope", config.scope);
         }
-        if (config.includeOptional) {
-            base = base.queryParam("includeOptional", true);
+        if (config.alwaysIncludeProvided) {
+            base = base.queryParam("alwaysIncludeProvided", true);
+        }
+        if (config.alwaysIncludeOptional) {
+            base = base.queryParam("alwaysIncludeOptional", true);
         }
         return base;
     }
