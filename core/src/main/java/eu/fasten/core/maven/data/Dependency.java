@@ -108,6 +108,7 @@ public class Dependency extends MavenProduct {
 	 *
 	 * @return JSONObject representation of dependency
 	 */
+	@Deprecated // see eu.fasten.core.json.CoreMavenDataModule
 	public JSONObject toJSON() {
 		final var json = new JSONObject();
 		json.put("artifactId", this.artifactId);
@@ -192,6 +193,7 @@ public class Dependency extends MavenProduct {
 	 * @param json JSONObject representation of dependency
 	 * @return Dependency object
 	 */
+	@Deprecated // see eu.fasten.core.json.CoreMavenDataModule
 	public static Dependency fromJSON(JSONObject json) {
 		var artifactId = json.getString("artifactId");
 		var groupId = json.getString("groupId");

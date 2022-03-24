@@ -119,6 +119,11 @@ public class VersionConstraint {
         spec = spec.replaceAll(" ", "").replaceAll("\n", "").replaceAll("\t", "");
         assertTrue(!spec.startsWith("$"));
 
+        var constraints = new LinkedHashSet<VersionConstraint>();
+        if (spec.isEmpty()) {
+            return constraints;
+        }
+
         if (!spec.startsWith("[") && !spec.startsWith("(")) {
             // has to be soft constraint
             assertTrue(!spec.contains(","));
@@ -132,8 +137,6 @@ public class VersionConstraint {
         // has to be hard constraint
         var charZero = spec.charAt(0);
         assertTrue(charZero == '[' || charZero == '(');
-
-        var constraints = new LinkedHashSet<VersionConstraint>();
 
         var idxOpen = 0;
         while (idxOpen != -1) {

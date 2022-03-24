@@ -15,6 +15,7 @@
  */
 package eu.fasten.core.json;
 
+import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.Set;
@@ -54,6 +55,13 @@ public class CoreMavenDataModuleTest {
                 Scope.TEST, false, "type", "sources");
         var json = "{\"versionConstraints\":[\"[1,2]\"],\"groupId\":\"g1\",\"scope\":\"test\",\"classifier\":\"sources\",\"artifactId\":\"a1\",\"exclusions\":[\"g2:a2\"],\"optional\":false,\"type\":\"type\"}";
         test(d, json);
+    }
+
+    @Test
+    public void testDependencyFixNonEmptyVersionConstraints() throws Exception {
+        var json = "{\"versionConstraints\":[\"\"],\"groupId\":\"g1\",\"scope\":\"test\",\"classifier\":\"sources\",\"artifactId\":\"a1\",\"exclusions\":[\"g2:a2\"],\"optional\":false,\"type\":\"type\"}";
+        var out = om.readValue(json, Dependency.class);
+        assertTrue(out.versionConstraints.isEmpty());
     }
 
     @Test
