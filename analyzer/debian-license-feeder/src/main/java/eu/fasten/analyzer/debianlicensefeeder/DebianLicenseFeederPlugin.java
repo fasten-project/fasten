@@ -175,12 +175,12 @@ public class DebianLicenseFeederPlugin extends Plugin {
                 logger.debug("(cycling files) JSONObject f: " + file + " has " +
                         (file.has("path") ? "" : "no ") + "path and " +
                         (file.has("licenses") ? file.getJSONArray("licenses").length() : "no") + " licenses.");
-                if (file.has("path") && file.has("licenses")) {
+                if (file.has("path") && file.has("license")) {
                     metadataDao.insertFileLicenses(
                             packageName,
                             packageVersion,
                             file.getString("path"),
-                            new JSONObject().put("licenses", file.getJSONArray("licenses")).toString()
+                            new JSONObject().put("license", file.getString("license")).toString()
                     );
                 }
             });
