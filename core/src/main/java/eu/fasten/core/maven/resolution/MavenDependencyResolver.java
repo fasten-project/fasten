@@ -27,6 +27,7 @@ import eu.fasten.core.maven.data.Dependency;
 import eu.fasten.core.maven.data.MavenProduct;
 import eu.fasten.core.maven.data.PomAnalysisResult;
 import eu.fasten.core.maven.data.Revision;
+import eu.fasten.core.maven.data.Scope;
 import eu.fasten.core.maven.data.VersionConstraint;
 
 public class MavenDependencyResolver {
@@ -94,6 +95,10 @@ public class MavenDependencyResolver {
                 var depData = QueueData.nest(data);
 
                 if (dep.optional && !config.alwaysIncludeOptional && depData.isTransitiveDep()) {
+                    continue;
+                }
+                
+                if(dep.scope == Scope.PROVIDED && !config.alwaysIncludeProvided && depData.isTransitiveDep()) {
                     continue;
                 }
 
