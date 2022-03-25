@@ -15,6 +15,12 @@
  */
 package eu.fasten.core.maven.resolution;
 
+import static eu.fasten.core.maven.data.Scope.COMPILE;
+import static eu.fasten.core.maven.data.Scope.PROVIDED;
+import static eu.fasten.core.maven.data.Scope.RUNTIME;
+import static eu.fasten.core.maven.data.Scope.SYSTEM;
+import static eu.fasten.core.maven.data.Scope.TEST;
+
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -39,6 +45,8 @@ public class MavenDependencyResolver {
     }
 
     public Set<Revision> resolve(Collection<String> gavs, ResolverConfig config) {
+
+        failForImportProvidedSystemScope(config);
 
         // TODO ensure that date(GAV) > config.timestamp
 
@@ -65,6 +73,17 @@ public class MavenDependencyResolver {
         return depSet;
     }
 
+    private void failForImportProvidedSystemScope(ResolverConfig config) {
+        switch (config.scope) {
+        case IMPORT:
+        case PROVIDED:
+        case SYSTEM:
+            throw new IllegalArgumentException(String.format("Invalid resolution scope: %s", config.scope));
+        default:
+            // nothing to do
+        }
+    }
+
     private Set<Revision> resolve(ResolverConfig config, Set<MavenProduct> addedProducts, QueueData startingData) {
 
         var depSet = new HashSet<Revision>();
@@ -89,17 +108,26 @@ public class MavenDependencyResolver {
                     continue;
                 }
 
-                // TODO check for scope
+                if (!isScopeCovered(config.scope, dep.scope)) {
+                    continue;
+                }
+
                 // TODO check for time
 
                 var depData = QueueData.nest(data);
+                if (depData.isTransitiveDep()) {
 
-                if (dep.optional && !config.alwaysIncludeOptional && depData.isTransitiveDep()) {
-                    continue;
-                }
-                
-                if(dep.scope == Scope.PROVIDED && !config.alwaysIncludeProvided && depData.isTransitiveDep()) {
-                    continue;
+                    if (dep.optional && !config.alwaysIncludeOptional) {
+                        continue;
+                    }
+
+                    if (dep.scope == Scope.PROVIDED && !config.alwaysIncludeProvided) {
+                        continue;
+                    }
+
+                    if (dep.scope == TEST) {
+                        continue;
+                    }
                 }
 
                 for (var excl : dep.exclusions) {
@@ -123,11 +151,28 @@ public class MavenDependencyResolver {
         return depSet;
     }
 
+    private static boolean isScopeCovered(Scope target, Scope dep) {
+        if (dep == target) {
+            return true;
+        }
+        if (dep == PROVIDED || dep == SYSTEM) {
+            return true;
+        }
+        if (dep == RUNTIME) {
+            return target == TEST;
+        }
+        if (dep == COMPILE) {
+            return target == RUNTIME || target == TEST;
+        }
+        return false;
+    }
+
     private static boolean hasVersion(Dependency dep) {
         if (dep.versionConstraints.isEmpty()) {
             return false;
         }
         if (dep.versionConstraints.size() == 1) {
+            // TODO this case should be obsolete
             return !dep.versionConstraints.iterator().next().spec.isEmpty();
         }
         return true;
