@@ -92,7 +92,10 @@ public class MavenDependencyResolver {
                 // TODO check for time
 
                 var depData = QueueData.nest(data);
-                // TODO just check for isTrans to support depth
+
+                if (dep.optional && !config.alwaysIncludeOptional && depData.isTransitiveDep()) {
+                    continue;
+                }
 
                 for (var excl : dep.exclusions) {
                     depData.exclusions.add(String.format("%s:%s", excl.groupId, excl.artifactId));
@@ -134,7 +137,8 @@ public class MavenDependencyResolver {
 
     private static class QueueData {
 
-        public int depth = 0;
+        private int depth = 0;
+
         public PomAnalysisResult pom;
         public final Set<String> exclusions = new HashSet<>();
         public final Map<String, Set<VersionConstraint>> depMgmt = new HashMap<>();
