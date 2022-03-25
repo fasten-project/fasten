@@ -1602,21 +1602,26 @@ public class MetadataDao {
         PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
         Modules m = Modules.MODULES;
         Callables c = Callables.CALLABLES;
+        Vulnerabilities v = Vulnerabilities.VULNERABILITIES;
+        VulnerabilitiesXPackageVersions vxp = VulnerabilitiesXPackageVersions.VULNERABILITIES_X_PACKAGE_VERSIONS;
+        VulnerabilitiesXCallables vxc = VulnerabilitiesXCallables.VULNERABILITIES_X_CALLABLES;
 
         var result = context
-                .select(c.ID, c.METADATA)
-                .from(c)
+                .select(vxc.CALLABLE_ID, v.STATEMENT)
+                .from(c, v, vxp, vxc)
                 .join(m)
                 .on(c.MODULE_ID.eq(m.ID))
                 .join(pv)
                 .on(m.PACKAGE_VERSION_ID.eq(pv.ID))
                 .where(pv.ID.in(vulnerablePackageVersions))
-                .and(c.ID.in(callableIDs))
-                .and("callables.metadata::jsonb->'vulnerabilities' is not null")
+                .and(pv.ID.eq(vxp.PACKAGE_VERSION_ID))
+                .and(vxc.VULNERABILITY_ID.eq(vxp.VULNERABILITY_ID))
+                .and(v.ID.eq(vxc.VULNERABILITY_ID))
+                .and(vxc.CALLABLE_ID.in(callableIDs))
                 .fetch();
         var map = new HashMap<Long, JSONObject>(result.size());
         for (var record : result) {
-            map.put(record.value1(), new JSONObject(record.value2().data()).getJSONObject("vulnerabilities"));
+            map.put(record.value1(), new JSONObject(record.value2().data()));
         }
         return map;
     }
