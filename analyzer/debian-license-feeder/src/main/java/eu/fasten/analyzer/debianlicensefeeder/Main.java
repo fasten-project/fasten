@@ -20,7 +20,7 @@ package eu.fasten.analyzer.debianlicensefeeder;
 
 import picocli.CommandLine;
 
-@CommandLine.Command(name = "DebianLicenseDetector")
+@CommandLine.Command(name = "DebianLicenseFeeder")
 public class Main implements Runnable {
     @Override
     public void run() {
