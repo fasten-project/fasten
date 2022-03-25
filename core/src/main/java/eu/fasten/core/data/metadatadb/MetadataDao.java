@@ -22,9 +22,9 @@ import com.github.t9t.jooq.json.JsonbDSL;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import eu.fasten.core.data.Constants;
-import eu.fasten.core.data.FastenPythonURI;
-import eu.fasten.core.data.FastenJavaURI;
 import eu.fasten.core.data.FastenCURI;
+import eu.fasten.core.data.FastenJavaURI;
+import eu.fasten.core.data.FastenPythonURI;
 import eu.fasten.core.data.FastenURI;
 import eu.fasten.core.data.metadatadb.codegen.Keys;
 import eu.fasten.core.data.metadatadb.codegen.enums.Access;
@@ -1590,9 +1590,9 @@ public class MetadataDao {
     public Set<Long> findVulnerablePackageVersions(Set<Long> packageVersionIDs) {
         var result = context
                 .select(PackageVersions.PACKAGE_VERSIONS.ID)
-                .from(PackageVersions.PACKAGE_VERSIONS)
+                .from(PackageVersions.PACKAGE_VERSIONS, VulnerabilitiesXPackageVersions.VULNERABILITIES_X_PACKAGE_VERSIONS)
                 .where(PackageVersions.PACKAGE_VERSIONS.ID.in(packageVersionIDs))
-                .and("package_versions.metadata::jsonb->'vulnerabilities' is not null")
+                .and(PackageVersions.PACKAGE_VERSIONS.ID.eq(VulnerabilitiesXPackageVersions.VULNERABILITIES_X_PACKAGE_VERSIONS.PACKAGE_VERSION_ID))
                 .fetch();
         return new HashSet<>(result.map(Record1::value1));
     }
