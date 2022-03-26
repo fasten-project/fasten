@@ -117,6 +117,10 @@ public class MavenDependencyResolver {
                 var depData = QueueData.nest(data);
                 if (depData.isTransitiveDep()) {
 
+                    if (config.depth == ResolverDepth.DIRECT) {
+                        continue;
+                    }
+
                     if (dep.optional && !config.alwaysIncludeOptional) {
                         continue;
                     }
