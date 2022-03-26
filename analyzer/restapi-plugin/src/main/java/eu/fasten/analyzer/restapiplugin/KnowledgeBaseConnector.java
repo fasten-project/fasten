@@ -206,7 +206,6 @@ public class KnowledgeBaseConnector {
                     System.exit(1);
                 }
                 logger.info("...Graph database connection established successfully.");
-              
             }
         }
     }
