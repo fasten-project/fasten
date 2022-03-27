@@ -196,33 +196,29 @@ public class KnowledgeBaseConnector {
      */
     @PostConstruct
     public void connectToGraphDB() {
-        switch (KnowledgeBaseConnector.forge) {
-            case Constants.mvnForge: {
-                logger.info("Establishing connection to the Graph Database at " + graphdbPath + "...");
-                try {
-                    graphDao = RocksDBConnector.createReadOnlyRocksDBAccessObject(graphdbPath);
-                } catch (RuntimeException e) {
-                    logger.error("Couldn't connect to the Graph Database", e);
-                    System.exit(1);
-                }
-                logger.info("...Graph database connection established successfully.");
+        if (this.forge.equals(Constants.mvnForge)) {
+            logger.info("Establishing connection to the Graph Database at " + graphdbPath + "...");
+            try {
+                graphDao = RocksDBConnector.createReadOnlyRocksDBAccessObject(graphdbPath);
+            } catch (RuntimeException e) {
+                logger.error("Couldn't connect to the Graph Database", e);
+                System.exit(1);
             }
+            logger.info("...Graph database connection established successfully.");
         }
     }
 
     @PostConstruct
     public void initKafkaProducer() {
-        switch (this.forge) {
-            case Constants.mvnForge: {
-                ingestTopic = this.kafkaOutputTopic;
-                var producerProperties = new Properties();
-                producerProperties.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaAddress);
-                producerProperties.setProperty(ProducerConfig.CLIENT_ID_CONFIG, "fasten_restapi_producer");
-                producerProperties.setProperty(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
-                producerProperties.setProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
-                producerProperties.setProperty(ProducerConfig.MAX_REQUEST_SIZE_CONFIG, "1000000");
-                kafkaProducer = new KafkaProducer<>(producerProperties);
-            }
+        if (this.forge.equals(Constants.mvnForge)) {
+            ingestTopic = this.kafkaOutputTopic;
+            var producerProperties = new Properties();
+            producerProperties.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaAddress);
+            producerProperties.setProperty(ProducerConfig.CLIENT_ID_CONFIG, "fasten_restapi_producer");
+            producerProperties.setProperty(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
+            producerProperties.setProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
+            producerProperties.setProperty(ProducerConfig.MAX_REQUEST_SIZE_CONFIG, "1000000");
+            kafkaProducer = new KafkaProducer<>(producerProperties);
         }
     }
 }
