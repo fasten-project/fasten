@@ -74,11 +74,19 @@ public class MavenDependencyResolverMediationTest {
     }
 
     @Test
-    public void mediationSameChildLevel() {
+    public void mediationSameChildLevel1() {
         add(BASE, "b:1", "c:1");
         add("b:1", "d:1");
         add("c:1", "d:2");
         assertDepSet(BASE, "b:1", "c:1", "d:1");
+    }
+
+    @Test
+    public void mediationSameChildLevel2() {
+        add(BASE, "c:1", "b:1");
+        add("b:1", "d:1");
+        add("c:1", "d:2");
+        assertDepSet(BASE, "b:1", "c:1", "d:2");
     }
 
     @Test
