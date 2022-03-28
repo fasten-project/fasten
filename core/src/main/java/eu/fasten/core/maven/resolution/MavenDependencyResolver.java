@@ -48,14 +48,14 @@ public class MavenDependencyResolver {
 
         failForImportProvidedSystemScope(config);
 
-        // TODO ensure that date(GAV) > config.timestamp
-
         if (gavs.size() == 1) {
-            var gav = gavs.iterator().next();
+            var parts = gavs.iterator().next().split(":");
+            var ga = String.format("%s:%s", parts[0], parts[1]);
 
-            var pom = this.graph.find(gav);
+            var pom = this.graph.find(ga, Set.of(new VersionConstraint(parts[2])), config.timestamp);
             if (pom == null) {
-                return Set.of();
+                throw new MavenResolutionException(
+                        String.format("Cannot find coordinate %s:%s:%s", parts[0], parts[1], parts[2]));
             } else {
                 return resolve(config, new HashSet<>(), QueueData.startFrom(pom));
             }
@@ -85,6 +85,10 @@ public class MavenDependencyResolver {
     }
 
     private Set<Revision> resolve(ResolverConfig config, Set<MavenProduct> addedProducts, QueueData startingData) {
+
+        if (startingData.pom.releaseDate > config.timestamp) {
+            throw new MavenResolutionException("Requested POM has been released after resolution timestamp");
+        }
 
         var depSet = new HashSet<Revision>();
 
@@ -185,7 +189,7 @@ public class MavenDependencyResolver {
     private static Set<Dependency> toDeps(Collection<String> gavs) {
         return gavs.stream() //
                 .map(gav -> gav.split(":")) //
-                .map(parts -> new Dependency(parts[0], parts[0], parts[1])) //
+                .map(parts -> new Dependency(parts[0], parts[1], parts[2])) //
                 .collect(Collectors.toSet());
     }
 

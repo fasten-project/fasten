@@ -18,10 +18,12 @@
 
 package eu.fasten.analyzer.restapiplugin;
 
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toSet;
+
 import java.io.IOException;
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.Collectors;
 
 import org.json.JSONObject;
 
@@ -91,7 +93,7 @@ public class LazyIngestionProvider {
         var alreadyIngestedArtifacts = KnowledgeBaseConnector.kbDao.areArtifactsIngested(keys);
         artifacts = artifacts.stream()
                 .filter(a -> !alreadyIngestedArtifacts.contains(toKey(a.packageName, a.version)))
-                .collect(Collectors.toList());
+                .collect(toList());
         artifacts.forEach(a -> {
             var groupId = a.packageName.split(":")[0];
             var artifactId = a.packageName.split(":")[1];

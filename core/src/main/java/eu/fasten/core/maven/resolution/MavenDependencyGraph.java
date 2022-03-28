@@ -15,8 +15,6 @@
  */
 package eu.fasten.core.maven.resolution;
 
-import java.security.InvalidParameterException;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -36,13 +34,13 @@ public class MavenDependencyGraph {
         var gav = toGAV(pom);
         if (hasGAV(gav)) {
             // TODO might be too strict for practice (e.g., same GAV in multiple repos )
-            throw new InvalidParameterException("GAV exists");
+            throw new IllegalArgumentException(String.format("Coordinate %s exists", gav));
         }
         pomForGav.put(gav, pom);
         put(pomsForGa, toGA(pom), pom);
     }
 
-    public synchronized boolean hasGAV(String gav) {
+    private boolean hasGAV(String gav) {
         return pomForGav.containsKey(gav);
     }
 
@@ -56,12 +54,16 @@ public class MavenDependencyGraph {
         }
     }
 
-    public PomAnalysisResult find(String ga, Set<VersionConstraint> vcs, long timestamp) {
+    // no need for `synchronized`, the problematic part has been moved to `findGA`
+    public PomAnalysisResult find(String ga, Set<VersionConstraint> vcs, long resolveAt) {
 
         DefaultArtifactVersion highest = null;
         PomAnalysisResult highestPom = null;
 
         for (var pom : findGA(ga)) {
+            if (pom.releaseDate > resolveAt) {
+                continue;
+            }
             for (var vc : vcs) {
                 if (vc.matches(pom.version)) {
                     var cur = new DefaultArtifactVersion(pom.version);
@@ -82,13 +84,6 @@ public class MavenDependencyGraph {
 
     private synchronized Set<PomAnalysisResult> findGA(String ga) {
         return pomsForGa.getOrDefault(ga, Set.of());
-    }
-
-    public PomAnalysisResult find(String gav) {
-        var parts = gav.split(":");
-        var ga = parts[0] + ":" + parts[1];
-        var vc = new VersionConstraint(parts[2]);
-        return find(ga, Set.of(vc), new Date().getTime());
     }
 
     private static String toGA(PomAnalysisResult pom) {
