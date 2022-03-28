@@ -211,6 +211,7 @@
             </plugin>
 
             <plugin>
+                <!-- On updates, also update `analyzer/repo-analyzer/.../MavenRepoAnalyzer.java` -->
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>
                 <version>0.8.7</version>
