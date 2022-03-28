@@ -130,26 +130,29 @@ public class RepoClonerPlugin extends Plugin {
                     + File.separator + product.replace(Constants.mvnCoordinateSeparator, "_")
                     + ".json";
             repoUrl = json.optString("repoUrl").replaceAll("[\\n\\t ]", "");
-            if (!repoUrl.isEmpty()) {
-                var gitCloner = new GitCloner(baseDir);
-                var hgCloner = new HgCloner(baseDir);
-                var svnCloner = new SvnCloner(baseDir);
-                var result = cloneRepo(repoUrl, artifact, group, gitCloner, hgCloner, svnCloner);
-                if (result.getFirst() != null) {
-                    repoPath = result.getFirst();
-                    logger.info("Successfully cloned the repository for " + group + ":" + artifact + ":" + version + " from " + repoUrl);
-                } else if (result.getSecond() != null) {
-                    var errorTriple = result.getSecond();
-                    var errMsg = "Could not clone the repository for " + group + ":" + artifact + ":" + version + " from " + repoUrl
-                            + "; GitCloner: " + (errorTriple.getLeft() != null ? errorTriple.getLeft().getMessage() : "null")
-                            + "; SvnCloner: " + (errorTriple.getMiddle() != null ? errorTriple.getMiddle().getMessage() : "null")
-                            + "; HgCloner: " + (errorTriple.getRight() != null ? errorTriple.getRight().getMessage() : "null");
-                    logger.error(errMsg);
-                    this.pluginError = new CloneFailedException(errMsg);
-                }
-            } else {
-                logger.info("Repository URL not found");
-                this.pluginError = new RepoUrlNotFoundException("Repository URL not found");
+
+            if (repoUrl.isEmpty()) {
+                var m = "No Repository URL provided in the input record";
+                logger.info(m);
+                this.pluginError = new RepoUrlNotFoundException(m);
+                return;
+            }
+
+            var gitCloner = new GitCloner(baseDir);
+            var hgCloner = new HgCloner(baseDir);
+            var svnCloner = new SvnCloner(baseDir);
+            var result = cloneRepo(repoUrl, artifact, group, gitCloner, hgCloner, svnCloner);
+            if (result.getFirst() != null) {
+                repoPath = result.getFirst();
+                logger.info("Successfully cloned the repository for " + group + ":" + artifact + ":" + version + " from " + repoUrl);
+            } else if (result.getSecond() != null) {
+                var errorTriple = result.getSecond();
+                var errMsg = "Could not clone the repository for " + group + ":" + artifact + ":" + version + " from " + repoUrl
+                        + "; GitCloner: " + (errorTriple.getLeft() != null ? errorTriple.getLeft().getMessage() : "null")
+                        + "; SvnCloner: " + (errorTriple.getMiddle() != null ? errorTriple.getMiddle().getMessage() : "null")
+                        + "; HgCloner: " + (errorTriple.getRight() != null ? errorTriple.getRight().getMessage() : "null");
+                logger.error(errMsg);
+                this.pluginError = new CloneFailedException(errMsg);
             }
         }
 
