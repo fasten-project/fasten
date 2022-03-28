@@ -24,8 +24,8 @@ import eu.fasten.analyzer.repoclonerplugin.utils.GitCloner;
 import eu.fasten.analyzer.repoclonerplugin.utils.HgCloner;
 import eu.fasten.analyzer.repoclonerplugin.utils.SvnCloner;
 import eu.fasten.core.data.Constants;
+import eu.fasten.core.plugins.AbstractKafkaPlugin;
 import eu.fasten.core.plugins.DataWriter;
-import eu.fasten.core.plugins.KafkaPlugin;
 import org.apache.commons.lang3.tuple.ImmutableTriple;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.commons.math3.util.Pair;
@@ -37,9 +37,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.util.Collections;
-import java.util.LinkedList;
-import java.util.List;
 import java.util.Optional;
 
 public class RepoClonerPlugin extends Plugin {
@@ -49,10 +46,8 @@ public class RepoClonerPlugin extends Plugin {
     }
 
     @Extension
-    public static class RepoCloner implements KafkaPlugin, DataWriter {
+    public static class RepoCloner extends AbstractKafkaPlugin implements DataWriter {
 
-        private List<String> consumeTopics = new LinkedList<>(Collections.singletonList("fasten.POMAnalyzer.out"));
-        private Exception pluginError = null;
         private final Logger logger = LoggerFactory.getLogger(RepoCloner.class.getName());
         private String repoPath = null;
         private String artifact = null;
@@ -73,38 +68,7 @@ public class RepoClonerPlugin extends Plugin {
         }
 
         @Override
-        public Optional<List<String>> consumeTopic() {
-            return Optional.of(consumeTopics);
-        }
-
-        @Override
-        public void setTopics(List<String> consumeTopics) {
-            this.consumeTopics = consumeTopics;
-        }
-
-        @Override
-        public Optional<String> produce() {
-            var json = new JSONObject();
-            json.put("artifactId", artifact);
-            json.put("groupId", group);
-            json.put("version", version);
-            json.put("repoPath", (repoPath != null) ? repoPath : "");
-            json.put("commitTag", (commitTag != null) ? commitTag : "");
-            json.put("sourcesUrl", (sourcesUrl != null) ? sourcesUrl : "");
-            json.put("repoUrl", (repoUrl != null) ? repoUrl : "");
-            json.put("date", date);
-            json.put("forge", (forge != null) ? forge : "");
-            json.put("repoType", (repoType != null) ? repoType : "");
-            return Optional.of(json.toString());
-        }
-
-        @Override
-        public String getOutputPath() {
-            return this.outputPath;
-        }
-
-        @Override
-        public void consume(String record) {
+        public void consume(String record, ProcessingLane l) {
             this.pluginError = null;
             this.artifact = null;
             this.group = null;
@@ -223,38 +187,24 @@ public class RepoClonerPlugin extends Plugin {
         }
 
         @Override
-        public String name() {
-            return "Repo Cloner Plugin";
+        public Optional<String> produce() {
+            var json = new JSONObject();
+            json.put("artifactId", artifact);
+            json.put("groupId", group);
+            json.put("version", version);
+            json.put("repoPath", (repoPath != null) ? repoPath : "");
+            json.put("commitTag", (commitTag != null) ? commitTag : "");
+            json.put("sourcesUrl", (sourcesUrl != null) ? sourcesUrl : "");
+            json.put("repoUrl", (repoUrl != null) ? repoUrl : "");
+            json.put("date", date);
+            json.put("forge", (forge != null) ? forge : "");
+            json.put("repoType", (repoType != null) ? repoType : "");
+            return Optional.of(json.toString());
         }
 
         @Override
-        public String description() {
-            return "Repo Cloner Plugin. "
-                    + "Consumes a repository URL, "
-                    + "clones the repo to the provided directory building directory hierarchy"
-                    + "and produces the path to directory with repository.";
-        }
-
-        @Override
-        public String version() {
-            return "0.1.2";
-        }
-
-        @Override
-        public void start() {
-        }
-
-        @Override
-        public void stop() {
-        }
-
-        @Override
-        public Exception getPluginError() {
-            return this.pluginError;
-        }
-
-        @Override
-        public void freeResource() {
+        public String getOutputPath() {
+            return this.outputPath;
         }
 
         @Override
