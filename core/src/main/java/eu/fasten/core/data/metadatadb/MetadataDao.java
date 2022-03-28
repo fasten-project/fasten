@@ -74,6 +74,7 @@ import javax.annotation.Nullable;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -1587,6 +1588,10 @@ public class MetadataDao {
         return result.value1() + Constants.mvnCoordinateSeparator + result.value2();
     }
 
+    /**
+     * Finds a set of vulnerable package version ID given a set of package version IDs.
+     * If none of given package version IDs are vulnerable, it returns an empty set.
+     */
     public Set<Long> findVulnerablePackageVersions(Set<Long> packageVersionIDs) {
         var result = context
                 .select(PackageVersions.PACKAGE_VERSIONS.ID)
@@ -1597,31 +1602,31 @@ public class MetadataDao {
         return new HashSet<>(result.map(Record1::value1));
     }
 
-    public Map<Long, JSONObject> findVulnerableCallables(Set<Long> vulnerablePackageVersions, Set<Long> callableIDs) {
+    /**
+     * Given a set of vulnerable package version IDs and a set of callable IDs, it returns a map of vulnerable callable IDs
+     * and their corresponding vulnerability JSON statement (if any).
+     */
+    public Map<Long, List<JSONObject>> findVulnerableCallables(Set<Long> vulnerablePackageVersions, Set<Long> callableIDs) {
 
-        PackageVersions pv = PackageVersions.PACKAGE_VERSIONS;
-        Modules m = Modules.MODULES;
-        Callables c = Callables.CALLABLES;
         Vulnerabilities v = Vulnerabilities.VULNERABILITIES;
         VulnerabilitiesXPackageVersions vxp = VulnerabilitiesXPackageVersions.VULNERABILITIES_X_PACKAGE_VERSIONS;
         VulnerabilitiesXCallables vxc = VulnerabilitiesXCallables.VULNERABILITIES_X_CALLABLES;
 
-        var result = context
-                .select(vxc.CALLABLE_ID, v.STATEMENT)
-                .from(c, v, vxp, vxc)
-                .join(m)
-                .on(c.MODULE_ID.eq(m.ID))
-                .join(pv)
-                .on(m.PACKAGE_VERSION_ID.eq(pv.ID))
-                .where(pv.ID.in(vulnerablePackageVersions))
-                .and(pv.ID.eq(vxp.PACKAGE_VERSION_ID))
-                .and(vxc.VULNERABILITY_ID.eq(vxp.VULNERABILITY_ID))
-                .and(v.ID.eq(vxc.VULNERABILITY_ID))
+        var result = context.
+                select(vxc.CALLABLE_ID, v.STATEMENT)
+                .from(v, vxp, vxc)
+                .where(vxp.PACKAGE_VERSION_ID.in(vulnerablePackageVersions))
+                .and(v.ID.eq(vxp.VULNERABILITY_ID))
                 .and(vxc.CALLABLE_ID.in(callableIDs))
                 .fetch();
-        var map = new HashMap<Long, JSONObject>(result.size());
+
+        var map = new HashMap<Long, List<JSONObject>>(result.size());
         for (var record : result) {
-            map.put(record.value1(), new JSONObject(record.value2().data()));
+            if (!map.containsKey(record.value1())) {
+                map.put(record.value1(), new ArrayList<>(Collections.singletonList(new JSONObject(record.value2().data()))));
+            } else {
+                map.get(record.value1()).add(new JSONObject(record.value2().data()));
+            }
         }
         return map;
     }
