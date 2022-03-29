@@ -10,11 +10,11 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>eu.fasten.analyzer</groupId>
-    <artifactId>license-detector</artifactId>
+    <artifactId>python-license-detector</artifactId>
     <version>0.0.4-SNAPSHOT</version>
     <packaging>jar</packaging>
 
-    <name>license-detector</name>
+    <name>python-license-detector</name>
 
     <dependencies>
         <dependency>
@@ -73,9 +73,9 @@
                                     <manifestEntries>
                                         <X-Compile-Source-JDK>11</X-Compile-Source-JDK>
                                         <X-Compile-Target-JDK>11</X-Compile-Target-JDK>
-                                        <Plugin-Class>eu.fasten.analyzer.licensedetector.LicenseDetectorPlugin
+                                        <Plugin-Class>eu.fasten.analyzer.pythonlicensedetector.PythonLicenseDetectorPlugin
                                         </Plugin-Class>
-                                        <Plugin-Id>license-detector</Plugin-Id>
+                                        <Plugin-Id>python-license-detector</Plugin-Id>
                                         <Plugin-Version>0.0.1</Plugin-Version>
                                         <Plugin-Description>
                                             Detects licenses of a repository.
