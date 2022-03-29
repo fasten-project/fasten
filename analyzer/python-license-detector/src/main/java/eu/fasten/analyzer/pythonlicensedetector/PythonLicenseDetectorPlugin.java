@@ -89,36 +89,34 @@ public class PythonLicenseDetectorPlugin extends Plugin {
                 reset();
                 JSONObject json = new JSONObject(kafkaRecord);
                 logger.info("Python license detector started.");
-                String repoPath = findSourcePath(json);
-                //repoPath = repoPath.replace("revision-callgraphs/","");
-                System.out.println(repoPath);
-                // Detecting inbound licenses by scanning the project
-                String scanResultPath = scanProject(repoPath);
-                // Parsing the result
-                JSONArray fileLicenses = parseScanResult(scanResultPath);
-                if (fileLicenses != null && !fileLicenses.isEmpty()) {
-                    detectedLicenses.addFiles(fileLicenses);
-                } else {
-                    logger.warn("Scanner hasn't detected any licenses in " + scanResultPath + ".");
-                }
 
-                /*
                 // Retrieving the package name
                 packageName = extractPackageName(json);
                 logger.info("The package to analyze is:"+packageName+".");
                 // Retrieving the package version
                 packageVersion = extractPackageVersion(json);
-                logger.info("The package version is:"+packageVersion+".");*/
+                logger.info("The package version is:"+packageVersion+".");
 
-                //Adding packageName and packageVersion to the out message (object).
-                /*JSONObject packageInfo = new JSONObject();
-                packageInfo.put("packageName", packageName);
-                packageInfo.put("packageVersion", packageVersion);
-                // forcing the packageName and packageVersion information into the files JSONArray
-                object.accumulate("files", packageInfo);
+                //String GitHubURL =
+                JSONObject PypiJSON = new JSONObject();;
+
+                PypiJSON = getJSONFromPypi(packageName, packageVersion);
+
+                findGitHubStringIterate(PypiJSON);
+
+                System.out.println ("GitHubURL:");
+                System.out.println (str1);
+
+                String GitHubURL = str1;
+
+
+
+                //String PypiLicense = getLicenseFromPypi(PypiJSON);
+                //System.out.println ("PypiLicense");
+                //System.out.println (PypiLicense);
 
                 // Outbound license detection
-                detectedLicenses.setOutbound(getOutboundLicenses(packageName, packageVersion));
+                detectedLicenses.setOutbound(getOutboundLicenses(packageName, packageVersion, GitHubURL));
                 if (detectedLicenses.getOutbound() == null || detectedLicenses.getOutbound().isEmpty()) {
                     logger.warn("No outbound licenses were detected.");
                 } else {
@@ -129,11 +127,35 @@ public class PythonLicenseDetectorPlugin extends Plugin {
                     );
                 }
 
+                String repoPath = findSourcePath(json);
+                //repoPath = repoPath.replace("revision-callgraphs/","");
+                System.out.println(repoPath);
                 // Detecting inbound licenses by scanning the project
                 String scanResultPath = scanProject(repoPath);
-
                 // Parsing the result
                 JSONArray fileLicenses = parseScanResult(scanResultPath);
+                System.out.println(fileLicenses);
+                if (fileLicenses != null && !fileLicenses.isEmpty()) {
+                    detectedLicenses.addFiles(fileLicenses);
+                } else {
+                    logger.warn("Scanner hasn't detected any licenses in " + scanResultPath + ".");
+                }
+
+
+
+
+                //Adding packageName and packageVersion to the out message (object).
+                /*JSONObject packageInfo = new JSONObject();
+                packageInfo.put("packageName", packageName);
+                packageInfo.put("packageVersion", packageVersion);
+                // forcing the packageName and packageVersion information into the files JSONArray
+                object.accumulate("files", packageInfo);*/
+
+                // Detecting inbound licenses by scanning the project
+                //String scanResultPath = scanProject(repoPath);
+
+                // Parsing the result
+                /*JSONArray fileLicenses = parseScanResult(scanResultPath);
                 if (fileLicenses != null && !fileLicenses.isEmpty()) {
                     detectedLicenses.addFiles(fileLicenses);
                 } else {
@@ -197,37 +219,43 @@ public class PythonLicenseDetectorPlugin extends Plugin {
         /**
          * Retrieves the outbound license(s) of the input project.
          *
-         * @param repoPath the repository path whose outbound license(s) is(are) of interest.
-         * @param repoUrl  the input repository URL. Might be `null`.
+         * @param packageName the package name.
+         * @param packageVersion  the package version.
+         * @param GitHubURL  the input repository URL. Might be `null`.
          * @return the set of detected outbound licenses.
          */
-        /*protected Set<DetectedLicense> getOutboundLicenses(String packageName, String packageVersion) throws IOException, TimeoutException {
+        protected Set<DetectedLicense> getOutboundLicenses(String packageName, String packageVersion, @Nullable String GitHubURL) throws IOException, TimeoutException {
             //currently excluded the GitHub outbound license detection
             try {
-
                 DetectedLicense licenseFromPypi = getLicenseFromPypi(packageName,packageVersion);
                 if (licenseFromPypi != null) {
                     return Sets.newHashSet(licenseFromPypi);
                 } else {
                     logger.warn("Couldn't retrieve the outbound license from Pypi.");
+                    if (GitHubURL != null){
+                        logger.warn("Trying with the GitHub APIs ...");
+                        DetectedLicense GitHubLicense = getLicenseFromGitHub(str1);
+                        System.out.println(GitHubLicense);
+
+                    }
+
                 }
             } catch (IllegalArgumentException | IOException ex) { // not a valid GitHub repo URL
-                    logger.warn(e.getMessage(), e.getCause());
+                    logger.warn("It is not a valid GitHub repo URL");
             } catch (@SuppressWarnings({"TryWithIdenticalCatches", "RedundantSuppression"})
                     RuntimeException ex) {
-                logger.warn(e.getMessage(), e.getCause()); // could not contact GitHub API
+                logger.warn("Couldn't connect with GitHub APIs"); // could not contact GitHub API
             }
 
             return Collections.emptySet();
-        }*/
+        }
 
         /**
          * Retrieves the outbound license of a Pypi package using its API.
          *
-         * @param repoUrl the repository URL whose license is of interest.
-         * @return the outbound license retrieved from GitHub's API.
+         * @return the outbound license retrieved from PyPI's API.
          * @throws TimeoutException in case there was a connection timeout.
-         * @throws IOException in case there was a problem contacting the GitHub API.
+         * @throws IOException in case there was a problem contacting the PyPI's API.
          */
 
         protected DetectedLicense getLicenseFromPypi(String packageName, String packageVersion) throws IOException, TimeoutException {
@@ -271,6 +299,62 @@ public class PythonLicenseDetectorPlugin extends Plugin {
             //return repoLicense;
         }
 
+
+        private static JSONObject getJSONFromPypi(String packageName, String packageVersion) throws
+                IOException, TimeoutException {
+            JSONObject result = new JSONObject();
+            //response = requests.get("https://pypi.org/pypi/"+packageName+"/"+packageVersion+"/json")
+            URL url = new URL("https://pypi.org/pypi/" + packageName + "/" + packageVersion + "/json");
+            System.out.println(url);
+            JSONObject LicenseAndPath = new JSONObject();
+            HttpURLConnection conn = (HttpURLConnection) url.openConnection();
+            conn.setRequestMethod("GET");
+            conn.setRequestProperty("Accept", "application/json");
+            if (conn.getResponseCode() != 200) {
+                throw new RuntimeException("HTTP query failed. Error code: " + conn.getResponseCode());
+            }
+            InputStreamReader in = new InputStreamReader(conn.getInputStream());
+            BufferedReader br = new BufferedReader(in);
+            String jsonOutput = br.lines().collect(Collectors.joining());
+            // searching for the copyright files in the JSON response
+            var jsonOutputPayload = new JSONObject(jsonOutput);
+            return jsonOutputPayload;
+        }
+
+        /* Retrieve PyPI license from PyPI json */
+        private static String getLicenseFromPypi(JSONObject jsonOutputPayload ){
+            if (jsonOutputPayload.has("info")) {
+                JSONObject json2 = jsonOutputPayload.getJSONObject("info");
+
+                if (json2.has("license")) {
+                    return json2.getString("license");
+                } else {
+                    String licenseNotFound = "License not declared";
+                    return licenseNotFound;
+                }
+            }
+            return null;
+        }
+
+        /* Find recursively the GitHub URL inside of the payload/input */
+        private static String findGitHubStringIterate(JSONObject jsonObj) {
+            for (String keyStr : jsonObj.keySet()) {
+                Object keyvalue = jsonObj.get(keyStr);
+                str1 = String.valueOf(keyvalue);
+                if (jsonObj.get(keyStr) instanceof JSONObject) {
+                    JSONObject jsonObject = new JSONObject();
+                    jsonObject = (JSONObject) jsonObj.get(keyStr);
+                    findGitHubStringIterate(jsonObject);
+                    //break;
+                }
+                if (str1.contains("github.com")) {
+                    System.out.println("The Keyword :github.com is found in given string");
+                    System.out.println("key: " + keyStr + " value: " + keyvalue);
+                    return str1;
+                }
+            }
+            return null;
+        }
 
         /**
          * Retrieves the outbound license of a GitHub project using its API.
@@ -354,7 +438,7 @@ public class PythonLicenseDetectorPlugin extends Plugin {
         /**
          * Retrieves the cloned repository path on the shared volume from the input record.
          *
-         * @param record the input record containing repository information.
+         * @param json the input record containing repository information.
          * @return the repository path on the shared volume
          * @throws IllegalArgumentException in case the function couldn't find the repository path in the input record.
          */
@@ -398,42 +482,6 @@ public class PythonLicenseDetectorPlugin extends Plugin {
             return payload.getString("repoUrl");
         }
 
-        /**
-         * Retrieves the pom.xml file given a repository path.
-         *
-         * @param repoPath the repository path whose pom.xml file must be retrieved.
-         * @return the pom.xml file of the repository.
-         * @throws FileNotFoundException in case no pom.xml file could be found in the repository.
-         */
-        protected File retrievePomFile(String repoPath) throws FileNotFoundException {
-
-            // Result
-            Optional<File> pomFile = Optional.empty();
-
-            // Repository folder
-            File repoFolder = new File(repoPath);
-
-            // Retrieving all repository's pom files
-            File[] pomFiles = repoFolder.listFiles((dir, name) -> name.equalsIgnoreCase("pom.xml"));
-            if (pomFiles == null) {
-                throw new RuntimeException("Path " + repoPath + " does not denote a directory.");
-            }
-            logger.trace("Found " + pomFiles.length + " pom.xml file" +
-                    ((pomFiles.length == 1) ? "" : "s") + ": " + Arrays.toString(pomFiles));
-            if (pomFiles.length == 1) {
-                pomFile = Optional.ofNullable(pomFiles[0]);
-            } else if (pomFiles.length > 1) {
-                // Retrieving the pom.xml file having the shortest path (closest to it repository's root path)
-                pomFile = Arrays.stream(pomFiles).min(Comparator.comparingInt(f -> f.getAbsolutePath().length()));
-                logger.info("Multiple pom.xml files found. Using " + pomFile.get());
-            }
-
-            if (pomFile.isEmpty()) {
-                throw new FileNotFoundException("No file named pom.xml found in " + repoPath + ".");
-            }
-
-            return pomFile.get();
-        }
 
         /**
          * Scans a repository looking for license text in files with scancode.
