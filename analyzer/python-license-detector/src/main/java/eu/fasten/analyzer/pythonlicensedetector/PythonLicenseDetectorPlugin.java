@@ -97,9 +97,8 @@ public class PythonLicenseDetectorPlugin extends Plugin {
                 packageVersion = extractPackageVersion(json);
                 logger.info("The package version is:"+packageVersion+".");
 
-                //String GitHubURL =
-                JSONObject PypiJSON = new JSONObject();;
 
+                JSONObject PypiJSON = new JSONObject();;
                 PypiJSON = getJSONFromPypi(packageName, packageVersion);
 
                 findGitHubStringIterate(PypiJSON);
@@ -108,12 +107,6 @@ public class PythonLicenseDetectorPlugin extends Plugin {
                 System.out.println (str1);
 
                 String GitHubURL = str1;
-
-
-
-                //String PypiLicense = getLicenseFromPypi(PypiJSON);
-                //System.out.println ("PypiLicense");
-                //System.out.println (PypiLicense);
 
                 // Outbound license detection
                 detectedLicenses.setOutbound(getOutboundLicenses(packageName, packageVersion, GitHubURL));
@@ -136,6 +129,9 @@ public class PythonLicenseDetectorPlugin extends Plugin {
                 JSONArray fileLicenses = parseScanResult(scanResultPath);
                 System.out.println("Content of fileLicenses JSONArray");
                 System.out.println(fileLicenses);
+
+
+
                 if (fileLicenses != null && !fileLicenses.isEmpty()) {
                     detectedLicenses.addFiles(fileLicenses);
                 } else {
@@ -145,23 +141,6 @@ public class PythonLicenseDetectorPlugin extends Plugin {
 
 
 
-                //Adding packageName and packageVersion to the out message (object).
-                /*JSONObject packageInfo = new JSONObject();
-                packageInfo.put("packageName", packageName);
-                packageInfo.put("packageVersion", packageVersion);
-                // forcing the packageName and packageVersion information into the files JSONArray
-                object.accumulate("files", packageInfo);*/
-
-                // Detecting inbound licenses by scanning the project
-                //String scanResultPath = scanProject(repoPath);
-
-                // Parsing the result
-                /*JSONArray fileLicenses = parseScanResult(scanResultPath);
-                if (fileLicenses != null && !fileLicenses.isEmpty()) {
-                    detectedLicenses.addFiles(fileLicenses);
-                } else {
-                    logger.warn("Scanner hasn't detected any licenses in " + scanResultPath + ".");
-                }*/
 
             } catch (Exception e) { // Fasten error-handling guidelines
                 logger.error(e.getMessage(), e.getCause());
@@ -206,8 +185,8 @@ public class PythonLicenseDetectorPlugin extends Plugin {
                 JSONObject json2 = json.getJSONObject("input");
                 if (json2.has("input")) {
                     JSONObject json3 = json2.getJSONObject("input");
-                    if (json3.has("source")) {
-                        return json3.getString("source");
+                    if (json3.has("product")) {
+                        return json3.getString("product");
                     } else {
                         String packageNameNotFound = "Package name not found";
                         return packageNameNotFound;
@@ -568,6 +547,13 @@ public class PythonLicenseDetectorPlugin extends Plugin {
             try {
                 // Retrieving the root element of the scan result file
                 JSONObject root = new JSONObject(Files.readString(Paths.get(scanResultPath)));
+                //Adding packageName and packageVersion to the out message (object).
+                JSONObject packageInfo = new JSONObject();
+                packageInfo.put("packageName", packageName);
+                packageInfo.put("packageVersion", packageVersion);
+                // forcing the packageName and packageVersion information into the files JSONArray
+                root.accumulate("files", packageInfo);
+
                 if (root.isEmpty()) {
                     throw new JSONException("Couldn't retrieve the root object of the JSON scan result file " +
                             "at " + scanResultPath + ".");
