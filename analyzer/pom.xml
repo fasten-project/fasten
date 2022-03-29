@@ -44,7 +44,7 @@
         <module>vulnerability-packages-listener</module>
         <module>dummy-plugin</module>
         <module>python-license-detector</module>
-        <!-- <module>python-license-feeder</module> -->
+        <module>python-license-feeder</module>
     </modules>
 
     <build>
