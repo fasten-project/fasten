@@ -208,6 +208,8 @@ public class PythonLicenseDetectorPlugin extends Plugin {
 
             try {
                 DetectedLicense licenseFromPypi = getLicenseFromPypi(packageName,packageVersion);
+                System.out.println("licenseFromPypi");
+                System.out.println(licenseFromPypi);
                 if (licenseFromPypi != null) {
                     return Sets.newHashSet(licenseFromPypi);
                 } else {
@@ -257,12 +259,16 @@ public class PythonLicenseDetectorPlugin extends Plugin {
                 var jsonOutputPayload = new JSONObject(jsonOutput);
                 if (jsonOutputPayload.has("info")) {
                     JSONObject json2 = jsonOutputPayload.getJSONObject("info");
+                    System.out.println("Getting the License from PyPI:");
+                    System.out.println(json2);
                     if (json2.has("license")) {
                         //return json2.getString("license");
                         json2 = json2.getJSONObject("license");
+                        System.out.println("License information retrieved from PyPI");
                         System.out.println(json2);
                     }
                     repoLicense = new DetectedLicense(json2.getString("spdx_id"), DetectedLicenseSource.PYPI);
+                    System.out.println(repoLicense);
                 }
                 conn.disconnect();
                 System.out.println("repoLicense .. inside of getLicenseFromPyPI.");
@@ -329,8 +335,8 @@ public class PythonLicenseDetectorPlugin extends Plugin {
                     //break;
                 }
                 if (str1.contains("github.com")) {
-                    System.out.println("The Keyword :github.com is found in given string");
-                    System.out.println("key: " + keyStr + " value: " + keyvalue);
+                    //System.out.println("The Keyword :github.com is found in given string");
+                    //System.out.println("key: " + keyStr + " value: " + keyvalue);
                     return str1;
                 }
             }
@@ -382,7 +388,6 @@ public class PythonLicenseDetectorPlugin extends Plugin {
 
             // Querying the GitHub API
             try {
-
                 // Format: "https://api.github.com/repos/`owner`/`repo`/license"
                 URL url = new URL("https://api.github.com/repos/" + owner + "/" + repo + "/license");
                 System.out.println("GitHub API url");
@@ -431,9 +436,9 @@ public class PythonLicenseDetectorPlugin extends Plugin {
                     String candidatePayload = json.getString("sourcePath");
                     //var candidatePayload = json.getJSONObject(key);
                     //if (candidatePayload.has("forge")) {
-                    System.out.println("sourcePath");
+                    /*System.out.println("sourcePath");
                     System.out.println(candidatePayload);
-                    System.out.println(json.getString("sourcePath"));
+                    System.out.println(json.getString("sourcePath"));*/
                     return candidatePayload;
                 } else {
                     var other = json.get(key);
