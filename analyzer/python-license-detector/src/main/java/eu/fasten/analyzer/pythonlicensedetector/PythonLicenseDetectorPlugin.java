@@ -90,7 +90,7 @@ public class PythonLicenseDetectorPlugin extends Plugin {
                 JSONObject json = new JSONObject(kafkaRecord);
                 logger.info("Python license detector started.");
                 String repoPath = findSourcePath(json);
-                repoPath = repoPath.replace("revision-callgraphs/","");
+                //repoPath = repoPath.replace("revision-callgraphs/","");
                 System.out.println(repoPath);
                 // Detecting inbound licenses by scanning the project
                 String scanResultPath = scanProject(repoPath);
