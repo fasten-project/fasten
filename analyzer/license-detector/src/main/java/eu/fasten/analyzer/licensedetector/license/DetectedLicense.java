@@ -1,4 +1,4 @@
-package eu.fasten.analyzer.licensedetector.license;
+package eu.fasten.analyzer.pythonlicensedetector.license;
 
 import java.util.Objects;
 
