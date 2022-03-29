@@ -119,12 +119,14 @@ public class PythonLicenseDetectorPlugin extends Plugin {
 
 
                 String repoPath = findSourcePath(json);
-
+                System.out.println("repoPath");
+                System.out.println(repoPath);
                 // Detecting inbound licenses by scanning the project
                 String scanResultPath = scanProject(repoPath);
                 // Parsing the result
                 JSONArray fileLicenses = parseScanResult(scanResultPath);
-
+                System.out.println("fileLicenses");
+                System.out.println(fileLicenses);
                 if (fileLicenses != null && !fileLicenses.isEmpty()) {
                     detectedLicenses.addFiles(fileLicenses);
                 } else {
