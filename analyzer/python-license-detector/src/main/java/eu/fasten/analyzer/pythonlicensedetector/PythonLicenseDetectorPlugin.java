@@ -134,6 +134,7 @@ public class PythonLicenseDetectorPlugin extends Plugin {
                 String scanResultPath = scanProject(repoPath);
                 // Parsing the result
                 JSONArray fileLicenses = parseScanResult(scanResultPath);
+                System.out.println("Content of fileLicenses JSONArray");
                 System.out.println(fileLicenses);
                 if (fileLicenses != null && !fileLicenses.isEmpty()) {
                     detectedLicenses.addFiles(fileLicenses);
