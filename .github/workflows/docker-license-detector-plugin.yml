@@ -15,7 +15,7 @@ on:
       - develop
 
 env:
-  IMAGE_NAME: fasten.python.license.detector.plugin
+  IMAGE_NAME: fasten.license.detector.plugin
 
 jobs:
 
