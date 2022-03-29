@@ -226,7 +226,7 @@ public class PythonLicenseDetectorPlugin extends Plugin {
          * @return the set of detected outbound licenses.
          */
         protected Set<DetectedLicense> getOutboundLicenses(String packageName, String packageVersion, @Nullable String GitHubURL) throws IOException, TimeoutException {
-            //currently excluded the GitHub outbound license detection
+
             try {
                 DetectedLicense licenseFromPypi = getLicenseFromPypi(packageName,packageVersion);
                 if (licenseFromPypi != null) {
@@ -283,6 +283,7 @@ public class PythonLicenseDetectorPlugin extends Plugin {
                     if (json2.has("license")) {
                         //return json2.getString("license");
                         json2 = json2.getJSONObject("license");
+                        System.out.println(json2);
                     }
                     repoLicense = new DetectedLicense(json2.getString("spdx_id"), DetectedLicenseSource.PYPI);
                 }
