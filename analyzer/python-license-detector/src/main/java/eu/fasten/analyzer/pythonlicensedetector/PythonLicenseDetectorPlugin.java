@@ -216,9 +216,7 @@ public class PythonLicenseDetectorPlugin extends Plugin {
                         logger.warn("Trying with the GitHub APIs ...");
                         DetectedLicense GitHubLicense = getLicenseFromGitHub(str1);
                         System.out.println(GitHubLicense);
-
                     }
-
                 }
             } catch (IllegalArgumentException | IOException ex) { // not a valid GitHub repo URL
                     logger.warn("It is not a valid GitHub repo URL");
@@ -267,6 +265,8 @@ public class PythonLicenseDetectorPlugin extends Plugin {
                     repoLicense = new DetectedLicense(json2.getString("spdx_id"), DetectedLicenseSource.PYPI);
                 }
                 conn.disconnect();
+                System.out.println("repoLicense .. inside of getLicenseFromPyPI.");
+                System.out.println(repoLicense);
                 return repoLicense;
             } catch (ProtocolException e) {
                 throw new ProtocolException(
@@ -385,6 +385,8 @@ public class PythonLicenseDetectorPlugin extends Plugin {
 
                 // Format: "https://api.github.com/repos/`owner`/`repo`/license"
                 URL url = new URL("https://api.github.com/repos/" + owner + "/" + repo + "/license");
+                System.out.println("GitHub API url");
+                System.out.println(url);
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                 conn.setRequestMethod("GET");
                 conn.setRequestProperty("Accept", "application/json");
