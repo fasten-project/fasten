@@ -117,9 +117,9 @@ public class PythonLicenseDetectorPlugin extends Plugin {
                     );
                 }
 
-                /*
+
                 String repoPath = findSourcePath(json);
-                //repoPath = repoPath.replace("revision-callgraphs/","");
+
                 // Detecting inbound licenses by scanning the project
                 String scanResultPath = scanProject(repoPath);
                 // Parsing the result
@@ -129,7 +129,7 @@ public class PythonLicenseDetectorPlugin extends Plugin {
                     detectedLicenses.addFiles(fileLicenses);
                 } else {
                     logger.warn("Scanner hasn't detected any licenses in " + scanResultPath + ".");
-                } */
+                }
 
             } catch (Exception e) { // Fasten error-handling guidelines
                 logger.error(e.getMessage(), e.getCause());
