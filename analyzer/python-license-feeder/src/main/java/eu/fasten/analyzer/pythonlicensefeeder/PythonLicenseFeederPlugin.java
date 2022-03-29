@@ -28,7 +28,7 @@ public class PythonLicenseFeederPlugin extends Plugin {
     @Extension
     public static class PythonLicenseFeederExtension implements KafkaPlugin, DBConnector {
 
-        private final Logger logger = LoggerFactory.getLogger(LicenseFeeder.class.getName());
+        private final Logger logger = LoggerFactory.getLogger(PythonLicenseFeederExtension.class.getName());
 
         protected Exception pluginError = null;
         private static DSLContext dslContext;
