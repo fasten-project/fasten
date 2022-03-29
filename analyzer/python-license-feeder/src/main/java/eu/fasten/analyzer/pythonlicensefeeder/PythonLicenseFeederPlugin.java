@@ -59,19 +59,20 @@ public class PythonLicenseFeederPlugin extends Plugin {
 
                 logger.info("License feeder started.");
 
-                // Retrieving coordinates of the input record
-                Revision coordinates = extractMavenCoordinates(record);
-                logger.info("Input coordinates: " + coordinates + ".");
+                String packageName = extractPackageName(record);
+                String packageVersion = extractPackageVersion(record);
+
+                logger.info("Package name: " + packageName + ".");
+                logger.info("Package version: " + packageVersion + ".");
 
                 // Inserting detected outbound into the database
                 var metadataDao = new MetadataDao(dslContext);
                 dslContext.transaction(transaction -> {
                     metadataDao.setContext(DSL.using(transaction));
-                    insertOutboundLicenses(coordinates, record, metadataDao);
-                    insertFileLicenses(coordinates, record, metadataDao);
+                    insertOutboundLicenses(packageName, packageVersion, record, metadataDao);
+                    insertFileLicenses(packageName, packageVersion, record, metadataDao);
                 });
 
-                // TODO Inserting licenses in files
 
             } catch (Exception e) { // Fasten error-handling guidelines
                 logger.error(e.getMessage(), e.getCause());
@@ -79,41 +80,45 @@ public class PythonLicenseFeederPlugin extends Plugin {
             }
         }
 
-        /**
-         * Retrieves the Maven coordinate of the input record.
-         * TODO Unit tests.
-         *
-         * @param record the input record containing repository information (`fasten.RepoCloner.out`).
-         * @return the Maven coordinate of the input record.
-         * @throws IllegalArgumentException in case the function couldn't find coordinate information
-         *                                  in the input record.
-         */
-        public static Revision extractMavenCoordinates(String record) {
+        protected String extractPackageName(String record) {
             var payload = new JSONObject(record);
-            if (payload.has("input")) {
-                payload = payload.getJSONObject("input");
-            }
-            if (payload.has("fasten.RepoCloner.out")) {
-                payload = payload.getJSONObject("fasten.RepoCloner.out");
-            }
             if (payload.has("payload")) {
                 payload = payload.getJSONObject("payload");
             }
-            String groupId = payload.getString("groupId");
-            if (groupId == null) {
-                throw new IllegalArgumentException("Invalid repository information: missing coordinate group ID.");
+            JSONArray array1 = payload.getJSONArray("files");
+            logger.info("Package name:");
+            for (int j = 0; j < array1.length(); j++) {
+                JSONObject obj2 = array1.getJSONObject(j);
+                //System.out.println(obj2);
+                if (obj2.has("packageName")){
+                    String packageName = obj2.getString("packageName");
+                    System.out.println(packageName);
+                    return packageName;
+                }
             }
-            String artifactId = payload.getString("artifactId");
-            if (artifactId == null) {
-                throw new IllegalArgumentException("Invalid repository information: missing coordinate artifact ID.");
+            System.out.println("Package version not retrieved.");
+            return null;
+        }
+
+        protected String extractPackageVersion(String record) {
+            var payload = new JSONObject(record);
+            if (payload.has("payload")) {
+                payload = payload.getJSONObject("payload");
             }
-            String version = payload.getString("version");
-            if (version == null) {
-                throw new IllegalArgumentException("Invalid repository information: missing coordinate version.");
+            JSONArray array1 = new JSONArray();
+            array1 = payload.getJSONArray("files");
+            logger.info("Package version:");
+            for (int j = 0; j < array1.length(); j++) {
+                JSONObject obj2 = array1.getJSONObject(j);
+                //System.out.println(obj2);
+                if (obj2.has("packageVersion")){
+                    String packageVersion = obj2.getString("packageVersion");
+                    System.out.println(packageVersion);
+                    return packageVersion;
+                }
             }
-            long createdAt = payload.getLong("date");
-            // TODO Is the timestamp conversion right?
-            return new Revision(groupId, artifactId, version, new Timestamp(createdAt));
+            System.out.println("Package version not retrieved.");
+            return null;
         }
 
         /**
@@ -123,25 +128,28 @@ public class PythonLicenseFeederPlugin extends Plugin {
          * @param record      the input record containing outbound license findings.
          * @param metadataDao Data Access Object to insert records in the database.
          */
-        protected void insertOutboundLicenses(Revision coordinates, String record, MetadataDao metadataDao) {
+        protected void insertOutboundLicenses(String packageName, String packageVersion, String record, MetadataDao metadataDao) {
             var payload = new JSONObject(record);
             if (payload.has("payload")) {
                 payload = payload.getJSONObject("payload");
             }
+
             JSONArray outboundLicenses = payload.getJSONArray("outbound");
             logger.info("About to insert outbound licenses...");
             metadataDao.insertPackageOutboundLicenses(
-                    coordinates,
+                    packageName,
+                    packageVersion,
                     new JSONObject().put("licenses", outboundLicenses).toString()
             );
             logger.info("...outbound licenses inserted.");
         }
 
-        protected void insertFileLicenses(Revision coordinates, String record, MetadataDao metadataDao) {
+        protected void insertFileLicenses(String packageName, String packageVersion, String record, MetadataDao metadataDao) {
             var payload = new JSONObject(record);
             if (payload.has("payload")) {
                 payload = payload.getJSONObject("payload");
             }
+
             JSONArray fileLicenses = payload.getJSONArray("files");
             logger.info("About to insert file licenses...");
             fileLicenses.forEach(f -> {
@@ -150,11 +158,12 @@ public class PythonLicenseFeederPlugin extends Plugin {
                 logger.debug("(cycling files) JSONObject f: " + file + " has " +
                         (file.has("path") ? "" : "no ") + "path and " +
                         (file.has("licenses") ? file.getJSONArray("licenses").length() : "no") + " licenses.");
-                if (file.has("path") && file.has("licenses")) {
+                if (file.has("path") && file.has("license")) {
                     metadataDao.insertFileLicenses(
-                            coordinates,
+                            packageName,
+                            packageVersion,
                             file.getString("path"),
-                            new JSONObject().put("licenses", file.getJSONArray("licenses")).toString()
+                            new JSONObject().put("license", file.getString("license")).toString()
                     );
                 }
             });
@@ -163,7 +172,7 @@ public class PythonLicenseFeederPlugin extends Plugin {
 
         @Override
         public String name() {
-            return "License Feeder Plugin";
+            return "Python License Feeder Plugin";
         }
 
         @Override
