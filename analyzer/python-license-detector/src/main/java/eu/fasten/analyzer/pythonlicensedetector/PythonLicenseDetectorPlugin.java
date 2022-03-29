@@ -103,9 +103,6 @@ public class PythonLicenseDetectorPlugin extends Plugin {
 
                 findGitHubStringIterate(PypiJSON);
 
-                System.out.println ("GitHubURL:");
-                System.out.println (str1);
-
                 String GitHubURL = str1;
 
                 // Outbound license detection
@@ -120,27 +117,19 @@ public class PythonLicenseDetectorPlugin extends Plugin {
                     );
                 }
 
+                /*
                 String repoPath = findSourcePath(json);
                 //repoPath = repoPath.replace("revision-callgraphs/","");
-                System.out.println(repoPath);
                 // Detecting inbound licenses by scanning the project
                 String scanResultPath = scanProject(repoPath);
                 // Parsing the result
                 JSONArray fileLicenses = parseScanResult(scanResultPath);
-                System.out.println("Content of fileLicenses JSONArray");
-                System.out.println(fileLicenses);
-
-
 
                 if (fileLicenses != null && !fileLicenses.isEmpty()) {
                     detectedLicenses.addFiles(fileLicenses);
                 } else {
                     logger.warn("Scanner hasn't detected any licenses in " + scanResultPath + ".");
-                }
-
-
-
-
+                } */
 
             } catch (Exception e) { // Fasten error-handling guidelines
                 logger.error(e.getMessage(), e.getCause());
@@ -208,16 +197,14 @@ public class PythonLicenseDetectorPlugin extends Plugin {
 
             try {
                 DetectedLicense licenseFromPypi = getLicenseFromPypi(packageName,packageVersion);
-                System.out.println("licenseFromPypi");
-                System.out.println(licenseFromPypi);
-                if (licenseFromPypi != null) {
+                if (licenseFromPypi != null ) {
                     return Sets.newHashSet(licenseFromPypi);
                 } else {
                     logger.warn("Couldn't retrieve the outbound license from Pypi.");
                     if (GitHubURL != null){
                         logger.warn("Trying with the GitHub APIs ...");
-                        DetectedLicense GitHubLicense = getLicenseFromGitHub(str1);
-                        System.out.println(GitHubLicense);
+                        DetectedLicense GitHubLicense = getLicenseFromGitHub(GitHubURL);
+                        return Sets.newHashSet(GitHubLicense);
                     }
                 }
             } catch (IllegalArgumentException | IOException ex) { // not a valid GitHub repo URL
@@ -245,7 +232,6 @@ public class PythonLicenseDetectorPlugin extends Plugin {
                 JSONObject result = new JSONObject();
                 //response = requests.get("https://pypi.org/pypi/"+packageName+"/"+packageVersion+"/json")
                 URL url = new URL("https://pypi.org/pypi/" + packageName + "/" + packageVersion + "/json");
-                JSONObject LicenseAndPath = new JSONObject();
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                 conn.setRequestMethod("GET");
                 conn.setRequestProperty("Accept", "application/json");
@@ -259,20 +245,14 @@ public class PythonLicenseDetectorPlugin extends Plugin {
                 var jsonOutputPayload = new JSONObject(jsonOutput);
                 if (jsonOutputPayload.has("info")) {
                     JSONObject json2 = jsonOutputPayload.getJSONObject("info");
-                    System.out.println("Getting the License from PyPI:");
-                    System.out.println(json2);
-                    if (json2.has("license")) {
+                    // TODO investigating what is going on inside this condition
+                    if (json2.getString("license")!=null && !json2.getString("license").isEmpty()) {
                         //return json2.getString("license");
-                        json2 = json2.getJSONObject("license");
-                        System.out.println("License information retrieved from PyPI");
-                        System.out.println(json2);
+                        JSONObject json3 = json2.getJSONObject("license");
+                        repoLicense = new DetectedLicense(json3.getString("license"), DetectedLicenseSource.PYPI);
                     }
-                    repoLicense = new DetectedLicense(json2.getString("spdx_id"), DetectedLicenseSource.PYPI);
-                    System.out.println(repoLicense);
                 }
                 conn.disconnect();
-                System.out.println("repoLicense .. inside of getLicenseFromPyPI.");
-                System.out.println(repoLicense);
                 return repoLicense;
             } catch (ProtocolException e) {
                 throw new ProtocolException(
@@ -292,7 +272,6 @@ public class PythonLicenseDetectorPlugin extends Plugin {
             JSONObject result = new JSONObject();
             //response = requests.get("https://pypi.org/pypi/"+packageName+"/"+packageVersion+"/json")
             URL url = new URL("https://pypi.org/pypi/" + packageName + "/" + packageVersion + "/json");
-            System.out.println(url);
             JSONObject LicenseAndPath = new JSONObject();
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("GET");
@@ -335,8 +314,6 @@ public class PythonLicenseDetectorPlugin extends Plugin {
                     //break;
                 }
                 if (str1.contains("github.com")) {
-                    //System.out.println("The Keyword :github.com is found in given string");
-                    //System.out.println("key: " + keyStr + " value: " + keyvalue);
                     return str1;
                 }
             }
@@ -390,8 +367,6 @@ public class PythonLicenseDetectorPlugin extends Plugin {
             try {
                 // Format: "https://api.github.com/repos/`owner`/`repo`/license"
                 URL url = new URL("https://api.github.com/repos/" + owner + "/" + repo + "/license");
-                System.out.println("GitHub API url");
-                System.out.println(url);
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                 conn.setRequestMethod("GET");
                 conn.setRequestProperty("Accept", "application/json");
@@ -434,11 +409,6 @@ public class PythonLicenseDetectorPlugin extends Plugin {
             for (var key : json.keySet()) {
                 if (key.equals("sourcePath")) {
                     String candidatePayload = json.getString("sourcePath");
-                    //var candidatePayload = json.getJSONObject(key);
-                    //if (candidatePayload.has("forge")) {
-                    /*System.out.println("sourcePath");
-                    System.out.println(candidatePayload);
-                    System.out.println(json.getString("sourcePath"));*/
                     return candidatePayload;
                 } else {
                     var other = json.get(key);
