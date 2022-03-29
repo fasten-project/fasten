@@ -224,6 +224,7 @@ public class PythonLicenseDetectorPlugin extends Plugin {
             if (jsonOutputPayload.has("info")) {
                 JSONObject json2 = jsonOutputPayload.getJSONObject("info");
                 if (json2.has("license")) {
+                    //this cannot be a string ... it should be a DetectedLicense type instead TODO
                     return json2.getString("license");
                 } else {
                     String licenseNotFound = "License not declared";
