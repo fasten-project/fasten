@@ -92,6 +92,15 @@ public class PythonLicenseDetectorPlugin extends Plugin {
                 String repoPath = findSourcePath(json);
                 repoPath = repoPath.replace("revision-callgraphs/","");
                 System.out.println(repoPath);
+                // Detecting inbound licenses by scanning the project
+                String scanResultPath = scanProject(repoPath);
+                // Parsing the result
+                JSONArray fileLicenses = parseScanResult(scanResultPath);
+                if (fileLicenses != null && !fileLicenses.isEmpty()) {
+                    detectedLicenses.addFiles(fileLicenses);
+                } else {
+                    logger.warn("Scanner hasn't detected any licenses in " + scanResultPath + ".");
+                }
 
                 /*
                 // Retrieving the package name
