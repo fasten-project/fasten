@@ -139,7 +139,7 @@ public class PythonLicenseFeederPlugin extends Plugin {
             metadataDao.insertPackageOutboundLicenses(
                     packageName,
                     packageVersion,
-                    new JSONObject().put("licenses", outboundLicenses).toString()
+                    new JSONObject().put("license", outboundLicenses).toString()
             );
             logger.info("...outbound licenses inserted.");
         }
@@ -157,7 +157,7 @@ public class PythonLicenseFeederPlugin extends Plugin {
                 JSONObject file = (JSONObject) f;
                 logger.debug("(cycling files) JSONObject f: " + file + " has " +
                         (file.has("path") ? "" : "no ") + "path and " +
-                        (file.has("licenses") ? file.getJSONArray("licenses").length() : "no") + " licenses.");
+                        (file.has("license") ? file.getJSONArray("license").length() : "no") + " license.");
                 if (file.has("path") && file.has("license")) {
                     metadataDao.insertFileLicenses(
                             packageName,
