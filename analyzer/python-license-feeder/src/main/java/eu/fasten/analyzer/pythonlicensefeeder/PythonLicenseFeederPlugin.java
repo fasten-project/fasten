@@ -61,6 +61,7 @@ public class PythonLicenseFeederPlugin extends Plugin {
 
                 String packageName = extractPackageName(record);
                 String packageVersion = extractPackageVersion(record);
+                String sourcePath = extractSourcePath(record);
 
                 logger.info("Package name: " + packageName + ".");
                 logger.info("Package version: " + packageVersion + ".");
@@ -70,7 +71,7 @@ public class PythonLicenseFeederPlugin extends Plugin {
                 dslContext.transaction(transaction -> {
                     metadataDao.setContext(DSL.using(transaction));
                     insertOutboundLicenses(packageName, packageVersion, record, metadataDao);
-                    insertFileLicenses(packageName, packageVersion, record, metadataDao);
+                    insertFileLicenses(packageName, packageVersion, sourcePath, record, metadataDao);
                 });
 
 
@@ -121,6 +122,27 @@ public class PythonLicenseFeederPlugin extends Plugin {
             return null;
         }
 
+        protected String extractSourcePath(String record) {
+            var payload = new JSONObject(record);
+            if (payload.has("payload")) {
+                payload = payload.getJSONObject("payload");
+            }
+            JSONArray array1 = new JSONArray();
+            array1 = payload.getJSONArray("files");
+            logger.info("Repo path:");
+            for (int j = 0; j < array1.length(); j++) {
+                JSONObject obj2 = array1.getJSONObject(j);
+                //System.out.println(obj2);
+                if (obj2.has("sourcePath")){
+                    String sourcePath = obj2.getString("sourcePath");
+                    System.out.println(sourcePath);
+                    return sourcePath;
+                }
+            }
+            System.out.println("Repo path not retrieved.");
+            return null;
+        }
+
         /**
          * Inserts outbound licenses at the package version level.
          *
@@ -150,7 +172,7 @@ public class PythonLicenseFeederPlugin extends Plugin {
          * @param record      the input record containing outbound license findings.
          * @param metadataDao Data Access Object to insert records in the database.
          */
-        protected void insertFileLicenses(String packageName, String packageVersion, String record, MetadataDao metadataDao) {
+        protected void insertFileLicenses(String packageName, String packageVersion, String sourcePath, String record, MetadataDao metadataDao) {
             var payload = new JSONObject(record);
             if (payload.has("payload")) {
                 payload = payload.getJSONObject("payload");
@@ -159,16 +181,21 @@ public class PythonLicenseFeederPlugin extends Plugin {
             JSONArray fileLicenses = payload.getJSONArray("files");
             logger.info("About to insert file licenses...");
             fileLicenses.forEach(f -> {
-                logger.debug("(cycling files) Object f: " + f);
+                logger.info("(cycling files) Object f: " + f);
                 JSONObject file = (JSONObject) f;
-                logger.debug("(cycling files) JSONObject f: " + file + " has " +
+                logger.info("(cycling files) JSONObject f: " + file + " has " +
                         (file.has("path") ? "" : "no ") + "path and " +
                         (file.has("license") ? file.getJSONArray("license").length() : "no") + " license.");
                 if (file.has("path") && file.has("license")) {
+                    String path = file.getString("path");
+                    path = path.replace(sourcePath,"");
+                    logger.info("path before to insertFileLicenses:");
+                    logger.info(path);
                     metadataDao.insertFileLicenses(
                             packageName,
                             packageVersion,
-                            file.getString("path"),
+                            //file.getString("path"),
+                            path,
                             new JSONObject().put("license", file.getString("license")).toString()
                     );
                 }
