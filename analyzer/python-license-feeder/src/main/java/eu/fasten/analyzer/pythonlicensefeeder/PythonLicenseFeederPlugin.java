@@ -185,10 +185,10 @@ public class PythonLicenseFeederPlugin extends Plugin {
                 JSONObject file = (JSONObject) f;
                 logger.info("(cycling files) JSONObject f: " + file + " has " +
                         (file.has("path") ? "" : "no ") + "path and " +
-                        (file.has("license") ? file.getJSONArray("license").length() : "no") + " license.");
-                if (file.has("path") && file.has("license")) {
+                        (file.has("licenses") ? file.getJSONArray("licenses").length() : "no") + " license.");
+                if (file.has("path") && file.has("licenses")) {
                     String path = file.getString("path");
-                    path = path.replace(sourcePath,"");
+                    path = path.replace(sourcePath+"/","");
                     logger.info("path before to insertFileLicenses:");
                     logger.info(path);
                     metadataDao.insertFileLicenses(
@@ -196,7 +196,7 @@ public class PythonLicenseFeederPlugin extends Plugin {
                             packageVersion,
                             //file.getString("path"),
                             path,
-                            new JSONObject().put("license", file.getString("license")).toString()
+                            new JSONObject().put("licenses", file.getJSONArray("licenses")).toString()
                     );
                 }
             });
