@@ -124,7 +124,7 @@ public class PythonLicenseDetectorPlugin extends Plugin {
                 // Detecting inbound licenses by scanning the project
                 String scanResultPath = scanProject(repoPath);
                 // Parsing the result
-                JSONArray fileLicenses = parseScanResult(scanResultPath);
+                JSONArray fileLicenses = parseScanResult(scanResultPath,repoPath);
                 System.out.println("fileLicenses");
                 System.out.println(fileLicenses);
                 if (fileLicenses != null && !fileLicenses.isEmpty()) {
@@ -521,7 +521,7 @@ public class PythonLicenseDetectorPlugin extends Plugin {
          * @throws IOException   in case the JSON scan result couldn't be read.
          * @throws JSONException in case the root object of the JSON scan result couldn't have been retrieved.
          */
-        protected JSONArray parseScanResult(String scanResultPath) throws IOException, JSONException {
+        protected JSONArray parseScanResult(String scanResultPath, String repoPath) throws IOException, JSONException {
 
             try {
                 // Retrieving the root element of the scan result file
@@ -530,6 +530,7 @@ public class PythonLicenseDetectorPlugin extends Plugin {
                 JSONObject packageInfo = new JSONObject();
                 packageInfo.put("packageName", packageName);
                 packageInfo.put("packageVersion", packageVersion);
+                packageInfo.put("sourcePath", repoPath );
                 // forcing the packageName and packageVersion information into the files JSONArray
                 root.accumulate("files", packageInfo);
 
