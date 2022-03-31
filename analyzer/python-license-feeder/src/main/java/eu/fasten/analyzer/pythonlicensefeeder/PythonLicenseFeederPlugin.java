@@ -124,7 +124,7 @@ public class PythonLicenseFeederPlugin extends Plugin {
         /**
          * Inserts outbound licenses at the package version level.
          *
-         * @param coordinates the coordinates whose outbound licenses are about to be inserted.
+         * @param packageName,packageVersion the coordinates whose outbound licenses are about to be inserted.
          * @param record      the input record containing outbound license findings.
          * @param metadataDao Data Access Object to insert records in the database.
          */
@@ -139,11 +139,17 @@ public class PythonLicenseFeederPlugin extends Plugin {
             metadataDao.insertPackageOutboundLicenses(
                     packageName,
                     packageVersion,
-                    new JSONObject().put("license", outboundLicenses).toString()
+                    new JSONObject().put("licenses", outboundLicenses).toString()
             );
             logger.info("...outbound licenses inserted.");
         }
-
+        /**
+         * Inserts licenses at the file level.
+         *
+         * @param packageName,packageVersion the coordinates whose outbound licenses are about to be inserted.
+         * @param record      the input record containing outbound license findings.
+         * @param metadataDao Data Access Object to insert records in the database.
+         */
         protected void insertFileLicenses(String packageName, String packageVersion, String record, MetadataDao metadataDao) {
             var payload = new JSONObject(record);
             if (payload.has("payload")) {
