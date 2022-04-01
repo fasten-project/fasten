@@ -36,7 +36,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import eu.fasten.core.json.ObjectMapperBuilder;
-import eu.fasten.core.maven.data.PomAnalysisResult;
+import eu.fasten.core.maven.data.Pom;
 import eu.fasten.core.maven.data.VersionConstraint;
 
 public class DependencyGraphBuilder {
@@ -91,7 +91,7 @@ public class DependencyGraphBuilder {
         }
     }
 
-    public Set<PomAnalysisResult> getPomAnalysisResults() {
+    public Set<Pom> getPomAnalysisResults() {
 
         var dbRes = dbContext.select( //
                 PACKAGE_VERSIONS.METADATA, //
@@ -104,7 +104,7 @@ public class DependencyGraphBuilder {
                 .map(x -> {
                     try {
                         var json = x.component1().data();
-                        var pom = OM.readValue(json, PomAnalysisResult.class);
+                        var pom = OM.readValue(json, Pom.class);
                         pom.id = x.component2();
                         return pom;
                     } catch (JsonProcessingException e) {

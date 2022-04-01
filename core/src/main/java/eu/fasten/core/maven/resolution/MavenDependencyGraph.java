@@ -22,15 +22,15 @@ import java.util.Set;
 
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 
-import eu.fasten.core.maven.data.PomAnalysisResult;
+import eu.fasten.core.maven.data.Pom;
 import eu.fasten.core.maven.data.VersionConstraint;
 
 public class MavenDependencyGraph {
 
-    private Map<String, Set<PomAnalysisResult>> pomsForGa = new HashMap<>();
-    private Map<String, PomAnalysisResult> pomForGav = new HashMap<>();
+    private Map<String, Set<Pom>> pomsForGa = new HashMap<>();
+    private Map<String, Pom> pomForGav = new HashMap<>();
 
-    public synchronized void add(PomAnalysisResult pom) {
+    public synchronized void add(Pom pom) {
         var gav = toGAV(pom);
         if (hasGAV(gav)) {
             // TODO might be too strict for practice (e.g., same GAV in multiple repos )
@@ -55,10 +55,10 @@ public class MavenDependencyGraph {
     }
 
     // no need for `synchronized`, the problematic part has been moved to `findGA`
-    public PomAnalysisResult find(String ga, Set<VersionConstraint> vcs, long resolveAt) {
+    public Pom find(String ga, Set<VersionConstraint> vcs, long resolveAt) {
 
         DefaultArtifactVersion highest = null;
-        PomAnalysisResult highestPom = null;
+        Pom highestPom = null;
 
         for (var pom : findGA(ga)) {
             if (pom.releaseDate > resolveAt) {
@@ -82,15 +82,15 @@ public class MavenDependencyGraph {
         return highestPom;
     }
 
-    private synchronized Set<PomAnalysisResult> findGA(String ga) {
+    private synchronized Set<Pom> findGA(String ga) {
         return pomsForGa.getOrDefault(ga, Set.of());
     }
 
-    private static String toGA(PomAnalysisResult pom) {
+    private static String toGA(Pom pom) {
         return String.format("%s:%s", pom.groupId, pom.artifactId);
     }
 
-    private static String toGAV(PomAnalysisResult pom) {
+    private static String toGAV(Pom pom) {
         return String.format("%s:%s:%s", pom.groupId, pom.artifactId, pom.version);
     }
 }

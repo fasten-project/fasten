@@ -28,7 +28,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import eu.fasten.core.maven.data.Dependency;
-import eu.fasten.core.maven.data.PomAnalysisResult;
+import eu.fasten.core.maven.data.Pom;
 import eu.fasten.core.maven.data.Revision;
 
 public class MavenDependencyResolverIncludeOptionalTest {
@@ -85,7 +85,7 @@ public class MavenDependencyResolverIncludeOptionalTest {
 
     private void add(String from, Dep... tos) {
         danglingGAVs.remove(from);
-        var pom = new PomAnalysisResult();
+        var pom = new Pom();
         var parts = from.split(":");
         pom.groupId = parts[0];
         pom.artifactId = parts[0];

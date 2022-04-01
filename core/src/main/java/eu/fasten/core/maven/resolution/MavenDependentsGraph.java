@@ -23,7 +23,7 @@ import java.util.Set;
 import org.slf4j.Logger;
 
 import eu.fasten.core.maven.data.MavenProduct;
-import eu.fasten.core.maven.data.PomAnalysisResult;
+import eu.fasten.core.maven.data.Pom;
 import eu.fasten.core.maven.data.Revision;
 
 public class MavenDependentsGraph {
@@ -33,12 +33,12 @@ public class MavenDependentsGraph {
     // last kafka offset that is represented
     public long lastOffset = -1;
 
-    public final Map<Revision, PomAnalysisResult> pomForRevision = new HashMap<>();
+    public final Map<Revision, Pom> pomForRevision = new HashMap<>();
 //    public final Map<MavenProduct, Set<PomAnalysisResultX>> pomsForProduct = new HashMap<>();
     // all entries in the value set depend on a version of the key
-    public final Map<MavenProduct, Set<PomAnalysisResult>> dependentsForProduct = new HashMap<>();
+    public final Map<MavenProduct, Set<Pom>> dependentsForProduct = new HashMap<>();
 
-    public void add(PomAnalysisResult pom) {
+    public void add(Pom pom) {
 
         pomForRevision.put(pom.toRevision(), pom);
 

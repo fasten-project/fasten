@@ -27,7 +27,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import eu.fasten.core.maven.data.Dependency;
-import eu.fasten.core.maven.data.PomAnalysisResult;
+import eu.fasten.core.maven.data.Pom;
 import eu.fasten.core.maven.data.Revision;
 import eu.fasten.core.maven.data.VersionConstraint;
 
@@ -124,7 +124,7 @@ public class MavenDependencyResolverVersionRangeTest {
     }
 
     private void add(String from, String... tos) {
-        var pom = new PomAnalysisResult();
+        var pom = new Pom();
         var parts = from.split(":");
         pom.groupId = parts[0];
         pom.artifactId = parts[0];

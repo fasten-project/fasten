@@ -32,11 +32,11 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 
 import eu.fasten.core.json.ObjectMapperBuilder;
 
-public class PomAnalysisResultTest {
+public class PomTest {
 
     @Test
     public void defaults() {
-        var sut = new PomAnalysisResult();
+        var sut = new Pom();
         assertNull(sut.artifactId);
         assertNull(sut.artifactRepository);
         assertNull(sut.commitTag);
@@ -55,8 +55,8 @@ public class PomAnalysisResultTest {
 
     @Test
     public void equalityDefault() {
-        var a = new PomAnalysisResult();
-        var b = new PomAnalysisResult();
+        var a = new Pom();
+        var b = new Pom();
         assertEquals(a, b);
         assertEquals(a.hashCode(), b.hashCode());
     }
@@ -71,8 +71,8 @@ public class PomAnalysisResultTest {
 
     @Test
     public void equalityDiffArtifact() {
-        var a = new PomAnalysisResult();
-        var b = new PomAnalysisResult();
+        var a = new Pom();
+        var b = new Pom();
         b.artifactId = "a";
 
         assertNotEquals(a, b);
@@ -81,8 +81,8 @@ public class PomAnalysisResultTest {
 
     @Test
     public void equalityDiffArtifactRepo() {
-        var a = new PomAnalysisResult();
-        var b = new PomAnalysisResult();
+        var a = new Pom();
+        var b = new Pom();
         b.artifactRepository = "b";
 
         assertNotEquals(a, b);
@@ -91,8 +91,8 @@ public class PomAnalysisResultTest {
 
     @Test
     public void equalityDiffCommitTag() {
-        var a = new PomAnalysisResult();
-        var b = new PomAnalysisResult();
+        var a = new Pom();
+        var b = new Pom();
         b.commitTag = "c";
 
         assertNotEquals(a, b);
@@ -101,8 +101,8 @@ public class PomAnalysisResultTest {
 
     @Test
     public void equalityDiffDep() {
-        var a = new PomAnalysisResult();
-        var b = new PomAnalysisResult();
+        var a = new Pom();
+        var b = new Pom();
         b.dependencies.add(someDependency("d"));
 
         assertNotEquals(a, b);
@@ -111,8 +111,8 @@ public class PomAnalysisResultTest {
 
     @Test
     public void equalityDiffDepMgmt() {
-        var a = new PomAnalysisResult();
-        var b = new PomAnalysisResult();
+        var a = new Pom();
+        var b = new Pom();
         b.dependencyManagement.add(someDependency("e"));
 
         assertNotEquals(a, b);
@@ -121,8 +121,8 @@ public class PomAnalysisResultTest {
 
     @Test
     public void equalityDiffForge() {
-        var a = new PomAnalysisResult();
-        var b = new PomAnalysisResult();
+        var a = new Pom();
+        var b = new Pom();
         b.forge = "f";
 
         assertNotEquals(a, b);
@@ -131,8 +131,8 @@ public class PomAnalysisResultTest {
 
     @Test
     public void equalityDiffGroup() {
-        var a = new PomAnalysisResult();
-        var b = new PomAnalysisResult();
+        var a = new Pom();
+        var b = new Pom();
         b.groupId = "g";
 
         assertNotEquals(a, b);
@@ -141,8 +141,8 @@ public class PomAnalysisResultTest {
 
     @Test
     public void equalityDiffPackaging() {
-        var a = new PomAnalysisResult();
-        var b = new PomAnalysisResult();
+        var a = new Pom();
+        var b = new Pom();
         b.packagingType = "h";
 
         assertNotEquals(a, b);
@@ -151,8 +151,8 @@ public class PomAnalysisResultTest {
 
     @Test
     public void equalityDiffParent() {
-        var a = new PomAnalysisResult();
-        var b = new PomAnalysisResult();
+        var a = new Pom();
+        var b = new Pom();
         b.parentCoordinate = "i";
 
         assertNotEquals(a, b);
@@ -161,8 +161,8 @@ public class PomAnalysisResultTest {
 
     @Test
     public void equalityDiffName() {
-        var a = new PomAnalysisResult();
-        var b = new PomAnalysisResult();
+        var a = new Pom();
+        var b = new Pom();
         b.projectName = "j";
 
         assertNotEquals(a, b);
@@ -171,8 +171,8 @@ public class PomAnalysisResultTest {
 
     @Test
     public void equalityDiffReleaseDate() {
-        var a = new PomAnalysisResult();
-        var b = new PomAnalysisResult();
+        var a = new Pom();
+        var b = new Pom();
         b.releaseDate = 123;
 
         assertNotEquals(a, b);
@@ -181,8 +181,8 @@ public class PomAnalysisResultTest {
 
     @Test
     public void equalityDiffRepoUrl() {
-        var a = new PomAnalysisResult();
-        var b = new PomAnalysisResult();
+        var a = new Pom();
+        var b = new Pom();
         b.repoUrl = "k";
 
         assertNotEquals(a, b);
@@ -191,8 +191,8 @@ public class PomAnalysisResultTest {
 
     @Test
     public void equalityDiffSourcesUrl() {
-        var a = new PomAnalysisResult();
-        var b = new PomAnalysisResult();
+        var a = new Pom();
+        var b = new Pom();
         b.sourcesUrl = "j";
 
         assertNotEquals(a, b);
@@ -201,8 +201,8 @@ public class PomAnalysisResultTest {
 
     @Test
     public void equalityDiffVersion() {
-        var a = new PomAnalysisResult();
-        var b = new PomAnalysisResult();
+        var a = new Pom();
+        var b = new Pom();
         b.version = "k";
 
         assertNotEquals(a, b);
@@ -211,10 +211,10 @@ public class PomAnalysisResultTest {
 
     @Test
     public void hasToString() {
-        var sut = new PomAnalysisResult();
+        var sut = new Pom();
         var actual = sut.toString();
 
-        assertTrue(actual.contains(PomAnalysisResult.class.getSimpleName()));
+        assertTrue(actual.contains(Pom.class.getSimpleName()));
         assertTrue(actual.contains("\n"));
         assertTrue(actual.split("\n")[0].contains("@"));
         assertTrue(actual.contains("artifactId"));
@@ -236,7 +236,7 @@ public class PomAnalysisResultTest {
 
     @Test
     public void dependencyOrderIsPreserved() throws JsonProcessingException {
-        var sut = new PomAnalysisResult();
+        var sut = new Pom();
         range(0, 100).forEach(num -> {
             sut.dependencies.add(new Dependency("g", "a", String.valueOf(num)));
         });
@@ -275,8 +275,8 @@ public class PomAnalysisResultTest {
         assertEquals(expected, actual);
     }
 
-    private static PomAnalysisResult somePomAnalysisResult() {
-        PomAnalysisResult r = new PomAnalysisResult();
+    private static Pom somePomAnalysisResult() {
+        Pom r = new Pom();
         r.artifactId = "a";
         r.artifactRepository = "b";
         r.commitTag = "c";
@@ -298,13 +298,12 @@ public class PomAnalysisResultTest {
         return new Dependency("dep", name, "0.0.1");
     }
 
-    private static PomAnalysisResult jsonRoundtrip(PomAnalysisResult sut)
-            throws JsonProcessingException, JsonMappingException {
+    private static Pom jsonRoundtrip(Pom sut) throws JsonProcessingException, JsonMappingException {
         var om = new ObjectMapperBuilder().build();
         var json = om.writeValueAsString(sut);
         // make sure custom serializers are registered
         assertTrue(json.contains("\"versionConstraints\":[\"0\"]"));
-        var sut2 = om.readValue(json, PomAnalysisResult.class);
+        var sut2 = om.readValue(json, Pom.class);
         assertEquals(sut, sut2);
         return sut2;
     }

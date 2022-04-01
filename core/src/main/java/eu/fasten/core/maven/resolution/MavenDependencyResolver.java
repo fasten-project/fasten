@@ -31,7 +31,7 @@ import java.util.stream.Collectors;
 
 import eu.fasten.core.maven.data.Dependency;
 import eu.fasten.core.maven.data.MavenProduct;
-import eu.fasten.core.maven.data.PomAnalysisResult;
+import eu.fasten.core.maven.data.Pom;
 import eu.fasten.core.maven.data.Revision;
 import eu.fasten.core.maven.data.Scope;
 import eu.fasten.core.maven.data.VersionConstraint;
@@ -61,7 +61,7 @@ public class MavenDependencyResolver {
             }
         }
 
-        var pom = new PomAnalysisResult();
+        var pom = new Pom();
         pom.groupId = "virtual-file";
         pom.artifactId = "pom";
         pom.version = "0.0.1";
@@ -197,7 +197,7 @@ public class MavenDependencyResolver {
 
         private int depth = 0;
 
-        public PomAnalysisResult pom;
+        public Pom pom;
         public final Set<String> exclusions = new HashSet<>();
         public final Map<String, Set<VersionConstraint>> depMgmt = new HashMap<>();
 
@@ -206,7 +206,7 @@ public class MavenDependencyResolver {
             return depth > 1;
         }
 
-        public void setPom(PomAnalysisResult pom) {
+        public void setPom(Pom pom) {
             this.pom = pom;
             for (var dm : pom.dependencyManagement) {
                 var ga = String.format("%s:%s", dm.groupId, dm.artifactId);
@@ -222,7 +222,7 @@ public class MavenDependencyResolver {
             return inner;
         }
 
-        private static QueueData startFrom(PomAnalysisResult pom) {
+        private static QueueData startFrom(Pom pom) {
             var data = new QueueData();
             data.setPom(pom);
             return data;
