@@ -30,6 +30,7 @@ import org.json.JSONObject;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+@SuppressWarnings("deprecation")
 public class DependencyTest {
 
     private static final Dependency SOME_DEPENDENCY = new Dependency("gid", "aid",

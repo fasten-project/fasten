@@ -29,10 +29,10 @@ import org.apache.commons.lang3.builder.ToStringBuilder;
 
 import eu.fasten.core.data.Constants;
 
-public class PomAnalysisResult implements Cloneable {
+public class Pom implements Cloneable {
 
     public transient long id;
-    
+
     public String forge = Constants.mvnForge;
 
     public String artifactId = null;
@@ -69,8 +69,8 @@ public class PomAnalysisResult implements Cloneable {
     }
 
     @Override
-    public PomAnalysisResult clone() {
-        var clone = new PomAnalysisResult();
+    public Pom clone() {
+        var clone = new Pom();
         clone.forge = forge;
 
         clone.artifactId = artifactId;

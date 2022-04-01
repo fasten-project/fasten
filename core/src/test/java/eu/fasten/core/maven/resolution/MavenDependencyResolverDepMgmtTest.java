@@ -29,7 +29,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import eu.fasten.core.maven.data.Dependency;
-import eu.fasten.core.maven.data.PomAnalysisResult;
+import eu.fasten.core.maven.data.Pom;
 import eu.fasten.core.maven.data.Revision;
 
 public class MavenDependencyResolverDepMgmtTest {
@@ -79,8 +79,8 @@ public class MavenDependencyResolverDepMgmtTest {
         assertDepSet(BASE, "a:1", "b:1");
     }
 
-    private void add(Pom from, String... tos) {
-        var pom = new PomAnalysisResult();
+    private void add(Pom2 from, String... tos) {
+        var pom = new Pom();
         if (!from.coord.contains(":")) {
             from.coord = from.coord + ":";
         }
@@ -119,9 +119,9 @@ public class MavenDependencyResolverDepMgmtTest {
         }
     }
 
-    private Pom $(String from, String... manageds) {
+    private Pom2 $(String from, String... manageds) {
         addedAV.add(from);
-        var pom = new Pom();
+        var pom = new Pom2();
         pom.coord = from;
         pom.depMgmt = Arrays.stream(manageds).collect(Collectors.toList());
         return pom;
@@ -138,7 +138,7 @@ public class MavenDependencyResolverDepMgmtTest {
         assertEquals(expecteds, actuals);
     }
 
-    private static class Pom {
+    private static class Pom2 {
         public String coord;
         public List<String> depMgmt = new LinkedList<>();
     }

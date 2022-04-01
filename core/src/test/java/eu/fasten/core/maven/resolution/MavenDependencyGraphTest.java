@@ -25,7 +25,7 @@ import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import eu.fasten.core.maven.data.PomAnalysisResult;
+import eu.fasten.core.maven.data.Pom;
 import eu.fasten.core.maven.data.VersionConstraint;
 
 public class MavenDependencyGraphTest {
@@ -151,15 +151,15 @@ public class MavenDependencyGraphTest {
         assertEquals(expected, actual);
     }
 
-    private PomAnalysisResult find(long resolveAt, String ga, String... specs) {
+    private Pom find(long resolveAt, String ga, String... specs) {
         var vcs = Arrays.stream(specs) //
                 .map(VersionConstraint::new) //
                 .collect(Collectors.toSet());
         return sut.find(ga, vcs, resolveAt);
     }
 
-    private PomAnalysisResult addPom(String g, String a, String v, long releaseDate) {
-        var pom = new PomAnalysisResult();
+    private Pom addPom(String g, String a, String v, long releaseDate) {
+        var pom = new Pom();
         pom.groupId = g;
         pom.artifactId = a;
         pom.version = v;

@@ -32,7 +32,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import eu.fasten.core.maven.data.Dependency;
-import eu.fasten.core.maven.data.PomAnalysisResult;
+import eu.fasten.core.maven.data.Pom;
 import eu.fasten.core.maven.data.Revision;
 import eu.fasten.core.maven.data.VersionConstraint;
 
@@ -131,7 +131,7 @@ public class MavenDependencyResolverTimeTest {
     }
 
     private void add(long releaseDate, String from, String... tos) {
-        var pom = new PomAnalysisResult();
+        var pom = new Pom();
         var parts = from.split(":");
         pom.groupId = parts[0];
         pom.artifactId = parts[0];
@@ -162,8 +162,8 @@ public class MavenDependencyResolverTimeTest {
         assertEquals(expecteds, actuals);
     }
 
-    private static PomAnalysisResult getPom(String g, String a, String v, long releaseDate) {
-        var pom = new PomAnalysisResult();
+    private static Pom getPom(String g, String a, String v, long releaseDate) {
+        var pom = new Pom();
         pom.groupId = g;
         pom.artifactId = a;
         pom.version = v;
@@ -176,7 +176,7 @@ public class MavenDependencyResolverTimeTest {
         sut.setData(data);
     }
 
-    private void addMockData(String g, String a, String v, long resolveAt, PomAnalysisResult pom) {
+    private void addMockData(String g, String a, String v, long resolveAt, Pom pom) {
         var ga = String.format("%s:%s", g, a);
         when(data.find(ga, Set.of(new VersionConstraint(v)), resolveAt)).thenReturn(pom);
     }
