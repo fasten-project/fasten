@@ -15,4 +15,4 @@
  */
 package eu.fasten.core.maven.resolution;
 
-public class MavenDependentsResolverTest {}
+public class MavenDependentsResolverScopesTest {}

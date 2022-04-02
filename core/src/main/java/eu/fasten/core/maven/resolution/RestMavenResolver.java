@@ -70,7 +70,7 @@ public class RestMavenResolver implements IMavenResolver {
     private WebTarget getBase(String subpath, ResolverConfig config) {
         var base = baseTarget //
                 .path(subpath) //
-                .queryParam("timestamp", config.timestamp);
+                .queryParam("resolveAt", config.resolveAt);
         if (config.depth != ResolverDepth.TRANSITIVE) {
             base = base.queryParam("depth", config.depth);
         }

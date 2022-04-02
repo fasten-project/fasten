@@ -37,7 +37,7 @@ public class ResolverConfigTest {
         assertEquals(Scope.RUNTIME, sut.scope);
         assertFalse(sut.alwaysIncludeProvided);
         assertFalse(sut.alwaysIncludeOptional);
-        var diff = new Date().getTime() - sut.timestamp;
+        var diff = new Date().getTime() - sut.resolveAt;
         assertTrue("Difference should be <100ms, but is " + diff, diff < 100);
     }
 
@@ -79,7 +79,7 @@ public class ResolverConfigTest {
     public void equalityDifferentTime() {
         var a = new ResolverConfig();
         var b = new ResolverConfig();
-        b.timestamp = 1234567890000L;
+        b.resolveAt = 1234567890000L;
         assertNotEquals(a, b);
         assertNotEquals(a.hashCode(), b.hashCode());
     }
@@ -123,7 +123,7 @@ public class ResolverConfigTest {
     public void builderSetsTime() {
         var sut = resolve();
         assertSame(sut, sut.at(23456));
-        assertEquals(sut.timestamp, 23456);
+        assertEquals(sut.resolveAt, 23456);
     }
 
     @Test
@@ -158,7 +158,7 @@ public class ResolverConfigTest {
         var cfg = new ResolverConfig();
         cfg.depth = ResolverDepth.DIRECT;
         cfg.scope = Scope.COMPILE;
-        cfg.timestamp = 1234567890000L;
+        cfg.resolveAt = 1234567890000L;
         cfg.alwaysIncludeProvided = true;
         cfg.alwaysIncludeOptional = true;
         return cfg;

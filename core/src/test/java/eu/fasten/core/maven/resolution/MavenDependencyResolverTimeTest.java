@@ -151,7 +151,7 @@ public class MavenDependencyResolverTimeTest {
         var baseParts = shortBase.split(":");
         var base = String.format("%s:%s:%s", baseParts[0], baseParts[0], baseParts[1]);
 
-        config.timestamp = resolveAt;
+        config.resolveAt = resolveAt;
         var actuals = sut.resolve(Set.of(base), config);
         var expecteds = Arrays.stream(deps) //
                 .map(dep -> dep.split(":")) //
@@ -182,7 +182,7 @@ public class MavenDependencyResolverTimeTest {
     }
 
     private void resolve(long resolveAt, String... coords) {
-        config.timestamp = resolveAt;
+        config.resolveAt = resolveAt;
         sut.resolve(Set.of(coords), config);
     }
 }
