@@ -142,9 +142,9 @@ public class IMavenResolverTest {
     }
 
     private void assertConfig(ResolverConfig config) {
-        config.timestamp = (sut.config.timestamp / 1000) * 1000;
-        assertFalse(sut.config.timestamp == 0);
-        sut.config.timestamp = (sut.config.timestamp / 1000) * 1000;
+        config.resolveAt = (sut.config.resolveAt / 1000) * 1000;
+        assertFalse(sut.config.resolveAt == 0);
+        sut.config.resolveAt = (sut.config.resolveAt / 1000) * 1000;
         assertEquals(config, sut.config);
     }
 

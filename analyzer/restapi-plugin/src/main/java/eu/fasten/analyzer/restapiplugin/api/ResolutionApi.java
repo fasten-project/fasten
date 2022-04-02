@@ -19,7 +19,6 @@
 package eu.fasten.analyzer.restapiplugin.api;
 
 import java.io.IOException;
-import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -49,7 +48,6 @@ import eu.fasten.core.dependents.GraphResolver;
 import eu.fasten.core.maven.data.Revision;
 import eu.fasten.core.maven.resolution.DependencyGraphBuilder;
 import eu.fasten.core.maven.resolution.IMavenResolver;
-import eu.fasten.core.maven.resolution.MavenResolver;
 import eu.fasten.core.maven.resolution.NativeMavenResolver;
 import eu.fasten.core.maven.resolution.ResolverConfig;
 import eu.fasten.core.maven.resolution.ResolverDepth;
@@ -141,15 +139,16 @@ public class ResolutionApi {
             }
         }
     }
-    private static ResolverConfig getConfig(boolean transitive, long timestamp) {
+    private static ResolverConfig getConfig(boolean transitive, long resolveAt) {
         var cfg = new ResolverConfig();
         cfg.depth = transitive ? ResolverDepth.TRANSITIVE : ResolverDepth.DIRECT;
-        if(timestamp != -1) {
-            cfg.timestamp = timestamp;
+        if(resolveAt != -1) {
+            cfg.resolveAt = resolveAt;
         }
         return cfg;
     }
 
+    // TODO rename `timestamp` to `resolveAt` 
     @GetMapping(value = "/packages/{pkg}/{pkg_ver}/resolve/dependents", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<String> resolveDependents(@PathVariable("pkg") String packageName,
                                              @PathVariable("pkg_ver") String packageVersion,
@@ -257,7 +256,7 @@ public class ResolutionApi {
     @GetMapping(value = "/__INTERNAL__/packages/{pkg_version_id}/directedgraph", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<String> getDirectedGraph(@PathVariable("pkg_version_id") long packageVersionId,
                                             @RequestParam(required = false, defaultValue = "false") boolean needStitching,
-                                            @RequestParam(required = false, defaultValue = "-1") long timestamp) {
+                                            @RequestParam(required = false, defaultValue = "-1") long resolveAt) {
         DirectedGraph graph;
         if (needStitching) {
             var mavenCoordinate = KnowledgeBaseConnector.kbDao.getMavenCoordinate(packageVersionId);
@@ -268,8 +267,8 @@ public class ResolutionApi {
             var artifactId = mavenCoordinate.split(Constants.mvnCoordinateSeparator)[1];
             var version = mavenCoordinate.split(Constants.mvnCoordinateSeparator)[2];
             var cfg = new ResolverConfig();
-            if(timestamp != -1) {
-                cfg.timestamp = timestamp;
+            if(resolveAt != -1) {
+                cfg.resolveAt = resolveAt;
             }
             var depSet = this.graphMavenResolver.resolveDependencies(groupId, artifactId, version, cfg);
             var depIds = depSet.stream().map(r -> r.id).collect(Collectors.toSet());

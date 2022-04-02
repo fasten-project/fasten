@@ -29,7 +29,7 @@ import eu.fasten.core.maven.data.Scope;
 
 public class ResolverConfig {
 
-    public long timestamp = new Date().getTime();
+    public long resolveAt = new Date().getTime();
     public ResolverDepth depth = TRANSITIVE;
     public Scope scope = RUNTIME;
 
@@ -44,7 +44,7 @@ public class ResolverConfig {
     public boolean alwaysIncludeOptional;
 
     public ResolverConfig at(long timestamp) {
-        this.timestamp = timestamp;
+        this.resolveAt = timestamp;
         return this;
     }
 

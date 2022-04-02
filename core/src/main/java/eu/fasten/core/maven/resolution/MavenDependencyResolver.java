@@ -52,7 +52,7 @@ public class MavenDependencyResolver {
             var parts = gavs.iterator().next().split(":");
             var ga = String.format("%s:%s", parts[0], parts[1]);
 
-            var pom = this.graph.find(ga, Set.of(new VersionConstraint(parts[2])), config.timestamp);
+            var pom = this.graph.find(ga, Set.of(new VersionConstraint(parts[2])), config.resolveAt);
             if (pom == null) {
                 throw new MavenResolutionException(
                         String.format("Cannot find coordinate %s:%s:%s", parts[0], parts[1], parts[2]));
@@ -65,7 +65,7 @@ public class MavenDependencyResolver {
         pom.groupId = "virtual-file";
         pom.artifactId = "pom";
         pom.version = "0.0.1";
-        pom.releaseDate = config.timestamp;
+        pom.releaseDate = config.resolveAt;
         pom.dependencies.addAll(toDeps(gavs));
 
         var depSet = resolve(config, new HashSet<>(), QueueData.startFrom(pom));
@@ -86,7 +86,7 @@ public class MavenDependencyResolver {
 
     private Set<Revision> resolve(ResolverConfig config, Set<MavenProduct> addedProducts, QueueData startingData) {
 
-        if (startingData.pom.releaseDate > config.timestamp) {
+        if (startingData.pom.releaseDate > config.resolveAt) {
             throw new MavenResolutionException("Requested POM has been released after resolution timestamp");
         }
 
@@ -145,7 +145,7 @@ public class MavenDependencyResolver {
                         ? depData.depMgmt.get(depGA) //
                         : dep.versionConstraints;
 
-                var depPom = graph.find(depGA, vcs, config.timestamp);
+                var depPom = graph.find(depGA, vcs, config.resolveAt);
 
                 if (depPom != null) {
                     depData.setPom(depPom);
