@@ -198,8 +198,6 @@ public class PythonLicenseFeederPlugin extends Plugin {
                         JSONObject jsonObj = FileLicenses.getJSONObject(i);
                         if (jsonObj.has("spdx_license_key")){
                             String spdx_id = jsonObj.getString("spdx_license_key");
-                            System.out.println("spdx_id");
-                            System.out.println(spdx_id);
                             packageLicenseInfo.put("spdx_license_key", spdx_id);
                             FileLicensesParsed.put(packageLicenseInfo);
                         }
