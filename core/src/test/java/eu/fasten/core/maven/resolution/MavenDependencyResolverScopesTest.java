@@ -45,13 +45,13 @@ public class MavenDependencyResolverScopesTest {
 
     private Set<String> danglingGAVs;
     private ResolverConfig config;
-    private MavenDependencyGraph data;
+    private MavenDependencyData data;
     private MavenDependencyResolver sut;
 
     @BeforeEach
     public void setup() {
         danglingGAVs = new HashSet<>();
-        data = new MavenDependencyGraph();
+        data = new MavenDependencyData();
         sut = new MavenDependencyResolver();
         sut.setData(data);
         config = new ResolverConfig();

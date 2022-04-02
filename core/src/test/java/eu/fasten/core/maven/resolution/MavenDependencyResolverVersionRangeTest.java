@@ -39,12 +39,12 @@ public class MavenDependencyResolverVersionRangeTest {
 
     private static final String BASE = "base:1";
 
-    private MavenDependencyGraph data;
+    private MavenDependencyData data;
     private MavenDependencyResolver sut;
 
     @BeforeEach
     public void setup() {
-        data = new MavenDependencyGraph();
+        data = new MavenDependencyData();
         sut = new MavenDependencyResolver();
         sut.setData(data);
     }

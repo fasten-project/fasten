@@ -94,7 +94,7 @@ public final class DependencyIOUtils {
      * @throws Exception When the files that hold the serialized data cannot be
      *                   created.
      */
-    public static void serializeDependentsGraph(MavenDependentsGraph graph, String path) throws Exception {
+    public static void serializeDependentsGraph(MavenDependentsData graph, String path) throws Exception {
         var kryo = setupKryo();
 
         try (var nodes = new Output(new FileOutputStream(path + ".nodes"))) {
@@ -111,7 +111,7 @@ public final class DependencyIOUtils {
      * @throws Exception When the files that hold the serialized graph cannot be
      *                   opened.
      */
-    public static MavenDependentsGraph deserializeDependencyGraph(String path) throws Exception {
+    public static MavenDependentsData deserializeDependencyGraph(String path) throws Exception {
         var startTs = System.currentTimeMillis();
         var kryo = setupKryo();
 
@@ -123,7 +123,7 @@ public final class DependencyIOUtils {
 
 //        logger.debug("Loaded {} nodes and {} edges", nodes.size(), edges.size());
 
-        var graph = new MavenDependentsGraph();
+        var graph = new MavenDependentsData();
 
 //        nodes.forEach(dependencyGraph::addNode);
 //        edges.forEach(e -> dependencyGraph.addDependencyEdge(e));
@@ -142,7 +142,7 @@ public final class DependencyIOUtils {
      *
      * @throws Exception When deserialization fails.
      */
-    public static MavenDependentsGraph loadDependentsGraph(String path) throws Exception {
+    public static MavenDependentsData loadDependentsGraph(String path) throws Exception {
         if (!doesDependentsGraphExist(path)) {
             throw new InvalidParameterException("graph does not exist or is incomplete: " + path);
         }

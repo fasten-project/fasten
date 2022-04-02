@@ -32,9 +32,9 @@ public class MavenDependentsResolver {
 
     private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(MavenDependentsResolver.class);
 
-    private MavenDependentsGraph graph;
+    private MavenDependentsData graph;
 
-    public MavenDependentsResolver(MavenDependentsGraph graph) {
+    public MavenDependentsResolver(MavenDependentsData graph) {
         this.graph = graph;
     }
 

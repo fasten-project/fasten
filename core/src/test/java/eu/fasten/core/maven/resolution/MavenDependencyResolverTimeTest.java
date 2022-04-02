@@ -46,14 +46,14 @@ public class MavenDependencyResolverTimeTest {
     // simple transitive dependency is too new
     // newest matching time from version ranges
 
-    private MavenDependencyGraph data;
+    private MavenDependencyData data;
     private MavenDependencyResolver sut;
 
     private ResolverConfig config;
 
     @BeforeEach
     public void setup() {
-        data = new MavenDependencyGraph();
+        data = new MavenDependencyData();
         sut = new MavenDependencyResolver();
         sut.setData(data);
         config = new ResolverConfig();
@@ -61,7 +61,7 @@ public class MavenDependencyResolverTimeTest {
 
     @Test
     public void failsWhenSinglePomCannotBeFound() {
-        sut.setData(mock(MavenDependencyGraph.class));
+        sut.setData(mock(MavenDependencyData.class));
         var e = assertThrows(MavenResolutionException.class, () -> {
             sut.resolve(Set.of("a:a:1"), config);
         });
@@ -172,7 +172,7 @@ public class MavenDependencyResolverTimeTest {
     }
 
     private void mockDepGraph() {
-        data = mock(MavenDependencyGraph.class);
+        data = mock(MavenDependencyData.class);
         sut.setData(data);
     }
 
