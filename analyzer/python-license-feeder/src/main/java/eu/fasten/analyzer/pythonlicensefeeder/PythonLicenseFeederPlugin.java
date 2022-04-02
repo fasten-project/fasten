@@ -191,12 +191,25 @@ public class PythonLicenseFeederPlugin extends Plugin {
                     path = path.replace(sourcePath+"/","");
                     logger.info("path before to insertFileLicenses:");
                     logger.info(path);
+                    JSONArray FileLicenses = file.getJSONArray("licenses");
+                    JSONArray FileLicensesParsed = new JSONArray();
+                    JSONObject packageLicenseInfo = new JSONObject();
+                    for (int i = 0; i < FileLicenses.length(); i++) {
+                        JSONObject jsonObj = FileLicenses.getJSONObject(i);
+                        if (jsonObj.has("spdx_license_key")){
+                            String spdx_id = jsonObj.getString("spdx_license_key");
+                            System.out.println("spdx_id");
+                            System.out.println(spdx_id);
+                            packageLicenseInfo.put("spdx_license_key", spdx_id);
+                            FileLicensesParsed.put(packageLicenseInfo);
+                        }
+                    }
+                    String fileMetadata = new JSONObject().put("licenses", FileLicensesParsed).toString();
                     metadataDao.insertFileLicenses(
                             packageName,
                             packageVersion,
-                            //file.getString("path"),
                             path,
-                            new JSONObject().put("licenses", file.getJSONArray("licenses")).toString()
+                            fileMetadata
                     );
                 }
             });
