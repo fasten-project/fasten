@@ -33,11 +33,21 @@ public class MavenDependencyData {
     public synchronized void add(Pom pom) {
         var gav = toGAV(pom);
         if (hasGAV(gav)) {
-            // TODO might be too strict for practice (e.g., same GAV in multiple repos )
-            throw new IllegalArgumentException(String.format("Coordinate %s exists", gav));
+            remove(pom, gav);
         }
         pomForGav.put(gav, pom);
         put(pomsForGa, toGA(pom), pom);
+    }
+
+    private void remove(Pom pom, String gav) {
+        pomForGav.remove(gav);
+        var it = pomsForGa.get(toGA(pom)).iterator();
+        while (it.hasNext()) {
+            var pom2 = it.next();
+            if (pom.toCoordinate().equals(pom2.toCoordinate())) {
+                it.remove();
+            }
+        }
     }
 
     private boolean hasGAV(String gav) {

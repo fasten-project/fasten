@@ -32,7 +32,7 @@ import eu.fasten.core.maven.data.Revision;
 
 public class MavenDependencyResolverMediationTest {
 
-    private static final String BASE = "a:1";
+    private static final String BASE = "base:1";
 
     private Set<String> danglingGAVs;
     private MavenDependencyData data;
@@ -105,6 +105,31 @@ public class MavenDependencyResolverMediationTest {
         add("c:1", "cc:1");
         add("cc:1", "x:2");
         assertDepSet(BASE, "c:1", "cc:1", "b:1", "x:1");
+    }
+
+    @Test
+    public void cycleDirect() {
+        add(BASE, "a:1");
+        add("a:1", BASE);
+        danglingGAVs.clear();
+        assertDepSet(BASE, "a:1");
+    }
+
+    @Test
+    public void cycleTransitive() {
+        add(BASE, "a:1");
+        add("a:1", "b:1");
+        add("b:1", BASE);
+        danglingGAVs.clear();
+        assertDepSet(BASE, "a:1", "b:1");
+    }
+
+    @Test
+    public void cycleBranches() {
+        add(BASE, "a:1", "b:1");
+        add("a:1", "b:1");
+        add("b:1", "a:1");
+        assertDepSet(BASE, "a:1", "b:1");
     }
 
     private void add(String from, String... tos) {
