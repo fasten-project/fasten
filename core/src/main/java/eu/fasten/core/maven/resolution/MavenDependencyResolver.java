@@ -116,8 +116,6 @@ public class MavenDependencyResolver {
                     continue;
                 }
 
-                // TODO check for time
-
                 var depData = QueueData.nest(data);
                 if (depData.isTransitiveDep()) {
 

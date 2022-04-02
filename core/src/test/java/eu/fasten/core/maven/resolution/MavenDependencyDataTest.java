@@ -15,11 +15,13 @@
  */
 package eu.fasten.core.maven.resolution;
 
+import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.Arrays;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -95,12 +97,12 @@ public class MavenDependencyDataTest {
     }
 
     @Test
-    public void cannotAddTheSamePomTwice() {
-        addPom("a", "b", "1", SOME_TIME);
-        var e = assertThrows(IllegalArgumentException.class, () -> {
-            addPom("a", "b", "1", SOME_TIME);
-        });
-        assertEquals("Coordinate a:b:1 exists", e.getMessage());
+    public void canReplaceRegisteredPom() {
+        var a = addPom("a", "b", "1", SOME_TIME);
+        var b = addPom("a", "b", "1", SOME_TIME + 1);
+        var c = sut.find("a:b", Set.of(new VersionConstraint("1")), SOME_TIME + 1);
+        assertNotSame(a, c);
+        assertSame(b, c);
     }
 
     @Test
