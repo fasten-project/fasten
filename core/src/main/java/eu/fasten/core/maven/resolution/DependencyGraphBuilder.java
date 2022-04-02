@@ -45,8 +45,8 @@ public class DependencyGraphBuilder {
     private static final ObjectMapper OM = new ObjectMapperBuilder().build();
 
     private DSLContext dbContext;
-    private MavenDependentsGraph dataDpdt;
-    private MavenDependencyGraph dataDeps;
+    private MavenDependentsData dataDpdt;
+    private MavenDependencyData dataDeps;
 
     public static IMavenResolver init(DSLContext dbContext, String path) {
         assertNotNullOrEmpty(path);
@@ -83,8 +83,8 @@ public class DependencyGraphBuilder {
 
     private void build() {
 
-        dataDpdt = new MavenDependentsGraph();
-        dataDeps = new MavenDependencyGraph();
+        dataDpdt = new MavenDependentsData();
+        dataDeps = new MavenDependencyData();
         for (var pom : getPomAnalysisResults()) {
             dataDpdt.add(pom);
             dataDeps.add(pom);

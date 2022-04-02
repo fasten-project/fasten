@@ -28,14 +28,14 @@ import org.junit.jupiter.api.Test;
 import eu.fasten.core.maven.data.Pom;
 import eu.fasten.core.maven.data.VersionConstraint;
 
-public class MavenDependencyGraphTest {
+public class MavenDependencyDataTest {
 
     private static final long SOME_TIME = 123L;
-    private MavenDependencyGraph sut;
+    private MavenDependencyData sut;
 
     @BeforeEach
     public void setup() {
-        sut = new MavenDependencyGraph();
+        sut = new MavenDependencyData();
     }
 
     @Test

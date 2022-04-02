@@ -38,13 +38,13 @@ public class MavenDependencyResolverDepMgmtTest {
 
     private Set<String> addedAV;
 
-    private MavenDependencyGraph data;
+    private MavenDependencyData data;
     private MavenDependencyResolver sut;
 
     @BeforeEach
     public void setup() {
         addedAV = new HashSet<>();
-        data = new MavenDependencyGraph();
+        data = new MavenDependencyData();
         sut = new MavenDependencyResolver();
         sut.setData(data);
     }

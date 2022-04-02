@@ -36,7 +36,7 @@ public class MavenDependencyResolverIncludeOptionalTest {
     private static final String BASE = "base:1";
 
     private Set<String> danglingGAVs;
-    private MavenDependencyGraph data;
+    private MavenDependencyData data;
     private MavenDependencyResolver sut;
 
     private ResolverConfig config;
@@ -44,7 +44,7 @@ public class MavenDependencyResolverIncludeOptionalTest {
     @BeforeEach
     public void setup() {
         danglingGAVs = new HashSet<>();
-        data = new MavenDependencyGraph();
+        data = new MavenDependencyData();
         sut = new MavenDependencyResolver();
         sut.setData(data);
         config = new ResolverConfig();

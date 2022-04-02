@@ -25,7 +25,7 @@ import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 import eu.fasten.core.maven.data.Pom;
 import eu.fasten.core.maven.data.VersionConstraint;
 
-public class MavenDependencyGraph {
+public class MavenDependencyData {
 
     private Map<String, Set<Pom>> pomsForGa = new HashMap<>();
     private Map<String, Pom> pomForGav = new HashMap<>();

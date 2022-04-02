@@ -26,9 +26,9 @@ import eu.fasten.core.maven.data.MavenProduct;
 import eu.fasten.core.maven.data.Pom;
 import eu.fasten.core.maven.data.Revision;
 
-public class MavenDependentsGraph {
+public class MavenDependentsData {
 
-    private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(MavenDependentsGraph.class);
+    private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(MavenDependentsData.class);
 
     // last kafka offset that is represented
     public long lastOffset = -1;
