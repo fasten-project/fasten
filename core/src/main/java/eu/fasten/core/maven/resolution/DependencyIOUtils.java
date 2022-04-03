@@ -18,8 +18,6 @@
 
 package eu.fasten.core.maven.resolution;
 
-import static eu.fasten.core.utils.Asserts.assertNotNullOrEmpty;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -28,7 +26,6 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
-import org.jooq.DSLContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

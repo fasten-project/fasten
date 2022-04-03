@@ -19,45 +19,63 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
-import org.slf4j.Logger;
-
-import eu.fasten.core.maven.data.MavenProduct;
+import eu.fasten.core.maven.data.Dependency;
 import eu.fasten.core.maven.data.Pom;
-import eu.fasten.core.maven.data.Revision;
 
 public class MavenDependentsData {
 
-    private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(MavenDependentsData.class);
-
-    // last kafka offset that is represented
-    public long lastOffset = -1;
-
-    public final Map<Revision, Pom> pomForRevision = new HashMap<>();
-//    public final Map<MavenProduct, Set<PomAnalysisResultX>> pomsForProduct = new HashMap<>();
-    // all entries in the value set depend on a version of the key
-    public final Map<MavenProduct, Set<Pom>> dependentsForProduct = new HashMap<>();
+    private final Map<String, Pom> pomForGAV = new HashMap<>();
+    private final Map<String, Set<Pom>> dependentsForGA = new HashMap<>();
 
     public void add(Pom pom) {
-
-        pomForRevision.put(pom.toRevision(), pom);
-
-//        var prod = pom.toProduct();
-//        add(pomsForProduct, prod, pom);
-
-        for (var abstractDep : pom.dependencies) {
-            var depProduct = abstractDep.product();
-            add(dependentsForProduct, depProduct, pom);
+        var gav = toGAV(pom);
+        pomForGAV.put(gav, pom);
+        for (var dep : pom.dependencies) {
+            var depGA = toGA(dep);
+            addDependent(depGA, pom);
         }
     }
 
-    private static <K, V> void add(Map<K, Set<V>> map, K key, V val) {
-        if (map.containsKey(key)) {
-            map.get(key).add(val);
+    private void addDependent(String depGA, Pom pom) {
+        Set<Pom> poms;
+        if (!dependentsForGA.containsKey(depGA)) {
+            poms = new HashSet<Pom>();
+            dependentsForGA.put(depGA, poms);
         } else {
-            var set = new HashSet<V>();
-            set.add(val);
-            map.put(key, set);
+            poms = dependentsForGA.get(depGA);
+            var it = poms.iterator();
+            while (it.hasNext()) {
+                var pom2 = it.next();
+                if (pom.toCoordinate().equals(pom2.toCoordinate())) {
+                    it.remove();
+                }
+            }
         }
+        poms.add(pom);
+    }
+
+    public Pom findPom(String gav, long resolveAt) {
+        var pom = pomForGAV.get(gav);
+        if (pom != null && pom.releaseDate <= resolveAt) {
+            return pom;
+        }
+        return null;
+    }
+
+    public Set<Pom> findPotentialDependents(String ga, long resolveAt) {
+        var dpds = dependentsForGA.getOrDefault(ga, Set.of());
+        return dpds.stream() //
+                .filter(d -> d.releaseDate <= resolveAt) //
+                .collect(Collectors.toSet());
+    }
+
+    private static String toGA(Dependency dep) {
+        return String.format("%s:%s", dep.groupId, dep.artifactId);
+    }
+
+    private static String toGAV(Pom pom) {
+        return String.format("%s:%s:%s", pom.groupId, pom.artifactId, pom.version);
     }
 }
