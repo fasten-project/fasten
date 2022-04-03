@@ -20,7 +20,7 @@
 
     <!-- Plugin and dependency versions -->
     <properties>
-        <spring-boot.version>2.6.1</spring-boot.version>
+        <spring-boot.version>2.6.6</spring-boot.version>
         <maven-shade-plugin.version>3.2.4</maven-shade-plugin.version>
     </properties>
 
@@ -60,7 +60,7 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
-                <version>2.3.6.RELEASE</version>
+                <version>2.3.12.RELEASE</version>
                 <configuration>
                     <mainClass>eu.fasten.analyzer.restapiplugin.RestApplication</mainClass>
                 </configuration>
