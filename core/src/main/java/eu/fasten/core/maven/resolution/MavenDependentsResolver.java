@@ -24,7 +24,6 @@ import java.util.Set;
 import org.slf4j.Logger;
 
 import eu.fasten.core.maven.data.Dependency;
-import eu.fasten.core.maven.data.MavenProduct;
 import eu.fasten.core.maven.data.Pom;
 import eu.fasten.core.maven.data.Revision;
 
@@ -32,49 +31,55 @@ public class MavenDependentsResolver {
 
     private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(MavenDependentsResolver.class);
 
-    private MavenDependentsData graph;
+    private MavenDependentsData data;
 
-    public MavenDependentsResolver(MavenDependentsData graph) {
-        this.graph = graph;
+    public MavenDependentsResolver(MavenDependentsData data) {
+        this.data = data;
     }
 
-    public Set<Revision> resolve(Revision r, ResolverConfig config) {
-        assertTrue(graph.pomForRevision.containsKey(r), "no pom found for provided revision");
-        var pom = graph.pomForRevision.get(r);
-        return resolve(pom, config, new HashSet<>());
-    }
+    public Set<Revision> resolve(String gav, ResolverConfig config) {
+        var pom = data.findPom(gav, config.resolveAt);
 
-    private HashSet<Revision> resolve(Pom dependency, ResolverConfig config, Set<Object> visited) {
-        assertTrue(dependency.releaseDate <= config.timestamp, "provided revision is newer than resolution date");
-
-        if (visited.contains(dependency)) {
-            LOG.info("Dependency has been visited before, skipping.");
-            return new HashSet<Revision>();
+        if (!config.alwaysIncludeOptional || !config.alwaysIncludeProvided) {
+            // TODO warn that interpretation is "always include"
         }
-        visited.add(dependency);
-
         var dependents = new HashSet<Revision>();
+        resolve(pom, config, dependents, new HashSet<>());
+        return dependents;
+    }
 
-        var product = dependency.toProduct();
-        for (var potentialDependent : graph.dependentsForProduct.getOrDefault(product, Set.of())) {
+    // scope
+    // depth
+    // timestamp
+    // versionRange
 
-            // skip dependents with too recent releases
-            if (potentialDependent.releaseDate > config.timestamp) {
+    private void resolve(Pom pom, ResolverConfig config, Set<Revision> dependents, Set<Object> visited) {
+        assertTrue(pom.releaseDate <= config.resolveAt, "provided revision is newer than resolution date");
+
+        if (visited.contains(pom)) {
+            LOG.info("Dependency has been visited before, skipping.");
+            return;
+        }
+        visited.add(pom);
+
+        var ga = toGA(pom);
+        for (var dpd : data.findPotentialDependents(ga, config.resolveAt)) {
+
+            if (visited.contains(dpd)) {
                 continue;
             }
 
             // find correct dependency declaration
-            var declaration = find(product, potentialDependent.dependencies);
+            var declaration = find(ga, dpd.dependencies);
 
             // check whether version of pom matches the dependency declaration
-            if (doesVersionMatch(declaration, dependency)) {
-                dependents.add(potentialDependent.toRevision());
+            if (doesVersionMatch(declaration, pom)) {
+                dependents.add(dpd.toRevision());
                 if (config.depth == TRANSITIVE) {
-                    dependents.addAll(resolve(potentialDependent, config, visited));
+                    resolve(dpd, config, dependents, visited);
                 }
             }
         }
-        return dependents;
     }
 
     private boolean doesVersionMatch(Dependency dep, Pom pom) {
@@ -86,12 +91,20 @@ public class MavenDependentsResolver {
         return false;
     }
 
-    private static Dependency find(MavenProduct product, Set<Dependency> dependencies) {
+    private static Dependency find(String ga, Set<Dependency> dependencies) {
         for (var dep : dependencies) {
-            if (product.equals(dep.product())) {
+            if (ga.equals(toGA(dep))) {
                 return dep;
             }
         }
         throw new IllegalStateException("Cannot find reported dependency");
+    }
+
+    private static String toGA(Dependency dep) {
+        return String.format("%s:%s", dep.groupId, dep.artifactId);
+    }
+
+    private static String toGA(Pom pom) {
+        return String.format("%s:%s", pom.groupId, pom.artifactId);
     }
 }
