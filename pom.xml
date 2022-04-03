@@ -6,7 +6,7 @@
 
     <groupId>eu.fasten</groupId>
     <artifactId>parent</artifactId>
-    <version>0.0.4-SNAPSHOT</version>
+    <version>0.0.5-SNAPSHOT</version>
     <packaging>pom</packaging>
 
 
