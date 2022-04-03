@@ -201,6 +201,13 @@ public class PythonLicenseFeederPlugin extends Plugin {
                             packageLicenseInfo.put("spdx_license_key", spdx_id);
                             FileLicensesParsed.put(packageLicenseInfo);
                         }
+                        if (jsonObj.has("key")){
+                            String license_key = jsonObj.getString("key");
+                            System.out.println("license_key");
+                            System.out.println(license_key);
+                            packageLicenseInfo.put("key", license_key);
+                            FileLicensesParsed.put(packageLicenseInfo);
+                        }
                     }
                     String fileMetadata = new JSONObject().put("licenses", FileLicensesParsed).toString();
                     metadataDao.insertFileLicenses(
