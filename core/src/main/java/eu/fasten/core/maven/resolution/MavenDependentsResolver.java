@@ -15,8 +15,11 @@
  */
 package eu.fasten.core.maven.resolution;
 
+import static eu.fasten.core.maven.data.Scope.COMPILE;
+import static eu.fasten.core.maven.data.Scope.RUNTIME;
+import static eu.fasten.core.maven.data.Scope.SYSTEM;
+import static eu.fasten.core.maven.data.Scope.TEST;
 import static eu.fasten.core.maven.resolution.ResolverDepth.TRANSITIVE;
-import static eu.fasten.core.utils.Asserts.assertTrue;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -26,6 +29,7 @@ import org.slf4j.Logger;
 import eu.fasten.core.maven.data.Dependency;
 import eu.fasten.core.maven.data.Pom;
 import eu.fasten.core.maven.data.Revision;
+import eu.fasten.core.maven.data.Scope;
 
 public class MavenDependentsResolver {
 
@@ -38,47 +42,87 @@ public class MavenDependentsResolver {
     }
 
     public Set<Revision> resolve(String gav, ResolverConfig config) {
+        failForInvalidScopes(config);
+
         var pom = data.findPom(gav, config.resolveAt);
 
         if (!config.alwaysIncludeOptional || !config.alwaysIncludeProvided) {
             // TODO warn that interpretation is "always include"
         }
+
         var dependents = new HashSet<Revision>();
-        resolve(pom, config, dependents, new HashSet<>());
+        resolve(pom, config, dependents, new HashSet<>(), false);
         return dependents;
     }
 
-    // scope
+    private void failForInvalidScopes(ResolverConfig config) {
+        if (config.scope == Scope.IMPORT || config.scope == Scope.PROVIDED || config.scope == Scope.SYSTEM) {
+            var msg = "Invalid resolution scope: %s";
+            throw new IllegalArgumentException(String.format(msg, config.scope));
+        }
+    }
+
     // depth
     // timestamp
     // versionRange
 
-    private void resolve(Pom pom, ResolverConfig config, Set<Revision> dependents, Set<Object> visited) {
-        assertTrue(pom.releaseDate <= config.resolveAt, "provided revision is newer than resolution date");
+    private void resolve(Pom pom, ResolverConfig config, Set<Revision> dependents, Set<Object> visited,
+            boolean isTransitiveDep) {
+        // assertTrue(pom.releaseDate <= config.resolveAt, "provided revision is newer
+        // than resolution date");
 
-        if (visited.contains(pom)) {
-            LOG.info("Dependency has been visited before, skipping.");
-            return;
-        }
         visited.add(pom);
 
         var ga = toGA(pom);
         for (var dpd : data.findPotentialDependents(ga, config.resolveAt)) {
 
             if (visited.contains(dpd)) {
+                LOG.info("Dependency has been visited before, skipping.");
                 continue;
             }
 
             // find correct dependency declaration
-            var declaration = find(ga, dpd.dependencies);
+            var decl = find(ga, dpd.dependencies);
+
+            if (!matchesScope(decl.scope, config.scope, config.alwaysIncludeProvided)) {
+                continue;
+            }
+
+            if (isTransitiveDep && decl.scope == Scope.PROVIDED) {
+                continue;
+            }
 
             // check whether version of pom matches the dependency declaration
-            if (doesVersionMatch(declaration, pom)) {
+            if (doesVersionMatch(decl, pom)) {
                 dependents.add(dpd.toRevision());
-                if (config.depth == TRANSITIVE) {
-                    resolve(dpd, config, dependents, visited);
+
+                if (config.depth == TRANSITIVE && shouldProcessDependent(config, decl)) {
+                    resolve(dpd, config, dependents, visited, true);
                 }
             }
+        }
+    }
+
+    private static boolean shouldProcessDependent(ResolverConfig config, Dependency decl) {
+        var isNonProvided = decl.scope != Scope.PROVIDED || config.alwaysIncludeProvided;
+        var isNonOptional = !decl.optional || config.alwaysIncludeOptional;
+        return isNonProvided && isNonOptional;
+    }
+
+    private boolean matchesScope(Scope dep, Scope request, boolean alwaysIncludeProvided) {
+
+        if (dep == Scope.PROVIDED && alwaysIncludeProvided) {
+            return true;
+        }
+
+        if (request == Scope.COMPILE) {
+            return dep == COMPILE || dep == SYSTEM || dep == Scope.PROVIDED;
+        }
+
+        if (request == Scope.RUNTIME) {
+            return dep == RUNTIME || dep == COMPILE || dep == SYSTEM;
+        } else {
+            return dep == TEST || dep == RUNTIME || dep == COMPILE || dep == SYSTEM || dep == Scope.PROVIDED;
         }
     }
 
