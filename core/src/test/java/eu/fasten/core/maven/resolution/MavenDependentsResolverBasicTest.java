@@ -90,6 +90,14 @@ public class MavenDependentsResolverBasicTest {
         assertDependents(DEST, "a:1", "b:1");
     }
 
+    @Test
+    public void illegalStateDepNotFound() {
+        add("a:1", DEST);
+        add("b:1", "a:1");
+        add(DEST, "b:1");
+        assertDependents(DEST, "a:1", "b:1");
+    }
+
     private void add(String from, String... tos) {
         var pom = new Pom();
         var parts = from.split(":");
