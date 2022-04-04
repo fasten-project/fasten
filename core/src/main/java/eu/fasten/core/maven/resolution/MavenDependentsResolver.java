@@ -65,7 +65,6 @@ public class MavenDependentsResolver {
         }
     }
 
-    // depth
     // timestamp
     // versionRange
 
