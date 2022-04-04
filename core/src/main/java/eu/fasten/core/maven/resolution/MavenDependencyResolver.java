@@ -112,7 +112,7 @@ public class MavenDependencyResolver {
                     continue;
                 }
 
-                if (!isScopeCovered(config.scope, dep.scope)) {
+                if (!isScopeCovered(config.scope, dep.scope, config.alwaysIncludeProvided)) {
                     continue;
                 }
 
@@ -157,12 +157,15 @@ public class MavenDependencyResolver {
         return depSet;
     }
 
-    private static boolean isScopeCovered(Scope target, Scope dep) {
+    private static boolean isScopeCovered(Scope target, Scope dep, boolean alwaysIncludeProvided) {
         if (dep == target) {
             return true;
         }
-        if (dep == PROVIDED || dep == SYSTEM) {
+        if (dep == SYSTEM) {
             return true;
+        }
+        if (dep == PROVIDED) {
+            return alwaysIncludeProvided || target == COMPILE ||  target == TEST;
         }
         if (dep == RUNTIME) {
             return target == TEST;

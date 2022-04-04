@@ -16,7 +16,7 @@
 package eu.fasten.core.maven.resolution;
 
 import static org.junit.Assert.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.Assert.fail;
 
 import java.sql.Timestamp;
 import java.util.Arrays;
@@ -33,6 +33,8 @@ import eu.fasten.core.maven.data.Revision;
 import eu.fasten.core.maven.data.Scope;
 
 public class MavenDependencyResolverIncludeProvidedTest {
+
+    private static final Scope[] SCOPES = new Scope[] { Scope.COMPILE, Scope.RUNTIME, Scope.TEST };
 
     private static final String BASE = "base:1";
 
@@ -53,35 +55,62 @@ public class MavenDependencyResolverIncludeProvidedTest {
 
     @Test
     public void disabledByDefault() {
-        assertFalse(config.alwaysIncludeOptional);
+        assertFalse(config.alwaysIncludeProvided);
     }
 
     @Test
-    public void byDefaultIncludeDirectDependency() {
+    public void ifUnsetIncludeDirectProvidedDepsForCompile() {
+        config.scope = Scope.COMPILE;
         add(BASE, dep("a:1"), prov("b:1"));
         assertDepSet(BASE, "a:1", "b:1");
     }
 
     @Test
-    public void byDefaultDontIncludeTransitiveDependency() {
-        add(BASE, dep("a:1"));
-        add("a:1", dep("b:1"), prov("c:1"));
-        assertDepSet(BASE, "a:1", "b:1");
+    public void ifUnsetDoNotIncludeDirectProvidedDepsForRuntime() {
+        config.scope = Scope.RUNTIME;
+        add(BASE, dep("a:1"), prov("b:1"));
+        assertDepSet(BASE, "a:1");
     }
 
     @Test
-    public void whenSetIncludeDirectDependency() {
-        config.alwaysIncludeProvided = true;
+    public void ifUnsetIncludeDirectProvidedDepsForTest() {
+        config.scope = Scope.TEST;
         add(BASE, dep("a:1"), prov("b:1"));
         assertDepSet(BASE, "a:1", "b:1");
     }
 
     @Test
-    public void whenSetIncludeTransitiveDependency() {
+    public void ifUnsetDoNotIncludeTransitiveProvidedDepsForAllScopes() {
+        add(BASE, dep("a:1"));
+        add("a:1", dep("b:1"), prov("c:1"));
+
+        for (var scope : SCOPES) {
+            config.scope = scope;
+            assertDepSet(BASE, "a:1", "b:1");
+        }
+    }
+
+    @Test
+    public void whenSetIncludeDirectProvidedDepsForAllScope() {
+        config.alwaysIncludeProvided = true;
+        add(BASE, dep("a:1"), prov("b:1"));
+
+        for (var scope : SCOPES) {
+            config.scope = scope;
+            assertDepSet(BASE, "a:1", "b:1");
+        }
+    }
+
+    @Test
+    public void whenSetIncludeTransitiveProvidedDepsForAllScopes() {
         config.alwaysIncludeProvided = true;
         add(BASE, dep("a:1"));
         add("a:1", dep("b:1"), prov("c:1"));
-        assertDepSet(BASE, "a:1", "b:1", "c:1");
+
+        for (var scope : SCOPES) {
+            config.scope = scope;
+            assertDepSet(BASE, "a:1", "b:1", "c:1");
+        }
     }
 
     private void add(String from, Dep... tos) {
@@ -120,7 +149,21 @@ public class MavenDependencyResolverIncludeProvidedTest {
                 .map(gav -> gav.split(":")) //
                 .map(parts -> new Revision(parts[0], parts[0], parts[1], new Timestamp(-1L))) //
                 .collect(Collectors.toSet());
-        assertEquals(expecteds, actuals);
+
+        if (!expecteds.equals(actuals)) {
+            var sb = new StringBuilder();
+            sb.append("Expected:\n");
+            for (var e : expecteds) {
+                sb.append("- ").append(e.groupId).append(":").append(e.artifactId).append(":").append(e.version)
+                        .append("\n");
+            }
+            sb.append("But was:\n");
+            for (var a : actuals) {
+                sb.append("- ").append(a.groupId).append(":").append(a.artifactId).append(":").append(a.version)
+                        .append("\n");
+            }
+            fail(sb.toString());
+        }
     }
 
     private static Dep dep(String coord) {
