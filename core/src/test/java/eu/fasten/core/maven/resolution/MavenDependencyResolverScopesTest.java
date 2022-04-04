@@ -115,7 +115,7 @@ public class MavenDependencyResolverScopesTest {
                 $("c:1", Scope.COMPILE), //
                 $("r:1", Scope.RUNTIME), //
                 $("t:1", Scope.TEST));
-        assertDepSet(BASE, "s:1", "p:1", "c:1", "r:1");
+        assertDepSet(BASE, "s:1", "c:1", "r:1");
     }
 
     @Test
