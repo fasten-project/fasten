@@ -16,15 +16,9 @@
 package eu.fasten.core.maven.resolution;
 
 import static eu.fasten.core.maven.data.Scope.COMPILE;
-import static eu.fasten.core.maven.data.Scope.IMPORT;
 import static eu.fasten.core.maven.data.Scope.PROVIDED;
-import static eu.fasten.core.maven.data.Scope.RUNTIME;
-import static eu.fasten.core.maven.data.Scope.SYSTEM;
-import static eu.fasten.core.maven.data.Scope.TEST;
-import static eu.fasten.core.maven.resolution.ResolverConfig.resolve;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.fail;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.sql.Timestamp;
 import java.util.Arrays;
@@ -38,10 +32,11 @@ import eu.fasten.core.maven.data.Pom;
 import eu.fasten.core.maven.data.Revision;
 import eu.fasten.core.maven.data.Scope;
 
-public class MavenDependentsResolverScopesTest {
+public class MavenDependentsResolverIncludeProvidedTest {
+
+    private static final Scope[] SCOPES = new Scope[] { Scope.COMPILE, Scope.RUNTIME, Scope.TEST };
 
     private static final String DEST = "dest:1";
-    private static final String SOME_COORD = "some:coord:1.2.3";
 
     private MavenDependentsData data;
     private MavenDependentsResolver sut;
@@ -57,79 +52,76 @@ public class MavenDependentsResolverScopesTest {
     }
 
     @Test
-    public void cannotResolveImport() {
-        var e = assertThrows(IllegalArgumentException.class, () -> {
-            sut.resolve(SOME_COORD, resolve().scope(IMPORT));
-        });
-        assertEquals("Invalid resolution scope: IMPORT", e.getMessage());
+    public void disabledByDefault() {
+        assertFalse(config.alwaysIncludeProvided);
     }
 
     @Test
-    public void cannotResolveSystem() {
-        var e = assertThrows(IllegalArgumentException.class, () -> {
-            sut.resolve(SOME_COORD, resolve().scope(SYSTEM));
-        });
-        assertEquals("Invalid resolution scope: SYSTEM", e.getMessage());
+    public void ifUnsetIncludeDirectProvidedDepsForCompile() {
+        config.scope = Scope.COMPILE;
+        add("a:1", $(DEST, PROVIDED));
+        assertDependents(DEST, "a:1");
     }
 
     @Test
-    public void cannotResolveProvided() {
-        var e = assertThrows(IllegalArgumentException.class, () -> {
-            sut.resolve(SOME_COORD, resolve().scope(PROVIDED));
-        });
-        assertEquals("Invalid resolution scope: PROVIDED", e.getMessage());
-    }
-
-    @Test
-    public void resolveCompileDirectDependents() {
-        addDependentsWithAllScopes(DEST);
-        config.scope = COMPILE;
-        assertDependents(DEST, "c:1", "s:1", "p:1");
-    }
-
-    @Test
-    public void resolveRuntimeDirectDependents() {
-        addDependentsWithAllScopes(DEST);
-        config.scope = RUNTIME;
-        assertDependents(DEST, "c:1", "r:1", "s:1");
-    }
-
-    @Test
-    public void resolveTestDirectDependents() {
-        addDependentsWithAllScopes(DEST);
-        config.scope = TEST;
-        assertDependents(DEST, "c:1", "r:1", "t:1", "s:1", "p:1");
-    }
-
-    @Test
-    public void resolveCompileTransitiveDependents() {
-        add("x:1", $(DEST, COMPILE));
-        addDependentsWithAllScopes("x:1");
-        config.scope = COMPILE;
-        assertDependents(DEST, "x:1", "c:1", "s:1");
-    }
-
-    @Test
-    public void resolveRuntimeTransitiveDependents() {
-        add("x:1", $(DEST, COMPILE));
-        addDependentsWithAllScopes("x:1");
-        config.scope = RUNTIME;
-        assertDependents(DEST, "x:1", "c:1", "r:1", "s:1");
-    }
-
-    @Test
-    public void resolveTestTransitiveDependents() {
-        add("x:1", $(DEST, COMPILE));
-        addDependentsWithAllScopes("x:1");
-        config.scope = TEST;
-        assertDependents(DEST, "x:1", "c:1", "r:1", "t:1", "s:1");
-    }
-
-    @Test
-    public void invalidDepForFullCoverage() {
-        config.scope = TEST;
-        add("x:1", $(DEST, IMPORT));
+    public void ifUnsetDoNotIncludeDirectProvidedDepsForRuntime() {
+        config.scope = Scope.RUNTIME;
+        add("a:1", $(DEST, PROVIDED));
         assertDependents(DEST);
+    }
+
+    @Test
+    public void ifUnsetIncludeDirectProvidedDepsForTest() {
+        config.scope = Scope.TEST;
+        add("a:1", $(DEST, PROVIDED));
+        assertDependents(DEST, "a:1");
+    }
+
+    @Test
+    public void ifUnsetDoNotIncludeTransitiveProvidedDepsForCompile() {
+        config.scope = Scope.COMPILE;
+        add("a:1", $("b:1", COMPILE));
+        add("b:1", $(DEST, PROVIDED));
+        assertDependents(DEST, "b:1");
+    }
+
+    @Test
+    public void ifUnsetDoNotIncludeTransitiveProvidedDepsForRuntime() {
+        config.scope = Scope.RUNTIME;
+        add("a:1", $("b:1", COMPILE));
+        add("b:1", $(DEST, PROVIDED));
+        assertDependents(DEST);
+    }
+
+    @Test
+    public void ifUnsetDoNotIncludeTransitiveProvidedDepsForTest() {
+        config.scope = Scope.TEST;
+        add("a:1", $("b:1", COMPILE));
+        add("b:1", $(DEST, PROVIDED));
+        assertDependents(DEST, "b:1");
+    }
+
+    @Test
+    public void whenSetIncludeDirectProvidedDepsForAllScopes() {
+        add("a:1", $(DEST, PROVIDED));
+
+        for (var scope : SCOPES) {
+            config.alwaysIncludeProvided = true;
+            config.scope = scope;
+            assertDependents(DEST, "a:1");
+        }
+    }
+
+    @Test
+    public void whenSetIncludeTransitiveProvidedDepsForAllScopes() {
+        add("a:1", $("b:1", COMPILE));
+        add("b:1", $(DEST, PROVIDED));
+
+        for (var scope : SCOPES) {
+            config.alwaysIncludeProvided = true;
+            config.scope = scope;
+            assertDependents(DEST, "a:1", "b:1");
+        }
     }
 
     private void add(String from, Dep... tos) {
@@ -147,14 +139,6 @@ public class MavenDependentsResolverScopesTest {
         }
 
         data.add(pom);
-    }
-
-    private void addDependentsWithAllScopes(String dest) {
-        add("c:1", $(dest, COMPILE));
-        add("r:1", $(dest, RUNTIME));
-        add("t:1", $(dest, TEST));
-        add("s:1", $(dest, SYSTEM));
-        add("p:1", $(dest, PROVIDED));
     }
 
     private void assertDependents(String shortTarget, String... depSet) {
