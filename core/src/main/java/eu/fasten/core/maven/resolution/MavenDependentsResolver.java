@@ -45,6 +45,9 @@ public class MavenDependentsResolver {
         failForInvalidScopes(config);
 
         var pom = data.findPom(gav, config.resolveAt);
+        if (pom == null) {
+            throw new MavenResolutionException(String.format("Cannot find coordinate %s", gav));
+        }
 
         if (!config.alwaysIncludeOptional || !config.alwaysIncludeProvided) {
             // TODO warn that interpretation is "always include"

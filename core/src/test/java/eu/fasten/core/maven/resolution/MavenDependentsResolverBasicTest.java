@@ -16,7 +16,9 @@
 package eu.fasten.core.maven.resolution;
 
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.sql.Timestamp;
 import java.util.Arrays;
@@ -91,6 +93,14 @@ public class MavenDependentsResolverBasicTest {
     }
 
     @Test
+    public void throwsWhenDestCannotBeFound() {
+        var e = assertThrows(MavenResolutionException.class, () -> {
+            sut.resolve("non:existing:1", config);
+        });
+        assertEquals("Cannot find coordinate non:existing:1", e.getMessage());
+    }
+
+    @Test
     public void illegalStateDepNotFound() {
         add("a:1", DEST);
         add("b:1", "a:1");
@@ -123,6 +133,20 @@ public class MavenDependentsResolverBasicTest {
                 .map(gav -> gav.split(":")) //
                 .map(parts -> new Revision(parts[0], parts[0], parts[1], new Timestamp(-1L))) //
                 .collect(Collectors.toSet());
-        assertEquals(expecteds, actuals);
+
+        if (!expecteds.equals(actuals)) {
+            var sb = new StringBuilder();
+            sb.append("Expected:\n");
+            for (var e : expecteds) {
+                sb.append("- ").append(e.groupId).append(":").append(e.artifactId).append(":").append(e.version)
+                        .append("\n");
+            }
+            sb.append("But was:\n");
+            for (var a : actuals) {
+                sb.append("- ").append(a.groupId).append(":").append(a.artifactId).append(":").append(a.version)
+                        .append("\n");
+            }
+            fail(sb.toString());
+        }
     }
 }
