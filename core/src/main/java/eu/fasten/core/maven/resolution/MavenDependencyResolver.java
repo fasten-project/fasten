@@ -157,21 +157,21 @@ public class MavenDependencyResolver {
         return depSet;
     }
 
-    private static boolean isScopeCovered(Scope target, Scope dep, boolean alwaysIncludeProvided) {
-        if (dep == target) {
+    private static boolean isScopeCovered(Scope request, Scope dep, boolean alwaysIncludeProvided) {
+        if (dep == request) {
             return true;
         }
         if (dep == SYSTEM) {
             return true;
         }
         if (dep == PROVIDED) {
-            return alwaysIncludeProvided || target == COMPILE ||  target == TEST;
+            return alwaysIncludeProvided || request == COMPILE ||  request == TEST;
         }
         if (dep == RUNTIME) {
-            return target == TEST;
+            return request == TEST;
         }
         if (dep == COMPILE) {
-            return target == RUNTIME || target == TEST;
+            return request == RUNTIME || request == TEST;
         }
         return false;
     }

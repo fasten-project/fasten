@@ -77,7 +77,7 @@ public class MavenDependencyResolverDepthTest {
     }
 
     @Test
-    public void onlyDirectDependencyButTransitive() {
+    public void onlyDirectDependencyButTransitiveExists() {
         config.depth = DIRECT;
         add(BASE, "a:1");
         add("a:1", "b:1");
