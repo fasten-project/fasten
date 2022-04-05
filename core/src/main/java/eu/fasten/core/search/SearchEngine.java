@@ -229,7 +229,7 @@ public class SearchEngine implements AutoCloseable {
 	
 	private void cachePutDeps(final long key, LongLinkedOpenHashSet deps) throws RocksDBException {
 		depsCache.putAndMoveToFirst(key, deps);
-		cache.put(mergedHandle, Longs.toByteArray(key), SerializationUtils.serialize(deps));				
+		cache.put(dependenciesHandle, Longs.toByteArray(key), SerializationUtils.serialize(deps));				
 	}
 
 	private ArrayImmutableDirectedGraph cacheGetMerged(final long key) throws RocksDBException {
