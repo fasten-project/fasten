@@ -22,7 +22,6 @@ import java.io.Serializable;
 import java.util.Arrays;
 
 import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
-import it.unimi.dsi.fastutil.longs.Long2ObjectArrayMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap.Entry;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongArrayList;
@@ -104,7 +103,7 @@ public class ArrayImmutableDirectedGraph implements DirectedGraph, Serializable 
 		 *         depending on the value of {@code sorted}.
 		 */
 		public ArrayImmutableDirectedGraph build(final boolean sorted) {
-			final Long2ObjectArrayMap<LongArrayList> transpose = new Long2ObjectArrayMap<>();
+			final Long2ObjectOpenHashMap<LongArrayList> transpose = new Long2ObjectOpenHashMap<>();
 			for (final Entry<LongOpenHashSet> e : graph.long2ObjectEntrySet()) {
 				final long x = e.getLongKey();
 				for (final long y : e.getValue()) {
