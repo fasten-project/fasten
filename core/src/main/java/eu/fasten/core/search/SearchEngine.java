@@ -54,7 +54,6 @@ import eu.fasten.core.data.ArrayImmutableDirectedGraph;
 import eu.fasten.core.data.DirectedGraph;
 import eu.fasten.core.data.FastenJavaURI;
 import eu.fasten.core.data.FastenURI;
-import eu.fasten.core.data.MergedDirectedGraph;
 import eu.fasten.core.data.callableindex.RocksDao;
 import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
 import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
@@ -66,6 +65,7 @@ import eu.fasten.core.search.predicate.CachingPredicateFactory;
 import eu.fasten.core.search.predicate.PredicateFactory;
 import eu.fasten.core.search.predicate.PredicateFactory.MetadataSource;
 import it.unimi.dsi.fastutil.HashCommon;
+import it.unimi.dsi.fastutil.longs.Long2ObjectLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongArrayFIFOQueue;
 import it.unimi.dsi.fastutil.longs.LongCollection;
 import it.unimi.dsi.fastutil.longs.LongIterator;
@@ -75,7 +75,6 @@ import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.fastutil.longs.LongSets;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenHashSet;
-import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import it.unimi.dsi.lang.ObjectParser;
 
 /**
@@ -189,6 +188,9 @@ public class SearchEngine implements AutoCloseable {
 	/** Throwables thrown by mergeWithCHA(). */
 	private final List<Throwable> throwables = new ArrayList<>();
 
+	private final Long2ObjectLinkedOpenHashMap<ArrayImmutableDirectedGraph> mergedCache = new Long2ObjectLinkedOpenHashMap<>();
+	private final Long2ObjectLinkedOpenHashMap<LongLinkedOpenHashSet> depsCache = new Long2ObjectLinkedOpenHashMap<>();
+	
 	public static final class RocksDBData {
 		public final RocksDB cache;
 		public final List<ColumnFamilyHandle> columnFamilyHandles;
@@ -219,7 +221,37 @@ public class SearchEngine implements AutoCloseable {
 				RocksDB.openReadOnly(dbOptions, cacheDir, cfDescriptors, columnFamilyHandles) :
 				RocksDB.open(dbOptions, cacheDir, cfDescriptors, columnFamilyHandles), columnFamilyHandles); 
 	}
+
+	private void cachePutMerged(final long key, ArrayImmutableDirectedGraph graph) throws RocksDBException {
+		mergedCache.putAndMoveToFirst(key, graph);
+		cache.put(mergedHandle, Longs.toByteArray(key), SerializationUtils.serialize(graph));		
+	}
 	
+	private void cachePutDeps(final long key, LongLinkedOpenHashSet deps) throws RocksDBException {
+		depsCache.putAndMoveToFirst(key, deps);
+		cache.put(mergedHandle, Longs.toByteArray(key), SerializationUtils.serialize(deps));				
+	}
+
+	private ArrayImmutableDirectedGraph cacheGetMerged(final long key) throws RocksDBException {
+		ArrayImmutableDirectedGraph merged = mergedCache.get(key);
+		if (merged != null) return merged;
+		final byte[] array = cache.get(mergedHandle, Longs.toByteArray(key));
+		if (array == null || array.length == 0) return null;
+		merged = SerializationUtils.deserialize(array);
+		mergedCache.putAndMoveToFirst(key, merged);
+		return merged;
+	}
+	
+	private LongLinkedOpenHashSet cacheGetDeps(final long key) throws RocksDBException {
+		LongLinkedOpenHashSet deps = depsCache.get(key);
+		if (deps != null) return deps;
+		final byte[] array = cache.get(dependenciesHandle, Longs.toByteArray(key));
+		if (array == null || array.length == 0) return null;
+		deps = SerializationUtils.deserialize(array);
+		depsCache.putAndMoveToFirst(key, deps);
+		return deps;
+	}
+
 	/**
 	 * Creates a new search engine using a given JDBC URI, database name and path to RocksDB.
 	 *
@@ -547,47 +579,43 @@ public class SearchEngine implements AutoCloseable {
 		LOGGER.debug("Revision call graph has " + graph.numNodes() + " nodes");
 
 		DirectedGraph stitchedGraph;
-		byte[] revAsByteArray = Longs.toByteArray(rev);
-		byte[] stitchedFromCache = cache.get(mergedHandle, revAsByteArray);
-		if (stitchedFromCache != null) {
-			if (stitchedFromCache.length != 0) stitchedGraph = SerializationUtils.deserialize(stitchedFromCache);
-			else throw new NullPointerException("Cached returned null");
+		ArrayImmutableDirectedGraph stitchedFromCache = cacheGetMerged(rev);
+		if (stitchedFromCache == null) throw new NullPointerException("Cached returned null");
+
+		final Record2<String, String> record = context.select(Packages.PACKAGES.PACKAGE_NAME, PackageVersions.PACKAGE_VERSIONS.VERSION).from(PackageVersions.PACKAGE_VERSIONS).join(Packages.PACKAGES).on(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.eq(Packages.PACKAGES.ID)).where(PackageVersions.PACKAGE_VERSIONS.ID.eq(Long.valueOf(rev))).fetchOne();
+		final String[] a = record.component1().split(":");
+		final String groupId = a[0];
+		final String artifactId = a[1];
+		final String version = record.component2();
+
+		final LongLinkedOpenHashSet depFromCache = cacheGetDeps(rev);
+
+		final LongLinkedOpenHashSet dependencyIds; 
+		if (depFromCache == null) {
+			resolveTime -= System.nanoTime();
+			final Set<Revision> dependencySet = resolver.resolveDependencies(groupId, artifactId, version, -1, context, true);
+			dependencyIds = LongLinkedOpenHashSet.toSet(dependencySet.stream().mapToLong(x -> x.id));
+			dependencyIds.addAndMoveToFirst(rev);
+			resolveTime += System.nanoTime();
+			cachePutDeps(rev, dependencyIds);
+		}
+		else dependencyIds = depFromCache;
+
+		LOGGER.debug("Found " + dependencyIds.size() + " dependencies");
+
+		stitchingTime -= System.nanoTime();
+		final var dm = new CGMerger(dependencyIds, context, rocksDao);
+		stitchedGraph = getStitchedGraph(dm, rev);
+		stitchingTime += System.nanoTime();
+
+		if (stitchedGraph == null) {
+			// TODO
+			cache.put(mergedHandle, Longs.toByteArray(rev), new byte[0]);
+			throw new NullPointerException("mergeWithCHA() returned null");
 		}
 		else {
-			final Record2<String, String> record = context.select(Packages.PACKAGES.PACKAGE_NAME, PackageVersions.PACKAGE_VERSIONS.VERSION).from(PackageVersions.PACKAGE_VERSIONS).join(Packages.PACKAGES).on(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.eq(Packages.PACKAGES.ID)).where(PackageVersions.PACKAGE_VERSIONS.ID.eq(Long.valueOf(rev))).fetchOne();
-			final String[] a = record.component1().split(":");
-			final String groupId = a[0];
-			final String artifactId = a[1];
-			final String version = record.component2();
-
-			final byte[] depFromCache  = cache.get(dependenciesHandle, revAsByteArray);
-			
-			final LongLinkedOpenHashSet dependencyIds; 
-			if (depFromCache == null) {
-				resolveTime -= System.nanoTime();
-				final Set<Revision> dependencySet = resolver.resolveDependencies(groupId, artifactId, version, -1, context, true);
-				dependencyIds = LongLinkedOpenHashSet.toSet(dependencySet.stream().mapToLong(x -> x.id));
-				dependencyIds.addAndMoveToFirst(rev);
-				resolveTime += System.nanoTime();
-				cache.put(dependenciesHandle, revAsByteArray, SerializationUtils.serialize(dependencyIds));
-			}
-			else dependencyIds = SerializationUtils.deserialize(depFromCache);
-
-			LOGGER.debug("Found " + dependencyIds.size() + " dependencies");
-	
-			stitchingTime -= System.nanoTime();
-			final var dm = new CGMerger(dependencyIds, context, rocksDao);
-			stitchedGraph = getStitchedGraph(dm, rev);
-			stitchingTime += System.nanoTime();
-	
-			if (stitchedGraph == null) {
-				cache.put(mergedHandle, Longs.toByteArray(rev), new byte[0]);
-				throw new NullPointerException("mergeWithCHA() returned null");
-			}
-			else {
-				stitchedGraph = ArrayImmutableDirectedGraph.copyOf(stitchedGraph, false);
-				cache.put(mergedHandle, Longs.toByteArray(rev), SerializationUtils.serialize((ArrayImmutableDirectedGraph)stitchedGraph));
-			}
+			stitchedGraph = ArrayImmutableDirectedGraph.copyOf(stitchedGraph, false);
+			cachePutMerged(rev, (ArrayImmutableDirectedGraph)stitchedGraph);
 		}
 
 		LOGGER.debug("Stiched graph has " + stitchedGraph.numNodes() + " nodes");
@@ -689,59 +717,56 @@ public class SearchEngine implements AutoCloseable {
 			DirectedGraph stitchedGraph = null;
 
 			byte[] dependentIdAsByteArray = Longs.toByteArray(dependentId);
-			byte[] stitchedFromCache = cache.get(mergedHandle, dependentIdAsByteArray);
-			if (stitchedFromCache != null) {
-				if (stitchedFromCache.length != 0) stitchedGraph = SerializationUtils.deserialize(stitchedFromCache);
-				else continue;
+			ArrayImmutableDirectedGraph stitchedFromCache = cacheGetMerged(dependentId);
+			if (stitchedFromCache == null) continue;
+
+			groupId = dependent.groupId;
+			artifactId = dependent.artifactId;
+			version = dependent.version.toString();
+
+			LOGGER.debug("Analyzing dependent " + groupId + ":" + artifactId + ":" + version);
+
+			final LongLinkedOpenHashSet depFromCache = cacheGetDeps(dependentId);
+
+			final LongLinkedOpenHashSet dependencyIds;
+			if (depFromCache == null) {
+				resolveTime -= System.nanoTime();
+				final Set<Revision> dependencySet = resolver.resolveDependencies(groupId, artifactId, version, -1, context, true);
+				dependencyIds = LongLinkedOpenHashSet.toSet(dependencySet.stream().mapToLong(x -> x.id));
+				dependencyIds.addAndMoveToFirst(dependentId);
+				resolveTime += System.nanoTime();
+				cachePutDeps(dependentId, dependencyIds);
+			} else dependencyIds = depFromCache;
+
+			LOGGER.debug("Dependent has " + graph.numNodes() + " nodes");
+			LOGGER.debug("Found " + dependencyIds.size() + " dependencies");
+
+			if (dependentId != revId && !dependencyIds.contains(revId)) {
+				LOGGER.debug("False dependent");
+				continue; // We cannot possibly reach the callable
+			}
+
+			trueDependents++;
+
+			stitchingTime -= System.nanoTime();
+			final var dm = new CGMerger(dependencyIds, context, rocksDao);
+
+			try {
+				stitchedGraph = getStitchedGraph(dm, dependentId);
+			} catch (final Throwable t) {
+				throwables.add(t);
+				LOGGER.error("mergeWithCHA threw an exception", t);
+			}
+			stitchingTime += System.nanoTime();
+
+			if (stitchedGraph == null) {
+				// Marker
+				cache.put(mergedHandle, dependentIdAsByteArray, new byte[0]);
+				LOGGER.error("mergeWithCHA returned null");
+				continue;
 			} else {
-				groupId = dependent.groupId;
-				artifactId = dependent.artifactId;
-				version = dependent.version.toString();
-
-				LOGGER.debug("Analyzing dependent " + groupId + ":" + artifactId + ":" + version);
-
-				final byte[] depFromCache = cache.get(dependenciesHandle, dependentIdAsByteArray);
-
-				final LongLinkedOpenHashSet dependencyIds;
-				if (depFromCache == null) {
-					resolveTime -= System.nanoTime();
-					final Set<Revision> dependencySet = resolver.resolveDependencies(groupId, artifactId, version, -1, context, true);
-					dependencyIds = LongLinkedOpenHashSet.toSet(dependencySet.stream().mapToLong(x -> x.id));
-					dependencyIds.addAndMoveToFirst(dependentId);
-					resolveTime += System.nanoTime();
-					cache.put(dependenciesHandle, dependentIdAsByteArray, SerializationUtils.serialize(dependencyIds));
-				} else dependencyIds = SerializationUtils.deserialize(depFromCache);
-
-				LOGGER.debug("Dependent has " + graph.numNodes() + " nodes");
-				LOGGER.debug("Found " + dependencyIds.size() + " dependencies");
-
-				if (dependentId != revId && !dependencyIds.contains(revId)) {
-					LOGGER.debug("False dependent");
-					continue; // We cannot possibly reach the callable
-				}
-
-				trueDependents++;
-
-				stitchingTime -= System.nanoTime();
-				final var dm = new CGMerger(dependencyIds, context, rocksDao);
-
-				try {
-					stitchedGraph = getStitchedGraph(dm, dependentId);
-				} catch (final Throwable t) {
-					throwables.add(t);
-					LOGGER.error("mergeWithCHA threw an exception", t);
-				}
-				stitchingTime += System.nanoTime();
-
-				if (stitchedGraph == null) {
-					// Marker
-					cache.put(mergedHandle, dependentIdAsByteArray, new byte[0]);
-					LOGGER.error("mergeWithCHA returned null");
-					continue;
-				} else {
-					stitchedGraph = ArrayImmutableDirectedGraph.copyOf(stitchedGraph, false);
-					cache.put(mergedHandle, dependentIdAsByteArray, SerializationUtils.serialize((ArrayImmutableDirectedGraph)stitchedGraph));
-				}
+				stitchedGraph = ArrayImmutableDirectedGraph.copyOf(stitchedGraph, false);
+				cachePutMerged(dependentId, (ArrayImmutableDirectedGraph)stitchedGraph);
 			}
 
 			LOGGER.debug("Stiched graph has " + stitchedGraph.numNodes() + " nodes");
