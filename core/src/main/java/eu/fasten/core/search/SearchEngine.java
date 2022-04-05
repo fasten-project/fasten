@@ -714,7 +714,7 @@ public class SearchEngine implements AutoCloseable {
 			try {
 				dependent = s.take();
 			} catch(InterruptedException cantHappen) {}
-			if (dependent == null) break;
+			if (dependent == GraphMavenResolver.END) break;
 			var dependentId = dependent.id;
 
 			DirectedGraph stitchedGraph = null;

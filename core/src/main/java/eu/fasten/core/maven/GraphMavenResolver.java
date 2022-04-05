@@ -65,7 +65,7 @@ import picocli.CommandLine;
 
 @CommandLine.Command(name = "GraphMavenResolver")
 public class GraphMavenResolver implements Runnable {
-
+	public final static Revision END = new Revision();
     private static final Logger logger = LoggerFactory.getLogger(GraphMavenResolver.class);
 
     @CommandLine.Option(names = {"-p", "--serializedPath"},
@@ -459,7 +459,7 @@ public class GraphMavenResolver implements Runnable {
         	}
         	
 			try {
-	        	result.put(null);
+                result.put(END);
 			} catch(InterruptedException cantHappen) {}
         });
         
