@@ -703,14 +703,17 @@ public class SearchEngine implements AutoCloseable {
 		String artifactId = data[1];
 		String version = data[2];
 
-		final BlockingQueue<Revision> s = resolver.resolveDependentsPipeline(groupId, artifactId, version, -1, true);
+		final BlockingQueue<Revision> s = resolver.resolveDependentsPipeline(groupId, artifactId, version, -1, true, maxDependents);
 
 		final ObjectLinkedOpenHashSet<Result> results = new ObjectLinkedOpenHashSet<>();
 
 		long trueDependents = 0;
 
 		for (;;) {
-			var dependent = s.poll();
+			Revision dependent = null;
+			try {
+				dependent = s.take();
+			} catch(InterruptedException cantHappen) {}
 			if (dependent == null) break;
 			var dependentId = dependent.id;
 

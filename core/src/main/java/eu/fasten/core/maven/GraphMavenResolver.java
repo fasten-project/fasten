@@ -130,7 +130,7 @@ public class GraphMavenResolver implements Runnable {
             var optDependencyGraph = DependencyGraphUtilities.loadDependencyGraph(serializedPath);
             if (optDependencyGraph.isPresent()) {
                 dependencyGraph = optDependencyGraph.get();
-                dependentGraph = DependencyGraphUtilities.invertDependencyGraph(dependencyGraph);
+                dependentGraph = new org.jgrapht.graph.EdgeReversedGraph(dependencyGraph);
             }
         } catch (Exception e) {
             logger.warn("Could not load serialized dependency graph from {}\n", serializedPath, e);
@@ -407,8 +407,8 @@ public class GraphMavenResolver implements Runnable {
      * returned dependent set only includes nodes that where released AFTER the provided timestamp.
      */
     public BlockingQueue<Revision> resolveDependentsPipeline(String groupId, String artifactId, String version, long timestamp,
-                                                               boolean transitive) {
-        return dependentBFSPipeline(groupId, artifactId, version, timestamp, transitive);
+                                                               boolean transitive, long maxDeps) {
+        return dependentBFSPipeline(groupId, artifactId, version, timestamp, transitive, maxDeps);
     }
 
     /**
@@ -416,8 +416,8 @@ public class GraphMavenResolver implements Runnable {
      * used to determine which nodes will be ignored when traversing dependent nodes. Effectively, the returned
      * dependent set only includes nodes that where released AFTER the provided revision.
      */
-    public BlockingQueue<Revision> resolveDependentsPipeline(Revision r, boolean transitive) {
-        return dependentBFSPipeline(r.groupId, r.artifactId, r.version.toString(), r.createdAt.getTime(), transitive);
+    public BlockingQueue<Revision> resolveDependentsPipeline(Revision r, boolean transitive, long maxDeps) {
+        return dependentBFSPipeline(r.groupId, r.artifactId, r.version.toString(), r.createdAt.getTime(), transitive, maxDeps);
     }
 
     /**
@@ -428,7 +428,7 @@ public class GraphMavenResolver implements Runnable {
      * @param transitive - Whether the BFS should recurse into the graph
      */
     public BlockingQueue<Revision> dependentBFSPipeline(String groupId, String artifactId, String version, long timestamp,
-                                                          boolean transitive) {
+                                                          boolean transitive, final long maxDeps) {
         var artifact = new Revision(groupId, artifactId, version, new Timestamp(timestamp));
 
         if (!dependentGraph.containsVertex(artifact)) {
@@ -438,14 +438,18 @@ public class GraphMavenResolver implements Runnable {
         var workQueue = new ObjectArrayFIFOQueue<Revision>();
         workQueue.enqueue(artifact);
         var seen = new ReferenceOpenHashSet<Revision>();
-        var result = new ArrayBlockingQueue<Revision>(10000);
+        var result = new ArrayBlockingQueue<Revision>(100);
 
         Executors.newSingleThreadExecutor().execute(() -> {
+			var countDown = maxDeps;
         	while (!workQueue.isEmpty()) {
         		var rev = workQueue.dequeue();
         		seen.add(rev);
         		if (!dependentGraph.containsVertex(rev)) continue; // Ignore missing revisions
-        		result.add(rev);
+				try {
+	        		result.put(rev);
+					if (countDown-- == 0) break;
+				} catch(InterruptedException cantHappen) {}
 
         		filterDependentsByTimestamp(StreamSupport.stream(dependentGraph.iterables().outgoingEdgesOf(rev).spliterator(), false).map(edge -> edge.target), timestamp).filter(dependent -> !seen.contains(dependent)).forEach(dependent -> {
         			logger.info("Enqueueing " + dependent);
@@ -454,7 +458,9 @@ public class GraphMavenResolver implements Runnable {
         		if (! transitive) break;
         	}
         	
-        	result.add(null);
+			try {
+	        	result.put(null);
+			} catch(InterruptedException cantHappen) {}
         });
         
         return result;
