@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
 import java.util.Set;
+import java.util.concurrent.BlockingQueue;
 import java.util.function.LongPredicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -200,6 +201,7 @@ public class SearchEngine implements AutoCloseable {
 	/** Utility method to open the persistent cache.
 	 * 
 	 * @param cacheDir the path to the persistent cache.
+	 * @param readOnly open RocksDB read-only.
 	 * @return a RocksDB handle.
 	 */
 	public static final RocksDBData openCache(final String cacheDir, final boolean readOnly) throws RocksDBException {
@@ -672,37 +674,17 @@ public class SearchEngine implements AutoCloseable {
 		String groupId = data[0];
 		String artifactId = data[1];
 		String version = data[2];
-		resolveTime -= System.nanoTime();
-		final Set<Revision> s = resolver.resolveDependents(groupId, artifactId, version, -1, true);
-		final Set<Revision> dependentSet = new ObjectOpenHashSet<>();
 
-		// Temporary reduction in size to circumvent mergeWithCHA() crashes
-		long m = 0;
-		for (final var r : s) {
-			if (m++ == maxDependents) break;
-			dependentSet.add(r);
-		}
-
-		resolveTime += System.nanoTime();
-
-		LOGGER.debug("Found " + dependentSet.size() + " dependents");
-
-		final LongOpenHashSet dependentIds = LongOpenHashSet.toSet(dependentSet.stream().mapToLong(x -> x.id));
-		dependentIds.add(revId);
+		final BlockingQueue<Revision> s = resolver.resolveDependentsPipeline(groupId, artifactId, version, -1, true);
 
 		final ObjectLinkedOpenHashSet<Result> results = new ObjectLinkedOpenHashSet<>();
 
 		long trueDependents = 0;
 
-		for (final var iterator = dependentIds.iterator(); iterator.hasNext();) {
-			final long dependentId = iterator.nextLong();
-
-			data = Util.getGroupArtifactVersion(dependentId, context);
-
-			if (data == null) {
-				LOGGER.warn("Dependent with id " + dependentId + " not found in the database");
-				continue;
-			}
+		for (;;) {
+			var dependent = s.poll();
+			if (dependent == null) break;
+			var dependentId = dependent.id;
 
 			DirectedGraph stitchedGraph = null;
 
@@ -711,17 +693,16 @@ public class SearchEngine implements AutoCloseable {
 			if (stitchedFromCache != null) {
 				if (stitchedFromCache.length != 0) stitchedGraph = SerializationUtils.deserialize(stitchedFromCache);
 				else continue;
-			}
-			else {
-				groupId = data[0];
-				artifactId = data[1];
-				version = data[2];
-	
+			} else {
+				groupId = dependent.groupId;
+				artifactId = dependent.artifactId;
+				version = dependent.version.toString();
+
 				LOGGER.debug("Analyzing dependent " + groupId + ":" + artifactId + ":" + version);
-	
-				final byte[] depFromCache  = cache.get(dependenciesHandle, dependentIdAsByteArray);
-				
-				final LongLinkedOpenHashSet dependencyIds; 
+
+				final byte[] depFromCache = cache.get(dependenciesHandle, dependentIdAsByteArray);
+
+				final LongLinkedOpenHashSet dependencyIds;
 				if (depFromCache == null) {
 					resolveTime -= System.nanoTime();
 					final Set<Revision> dependencySet = resolver.resolveDependencies(groupId, artifactId, version, -1, context, true);
@@ -729,22 +710,21 @@ public class SearchEngine implements AutoCloseable {
 					dependencyIds.addAndMoveToFirst(dependentId);
 					resolveTime += System.nanoTime();
 					cache.put(dependenciesHandle, dependentIdAsByteArray, SerializationUtils.serialize(dependencyIds));
-				}
-				else dependencyIds = SerializationUtils.deserialize(depFromCache);
-	
-				LOGGER.debug("Dependent has " + graph.numNodes() + " nodes");	
+				} else dependencyIds = SerializationUtils.deserialize(depFromCache);
+
+				LOGGER.debug("Dependent has " + graph.numNodes() + " nodes");
 				LOGGER.debug("Found " + dependencyIds.size() + " dependencies");
-	
+
 				if (dependentId != revId && !dependencyIds.contains(revId)) {
 					LOGGER.debug("False dependent");
 					continue; // We cannot possibly reach the callable
 				}
-	
+
 				trueDependents++;
-	
+
 				stitchingTime -= System.nanoTime();
 				final var dm = new CGMerger(dependencyIds, context, rocksDao);
-	
+
 				try {
 					stitchedGraph = getStitchedGraph(dm, dependentId);
 				} catch (final Throwable t) {
@@ -752,14 +732,13 @@ public class SearchEngine implements AutoCloseable {
 					LOGGER.error("mergeWithCHA threw an exception", t);
 				}
 				stitchingTime += System.nanoTime();
-	
+
 				if (stitchedGraph == null) {
 					// Marker
 					cache.put(mergedHandle, dependentIdAsByteArray, new byte[0]);
 					LOGGER.error("mergeWithCHA returned null");
 					continue;
-				}
-				else {
+				} else {
 					stitchedGraph = ArrayImmutableDirectedGraph.copyOf(stitchedGraph, false);
 					cache.put(mergedHandle, dependentIdAsByteArray, SerializationUtils.serialize((ArrayImmutableDirectedGraph)stitchedGraph));
 				}
@@ -782,7 +761,6 @@ public class SearchEngine implements AutoCloseable {
 		Arrays.sort(array, (x, y) -> Double.compare(y.score, x.score));
 		return Arrays.asList(array);
 	}
-
 
 	@Override
 	public void close() throws Exception {

@@ -31,6 +31,10 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Scanner;
 import java.util.Set;
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.BlockingDeque;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -54,7 +58,9 @@ import eu.fasten.core.maven.data.DependencyEdge;
 import eu.fasten.core.maven.data.MavenProduct;
 import eu.fasten.core.maven.data.Revision;
 import eu.fasten.core.maven.utils.DependencyGraphUtilities;
+import it.unimi.dsi.fastutil.objects.ObjectArrayFIFOQueue;
 import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenHashSet;
+import it.unimi.dsi.fastutil.objects.ReferenceOpenHashSet;
 import picocli.CommandLine;
 
 @CommandLine.Command(name = "GraphMavenResolver")
@@ -393,6 +399,65 @@ public class GraphMavenResolver implements Runnable {
 			filterDependentsByTimestamp(StreamSupport.stream(dependentGraph.iterables().outgoingEdgesOf(rev).spliterator(), false).map(edge -> edge.target), timestamp).filter(dependent -> !result.contains(dependent)).forEach(dependent -> workQueue.add(dependent));
 		}
 		return result;
+    }
+
+    /**
+     * Resolves the dependents of the provided {@link Revision}, as specified by the provided revision details. The
+     * provided timestamp determines which nodes will be ignored when traversing dependent nodes. Effectively, the
+     * returned dependent set only includes nodes that where released AFTER the provided timestamp.
+     */
+    public BlockingQueue<Revision> resolveDependentsPipeline(String groupId, String artifactId, String version, long timestamp,
+                                                               boolean transitive) {
+        return dependentBFSPipeline(groupId, artifactId, version, timestamp, transitive);
+    }
+
+    /**
+     * Resolves the dependents of the provided {@link Revision}. The release timestamp of the provided revision is
+     * used to determine which nodes will be ignored when traversing dependent nodes. Effectively, the returned
+     * dependent set only includes nodes that where released AFTER the provided revision.
+     */
+    public BlockingQueue<Revision> resolveDependentsPipeline(Revision r, boolean transitive) {
+        return dependentBFSPipeline(r.groupId, r.artifactId, r.version.toString(), r.createdAt.getTime(), transitive);
+    }
+
+    /**
+     * Performs a Breadth-First Search on the {@param dependentGraph} to determine the revisions that depend on
+     * the revision indicated by the first 3 parameters, at the indicated {@param timestamp}.
+     *
+     * @param timestamp  - The cut-off timestamp. The returned dependents have been released after the provided timestamp
+     * @param transitive - Whether the BFS should recurse into the graph
+     */
+    public BlockingQueue<Revision> dependentBFSPipeline(String groupId, String artifactId, String version, long timestamp,
+                                                          boolean transitive) {
+        var artifact = new Revision(groupId, artifactId, version, new Timestamp(timestamp));
+
+        if (!dependentGraph.containsVertex(artifact)) {
+            throw new RuntimeException("Revision " + artifact + " is not in the dependents graph.");
+        }
+
+        var workQueue = new ObjectArrayFIFOQueue<Revision>();
+        workQueue.enqueue(artifact);
+        var seen = new ReferenceOpenHashSet<Revision>();
+        var result = new ArrayBlockingQueue<Revision>(10000);
+
+        Executors.newSingleThreadExecutor().execute(() -> {
+        	while (!workQueue.isEmpty()) {
+        		var rev = workQueue.dequeue();
+        		seen.add(rev);
+        		if (!dependentGraph.containsVertex(rev)) continue; // Ignore missing revisions
+        		result.add(rev);
+
+        		filterDependentsByTimestamp(StreamSupport.stream(dependentGraph.iterables().outgoingEdgesOf(rev).spliterator(), false).map(edge -> edge.target), timestamp).filter(dependent -> !seen.contains(dependent)).forEach(dependent -> {
+        			logger.info("Enqueueing " + dependent);
+        			workQueue.enqueue(dependent);
+        		});
+        		if (! transitive) break;
+        	}
+        	
+        	result.add(null);
+        });
+        
+        return result;
     }
 
     public ObjectLinkedOpenHashSet<Revision> filterDependenciesByExclusions(Set<Revision> dependencies,
