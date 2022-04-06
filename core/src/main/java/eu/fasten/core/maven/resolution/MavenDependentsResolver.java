@@ -37,7 +37,7 @@ public class MavenDependentsResolver {
 
     private MavenDependentsData data;
 
-    public MavenDependentsResolver(MavenDependentsData data) {
+    public void setData(MavenDependentsData data) {
         this.data = data;
     }
 

@@ -37,7 +37,8 @@ public class AbstractMavenDependentsResolverTest {
     @BeforeEach
     public void setupAbstract() {
         data = new MavenDependentsData();
-        sut = new MavenDependentsResolver(data);
+        sut = new MavenDependentsResolver();
+        sut.setData(data);
         config = new ResolverConfig();
     }
 
