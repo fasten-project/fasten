@@ -23,41 +23,15 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import java.sql.Timestamp;
-import java.util.Arrays;
 import java.util.Set;
-import java.util.stream.Collectors;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import eu.fasten.core.maven.data.Dependency;
 import eu.fasten.core.maven.data.Pom;
-import eu.fasten.core.maven.data.Revision;
 import eu.fasten.core.maven.data.VersionConstraint;
 
-public class MavenDependencyResolverTimeTest {
-
-    // target GAV is too new
-    // multi-GAV is covered
-    // timestamp <= matches
-    // timestamp > does not match
-    // simple direct dependency is too new
-    // simple transitive dependency is too new
-    // newest matching time from version ranges
-
-    private MavenDependencyData data;
-    private MavenDependencyResolver sut;
-
-    private ResolverConfig config;
-
-    @BeforeEach
-    public void setup() {
-        data = new MavenDependencyData();
-        sut = new MavenDependencyResolver();
-        sut.setData(data);
-        config = new ResolverConfig();
-    }
+public class MavenDependencyResolverTimeTest extends AbstractMavenDependencyResolverTest {
 
     @Test
     public void failsWhenSinglePomCannotBeFound() {
@@ -112,10 +86,10 @@ public class MavenDependencyResolverTimeTest {
         add(1, "a:1", "b:1");
         add(2, "b:1");
         assertThrows(MavenResolutionException.class, () -> {
-            assertDepSet(0, "a:1");
+            assertDepSetAt(0, "a:1");
         });
-        assertDepSet(1, "a:1");
-        assertDepSet(2, "a:1", "b:1");
+        assertDepSetAt(1, "a:1");
+        assertDepSetAt(2, "a:1", "b:1");
     }
 
     @Test
@@ -124,10 +98,10 @@ public class MavenDependencyResolverTimeTest {
         add(2, "b:1.1");
         add(3, "b:1.2");
         add(4, "b:1.3");
-        assertDepSet(1, "a:1");
-        assertDepSet(2, "a:1", "b:1.1");
-        assertDepSet(3, "a:1", "b:1.2");
-        assertDepSet(4, "a:1", "b:1.3");
+        assertDepSetAt(1, "a:1");
+        assertDepSetAt(2, "a:1", "b:1.1");
+        assertDepSetAt(3, "a:1", "b:1.2");
+        assertDepSetAt(4, "a:1", "b:1.3");
     }
 
     private void add(long releaseDate, String from, String... tos) {
@@ -147,19 +121,9 @@ public class MavenDependencyResolverTimeTest {
         data.add(pom);
     }
 
-    private void assertDepSet(long resolveAt, String shortBase, String... deps) {
-        var baseParts = shortBase.split(":");
-        var base = String.format("%s:%s:%s", baseParts[0], baseParts[0], baseParts[1]);
-
+    private void assertDepSetAt(long resolveAt, String... deps) {
         config.resolveAt = resolveAt;
-        var actuals = sut.resolve(Set.of(base), config);
-        var expecteds = Arrays.stream(deps) //
-                .map(dep -> dep.split(":")) //
-                .map(parts -> new Revision(parts[0], parts[0], parts[1], new Timestamp(-1L))) //
-                .collect(Collectors.toSet());
-        expecteds.add(new Revision(baseParts[0], baseParts[0], baseParts[1], new Timestamp(-1L)));
-
-        assertEquals(expecteds, actuals);
+        assertDepSet(deps);
     }
 
     private static Pom getPom(String g, String a, String v, long releaseDate) {

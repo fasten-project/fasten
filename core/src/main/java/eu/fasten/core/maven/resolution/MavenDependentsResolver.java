@@ -49,10 +49,6 @@ public class MavenDependentsResolver {
             throw new MavenResolutionException(String.format("Cannot find coordinate %s", gav));
         }
 
-        if (!config.alwaysIncludeOptional || !config.alwaysIncludeProvided) {
-            // TODO warn that interpretation is "always include"
-        }
-
         var dependents = new HashSet<Revision>();
         resolve(pom, config, dependents, new HashSet<>(), false);
         return dependents;
@@ -65,13 +61,8 @@ public class MavenDependentsResolver {
         }
     }
 
-    // timestamp
-    // versionRange
-
     private void resolve(Pom pom, ResolverConfig config, Set<Revision> dependents, Set<Object> visited,
             boolean isTransitiveDep) {
-        // assertTrue(pom.releaseDate <= config.resolveAt, "provided revision is newer
-        // than resolution date");
 
         visited.add(pom);
 

@@ -15,36 +15,14 @@
  */
 package eu.fasten.core.maven.resolution;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-
-import java.sql.Timestamp;
-import java.util.Arrays;
 import java.util.HashSet;
-import java.util.Set;
-import java.util.stream.Collectors;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import eu.fasten.core.maven.data.Dependency;
 import eu.fasten.core.maven.data.Pom;
-import eu.fasten.core.maven.data.Revision;
 
-public class MavenDependencyResolverMediationTest {
-
-    private static final String BASE = "base:1";
-
-    private Set<String> danglingGAVs;
-    private MavenDependencyData data;
-    private MavenDependencyResolver sut;
-
-    @BeforeEach
-    public void setup() {
-        danglingGAVs = new HashSet<>();
-        data = new MavenDependencyData();
-        sut = new MavenDependencyResolver();
-        sut.setData(data);
-    }
+public class MavenDependencyResolverMediationTest extends AbstractMavenDependencyResolverTest {
 
     @Test
     public void directDependency() {
@@ -150,21 +128,9 @@ public class MavenDependencyResolverMediationTest {
         data.add(pom);
     }
 
-    private void addDangling() {
+    protected void addDangling() {
         for (var gav : new HashSet<>(danglingGAVs)) {
             add(gav);
         }
-    }
-
-    private void assertDepSet(String... gavs) {
-        addDangling();
-        var baseParts = BASE.split(":");
-        var base = String.format("%s:%s:%s", baseParts[0], baseParts[0], baseParts[1]);
-        var actuals = sut.resolve(Set.of(base), new ResolverConfig());
-        var expecteds = Arrays.stream(gavs) //
-                .map(gav -> gav.split(":")) //
-                .map(parts -> new Revision(parts[0], parts[0], parts[1], new Timestamp(-1L))) //
-                .collect(Collectors.toSet());
-        assertEquals(expecteds, actuals);
     }
 }
