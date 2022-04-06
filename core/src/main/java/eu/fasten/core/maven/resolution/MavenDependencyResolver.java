@@ -165,7 +165,7 @@ public class MavenDependencyResolver {
             return true;
         }
         if (dep == PROVIDED) {
-            return alwaysIncludeProvided || request == COMPILE ||  request == TEST;
+            return alwaysIncludeProvided || request == COMPILE || request == TEST;
         }
         if (dep == RUNTIME) {
             return request == TEST;

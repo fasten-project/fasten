@@ -16,38 +16,21 @@
 package eu.fasten.core.maven.resolution;
 
 import static java.lang.String.format;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.sql.Timestamp;
 import java.util.Arrays;
-import java.util.Set;
 import java.util.stream.Collectors;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import eu.fasten.core.maven.data.Dependency;
 import eu.fasten.core.maven.data.Pom;
-import eu.fasten.core.maven.data.Revision;
 import eu.fasten.core.maven.data.VersionConstraint;
 
-public class MavenDependencyResolverVersionRangeTest {
+public class MavenDependencyResolverVersionRangeTest extends AbstractMavenDependencyResolverTest {
 
     // PLEASE NOTE: This behavior is a workaround until we support proper dependency
     // resolution. The approach is to select the most recent match in the "closest"
     // definition, which is the 20/80 solution, but not what Maven is doing.
-
-    private static final String BASE = "base:1";
-
-    private MavenDependencyData data;
-    private MavenDependencyResolver sut;
-
-    @BeforeEach
-    public void setup() {
-        data = new MavenDependencyData();
-        sut = new MavenDependencyResolver();
-        sut.setData(data);
-    }
 
     @Test
     public void directDependencyIncl() {
@@ -161,16 +144,5 @@ public class MavenDependencyResolverVersionRangeTest {
             }
         }
         add("x:3.0.0");
-    }
-
-    private void assertDepSet(String... gavs) {
-        var baseParts = BASE.split(":");
-        var base = String.format("%s:%s:%s", baseParts[0], baseParts[0], baseParts[1]);
-        var actuals = sut.resolve(Set.of(base), new ResolverConfig());
-        var expecteds = Arrays.stream(gavs) //
-                .map(gav -> gav.split(":")) //
-                .map(parts -> new Revision(parts[0], parts[0], parts[1], new Timestamp(-1L))) //
-                .collect(Collectors.toSet());
-        assertEquals(expecteds, actuals);
     }
 }

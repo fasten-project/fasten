@@ -16,42 +16,18 @@
 package eu.fasten.core.maven.resolution;
 
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.fail;
 
-import java.sql.Timestamp;
-import java.util.Arrays;
 import java.util.HashSet;
-import java.util.Set;
-import java.util.stream.Collectors;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import eu.fasten.core.maven.data.Dependency;
 import eu.fasten.core.maven.data.Pom;
-import eu.fasten.core.maven.data.Revision;
 import eu.fasten.core.maven.data.Scope;
 
-public class MavenDependencyResolverIncludeProvidedTest {
+public class MavenDependencyResolverIncludeProvidedTest extends AbstractMavenDependencyResolverTest {
 
     private static final Scope[] SCOPES = new Scope[] { Scope.COMPILE, Scope.RUNTIME, Scope.TEST };
-
-    private static final String BASE = "base:1";
-
-    private Set<String> danglingGAVs;
-    private MavenDependencyData data;
-    private MavenDependencyResolver sut;
-
-    private ResolverConfig config;
-
-    @BeforeEach
-    public void setup() {
-        danglingGAVs = new HashSet<>();
-        data = new MavenDependencyData();
-        sut = new MavenDependencyResolver();
-        sut.setData(data);
-        config = new ResolverConfig();
-    }
 
     @Test
     public void disabledByDefault() {
@@ -134,35 +110,9 @@ public class MavenDependencyResolverIncludeProvidedTest {
         data.add(pom);
     }
 
-    private void addDangling() {
+    protected void addDangling() {
         for (var gav : new HashSet<>(danglingGAVs)) {
             add(gav);
-        }
-    }
-
-    private void assertDepSet(String... gavs) {
-        addDangling();
-        var baseParts = BASE.split(":");
-        var base = String.format("%s:%s:%s", baseParts[0], baseParts[0], baseParts[1]);
-        var actuals = sut.resolve(Set.of(base), config);
-        var expecteds = Arrays.stream(gavs) //
-                .map(gav -> gav.split(":")) //
-                .map(parts -> new Revision(parts[0], parts[0], parts[1], new Timestamp(-1L))) //
-                .collect(Collectors.toSet());
-
-        if (!expecteds.equals(actuals)) {
-            var sb = new StringBuilder();
-            sb.append("Expected:\n");
-            for (var e : expecteds) {
-                sb.append("- ").append(e.groupId).append(":").append(e.artifactId).append(":").append(e.version)
-                        .append("\n");
-            }
-            sb.append("But was:\n");
-            for (var a : actuals) {
-                sb.append("- ").append(a.groupId).append(":").append(a.artifactId).append(":").append(a.version)
-                        .append("\n");
-            }
-            fail(sb.toString());
         }
     }
 

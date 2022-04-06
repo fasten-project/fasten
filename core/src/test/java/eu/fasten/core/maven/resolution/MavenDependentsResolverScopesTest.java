@@ -22,37 +22,22 @@ import static eu.fasten.core.maven.data.Scope.RUNTIME;
 import static eu.fasten.core.maven.data.Scope.SYSTEM;
 import static eu.fasten.core.maven.data.Scope.TEST;
 import static eu.fasten.core.maven.resolution.ResolverConfig.resolve;
-import static org.junit.Assert.fail;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-
-import java.sql.Timestamp;
-import java.util.Arrays;
-import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import eu.fasten.core.maven.data.Dependency;
 import eu.fasten.core.maven.data.Pom;
-import eu.fasten.core.maven.data.Revision;
 import eu.fasten.core.maven.data.Scope;
 
-public class MavenDependentsResolverScopesTest {
+public class MavenDependentsResolverScopesTest extends AbstractMavenDependentsResolverTest {
 
-    private static final String DEST = "dest:1";
     private static final String SOME_COORD = "some:coord:1.2.3";
-
-    private MavenDependentsData data;
-    private MavenDependentsResolver sut;
-
-    private ResolverConfig config;
 
     @BeforeEach
     public void setup() {
-        data = new MavenDependentsData();
-        sut = new MavenDependentsResolver(data);
-        config = new ResolverConfig();
         add(DEST);
     }
 
@@ -155,31 +140,6 @@ public class MavenDependentsResolverScopesTest {
         add("t:1", $(dest, TEST));
         add("s:1", $(dest, SYSTEM));
         add("p:1", $(dest, PROVIDED));
-    }
-
-    private void assertDependents(String shortTarget, String... depSet) {
-        var targetParts = shortTarget.split(":");
-        var target = String.format("%s:%s:%s", targetParts[0], targetParts[0], targetParts[1]);
-        var actuals = sut.resolve(target, config);
-        var expecteds = Arrays.stream(depSet) //
-                .map(gav -> gav.split(":")) //
-                .map(parts -> new Revision(parts[0], parts[0], parts[1], new Timestamp(-1L))) //
-                .collect(Collectors.toSet());
-
-        if (!expecteds.equals(actuals)) {
-            var sb = new StringBuilder();
-            sb.append("Expected:\n");
-            for (var e : expecteds) {
-                sb.append("- ").append(e.groupId).append(":").append(e.artifactId).append(":").append(e.version)
-                        .append("\n");
-            }
-            sb.append("But was:\n");
-            for (var a : actuals) {
-                sb.append("- ").append(a.groupId).append(":").append(a.artifactId).append(":").append(a.version)
-                        .append("\n");
-            }
-            fail(sb.toString());
-        }
     }
 
     private static Dep $(String coord, Scope scope) {
