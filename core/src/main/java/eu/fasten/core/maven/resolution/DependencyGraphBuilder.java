@@ -61,7 +61,9 @@ public class DependencyGraphBuilder {
             var resolverDeps = new MavenDependencyResolver();
             resolverDeps.setData(builder.dataDeps);
 
-            return new MavenResolver(new MavenDependentsResolver(builder.dataDpdt), resolverDeps);
+            var r = new MavenDependentsResolver();
+            r.setData(builder.dataDpdt);
+            return new MavenResolver(r, resolverDeps);
         } catch (RuntimeException e) {
             throw e;
         } catch (Exception e) {
