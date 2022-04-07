@@ -232,7 +232,7 @@ public class SearchEngine implements AutoCloseable {
 				RocksDB.open(dbOptions, cacheDir, cfDescriptors, columnFamilyHandles), columnFamilyHandles); 
 	}
 
-	private void cachePutMerged(final long key, ArrayImmutableDirectedGraph graph) throws RocksDBException {
+	private synchronized void cachePutMerged(final long key, ArrayImmutableDirectedGraph graph) throws RocksDBException {
 		if (graph == null) {
 			mergedCache.putAndMoveToFirst(key, NO_GRAPH);
 			cache.put(mergedHandle, Longs.toByteArray(key), new byte[0]);
@@ -242,12 +242,12 @@ public class SearchEngine implements AutoCloseable {
 		}
 	}
 	
-	private void cachePutDeps(final long key, LongLinkedOpenHashSet deps) throws RocksDBException {
+	private synchronized void cachePutDeps(final long key, LongLinkedOpenHashSet deps) throws RocksDBException {
 		depsCache.putAndMoveToFirst(key, deps);
 		cache.put(dependenciesHandle, Longs.toByteArray(key), SerializationUtils.serialize(deps));				
 	}
 
-	private ArrayImmutableDirectedGraph cacheGetMerged(final long key) throws RocksDBException {
+	private synchronized ArrayImmutableDirectedGraph cacheGetMerged(final long key) throws RocksDBException {
 		ArrayImmutableDirectedGraph merged = mergedCache.get(key);
 		if (merged != null) return merged;
 		final byte[] array = cache.get(mergedHandle, Longs.toByteArray(key));
@@ -258,7 +258,7 @@ public class SearchEngine implements AutoCloseable {
 		return merged;
 	}
 	
-	private LongLinkedOpenHashSet cacheGetDeps(final long key) throws RocksDBException {
+	private synchronized LongLinkedOpenHashSet cacheGetDeps(final long key) throws RocksDBException {
 		LongLinkedOpenHashSet deps = depsCache.get(key);
 		if (deps != null) return deps;
 		final byte[] array = cache.get(dependenciesHandle, Longs.toByteArray(key));
