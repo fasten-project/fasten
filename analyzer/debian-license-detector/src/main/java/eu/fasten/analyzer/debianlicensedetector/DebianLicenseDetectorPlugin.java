@@ -131,7 +131,7 @@ public class DebianLicenseDetectorPlugin extends Plugin {
                 String path = packageName + "/" + packageVersion;
                 var jsonOutputPayload = new JSONObject();
                 jsonOutputPayload = GetDirectoryOrFileJSON(path);
-                System.out.println(jsonOutputPayload);
+                //System.out.println(jsonOutputPayload);
                 if (jsonOutputPayload == null) {
                     logger.info("Analyzed: " + packageName + " version : " + packageVersion);
                     logger.info("The package is not present on the Debian repository.");
@@ -184,9 +184,9 @@ public class DebianLicenseDetectorPlugin extends Plugin {
                     );
                 }
 
-                //fileJson.delete();
+                fileJson.delete();
                 file.delete();
-                System.out.println("Json files deleted.");
+                //System.out.println("Json files deleted.");
 
                 packageVersion = "latest";
                 HttpGetCount = 0;
@@ -211,10 +211,10 @@ public class DebianLicenseDetectorPlugin extends Plugin {
             if (detectedLicenses == null ||
                     (detectedLicenses.getOutbound().isEmpty() && detectedLicenses.getFiles().isEmpty())
             ) {
-                System.out.println("Detected licenses is empty.");
+                logger.info("Detected licenses is empty.");
                 return Optional.empty();
             } else {
-                System.out.println("Producing the payload with the produce method.");
+                //System.out.println("Producing the payload with the produce method.");
                 return Optional.of(new JSONObject(detectedLicenses).toString());
             }
         }
@@ -231,8 +231,8 @@ public class DebianLicenseDetectorPlugin extends Plugin {
         protected Set<DetectedLicense> DebianOutboundLicenses(String packageName, String packageVersion) throws IOException, TimeoutException {
             // Retrieving the outbound license(s) from one of the copyright files (copyright, license or readme)
             JSONObject FileAndPath = retrieveCopyrightFile(packageName,packageVersion);
-            System.out.println("Inside DebianOutboundLicenses function.");
-            System.out.println(FileAndPath);
+            //System.out.println("Inside DebianOutboundLicenses function.");
+            //System.out.println(FileAndPath);
             if (FileAndPath.getString("license")!= null){
                 DetectedLicense licenseFromDebianAPI;
                 licenseFromDebianAPI = new DetectedLicense(FileAndPath.getString("license"), DetectedLicenseSource.DEBIAN_PACKAGES);
@@ -243,92 +243,7 @@ public class DebianLicenseDetectorPlugin extends Plugin {
             return Collections.emptySet();
         }
 
-
-
         /**
-         * Retrieves the outbound license of a GitHub project using its API.
-         *
-         * @param repoUrl the repository URL whose license is of interest.
-         * @return the outbound license retrieved from GitHub's API.
-         * @throws IllegalArgumentException in case the repository is not hosted on GitHub.
-         * @throws IOException              in case there was a problem contacting the GitHub API.
-         */
-        /*
-        protected DetectedDebianLicense getDebianLicenseFromGitHub(String repoUrl)
-                throws IllegalArgumentException, IOException {
-
-            // Adding "https://" in case it's missing
-            if (!Pattern.compile(Pattern.quote("http"), Pattern.CASE_INSENSITIVE).matcher(repoUrl).find()) {
-                repoUrl = "https://" + repoUrl;
-            }
-
-            // Checking whether the repo URL is a valid URL or not
-            URL parsedRepoUrl;
-            try {
-                parsedRepoUrl = new URL(repoUrl);
-            } catch (MalformedURLException e) {
-                throw new MalformedURLException("Repo URL " + repoUrl + " is not a valid URL: " + e.getMessage());
-            }
-
-            // Checking whether the repo is hosted on GitHub
-            if (!Pattern.compile(Pattern.quote("github"), Pattern.CASE_INSENSITIVE).matcher(repoUrl).find()) {
-                throw new IllegalArgumentException("Repo URL " + repoUrl + " is not hosted on GitHub.");
-            }
-
-            // Parsing the GitHub repo URL
-            String path = parsedRepoUrl.getPath();
-            String[] splitPath = path.split("/");
-            if (splitPath.length < 3) { // should be: ["/", "owner", "repo"]
-                throw new MalformedURLException(
-                        "Repo URL " + repoUrl + " has no valid path: " + Arrays.toString(splitPath));
-            }
-            String owner = splitPath[1];
-            String repo = splitPath[2].replaceAll(".git", "");
-            logger.info("Retrieving outbound license from GitHub. Owner: " + owner + ", repo: " + repo + ".");
-
-            // Result
-            DebianDetectedLicense repoLicense;
-
-            // Querying the GitHub API
-            try {
-
-                // Format: "https://api.github.com/repos/`owner`/`repo`/license"
-                URL url = new URL("https://api.github.com/repos/" + owner + "/" + repo + "/license");
-                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                conn.setRequestMethod("GET");
-                conn.setRequestProperty("Accept", "application/json");
-                if (conn.getResponseCode() != 200) {
-                    throw new RuntimeException("HTTP query failed. Error code: " + conn.getResponseCode());
-                }
-                InputStreamReader in = new InputStreamReader(conn.getInputStream());
-                BufferedReader br = new BufferedReader(in);
-                String jsonOutput = br.lines().collect(Collectors.joining());
-
-                // Retrieving the license SDPX ID
-                var jsonOutputPayload = new JSONObject(jsonOutput);
-                if (jsonOutputPayload.has("license")) {
-                    jsonOutputPayload = jsonOutputPayload.getJSONObject("license");
-                }
-                repoLicense = new DetectedLicense(jsonOutputPayload.getString("spdx_id"), DetectedLicenseSource.GITHUB);
-
-                conn.disconnect();
-            } catch (ProtocolException e) {
-                throw new ProtocolException(
-                        "Couldn't set the GET method while retrieving an outbound license from GitHub: " +
-                                e.getMessage());
-            } catch (IOException e) {
-                throw new IOException(
-                        "Couldn't get data from the HTTP response returned by GitHub's API: " + e.getMessage(),
-                        e.getCause());
-            }
-
-            return repoLicense;
-        }
-        */
-        /**
-         * ############################ TODO ########################
-         *                  Here the input topic changed.
-         *                  Integrate Magiel suggested code.
          * Retrieves the package version of the input record.
          *
          * @param json the input record containing the package version information.
@@ -352,9 +267,6 @@ public class DebianLicenseDetectorPlugin extends Plugin {
         }
 
         /**
-         * #################### TODO #####################
-         *          ....same as above...
-         *
          * Retrieves the package name of the input record.
          *
          * @param json the input record containing package information.
@@ -376,7 +288,6 @@ public class DebianLicenseDetectorPlugin extends Plugin {
             return null;
         }
 
-        // this method was calling the previous version of RetrieveLicenseAndPath, TODO check if with RetrieveLicenseAndPathJSON all it is functioning
         /**
          * Retrieves the copyright file given a package name and the package version path.
          *
@@ -410,7 +321,7 @@ public class DebianLicenseDetectorPlugin extends Plugin {
                     String licenseStr = "license";
                     String readme = "readme";
                     String license = null;
-                    System.out.println("The file name is : " + obj4.getString("name") + " Type of obj4 at index " + i + " is : " + obj4.getString("type"));
+                    //System.out.println("The file name is : " + obj4.getString("name") + " Type of obj4 at index " + i + " is : " + obj4.getString("type"));
                     //Converting both the strings to lower case for case insensitive checking
                     if (name.toLowerCase().contains(copyright)) {
                         String checksum = RetrieveChecksum(name, packageName, packageVersion);
@@ -439,7 +350,7 @@ public class DebianLicenseDetectorPlugin extends Plugin {
                     }
                 }
             } else {
-                System.out.println(" No contents key in this JSON");
+                //System.out.println(" No contents key in this JSON");
                 return LicenseAndPath;
             }
             return LicenseAndPath;
@@ -450,19 +361,19 @@ public class DebianLicenseDetectorPlugin extends Plugin {
             if (LicenseAndPath.has("result")){
                 JSONObject obj1 = LicenseAndPath.getJSONObject("result");
                 if (obj1.has("copyright")){
-                    System.out.println(obj1);
+                    //System.out.println(obj1);
                     JSONArray array1 = obj1.getJSONArray("copyright");
                     for (int j = 0; j < array1.length(); j++) {
                         JSONObject obj2 = array1.getJSONObject(j);
-                        System.out.println(obj2);
+                        //System.out.println(obj2);
                         String version = obj2.getString("version");
                         if (version.equals(packageVersion)) {
                             if (obj2.has("license")) {
                                 license = obj2.getString("license");
                                 String path = obj2.getString("path");
-                                System.out.println("Inside retrieveCopyright function.");
-                                System.out.println(LicenseAndPath);
-                                System.out.println(license);
+                                //System.out.println("Inside retrieveCopyright function.");
+                                //System.out.println(LicenseAndPath);
+                                //System.out.println(license);
                                 JSONObject obj3 = new JSONObject();
                                 obj3.put("license", license);
                                 obj3.put("path", path);
@@ -495,7 +406,6 @@ public class DebianLicenseDetectorPlugin extends Plugin {
             return checksum;
         }
 
-        // This is going to substitute the previous function called: RetrieveChecksum
         protected String RetrieveChecksumWithPath(String path) throws IOException, TimeoutException, InterruptedException {
             String checksum = null;
             var jsonOutputPayload = new JSONObject();
@@ -548,7 +458,7 @@ public class DebianLicenseDetectorPlugin extends Plugin {
                         String version = obj2.getString("version");
                         String path = obj2.getString("path");
                         if (version.equals(packageVersion)) {
-                            System.out.println(CurrentPathAndFilename);
+                            //System.out.println(CurrentPathAndFilename);
                             if (CurrentPathAndFilename != null){
                                 if (CurrentPathAndFilename.equals(path)) {
                                     if (!obj2.isNull("license")) {
@@ -563,7 +473,7 @@ public class DebianLicenseDetectorPlugin extends Plugin {
                                     filePath = obj2.getString("path");
                                     FilesCount+=1;
                                     licenseAndFilePath.put("path", filePath);
-                                    System.out.println(CurrentPathAndFilename+" and "+path+" matched!");
+                                    //System.out.println(CurrentPathAndFilename+" and "+path+" matched!");
                                 }
                             }
                         }
@@ -589,7 +499,7 @@ public class DebianLicenseDetectorPlugin extends Plugin {
         protected static JSONObject GetDirectoryOrFileJSON(String path) throws InterruptedException, RuntimeException, IOException, TimeoutException, SocketTimeoutException {
             JSONObject JSONDirectoryOrFile = new JSONObject();
             URL url = new URL("https://sources.debian.org/api/src/" + path + "/");
-            System.out.println(url);
+            //System.out.println(url);
             HttpURLConnection conn = (HttpURLConnection) url.openConnection();
             conn.setRequestMethod("GET");
             conn.setRequestProperty("Accept", "application/json");
@@ -599,7 +509,6 @@ public class DebianLicenseDetectorPlugin extends Plugin {
                 InputStreamReader in = new InputStreamReader(conn.getInputStream());
                 BufferedReader br = new BufferedReader(in);
                 String jsonOutput = br.lines().collect(Collectors.joining());
-                // searching for the copyright files in the JSON response
                 JSONDirectoryOrFile = new JSONObject(jsonOutput);
                 return JSONDirectoryOrFile;
             }
@@ -629,7 +538,7 @@ public class DebianLicenseDetectorPlugin extends Plugin {
                     }
 
                     if (JSONFiles.length() > 0) {
-                        System.out.println("JSONFiles :"+JSONFiles);
+                        //System.out.println("JSONFiles :"+JSONFiles);
                         LoopThroughFiles(JSONFiles);
                     }
                     // this loop analyzes directories in the current directory; when a dir is found recursively the
@@ -641,7 +550,7 @@ public class DebianLicenseDetectorPlugin extends Plugin {
                         String DirectoryPath = JSONDirectoryPayload.getString("path");
                         if (typeDir.equals("directory")) {
                             DirectoryPath = DirectoryPath + "/" + nameDir;
-                            System.out.println("DirectoryPath is: "+DirectoryPath);
+                            //System.out.println("DirectoryPath is: "+DirectoryPath);
                             JSONObject JSONDirectory = GetDirectoryOrFileJSON(DirectoryPath);
                             if (JSONDirectory != null){
                                 AnalyzeDirectory(JSONDirectory, packageName, packageVersion);
@@ -649,9 +558,6 @@ public class DebianLicenseDetectorPlugin extends Plugin {
                         }
                     }
                 }
-            }
-            else{
-                System.out.println("Too many files with a double entry");
             }
         }
 
@@ -667,15 +573,10 @@ public class DebianLicenseDetectorPlugin extends Plugin {
         // this method convert from milliseconds to minutes and seconds.
         protected static String ConvertMsToMins(long milliseconds) {
 
-            // formula for conversion for
-            // milliseconds to minutes.
             long minutes = (milliseconds / 1000) / 60;
 
-            // formula for conversion for
-            // milliseconds to seconds
             long seconds = (milliseconds / 1000) % 60;
 
-            // Print the output
             String output = minutes + " minutes and "
                     + seconds + " seconds.";
             return output;
@@ -690,20 +591,14 @@ public class DebianLicenseDetectorPlugin extends Plugin {
                 while ((next = br.readLine()) != null) {
                     JSONArray jsonArr = new JSONArray(next);
                     for (int i = 0; i < jsonArr.length(); i++) {
-                        //jsonArr[i].getString("path");
-                        //System.out.println(jsonArr.getString(i));
-                        //String arr= jsonArr(i);
                         JSONObject explrObject = jsonArr.getJSONObject(i);
                         String path2 = explrObject.getString("path");
-                        //double-check this loop
                         if (path2.equals(path)) {
                             LoopAlarm++;
                         }
                     }
                 }
                 if (LoopAlarm >= 2){
-                    System.out.println("LoopAlarm = "+LoopAlarm);
-                    System.out.println(path);
                     return false;
                 }
             } catch (FileNotFoundException e) {
@@ -717,16 +612,13 @@ public class DebianLicenseDetectorPlugin extends Plugin {
         // Loop through files and insert path and license into a JSONArray
         protected void LoopThroughFiles(JSONArray JSONFiles) throws IOException, TimeoutException, InterruptedException {
             JSONArray LicenseAndPathFiles = new JSONArray();
-            //JSONObject LicenseAndPathJSON = null;// = new JSONObject();
             String checksum = null;
-            System.out.println(JSONFiles);
             for (int j = 0; j < JSONFiles.length(); j++) {
                 JSONObject obj = JSONFiles.getJSONObject(j);
                 if (obj.has("path")) {
                     CurrentPathAndFilename = obj.getString("path");
                     CurrentPathAndFilename = CurrentPathAndFilename.replace(packageName+"/","");
                     CurrentPathAndFilename = CurrentPathAndFilename.replace(packageVersion+"/","");
-                    System.out.println(obj.getString("path"));
                     checksum = RetrieveChecksumWithPath(obj.getString("path"));
                 }
                 if (checksum != null) {
@@ -746,12 +638,10 @@ public class DebianLicenseDetectorPlugin extends Plugin {
                     JSONObject explrObject = LicenseAndPathFiles.getJSONObject(i);
                     String path = explrObject.getString("path");
                     String jsonFile = file.getName();
-                    System.out.println("jsonFile :"+jsonFile);
                     boolean DoubleEntries = SearchPathInJsonFile("logs/"+jsonFile, path);
                     if (!DoubleEntries){
                         NumberOfFilesWithDoubleEntries++;
                         FileDoubleEntered = path;
-                        //pathIndex++;
                     }
                 }
             }
@@ -769,14 +659,12 @@ public class DebianLicenseDetectorPlugin extends Plugin {
         protected JSONArray parseScanResult(String scanResultPath) throws IOException, JSONException {
 
             try {
-                // Retrieving the root element of the scan result file
                 JSONObject root = new JSONObject(Files.readString(Paths.get(scanResultPath)));
                 if (root.isEmpty()) {
                     throw new JSONException("Couldn't retrieve the root object of the JSON scan result file " +
                             "at " + scanResultPath + ".");
                 }
 
-                // Returning file licenses
                 if (root.has("files") && !root.isNull("files")) {
                     return root.getJSONArray("files");
                 }
@@ -784,22 +672,9 @@ public class DebianLicenseDetectorPlugin extends Plugin {
                 throw new IOException("Couldn't read the JSON scan result file at " + scanResultPath +
                         ": " + e.getMessage(), e.getCause());
             }
-
-            // In case nothing could have been found
             return null;
         }
-        
-        /*
-        @Override
-        public Optional<String> produce() {
-            if (detectedLicenses == null ||
-                    (detectedLicenses.getOutbound().isEmpty() && detectedLicenses.getFiles().isEmpty())
-            ) {
-                return Optional.empty();
-            } else {
-                return Optional.of(new JSONObject(detectedLicenses).toString());
-            }
-        }*/
+
 
         @Override
         public String getOutputPath() {
