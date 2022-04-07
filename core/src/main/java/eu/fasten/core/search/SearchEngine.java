@@ -28,6 +28,11 @@ import java.util.Scanner;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorCompletionService;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.LongPredicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -73,11 +78,12 @@ import it.unimi.dsi.fastutil.longs.LongArrayFIFOQueue;
 import it.unimi.dsi.fastutil.longs.LongCollection;
 import it.unimi.dsi.fastutil.longs.LongIterator;
 import it.unimi.dsi.fastutil.longs.LongLinkedOpenHashSet;
-import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.fastutil.longs.LongSets;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenHashSet;
+import it.unimi.dsi.fastutil.objects.ObjectSet;
+import it.unimi.dsi.fastutil.objects.ObjectSets;
 import it.unimi.dsi.lang.ObjectParser;
 
 /**
@@ -488,6 +494,7 @@ public class SearchEngine implements AutoCloseable {
 	protected static void bfs(final DirectedGraph graph, final boolean forward, final LongCollection seed, final LongPredicate filter, final Scorer scorer, final Collection<Result> results, final Map<Long, Boolean> seen) {
 		final LongArrayFIFOQueue queue = new LongArrayFIFOQueue(seed.size());
 		seed.forEach(x -> { if (seen.get(x) != Boolean.TRUE) queue.enqueue(x);}); // Load initial state
+		if (queue.isEmpty()) return; // All seed already visited
 		seed.forEach(x -> seen.put(x, Boolean.TRUE)); // Load initial state TODO: is this correct?
 		int d = -1;
 		long sentinel = queue.firstLong();
@@ -695,16 +702,16 @@ public class SearchEngine implements AutoCloseable {
 	 * the stitched graph associated with the provided revision, and returns them in a ranked list.
 	 *
 	 * @param revId the database id of a revision.
-	 * @param seed a collection of GIDs that will be used as a seed for the visit; if {@code null}, the
+	 * @param providedSeed a collection of GIDs that will be used as a seed for the visit; if {@code null}, the
 	 *            entire set of GIDs of the specified revision will be used as a seed.
 	 * @param filter a {@link LongPredicate} that will be used to filter callables.
 	 * @return a list of {@linkplain Result results}.
 	 */
-	public List<Result> to(final long revId, LongCollection seed, final LongPredicate filter) throws RocksDBException {
+	public List<Result> to(final long revId, LongCollection providedSeed, final LongPredicate filter) throws RocksDBException {
 		throwables.clear();
 		final var graph = rocksDao.getGraphData(revId);
 		if (graph == null) throw new NoSuchElementException("Revision associated with callable missing from the graph database");
-		if (seed == null) seed = graph.nodes();
+		final var seed = providedSeed == null ? graph.nodes() : providedSeed;
 
 		String[] data = Util.getGroupArtifactVersion(revId, context);
 		String groupId = data[0];
@@ -713,82 +720,102 @@ public class SearchEngine implements AutoCloseable {
 
 		final BlockingQueue<Revision> s = resolver.resolveDependentsPipeline(groupId, artifactId, version, -1, true, maxDependents);
 
-		final ObjectLinkedOpenHashSet<Result> results = new ObjectLinkedOpenHashSet<>();
+		final ObjectSet<Object> results = ObjectSets.synchronize(new ObjectLinkedOpenHashSet<>());
 
-		long trueDependents = 0;
 		var seen = new ConcurrentHashMap<Long, Boolean>(100000, .5f, Runtime.getRuntime().availableProcessors());
 
+		final int numberOfThreads = Runtime.getRuntime().availableProcessors();
+		final ExecutorService executorService = Executors.newFixedThreadPool(numberOfThreads);
+		final ExecutorCompletionService<Void> executorCompletionService = new ExecutorCompletionService<>(executorService);
+		AtomicLong trueDependents = new AtomicLong(0);
+		
 		for (;;) {
-			Revision dependent = null;
+			final Revision dependent;
 			try {
 				dependent = s.take();
-			} catch(InterruptedException cantHappen) {}
-			if (dependent == GraphMavenResolver.END) break;
-			var dependentId = dependent.id;
-
-			byte[] dependentIdAsByteArray = Longs.toByteArray(dependentId);
-			DirectedGraph stitchedGraph = cacheGetMerged(dependentId);
-			if (stitchedGraph == NO_GRAPH) continue;
-			if (stitchedGraph == null) {
-				groupId = dependent.groupId;
-				artifactId = dependent.artifactId;
-				version = dependent.version.toString();
-
-				LOGGER.debug("Analyzing dependent " + groupId + ":" + artifactId + ":" + version);
-
-				final LongLinkedOpenHashSet depFromCache = cacheGetDeps(dependentId);
-
-				final LongLinkedOpenHashSet dependencyIds;
-				if (depFromCache == null) {
-					resolveTime -= System.nanoTime();
-					final Set<Revision> dependencySet = resolver.resolveDependencies(groupId, artifactId, version, -1, context, true);
-					dependencyIds = LongLinkedOpenHashSet.toSet(dependencySet.stream().mapToLong(x -> x.id));
-					dependencyIds.addAndMoveToFirst(dependentId);
-					resolveTime += System.nanoTime();
-					cachePutDeps(dependentId, dependencyIds);
-				} else dependencyIds = depFromCache;
-
-				LOGGER.debug("Dependent has " + graph.numNodes() + " nodes");
-				LOGGER.debug("Found " + dependencyIds.size() + " dependencies");
-
-				if (dependentId != revId && !dependencyIds.contains(revId)) {
-					LOGGER.debug("False dependent");
-					continue; // We cannot possibly reach the callable
-				}
-
-				trueDependents++;
-
-				stitchingTime -= System.nanoTime();
-				final var dm = new CGMerger(dependencyIds, context, rocksDao);
-
-				try {
-					stitchedGraph = getStitchedGraph(dm, dependentId);
-				} catch (final Throwable t) {
-					throwables.add(t);
-					LOGGER.error("mergeWithCHA threw an exception", t);
-				}
-				stitchingTime += System.nanoTime();
-
-				if (stitchedGraph == null) {
-					cachePutMerged(dependentId, null);
-					LOGGER.error("mergeWithCHA returned null on gid " + dependentId);
-					continue;
-				} else {
-					stitchedGraph = ArrayImmutableDirectedGraph.copyOf(stitchedGraph, false);
-					cachePutMerged(dependentId, (ArrayImmutableDirectedGraph)stitchedGraph);
-				}
+			} catch(InterruptedException cantHappen) {
+				break;
+			}
+			if (dependent == GraphMavenResolver.END) {
+				break;
 			}
 
-			LOGGER.debug("Stiched graph has " + stitchedGraph.numNodes() + " nodes");
-			final int sizeBefore = results.size();
+			executorCompletionService.submit(() ->  {
+				var dependentId = dependent.id;
 
-			visitTime -= System.nanoTime();
-			bfs(stitchedGraph, false, seed, filter, scorer, results, seen);
-			visitTime += System.nanoTime();
+				DirectedGraph stitchedGraph = cacheGetMerged(dependentId);
+				if (stitchedGraph == NO_GRAPH) return null;
+				if (stitchedGraph == null) {
+					LOGGER.debug("Analyzing dependent " + dependent.groupId + ":" + dependent.artifactId + ":" + dependent.version.toString());
 
-			LOGGER.debug("Found " + (results.size() - sizeBefore) + " coreachable nodes");
+					final LongLinkedOpenHashSet depFromCache = cacheGetDeps(dependentId);
+
+					final LongLinkedOpenHashSet dependencyIds;
+					if (depFromCache == null) {
+						resolveTime -= System.nanoTime();
+						final Set<Revision> dependencySet = resolver.resolveDependencies(dependent.groupId, dependent.artifactId, dependent.version.toString(), -1, context, true);
+						dependencyIds = LongLinkedOpenHashSet.toSet(dependencySet.stream().mapToLong(x -> x.id));
+						dependencyIds.addAndMoveToFirst(dependentId);
+						resolveTime += System.nanoTime();
+						cachePutDeps(dependentId, dependencyIds);
+					} else dependencyIds = depFromCache;
+
+					LOGGER.debug("Dependent has " + graph.numNodes() + " nodes");
+					LOGGER.debug("Found " + dependencyIds.size() + " dependencies");
+
+					if (dependentId != revId && !dependencyIds.contains(revId)) {
+						LOGGER.debug("False dependent");
+						return null; // We cannot possibly reach the callable
+					}
+
+					trueDependents.incrementAndGet();
+
+					stitchingTime -= System.nanoTime();
+					final var dm = new CGMerger(dependencyIds, context, rocksDao);
+
+					try {
+						stitchedGraph = getStitchedGraph(dm, dependentId);
+					} catch (final Throwable t) {
+						throwables.add(t);
+						LOGGER.error("mergeWithCHA threw an exception", t);
+					}
+					stitchingTime += System.nanoTime();
+
+					if (stitchedGraph == null) {
+						cachePutMerged(dependentId, null);
+						LOGGER.error("mergeWithCHA returned null on gid " + dependentId);
+						return null;
+					} else {
+						stitchedGraph = ArrayImmutableDirectedGraph.copyOf(stitchedGraph, false);
+						cachePutMerged(dependentId, (ArrayImmutableDirectedGraph)stitchedGraph);
+					}
+				}
+
+				LOGGER.debug("Stiched graph has " + stitchedGraph.numNodes() + " nodes");
+				final int sizeBefore = results.size();
+
+				visitTime -= System.nanoTime();
+				bfs(stitchedGraph, false, seed, filter, scorer, results, seen);
+				visitTime += System.nanoTime();
+
+				LOGGER.debug("Found " + (results.size() - sizeBefore) + " coreachable nodes");
+				
+				return null;
+			});
 		}
 
+		try {
+			for(int i = 0; i <numberOfThreads; i++) executorCompletionService.take().get();
+		} catch (final InterruptedException e) {
+			throw new RuntimeException(e);
+		} catch (final ExecutionException e) {
+			final Throwable cause = e.getCause();
+			throw new RuntimeException(cause);
+		} finally {
+			executorService.shutdown();
+		}
+
+		
 		LOGGER.debug("Found " + trueDependents + " true dependents");
 		LOGGER.debug("Found overall " + results.size() + " coreachable nodes");
 
