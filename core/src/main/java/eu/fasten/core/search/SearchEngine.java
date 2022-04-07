@@ -720,7 +720,7 @@ public class SearchEngine implements AutoCloseable {
 
 		final BlockingQueue<Revision> s = resolver.resolveDependentsPipeline(groupId, artifactId, version, -1, true, maxDependents);
 
-		final ObjectSet<Object> results = ObjectSets.synchronize(new ObjectLinkedOpenHashSet<>());
+		final ObjectSet<Result> results = ObjectSets.synchronize(new ObjectLinkedOpenHashSet<Result>());
 
 		var seen = new ConcurrentHashMap<Long, Boolean>(100000, .5f, Runtime.getRuntime().availableProcessors());
 
