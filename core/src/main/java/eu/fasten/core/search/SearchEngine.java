@@ -728,7 +728,8 @@ public class SearchEngine implements AutoCloseable {
 		final ExecutorService executorService = Executors.newFixedThreadPool(numberOfThreads);
 		final ExecutorCompletionService<Void> executorCompletionService = new ExecutorCompletionService<>(executorService);
 		AtomicLong trueDependents = new AtomicLong(0);
-		
+		long tasks = 0;
+
 		for (;;) {
 			final Revision dependent;
 			try {
@@ -740,6 +741,7 @@ public class SearchEngine implements AutoCloseable {
 				break;
 			}
 
+			tasks++;
 			executorCompletionService.submit(() ->  {
 				var dependentId = dependent.id;
 
@@ -805,7 +807,7 @@ public class SearchEngine implements AutoCloseable {
 		}
 
 		try {
-			for(int i = 0; i <numberOfThreads; i++) executorCompletionService.take().get();
+			while(tasks-- != 0) executorCompletionService.take().get();
 		} catch (final InterruptedException e) {
 			throw new RuntimeException(e);
 		} catch (final ExecutionException e) {
