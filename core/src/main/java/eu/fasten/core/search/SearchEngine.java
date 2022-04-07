@@ -93,6 +93,7 @@ import it.unimi.dsi.lang.ObjectParser;
 
 public class SearchEngine implements AutoCloseable {
 	private static final Logger LOGGER = LoggerFactory.getLogger(SearchEngine.class);
+	private static final ArrayImmutableDirectedGraph NO_GRAPH = new ArrayImmutableDirectedGraph.Builder().build();
 
 	private static final int DEFAULT_LIMIT = 10;
 
@@ -223,8 +224,13 @@ public class SearchEngine implements AutoCloseable {
 	}
 
 	private void cachePutMerged(final long key, ArrayImmutableDirectedGraph graph) throws RocksDBException {
-		mergedCache.putAndMoveToFirst(key, graph);
-		cache.put(mergedHandle, Longs.toByteArray(key), SerializationUtils.serialize(graph));		
+		if (graph == null) {
+			mergedCache.putAndMoveToFirst(key, NO_GRAPH);
+			cache.put(mergedHandle, Longs.toByteArray(key), new byte[0]);
+		} else {
+			mergedCache.putAndMoveToFirst(key, graph);
+			cache.put(mergedHandle, Longs.toByteArray(key), SerializationUtils.serialize(graph));
+		}
 	}
 	
 	private void cachePutDeps(final long key, LongLinkedOpenHashSet deps) throws RocksDBException {
@@ -237,8 +243,8 @@ public class SearchEngine implements AutoCloseable {
 		if (merged != null) return merged;
 		final byte[] array = cache.get(mergedHandle, Longs.toByteArray(key));
 		if (array == null) return null;
-		if (array.length == 0) throw new NullPointerException("mergeWithCHA returned null on gid " + key);
-		merged = SerializationUtils.deserialize(array);
+		if (array.length == 0) merged = NO_GRAPH;
+		else merged = SerializationUtils.deserialize(array);
 		mergedCache.putAndMoveToFirst(key, merged);
 		return merged;
 	}
@@ -579,9 +585,9 @@ public class SearchEngine implements AutoCloseable {
 
 		LOGGER.debug("Revision call graph has " + graph.numNodes() + " nodes");
 
-		DirectedGraph stitchedGraph = null;
-		ArrayImmutableDirectedGraph stitchedFromCache = cacheGetMerged(rev);
-		if (stitchedFromCache == null) {
+		DirectedGraph stitchedGraph = cacheGetMerged(rev);
+		if (stitchedGraph == NO_GRAPH) throw new NullPointerException("mergeWithCHA() returned null on gid " + rev);
+		if (stitchedGraph == null) {
 			final Record2<String, String> record = context.select(Packages.PACKAGES.PACKAGE_NAME, PackageVersions.PACKAGE_VERSIONS.VERSION).from(PackageVersions.PACKAGE_VERSIONS).join(Packages.PACKAGES).on(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.eq(Packages.PACKAGES.ID)).where(PackageVersions.PACKAGE_VERSIONS.ID.eq(Long.valueOf(rev))).fetchOne();
 			final String[] a = record.component1().split(":");
 			final String groupId = a[0];
@@ -609,8 +615,7 @@ public class SearchEngine implements AutoCloseable {
 			stitchingTime += System.nanoTime();
 
 			if (stitchedGraph == null) {
-				// TODO
-				cache.put(mergedHandle, Longs.toByteArray(rev), new byte[0]);
+				cachePutMerged(rev, null);
 				throw new NullPointerException("mergeWithCHA() returned null on gid " + rev);
 			}
 			else {
@@ -718,12 +723,10 @@ public class SearchEngine implements AutoCloseable {
 			if (dependent == GraphMavenResolver.END) break;
 			var dependentId = dependent.id;
 
-			DirectedGraph stitchedGraph = null;
-
 			byte[] dependentIdAsByteArray = Longs.toByteArray(dependentId);
-			ArrayImmutableDirectedGraph stitchedFromCache = cacheGetMerged(dependentId);
-			if (stitchedFromCache == null) {
-
+			DirectedGraph stitchedGraph = cacheGetMerged(dependentId);
+			if (stitchedGraph == NO_GRAPH) continue;
+			if (stitchedGraph == null) {
 				groupId = dependent.groupId;
 				artifactId = dependent.artifactId;
 				version = dependent.version.toString();
@@ -764,8 +767,7 @@ public class SearchEngine implements AutoCloseable {
 				stitchingTime += System.nanoTime();
 
 				if (stitchedGraph == null) {
-					// Marker
-					cache.put(mergedHandle, dependentIdAsByteArray, new byte[0]);
+					cachePutMerged(dependentId, null);
 					LOGGER.error("mergeWithCHA returned null on gid " + dependentId);
 					continue;
 				} else {

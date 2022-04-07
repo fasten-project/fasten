@@ -451,10 +451,7 @@ public class GraphMavenResolver implements Runnable {
 					if (countDown-- == 0) break;
 				} catch(InterruptedException cantHappen) {}
 
-        		filterDependentsByTimestamp(StreamSupport.stream(dependentGraph.iterables().outgoingEdgesOf(rev).spliterator(), false).map(edge -> edge.target), timestamp).filter(dependent -> !seen.contains(dependent)).forEach(dependent -> {
-        			logger.info("Enqueueing " + dependent);
-        			workQueue.enqueue(dependent);
-        		});
+        		filterDependentsByTimestamp(StreamSupport.stream(dependentGraph.iterables().outgoingEdgesOf(rev).spliterator(), false).map(edge -> edge.target), timestamp).filter(dependent -> !seen.contains(dependent)).forEach(dependent -> workQueue.enqueue(dependent));
         		if (! transitive) break;
         	}
         	

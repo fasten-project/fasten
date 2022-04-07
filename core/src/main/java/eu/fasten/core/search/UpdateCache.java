@@ -108,7 +108,7 @@ public class UpdateCache {
 			pl.update();
 			final long gid = Longs.fromByteArray(key);
 
-			if (gid == 76535 || gid == 104122 || gid == 122038 || gid == 132690 || gid == 132691 || gid == 573488 || gid == 55880 || gid == 86579 || gid == 99329 || gid == 115386 || gid == 122413 || gid == 173194 || gid == 173207 || gid == 175286) {
+			if (gid == 76535 || gid == 104122 || gid == 122038 || gid == 132690 || gid == 132691 || gid == 573488 || gid == 55880 || gid == 86579 || gid == 99329 || gid == 115386 || gid == 122413 || gid == 173194 || gid == 173207 || gid == 175286 || gid == 213295) {
 				LOGGER.info("Skipping potential OOM caused by graph with gid " + gid);
 				continue;
 			}
