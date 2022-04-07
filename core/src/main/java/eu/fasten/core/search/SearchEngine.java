@@ -22,10 +22,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.LongPredicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -65,6 +67,7 @@ import eu.fasten.core.search.predicate.CachingPredicateFactory;
 import eu.fasten.core.search.predicate.PredicateFactory;
 import eu.fasten.core.search.predicate.PredicateFactory.MetadataSource;
 import it.unimi.dsi.fastutil.HashCommon;
+import it.unimi.dsi.fastutil.longs.Long2BooleanOpenHashMap;
 import it.unimi.dsi.fastutil.longs.Long2ObjectLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongArrayFIFOQueue;
 import it.unimi.dsi.fastutil.longs.LongCollection;
@@ -482,11 +485,10 @@ public class SearchEngine implements AutoCloseable {
 	 * @param results a list of {@linkplain Result results} that will be filled during the visit;
 	 *            pre-existing results will not be modified.
 	 */
-	protected static void bfs(final DirectedGraph graph, final boolean forward, final LongCollection seed, final LongPredicate filter, final Scorer scorer, final Collection<Result> results) {
+	protected static void bfs(final DirectedGraph graph, final boolean forward, final LongCollection seed, final LongPredicate filter, final Scorer scorer, final Collection<Result> results, final Map<Long, Boolean> seen) {
 		final LongArrayFIFOQueue queue = new LongArrayFIFOQueue(seed.size());
-		seed.forEach(x -> queue.enqueue(x)); // Load initial state
-		final LongOpenHashSet seen = new LongOpenHashSet();
-		seed.forEach(x -> seen.add(x)); // Load initial state
+		seed.forEach(x -> { if (seen.get(x) != Boolean.TRUE) queue.enqueue(x);}); // Load initial state
+		seed.forEach(x -> seen.put(x, Boolean.TRUE)); // Load initial state TODO: is this correct?
 		int d = -1;
 		long sentinel = queue.firstLong();
 		final Result probe = new Result();
@@ -511,7 +513,7 @@ public class SearchEngine implements AutoCloseable {
 
 			while (iterator.hasNext()) {
 				final long x = iterator.nextLong();
-				if (seen.add(x)) {
+				if (seen.put(x, Boolean.TRUE) != Boolean.TRUE) {
 					if (sentinel == -1) sentinel = x;
 					queue.enqueue(x);
 				}
@@ -629,7 +631,7 @@ public class SearchEngine implements AutoCloseable {
 		final ObjectLinkedOpenHashSet<Result> results = new ObjectLinkedOpenHashSet<>();
 
 		visitTime -= System.nanoTime();
-		bfs(stitchedGraph, true, seed, filter, scorer, results);
+		bfs(stitchedGraph, true, seed, filter, scorer, results, new Long2BooleanOpenHashMap());
 		visitTime += System.nanoTime();
 
 		LOGGER.debug("Found " + results.size() + " reachable nodes");
@@ -714,6 +716,7 @@ public class SearchEngine implements AutoCloseable {
 		final ObjectLinkedOpenHashSet<Result> results = new ObjectLinkedOpenHashSet<>();
 
 		long trueDependents = 0;
+		var seen = new ConcurrentHashMap<Long, Boolean>(100000, .5f, Runtime.getRuntime().availableProcessors());
 
 		for (;;) {
 			Revision dependent = null;
@@ -780,7 +783,7 @@ public class SearchEngine implements AutoCloseable {
 			final int sizeBefore = results.size();
 
 			visitTime -= System.nanoTime();
-			bfs(stitchedGraph, false, seed, filter, scorer, results);
+			bfs(stitchedGraph, false, seed, filter, scorer, results, seen);
 			visitTime += System.nanoTime();
 
 			LOGGER.debug("Found " + (results.size() - sizeBefore) + " coreachable nodes");
