@@ -18,20 +18,18 @@
 
 package eu.fasten.analyzer.restapiplugin;
 
-import static java.util.stream.Collectors.toList;
-import static java.util.stream.Collectors.toSet;
+import eu.fasten.core.data.Constants;
+import eu.fasten.core.maven.MavenResolver;
+import eu.fasten.core.maven.utils.MavenUtilities;
+import org.json.JSONObject;
 
 import java.io.IOException;
-import java.sql.Timestamp;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
-import org.json.JSONObject;
-
-import eu.fasten.core.data.Constants;
-import eu.fasten.core.maven.MavenResolver;
-import eu.fasten.core.maven.utils.MavenUtilities;
+import static java.util.stream.Collectors.toList;
+import static java.util.stream.Collectors.toSet;
 
 public class LazyIngestionProvider {
 
@@ -66,8 +64,6 @@ public class LazyIngestionProvider {
             	// TODO why is the date necessary?
                 jsonRecord.put("date", date);
             }
-            Timestamp curTime = new Timestamp(System.currentTimeMillis());
-            KnowledgeBaseConnector.kbDao.insertIngestedArtifact(toKey(packageName, version), "0.0.1-SNAPSHOT");
             if (KnowledgeBaseConnector.kafkaProducer != null && KnowledgeBaseConnector.ingestTopic != null) {
                 KafkaWriter.sendToKafka(KnowledgeBaseConnector.kafkaProducer, KnowledgeBaseConnector.ingestTopic, jsonRecord.toString());
             }

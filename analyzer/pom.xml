@@ -22,11 +22,11 @@
     <parent>
         <groupId>eu.fasten</groupId>
         <artifactId>parent</artifactId>
-        <version>0.0.4-SNAPSHOT</version>
+        <version>0.0.5-SNAPSHOT</version>
     </parent>
 
     <artifactId>analyzer</artifactId>
-    <version>0.0.4-SNAPSHOT</version>
+    <version>0.0.5-SNAPSHOT</version>
     <packaging>pom</packaging>
     <description>Collection of FASTEN-specific graph analyses.</description>
 
@@ -43,6 +43,10 @@
         <module>vulnerability-statements-processor</module>
         <module>vulnerability-packages-listener</module>
         <module>dummy-plugin</module>
+        <module>debian-license-detector</module>
+        <module>debian-license-feeder</module>
+        <module>license-detector</module>
+        <module>license-feeder</module>
         <module>python-license-detector</module>
         <module>python-license-feeder</module>
     </modules>

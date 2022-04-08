@@ -1,23 +1,21 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="http://maven.apache.org/POM/4.0.0"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-
-    <modelVersion>4.0.0</modelVersion>
-
     <parent>
         <artifactId>analyzer</artifactId>
         <groupId>eu.fasten</groupId>
         <version>0.0.5-SNAPSHOT</version>
     </parent>
+    <modelVersion>4.0.0</modelVersion>
 
     <groupId>eu.fasten.analyzer</groupId>
-    <artifactId>vulnerability-packages-listener</artifactId>
+    <artifactId>debian-license-detector</artifactId>
     <version>0.0.5-SNAPSHOT</version>
     <packaging>jar</packaging>
-    <name>vulnerability-packages-listener</name>
 
-    <!--    Dependencies-->
+    <name>debian-license-detector</name>
+
     <dependencies>
         <dependency>
             <groupId>eu.fasten</groupId>
@@ -25,27 +23,35 @@
             <version>0.0.5-SNAPSHOT</version>
         </dependency>
         <dependency>
-            <groupId>org.jooq</groupId>
-            <artifactId>jooq</artifactId>
-            <version>3.14.15</version>
-            <scope>provided</scope>
+            <groupId>org.apache.maven</groupId>
+            <artifactId>maven-model</artifactId>
+            <version>3.8.1</version>
         </dependency>
         <dependency>
-            <groupId>eu.fasten.analyzer</groupId>
-            <artifactId>vulnerability-statements-processor</artifactId>
-            <version>0.0.5-SNAPSHOT</version>
-            <scope>compile</scope>
+            <groupId>org.json</groupId>
+            <artifactId>json</artifactId>
+            <version>20180813</version>
         </dependency>
     </dependencies>
 
-    <!--    Build-->
     <build>
-        <testSourceDirectory>${project.basedir}/src/test/java/</testSourceDirectory>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.8.1</version>
+                <configuration>
+                    <annotationProcessors>
+                        <annotationProcessor>org.pf4j.processor.ExtensionAnnotationProcessor</annotationProcessor>
+                    </annotationProcessors>
+                    <source>1.11</source>
+                    <target>1.11</target>
+                </configuration>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-shade-plugin</artifactId>
-                <version>3.2.1</version>
                 <executions>
                     <execution>
                         <phase>package</phase>
@@ -59,20 +65,20 @@
                                 <excludes>
                                     <exclude>org.slf4j:slf4j-simple:*</exclude>
                                     <exclude>org.slf4j:slf4j-api:*</exclude>
-                                    <exclude>org.apache.kafka:kafka-clients:*</exclude>
                                 </excludes>
                             </artifactSet>
                             <transformers>
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                <transformer
+                                        implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                                     <manifestEntries>
-                                        <Main-Class>eu.fasten.analyzer.vulnerabilitypackageslistener.Main</Main-Class>
                                         <X-Compile-Source-JDK>11</X-Compile-Source-JDK>
                                         <X-Compile-Target-JDK>11</X-Compile-Target-JDK>
-                                        <Plugin-Class>eu.fasten.analyzer.vulnerabilitypackageslistener.VulnerabilityPackagesListener</Plugin-Class>
-                                        <Plugin-Id>vulnerability-packages-listener</Plugin-Id>
+                                        <Plugin-Class>eu.fasten.analyzer.debianlicensedetector.DebianLicenseDetectorPlugin
+                                        </Plugin-Class>
+                                        <Plugin-Id>license-detector</Plugin-Id>
                                         <Plugin-Version>0.0.1</Plugin-Version>
                                         <Plugin-Description>
-                                            Listens to package updates and trigger re-processing of vulnerability statements.
+                                            Detects licenses of a repository.
                                         </Plugin-Description>
                                         <Plugin-License>Apache License 2.0</Plugin-License>
                                     </manifestEntries>
@@ -97,37 +103,16 @@
                                 <exclude>eu/fasten/core/plugins/*</exclude>
                             </excludes>
                         </filter>
+                        <filter>
+                            <artifact>org.apache.kafka:*</artifact>
+                            <excludes>
+                                <exclude>org/apache/kafka/**</exclude>
+                            </excludes>
+                        </filter>
                     </filters>
-                </configuration>
-            </plugin>
-
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.8.1</version>
-                <configuration>
-                    <annotationProcessors>
-                        <annotationProcessor>org.pf4j.processor.ExtensionAnnotationProcessor</annotationProcessor>
-                    </annotationProcessors>
-                    <source>1.11</source>
-                    <target>1.11</target>
                 </configuration>
             </plugin>
         </plugins>
     </build>
 
-    <!--    Reporting-->
-    <reporting>
-        <plugins>
-            <plugin>
-                <groupId>org.jacoco</groupId>
-                <artifactId>jacoco-maven-plugin</artifactId>
-                <version>0.8.2</version>
-                <configuration>
-                    <excludes>
-                    </excludes>
-                </configuration>
-            </plugin>
-        </plugins>
-    </reporting>
 </project>

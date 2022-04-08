@@ -8,12 +8,12 @@
 	<parent>
 		<artifactId>analyzer</artifactId>
 		<groupId>eu.fasten</groupId>
-		<version>0.0.4-SNAPSHOT</version>
+		<version>0.0.5-SNAPSHOT</version>
 	</parent>
 
 	<groupId>eu.fasten.analyzer</groupId>
 	<artifactId>javacg-opal</artifactId>
-	<version>0.0.4-SNAPSHOT</version>
+	<version>0.0.5-SNAPSHOT</version>
 	<packaging>jar</packaging>
 
 	<name>javacg-opal</name>
@@ -22,7 +22,7 @@
 		<dependency>
 			<groupId>eu.fasten</groupId>
 			<artifactId>core</artifactId>
-			<version>0.0.4-SNAPSHOT</version>
+			<version>0.0.5-SNAPSHOT</version>
 		</dependency>
 		<dependency>
 			<groupId>de.opal-project</groupId>

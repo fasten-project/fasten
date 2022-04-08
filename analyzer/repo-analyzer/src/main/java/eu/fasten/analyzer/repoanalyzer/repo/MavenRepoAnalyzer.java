@@ -139,7 +139,7 @@ public class MavenRepoAnalyzer extends RepoAnalyzer {
         var artifact = plugin.addElement("artifactId");
         artifact.setText("jacoco-maven-plugin");
         var version = plugin.addElement("version");
-        version.setText("0.8.2");
+        version.setText("0.8.7");
         var executions = plugin.addElement("executions");
         var execution1 = executions.addElement("execution");
         var goals1 = execution1.addElement("goals");
