@@ -1,4 +1,4 @@
-package eu.fasten.analyzer.pythonlicensedetector.license;
+package eu.fasten.analyzer.licensedetector.license;
 
 import org.json.JSONArray;
 
