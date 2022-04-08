@@ -8,7 +8,9 @@ public enum DetectedLicenseSource {
     LOCAL_POM("Local pom file"),
     MAVEN_CENTRAL("Maven central"),
     PYPI("PyPi APIs"),
+    DEBIAN_PACKAGES("Debian packages"),
     GITHUB("GitHub APIs");
+
 
     private final String description;
 
