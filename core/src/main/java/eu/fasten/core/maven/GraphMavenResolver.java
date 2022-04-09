@@ -407,8 +407,8 @@ public class GraphMavenResolver implements Runnable {
      * returned dependent set only includes nodes that where released AFTER the provided timestamp.
      */
     public BlockingQueue<Revision> resolveDependentsPipeline(String groupId, String artifactId, String version, long timestamp,
-                                                               boolean transitive, long maxDeps) {
-        return dependentBFSPipeline(groupId, artifactId, version, timestamp, transitive, maxDeps);
+                                                               boolean transitive, long maxDeps, int numberOfThreads) {
+        return dependentBFSPipeline(groupId, artifactId, version, timestamp, transitive, maxDeps, numberOfThreads);
     }
 
     /**
@@ -416,8 +416,8 @@ public class GraphMavenResolver implements Runnable {
      * used to determine which nodes will be ignored when traversing dependent nodes. Effectively, the returned
      * dependent set only includes nodes that where released AFTER the provided revision.
      */
-    public BlockingQueue<Revision> resolveDependentsPipeline(Revision r, boolean transitive, long maxDeps) {
-        return dependentBFSPipeline(r.groupId, r.artifactId, r.version.toString(), r.createdAt.getTime(), transitive, maxDeps);
+    public BlockingQueue<Revision> resolveDependentsPipeline(Revision r, boolean transitive, long maxDeps, int numberOfThreads) {
+        return dependentBFSPipeline(r.groupId, r.artifactId, r.version.toString(), r.createdAt.getTime(), transitive, maxDeps, numberOfThreads);
     }
 
     /**
@@ -426,9 +426,10 @@ public class GraphMavenResolver implements Runnable {
      *
      * @param timestamp  - The cut-off timestamp. The returned dependents have been released after the provided timestamp
      * @param transitive - Whether the BFS should recurse into the graph
+     * @param numberOfThreads 
      */
     public BlockingQueue<Revision> dependentBFSPipeline(String groupId, String artifactId, String version, long timestamp,
-                                                          boolean transitive, final long maxDeps) {
+                                                          boolean transitive, final long maxDeps, int numberOfThreads) {
         var artifact = new Revision(groupId, artifactId, version, new Timestamp(timestamp));
 
         if (!dependentGraph.containsVertex(artifact)) {
@@ -456,7 +457,7 @@ public class GraphMavenResolver implements Runnable {
         	}
         	
 			try {
-                result.put(END);
+				for(int i = 0; i < numberOfThreads; i++) result.put(END);
 			} catch(InterruptedException cantHappen) {}
         });
         
