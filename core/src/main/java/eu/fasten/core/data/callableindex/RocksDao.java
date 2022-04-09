@@ -126,6 +126,7 @@ public class RocksDao implements Closeable, Iterable<byte[]> {
         initKryo();
     }
 
+    // Commodity method for BeanShell scripts: do not use concurrently
     public Iterator<byte[]> iterator() {
     	final RocksIterator i = rocksDb.newIterator();
     	i.seekToFirst();
@@ -226,7 +227,9 @@ public class RocksDao implements Closeable, Iterable<byte[]> {
                 }
             }
         }
-        rocksDb.put(metadataHandle, Longs.toByteArray(extendedGidGraph.getIndex()), 0, 8, fbaos.array, 0, fbaos.length);
+        synchronized(this) {
+        	rocksDb.put(metadataHandle, Longs.toByteArray(extendedGidGraph.getIndex()), 0, 8, fbaos.array, 0, fbaos.length);
+        }
     }
 
     /**
@@ -288,7 +291,9 @@ public class RocksDao implements Closeable, Iterable<byte[]> {
             kryo.writeObject(bbo, graph);
             bbo.flush();
             // Write to DB
-            rocksDb.put(defaultHandle, Longs.toByteArray(index), 0, 8, fbaos.array, 0, fbaos.length);
+            synchronized(this) {
+            	rocksDb.put(defaultHandle, Longs.toByteArray(index), 0, 8, fbaos.array, 0, fbaos.length);
+            }
             return graph;
         } else {
             /*
@@ -381,7 +386,9 @@ public class RocksDao implements Closeable, Iterable<byte[]> {
             kryo.writeObject(bbo, GID2LID);
             bbo.flush();
             // Write to DB
-            rocksDb.put(defaultHandle, Longs.toByteArray(index), 0, 8, fbaos.array, 0, fbaos.length);
+            synchronized(this) {
+            	rocksDb.put(defaultHandle, Longs.toByteArray(index), 0, 8, fbaos.array, 0, fbaos.length);
+            }
 			final var fileProperties = new File(file + BVGraph.PROPERTIES_EXTENSION);
 			final var fileOffsets = new File(file + BVGraph.OFFSETS_EXTENSION);
 			final var fileGraph = new File(file + BVGraph.GRAPH_EXTENSION);
@@ -419,7 +426,10 @@ public class RocksDao implements Closeable, Iterable<byte[]> {
      */
     public DirectedGraph getGraphData(final long index) throws RocksDBException {
         try {
-            final byte[] buffer = rocksDb.get(Longs.toByteArray(index));
+            final byte[] buffer;
+            synchronized(this) {
+                buffer = rocksDb.get(Longs.toByteArray(index));            	
+            }
             final Input input = new Input(buffer);
             assert kryo != null;
 
@@ -502,7 +512,9 @@ public class RocksDao implements Closeable, Iterable<byte[]> {
 
     private byte[] getMetaData(final long index) {
         try {
-            return rocksDb.get(metadataHandle, Longs.toByteArray(index));
+        	synchronized(this) {
+        		return rocksDb.get(metadataHandle, Longs.toByteArray(index));
+        	}
         } catch (RocksDBException e) {
             throw new RuntimeException(e);
         }
@@ -517,8 +529,10 @@ public class RocksDao implements Closeable, Iterable<byte[]> {
      */
     public boolean deleteCallGraph(final long index) {
         try {
-            rocksDb.delete(defaultHandle, Longs.toByteArray(index));
-            rocksDb.delete(metadataHandle, Longs.toByteArray(index));
+        	synchronized(this) {
+        		rocksDb.delete(defaultHandle, Longs.toByteArray(index));
+        		rocksDb.delete(metadataHandle, Longs.toByteArray(index));
+        	}
         } catch (final RocksDBException e) {
             logger.error("Could not delete graph with index " + index, e);
             return false;
@@ -532,7 +546,10 @@ public class RocksDao implements Closeable, Iterable<byte[]> {
             defaultHandle.close();
         }
         if (rocksDb != null) {
-            rocksDb.close();
+        	synchronized(this) {
+                rocksDb.close();
+        		
+        	}
         }
     }
 }
