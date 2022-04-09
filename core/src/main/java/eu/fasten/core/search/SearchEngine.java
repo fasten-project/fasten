@@ -35,7 +35,6 @@ import java.util.function.LongPredicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.commons.lang3.SerializationUtils;
 import org.jooq.DSLContext;
 import org.jooq.Record2;
 import org.jooq.conf.ParseUnknownFunctions;
@@ -48,7 +47,6 @@ import org.rocksdb.RocksDBException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.primitives.Longs;
 import com.martiansoftware.jsap.JSAP;
 import com.martiansoftware.jsap.JSAPResult;
 import com.martiansoftware.jsap.Parameter;
@@ -70,7 +68,6 @@ import eu.fasten.core.search.predicate.CachingPredicateFactory;
 import eu.fasten.core.search.predicate.PredicateFactory;
 import eu.fasten.core.search.predicate.PredicateFactory.MetadataSource;
 import it.unimi.dsi.fastutil.HashCommon;
-import it.unimi.dsi.fastutil.longs.Long2ObjectLinkedOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongArrayFIFOQueue;
 import it.unimi.dsi.fastutil.longs.LongCollection;
 import it.unimi.dsi.fastutil.longs.LongIterator;
@@ -161,11 +158,7 @@ public class SearchEngine implements AutoCloseable {
 	/** The resolver. */
 	private final GraphMavenResolver resolver;
 	/** The persistent cache. */
-	private final RocksDB cache;
-	/** The handle for merged graphs in the persistent cache. */
-	private ColumnFamilyHandle mergedHandle;
-	/** The handle for dependencies in the persistent cache. */
-	private ColumnFamilyHandle dependenciesHandle;
+	private final PersistentCache cache;
 	/** The predicate factory to be used to create predicates for this search engine. */
 	private final PredicateFactory predicateFactory;
 	/** The scorer that will be used to rank results. */
@@ -195,11 +188,6 @@ public class SearchEngine implements AutoCloseable {
 	private long visitTime;
 	/** Throwables thrown by mergeWithCHA(). */
 	private final List<Throwable> throwables = new ArrayList<>();
-
-	/** A map from GIDs to memory-cached merged graphs. */
-	private final SizeBoundCache<ArrayImmutableDirectedGraph> mergedCache = new SizeBoundCache<>(8L << 30, x -> x.numNodes() * 32L + x.numArcs() * 8L);
-	/** A map from GIDs to memory-cached resolved dependency sets. */
-	private final SizeBoundCache<LongLinkedOpenHashSet> depsCache = new SizeBoundCache<>(8L << 30, x -> x.size() * 16L);
 
 	/** Structure gathering the fields returned by {@link #openCache(String, boolean)}. */
 	public static final class RocksDBData {
@@ -242,72 +230,6 @@ public class SearchEngine implements AutoCloseable {
 				RocksDB.open(dbOptions, cacheDir, cfDescriptors, columnFamilyHandles), columnFamilyHandles); 
 	}
 
-	/** Puts a merged graph in the cache.
-	 * 
-	 * @param key the GID of the revision upon which the merged graph is based.
-	 * @param graph the merged graph; if {@code null}, the memory cache will store
-	 * {@link #NO_GRAPH} and the persistent cache will store a zero-length byte array.
-	 */
-	private synchronized void cachePutMerged(final long key, ArrayImmutableDirectedGraph graph) throws RocksDBException {
-		if (graph == null) {
-			mergedCache.put(key, NO_GRAPH);
-			cache.put(mergedHandle, Longs.toByteArray(key), new byte[0]);
-		} else {
-			mergedCache.put(key, graph);
-			cache.put(mergedHandle, Longs.toByteArray(key), SerializationUtils.serialize(graph));
-		}
-	}
-	
-	/** Puts a resolved dependency set in the cache.
-	 * 
-	 * @param key the GID of the revision upon which the resolved dependency set is based.
-	 * @param deps the resolved dependency set.
-	 */
-	private synchronized void cachePutDeps(final long key, LongLinkedOpenHashSet deps) throws RocksDBException {
-		depsCache.put(key, deps);
-		cache.put(dependenciesHandle, Longs.toByteArray(key), SerializationUtils.serialize(deps));				
-	}
-
-	/** Attempts to retrieve a merged graph from the cache.
-	 * 
-	 * <p>If the graph can be retrieved from the memory cache, it will be returned; otherwise,
-	 * this method will attempt to retrieve the graph from the persistent cache and, in case
-	 * of success, the graph will be added to the memory cache.
-	 * 
-	 * @param key the GID of the revision upon which the requested merged graph is based.
-	 * @return {@code null} if the graph is not present in the cache; {@link #NO_GRAPH} if
-	 * it is known that the graph cannot be merged; a merged graph for the given GID, otherwise. 
-	 */
-	private synchronized ArrayImmutableDirectedGraph cacheGetMerged(final long key) throws RocksDBException {
-		ArrayImmutableDirectedGraph merged = mergedCache.get(key);
-		if (merged != null) return merged;
-		final byte[] array = cache.get(mergedHandle, Longs.toByteArray(key));
-		if (array == null) return null;
-		if (array.length == 0) merged = NO_GRAPH;
-		else merged = SerializationUtils.deserialize(array);
-		mergedCache.put(key, merged);
-		return merged;
-	}
-	
-	/** Attempts to retrieve a resolved dependency set from the cache.
-	 * 
-	 * <p>If the dependency set can be retrieved from the memory cache, it will be returned; otherwise,
-	 * this method will attempt to retrieve the set from the persistent cache and, in case
-	 * of success, the set will be added to the memory cache.
-	 * 
-	 * @param key the GID of the revision for which the resolved dependency set is requested.
-	 * @return the resolved dependency set for the given GID, if present; {@code null}, otherwise. 
-	 */
-	private synchronized LongLinkedOpenHashSet cacheGetDeps(final long key) throws RocksDBException {
-		LongLinkedOpenHashSet deps = depsCache.get(key);
-		if (deps != null) return deps;
-		final byte[] array = cache.get(dependenciesHandle, Longs.toByteArray(key));
-		if (array == null) return null;
-		deps = SerializationUtils.deserialize(array);
-		depsCache.put(key, deps);
-		return deps;
-	}
-
 	/**
 	 * Creates a new search engine using a given JDBC URI, database name and path to RocksDB.
 	 *
@@ -326,7 +248,7 @@ public class SearchEngine implements AutoCloseable {
 	 *            {@link TrivialScorer} will be used instead.
 	 */
 	public SearchEngine(final String jdbcURI, final String database, final String rocksDb, final String cacheDir, final String resolverGraph, final String scorer) throws Exception {
-		this(PostgresConnector.getDSLContext(jdbcURI, database, false), new RocksDao(rocksDb, true), openCache(cacheDir, false), resolverGraph, scorer == null ? TrivialScorer.getInstance() : ObjectParser.fromSpec(scorer, Scorer.class));
+		this(PostgresConnector.getDSLContext(jdbcURI, database, false), new RocksDao(rocksDb, true), new PersistentCache(cacheDir, false), resolverGraph, scorer == null ? TrivialScorer.getInstance() : ObjectParser.fromSpec(scorer, Scorer.class));
 	}
 
 	/**
@@ -340,17 +262,15 @@ public class SearchEngine implements AutoCloseable {
 	 *            {@link TrivialScorer} will be used instead.
 	 */
 
-	public SearchEngine(final DSLContext context, final RocksDao rocksDao, final RocksDBData rocksDBData, final String resolverGraph, final Scorer scorer) throws Exception {
+	public SearchEngine(final DSLContext context, final RocksDao rocksDao, final PersistentCache cache, final String resolverGraph, final Scorer scorer) throws Exception {
 		this.context = context;
 		this.rocksDao = rocksDao;
-		this.cache = rocksDBData.cache;
+		this.cache = cache;
 		this.scorer = scorer == null ? TrivialScorer.getInstance() : scorer;
 		resolver = new GraphMavenResolver();
 		resolver.buildDependencyGraph(context, resolverGraph);
 		resolver.setIgnoreMissing(true);
 		this.predicateFactory = new CachingPredicateFactory(context);
-		mergedHandle = rocksDBData.columnFamilyHandles.get(0);
-		dependenciesHandle = rocksDBData.columnFamilyHandles.get(1);
 	}
 
 	/**
@@ -635,7 +555,7 @@ public class SearchEngine implements AutoCloseable {
 
 		LOGGER.debug("Revision call graph has " + graph.numNodes() + " nodes");
 
-		DirectedGraph stitchedGraph = cacheGetMerged(rev);
+		DirectedGraph stitchedGraph = cache.getMerged(rev);
 		if (stitchedGraph == NO_GRAPH) throw new NullPointerException("mergeWithCHA() returned null on gid " + rev);
 		if (stitchedGraph == null) {
 			final Record2<String, String> record = context.select(Packages.PACKAGES.PACKAGE_NAME, PackageVersions.PACKAGE_VERSIONS.VERSION).from(PackageVersions.PACKAGE_VERSIONS).join(Packages.PACKAGES).on(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.eq(Packages.PACKAGES.ID)).where(PackageVersions.PACKAGE_VERSIONS.ID.eq(Long.valueOf(rev))).fetchOne();
@@ -644,7 +564,7 @@ public class SearchEngine implements AutoCloseable {
 			final String artifactId = a[1];
 			final String version = record.component2();
 
-			final LongLinkedOpenHashSet depFromCache = cacheGetDeps(rev);
+			final LongLinkedOpenHashSet depFromCache = cache.getDeps(rev);
 
 			final LongLinkedOpenHashSet dependencyIds; 
 			if (depFromCache == null) {
@@ -653,7 +573,7 @@ public class SearchEngine implements AutoCloseable {
 				dependencyIds = LongLinkedOpenHashSet.toSet(dependencySet.stream().mapToLong(x -> x.id));
 				dependencyIds.addAndMoveToFirst(rev);
 				resolveTime += System.nanoTime();
-				cachePutDeps(rev, dependencyIds);
+				cache.putDeps(rev, dependencyIds);
 			}
 			else dependencyIds = depFromCache;
 
@@ -665,12 +585,12 @@ public class SearchEngine implements AutoCloseable {
 			stitchingTime += System.nanoTime();
 
 			if (stitchedGraph == null) {
-				cachePutMerged(rev, null);
+				cache.putMerged(rev, null);
 				throw new NullPointerException("mergeWithCHA() returned null on gid " + rev);
 			}
 			else {
 				stitchedGraph = ArrayImmutableDirectedGraph.copyOf(stitchedGraph, false);
-				cachePutMerged(rev, (ArrayImmutableDirectedGraph)stitchedGraph);
+				cache.putMerged(rev, (ArrayImmutableDirectedGraph)stitchedGraph);
 			}
 		}
 
@@ -779,12 +699,12 @@ public class SearchEngine implements AutoCloseable {
 
 			var dependentId = dependent.id;
 
-			DirectedGraph stitchedGraph = cacheGetMerged(dependentId);
+			DirectedGraph stitchedGraph = cache.getMerged(dependentId);
 			if (stitchedGraph == NO_GRAPH) return null;
 			if (stitchedGraph == null) {
 				LOGGER.debug("Analyzing dependent " + dependent.groupId + ":" + dependent.artifactId + ":" + dependent.version.toString());
 
-				final LongLinkedOpenHashSet depFromCache = cacheGetDeps(dependentId);
+				final LongLinkedOpenHashSet depFromCache = cache.getDeps(dependentId);
 
 				final LongLinkedOpenHashSet dependencyIds;
 				if (depFromCache == null) {
@@ -793,7 +713,7 @@ public class SearchEngine implements AutoCloseable {
 					dependencyIds = LongLinkedOpenHashSet.toSet(dependencySet.stream().mapToLong(x -> x.id));
 					dependencyIds.addAndMoveToFirst(dependentId);
 					resolveTime += System.nanoTime();
-					cachePutDeps(dependentId, dependencyIds);
+					cache.putDeps(dependentId, dependencyIds);
 				} else dependencyIds = depFromCache;
 
 				LOGGER.debug("Dependent has " + graph.numNodes() + " nodes");
@@ -818,12 +738,12 @@ public class SearchEngine implements AutoCloseable {
 				stitchingTime += System.nanoTime();
 
 				if (stitchedGraph == null) {
-					cachePutMerged(dependentId, null);
+					cache.putMerged(dependentId, null);
 					LOGGER.error("mergeWithCHA returned null on gid " + dependentId);
 					return null;
 				} else {
 					stitchedGraph = ArrayImmutableDirectedGraph.copyOf(stitchedGraph, false);
-					cachePutMerged(dependentId, (ArrayImmutableDirectedGraph)stitchedGraph);
+					cache.putMerged(dependentId, (ArrayImmutableDirectedGraph)stitchedGraph);
 				}
 			}
 
