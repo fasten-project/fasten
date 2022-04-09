@@ -18,9 +18,11 @@
 
 package eu.fasten.core.search;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.Set;
 
-import org.apache.commons.lang.mutable.MutableInt;
 import org.apache.commons.lang3.SerializationUtils;
 import org.jooq.DSLContext;
 import org.jooq.Record2;
@@ -28,7 +30,6 @@ import org.rocksdb.RocksDBException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.common.primitives.Ints;
 import com.google.common.primitives.Longs;
 import com.martiansoftware.jsap.JSAP;
 import com.martiansoftware.jsap.JSAPResult;
@@ -47,6 +48,7 @@ import eu.fasten.core.maven.data.Revision;
 import eu.fasten.core.merge.CGMerger;
 import eu.fasten.core.search.SearchEngine.RocksDBData;
 import eu.fasten.core.search.predicate.CachingPredicateFactory;
+import it.unimi.dsi.fastutil.io.TextIO;
 import it.unimi.dsi.fastutil.longs.LongLinkedOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.logging.ProgressLogger;
@@ -100,6 +102,10 @@ public class UpdateCache {
 		final UpdateCache update = new UpdateCache(jdbcURI, database, rocksDb, resolverGraph);
 		final DSLContext context = update.context;
 
+		LongOpenHashSet blackList = new LongOpenHashSet();
+		
+		TextIO.asLongIterator(new BufferedReader(new InputStreamReader(System.in, StandardCharsets.US_ASCII))).forEachRemaining(x -> blackList.add(x));
+		
 		int cached = 0, all = 0;
 		ProgressLogger pl = new ProgressLogger();
 		pl.start();
@@ -107,8 +113,7 @@ public class UpdateCache {
 			all++;
 			pl.update();
 			final long gid = Longs.fromByteArray(key);
-
-			if (gid == 76535 || gid == 104122 || gid == 122038 || gid == 132690 || gid == 132691 || gid == 573488 || gid == 55880 || gid == 86579 || gid == 99329 || gid == 115386 || gid == 122413 || gid == 173194 || gid == 173207 || gid == 175286 || gid == 213295) {
+			if (blackList.contains(gid)) {
 				LOGGER.info("Skipping potential OOM caused by graph with gid " + gid);
 				continue;
 			}
