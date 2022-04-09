@@ -197,9 +197,9 @@ public class SearchEngine implements AutoCloseable {
 	private final List<Throwable> throwables = new ArrayList<>();
 
 	/** A map from GIDs to memory-cached merged graphs. */
-	private final Long2ObjectLinkedOpenHashMap<ArrayImmutableDirectedGraph> mergedCache = new Long2ObjectLinkedOpenHashMap<>();
+	private final SizeBoundCache<ArrayImmutableDirectedGraph> mergedCache = new SizeBoundCache<>(8L << 30, x -> x.numNodes() * 32L + x.numArcs() * 8L);
 	/** A map from GIDs to memory-cached resolved dependency sets. */
-	private final Long2ObjectLinkedOpenHashMap<LongLinkedOpenHashSet> depsCache = new Long2ObjectLinkedOpenHashMap<>();
+	private final SizeBoundCache<LongLinkedOpenHashSet> depsCache = new SizeBoundCache<>(8L << 30, x -> x.size() * 16L);
 
 	/** Structure gathering the fields returned by {@link #openCache(String, boolean)}. */
 	public static final class RocksDBData {
@@ -250,10 +250,10 @@ public class SearchEngine implements AutoCloseable {
 	 */
 	private synchronized void cachePutMerged(final long key, ArrayImmutableDirectedGraph graph) throws RocksDBException {
 		if (graph == null) {
-			mergedCache.putAndMoveToFirst(key, NO_GRAPH);
+			mergedCache.put(key, NO_GRAPH);
 			cache.put(mergedHandle, Longs.toByteArray(key), new byte[0]);
 		} else {
-			mergedCache.putAndMoveToFirst(key, graph);
+			mergedCache.put(key, graph);
 			cache.put(mergedHandle, Longs.toByteArray(key), SerializationUtils.serialize(graph));
 		}
 	}
@@ -264,7 +264,7 @@ public class SearchEngine implements AutoCloseable {
 	 * @param deps the resolved dependency set.
 	 */
 	private synchronized void cachePutDeps(final long key, LongLinkedOpenHashSet deps) throws RocksDBException {
-		depsCache.putAndMoveToFirst(key, deps);
+		depsCache.put(key, deps);
 		cache.put(dependenciesHandle, Longs.toByteArray(key), SerializationUtils.serialize(deps));				
 	}
 
@@ -285,7 +285,7 @@ public class SearchEngine implements AutoCloseable {
 		if (array == null) return null;
 		if (array.length == 0) merged = NO_GRAPH;
 		else merged = SerializationUtils.deserialize(array);
-		mergedCache.putAndMoveToFirst(key, merged);
+		mergedCache.put(key, merged);
 		return merged;
 	}
 	
@@ -304,7 +304,7 @@ public class SearchEngine implements AutoCloseable {
 		final byte[] array = cache.get(dependenciesHandle, Longs.toByteArray(key));
 		if (array == null) return null;
 		deps = SerializationUtils.deserialize(array);
-		depsCache.putAndMoveToFirst(key, deps);
+		depsCache.put(key, deps);
 		return deps;
 	}
 
