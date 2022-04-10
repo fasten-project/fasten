@@ -103,18 +103,23 @@ public class UpdateCache {
 		final DSLContext context = update.context;
 
 		LongOpenHashSet blackList = new LongOpenHashSet();
-		
-		TextIO.asLongIterator(new BufferedReader(new InputStreamReader(System.in, StandardCharsets.US_ASCII))).forEachRemaining(x -> blackList.add(x));
+		final long[] last = new long[1];
+		TextIO.asLongIterator(new BufferedReader(new InputStreamReader(System.in, StandardCharsets.US_ASCII))).forEachRemaining(x -> blackList.add(last[0] = x));
 
 		LOGGER.info("Blacklisting GIDs " + blackList);
 		
 		int cached = 0, all = 0;
-		ProgressLogger pl = new ProgressLogger();
+		ProgressLogger pl = new ProgressLogger(LOGGER);
 		pl.start();
+		boolean foundLast = false;
 		for(byte[] key: update.rocksDao) {
+			final long gid = Longs.fromByteArray(key);
 			all++;
 			pl.update();
-			final long gid = Longs.fromByteArray(key);
+			// We try to speed up the scan assuming enumeration happens always in the same order
+			if (gid == last[0]) foundLast = true;
+			if (!foundLast) continue;
+
 			if (blackList.contains(gid)) {
 				LOGGER.info("Skipping potential OOM caused by graph with gid " + gid);
 				continue;
