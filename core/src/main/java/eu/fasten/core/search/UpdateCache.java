@@ -105,6 +105,8 @@ public class UpdateCache {
 		LongOpenHashSet blackList = new LongOpenHashSet();
 		
 		TextIO.asLongIterator(new BufferedReader(new InputStreamReader(System.in, StandardCharsets.US_ASCII))).forEachRemaining(x -> blackList.add(x));
+
+		LOGGER.info("Blacklisting GIDs " + blackList);
 		
 		int cached = 0, all = 0;
 		ProgressLogger pl = new ProgressLogger();
