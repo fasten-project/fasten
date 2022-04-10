@@ -477,7 +477,7 @@ public class SearchEngine implements AutoCloseable {
 				if (!results.contains(probe)) results.add(new Result(gid, scorer.score(graph, gid, d)));
 			}
 
-			final LongIterator iterator = forward ? graph.successors(gid).iterator() : graph.predecessors(gid).iterator();
+			final LongIterator iterator = forward ? graph.successorsIterator(gid) : graph.predecessorsIterator(gid);
 
 			while (iterator.hasNext()) {
 				final long x = iterator.nextLong();

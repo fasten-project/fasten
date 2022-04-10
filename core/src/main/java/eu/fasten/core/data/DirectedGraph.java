@@ -129,6 +129,17 @@ public interface DirectedGraph extends org.jgrapht.Graph<Long, LongLongPair>, Lo
 	public LongList successors(final long node);
 
 	/**
+	 * An iterator on the successors of a given node.
+	 *
+	 * @param node a node in the graph.
+	 * @return its successors as an iterator.
+	 * @throws IllegalArgumentException if <code>node</code> is not a node of the graph.
+	 */
+	default public LongIterator successorsIterator(final long node) {
+		return successors(node).iterator();
+	}
+
+	/**
 	 * The number of successors of a given node.
 	 *
 	 * @param node a node in the graph.
@@ -147,6 +158,17 @@ public interface DirectedGraph extends org.jgrapht.Graph<Long, LongLongPair>, Lo
 	 * @throws IllegalArgumentException if <code>node</code> is not a node of the graph.
 	 */
 	public LongList predecessors(final long node);
+
+	/**
+	 * An iterator on the predecessors of a given node.
+	 *
+	 * @param node a node in the graph.
+	 * @return its predecessors as an iterator.
+	 * @throws IllegalArgumentException if <code>node</code> is not a node of the graph.
+	 */
+	default public LongIterator predecessorsIterator(final long node) {
+		return predecessors(node).iterator();
+	}
 
 	/**
 	 * The number of predecessors of a given node.

@@ -195,6 +195,14 @@ public class ArrayImmutableDirectedGraph implements DirectedGraph, Serializable 
 	}
 
 	@Override
+	public LongIterator successorsIterator(final long node) {
+		final int offset = GID2Offset.get(node);
+		if (offset == -1) throw new IllegalArgumentException("No such node: " + node);
+		final int outdegree = (int)succpred[offset];
+		return LongIterators.wrap(succpred, offset + 1, outdegree);
+	}
+
+	@Override
 	public LongList predecessors(final long node) {
 		int offset = GID2Offset.get(node);
 		if (offset == -1) throw new IllegalArgumentException("No such node: " + node);
@@ -202,6 +210,16 @@ public class ArrayImmutableDirectedGraph implements DirectedGraph, Serializable 
 		final int indegree = (int)(succpred[offset] >>> 32);
 		offset += 1 + outdegree;
 		return LongArrayList.wrap(Arrays.copyOfRange(succpred, offset, offset + indegree));
+	}
+
+	@Override
+	public LongIterator predecessorsIterator(final long node) {
+		int offset = GID2Offset.get(node);
+		if (offset == -1) throw new IllegalArgumentException("No such node: " + node);
+		final int outdegree = (int)succpred[offset];
+		final int indegree = (int)(succpred[offset] >>> 32);
+		offset += 1 + outdegree;
+		return LongIterators.wrap(succpred, offset, indegree);
 	}
 
 	@Override

@@ -22,12 +22,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import it.unimi.dsi.fastutil.longs.LongIterator;
-import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.*;
+import it.unimi.dsi.fastutil.longs.LongIterator;
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 
 public class ArrayImmutableDirectedGraphTest {
 
@@ -95,6 +94,9 @@ public class ArrayImmutableDirectedGraphTest {
         assertEquals(graph.nodes(), copy.nodes());
         for(long x: graph) assertEquals(new LongOpenHashSet(graph.successors(x)), new LongOpenHashSet(copy.successors(x)));
         for(long x: graph) assertEquals(new LongOpenHashSet(graph.predecessors(x)), new LongOpenHashSet(copy.predecessors(x)));
+        
+        for(long x: graph) assertEquals(new LongOpenHashSet(graph.successors(x)), new LongOpenHashSet(graph.successorsIterator(x)));
+        for(long x: graph) assertEquals(new LongOpenHashSet(graph.predecessors(x)), new LongOpenHashSet(graph.predecessorsIterator(x)));        
     }
 
 	@Test
