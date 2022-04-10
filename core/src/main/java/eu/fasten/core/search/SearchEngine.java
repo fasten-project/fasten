@@ -24,7 +24,6 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
 import java.util.Set;
-import java.util.TreeSet;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorCompletionService;
@@ -76,6 +75,7 @@ import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.fastutil.longs.LongSets;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import it.unimi.dsi.fastutil.objects.ObjectRBTreeSet;
 import it.unimi.dsi.lang.ObjectParser;
 
 /**
@@ -456,7 +456,7 @@ public class SearchEngine implements AutoCloseable {
 	 * @param maxResults the maximum number of results deposited in {@code results}; results with a higher score
 	 * will replace results with a lower score if the {@code maxResults} threshold is exceeded.
 	 */
-	protected static void bfs(final DirectedGraph graph, final boolean forward, final LongCollection seed, final LongPredicate filter, final Scorer scorer, final TreeSet<Result> results, final long maxResults) {
+	protected static void bfs(final DirectedGraph graph, final boolean forward, final LongCollection seed, final LongPredicate filter, final Scorer scorer, final ObjectRBTreeSet<Result> results, final long maxResults) {
 		final LongArrayFIFOQueue queue = new LongArrayFIFOQueue(seed.size());
 		seed.forEach(x -> queue.enqueue(x)); // Load initial state
 		if (queue.isEmpty()) return; // All seed already visited
@@ -613,7 +613,7 @@ public class SearchEngine implements AutoCloseable {
 
 		LOGGER.debug("Stiched graph has " + stitchedGraph.numNodes() + " nodes");
 
-		final TreeSet<Result> results = new TreeSet<>();
+		final ObjectRBTreeSet<Result> results = new ObjectRBTreeSet<>();
 
 		visitTime -= System.nanoTime();
 		bfs(stitchedGraph, true, seed, filter, scorer, results, maxResults);
@@ -702,7 +702,7 @@ public class SearchEngine implements AutoCloseable {
 		final int numberOfThreads = Runtime.getRuntime().availableProcessors();
 		final BlockingQueue<Revision> s = resolver.resolveDependentsPipeline(groupId, artifactId, version, -1, true, maxDependents, numberOfThreads);
 
-		final TreeSet<Result> results = new TreeSet<>();
+		final ObjectRBTreeSet<Result> results = new ObjectRBTreeSet<>();
 
 		final ExecutorService executorService = Executors.newFixedThreadPool(numberOfThreads);
 		final ExecutorCompletionService<Void> executorCompletionService = new ExecutorCompletionService<>(executorService);
