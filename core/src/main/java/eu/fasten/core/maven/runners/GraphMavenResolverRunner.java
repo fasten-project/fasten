@@ -29,12 +29,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import eu.fasten.core.dbconnectors.PostgresConnector;
+import eu.fasten.core.maven.data.ResolvedRevision;
 import eu.fasten.core.maven.data.Revision;
 import eu.fasten.core.maven.resolution.DependencyGraphBuilder;
 import eu.fasten.core.maven.resolution.IMavenResolver;
 import eu.fasten.core.maven.resolution.MavenResolver;
-import eu.fasten.core.maven.resolution.ResolverConfig;
-import eu.fasten.core.maven.resolution.ResolverDepth;
 import picocli.CommandLine;
 
 @CommandLine.Command(name = "GraphMavenResolverRunner")
@@ -117,7 +116,7 @@ public class GraphMavenResolverRunner implements Runnable {
                     }
                 }
 
-                Set<Revision> revisions;
+                Set<ResolvedRevision> revisions;
                 var startTS = System.currentTimeMillis();
                 try {
                     var cfg = resolve().at(timestamp).depth(TRANSITIVE);

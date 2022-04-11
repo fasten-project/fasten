@@ -52,6 +52,7 @@ import eu.fasten.core.data.callableindex.RocksDao;
 import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
 import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
 import eu.fasten.core.dbconnectors.PostgresConnector;
+import eu.fasten.core.maven.data.ResolvedRevision;
 import eu.fasten.core.maven.data.Revision;
 import eu.fasten.core.maven.resolution.DependencyGraphBuilder;
 import eu.fasten.core.maven.resolution.IMavenResolver;
@@ -504,7 +505,7 @@ public class SearchEngine {
 		final String artifactId = a[1];
 		final String version = record.component2();
 		resolveTime -= System.nanoTime();
-		final Set<Revision> dependencySet = resolver.resolveDependencies(groupId, artifactId, version, resolve().depth(TRANSITIVE));
+		final Set<ResolvedRevision> dependencySet = resolver.resolveDependencies(groupId, artifactId, version, resolve().depth(TRANSITIVE));
 		resolveTime += System.nanoTime();
 
 		LOGGER.debug("Found " + dependencySet.size() + " dependencies");
@@ -601,7 +602,7 @@ public class SearchEngine {
 		String artifactId = data[1];
 		String version = data[2];
 		resolveTime -= System.nanoTime();
-		final Set<Revision> s = resolver.resolveDependents(groupId, artifactId, version, resolve().depth(TRANSITIVE));
+		final Set<ResolvedRevision> s = resolver.resolveDependents(groupId, artifactId, version, resolve().depth(TRANSITIVE));
 		final Set<Revision> dependentSet = new ObjectOpenHashSet<>();
 
 		// Temporary reduction in size to circumvent mergeWithCHA() crashes
@@ -639,7 +640,7 @@ public class SearchEngine {
 			LOGGER.debug("Analyzing dependent " + groupId + ":" + artifactId + ":" + version);
 
 			resolveTime -= System.nanoTime();
-			final Set<Revision> dependencySet = resolver.resolveDependencies(groupId, artifactId, version, resolve().depth(TRANSITIVE));
+			final Set<ResolvedRevision> dependencySet = resolver.resolveDependencies(groupId, artifactId, version, resolve().depth(TRANSITIVE));
 			resolveTime += System.nanoTime();
 
 			LOGGER.debug("Dependent has " + graph.numNodes() + " nodes");

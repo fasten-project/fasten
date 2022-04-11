@@ -23,7 +23,8 @@ import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.BeforeEach;
 
-import eu.fasten.core.maven.data.Revision;
+import eu.fasten.core.maven.data.ResolvedRevision;
+import eu.fasten.core.maven.data.Scope;
 
 public class AbstractMavenDependentsResolverTest {
 
@@ -48,7 +49,7 @@ public class AbstractMavenDependentsResolverTest {
         var actuals = sut.resolve(target, config);
         var expecteds = Arrays.stream(depSet) //
                 .map(gav -> gav.split(":")) //
-                .map(parts -> new Revision(parts[0], parts[0], parts[1], new Timestamp(-1L))) //
+                .map(parts -> new ResolvedRevision(-1, parts[0], parts[0], parts[1], new Timestamp(-1L), Scope.COMPILE)) //
                 .collect(Collectors.toSet());
 
         if (!expecteds.equals(actuals)) {

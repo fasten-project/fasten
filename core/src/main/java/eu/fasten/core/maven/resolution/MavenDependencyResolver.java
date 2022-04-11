@@ -32,7 +32,7 @@ import java.util.stream.Collectors;
 import eu.fasten.core.maven.data.Dependency;
 import eu.fasten.core.maven.data.MavenProduct;
 import eu.fasten.core.maven.data.Pom;
-import eu.fasten.core.maven.data.Revision;
+import eu.fasten.core.maven.data.ResolvedRevision;
 import eu.fasten.core.maven.data.Scope;
 import eu.fasten.core.maven.data.VersionConstraint;
 
@@ -44,7 +44,7 @@ public class MavenDependencyResolver {
         this.graph = graph;
     }
 
-    public Set<Revision> resolve(Collection<String> gavs, ResolverConfig config) {
+    public Set<ResolvedRevision> resolve(Collection<String> gavs, ResolverConfig config) {
 
         failForImportProvidedSystemScope(config);
 
@@ -84,13 +84,14 @@ public class MavenDependencyResolver {
         }
     }
 
-    private Set<Revision> resolve(ResolverConfig config, Set<MavenProduct> addedProducts, QueueData startingData) {
+    private Set<ResolvedRevision> resolve(ResolverConfig config, Set<MavenProduct> addedProducts,
+            QueueData startingData) {
 
         if (startingData.pom.releaseDate > config.resolveAt) {
             throw new MavenResolutionException("Requested POM has been released after resolution timestamp");
         }
 
-        var depSet = new HashSet<Revision>();
+        var depSet = new HashSet<ResolvedRevision>();
 
         var queue = new LinkedList<QueueData>();
         queue.add(startingData);
@@ -104,7 +105,7 @@ public class MavenDependencyResolver {
             }
             addedProducts.add(p);
 
-            depSet.add(data.pom.toRevision());
+            depSet.add(toRR(data.pom, COMPILE));
 
             for (var dep : data.pom.dependencies) {
                 var depGA = String.format("%s:%s", dep.groupId, dep.artifactId);
@@ -155,6 +156,10 @@ public class MavenDependencyResolver {
         }
 
         return depSet;
+    }
+
+    private static ResolvedRevision toRR(Pom pom, Scope s) {
+        return new ResolvedRevision(pom.toRevision(), s);
     }
 
     private static boolean isScopeCovered(Scope request, Scope dep, boolean alwaysIncludeProvided) {

@@ -45,7 +45,9 @@ import eu.fasten.analyzer.restapiplugin.LazyIngestionProvider;
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.DirectedGraph;
 import eu.fasten.core.dependents.GraphResolver;
+import eu.fasten.core.maven.data.ResolvedRevision;
 import eu.fasten.core.maven.data.Revision;
+import eu.fasten.core.maven.data.Scope;
 import eu.fasten.core.maven.resolution.DependencyGraphBuilder;
 import eu.fasten.core.maven.resolution.IMavenResolver;
 import eu.fasten.core.maven.resolution.NativeMavenResolver;
@@ -107,13 +109,15 @@ public class ResolutionApi {
                 }
                 var groupId = packageName.split(Constants.mvnCoordinateSeparator)[0];
                 var artifactId = packageName.split(Constants.mvnCoordinateSeparator)[1];
-                Set<Revision> depSet;
+                Set<ResolvedRevision> depSet;
                 if (useDepGraph) {
                     var cfg = getConfig(transitive, timestamp);
                     depSet = this.graphMavenResolver.resolveDependencies(groupId, artifactId, packageVersion, cfg);
                 } else {
                     var mavenResolver = new NativeMavenResolver();
-                    depSet = mavenResolver.resolveDependencies(groupId + ":" + artifactId + ":" + packageVersion);
+                    depSet = mavenResolver.resolveDependencies(groupId + ":" + artifactId + ":" + packageVersion).stream() //
+                            .map(r -> new ResolvedRevision(r, Scope.COMPILE)) //
+                            .collect(Collectors.toSet());
                 }
                 var jsonArray = new JSONArray();
                 depSet.stream().map(Revision::toJSON).peek(json -> {

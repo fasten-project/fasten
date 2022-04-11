@@ -28,7 +28,7 @@ import org.slf4j.Logger;
 
 import eu.fasten.core.maven.data.Dependency;
 import eu.fasten.core.maven.data.Pom;
-import eu.fasten.core.maven.data.Revision;
+import eu.fasten.core.maven.data.ResolvedRevision;
 import eu.fasten.core.maven.data.Scope;
 
 public class MavenDependentsResolver {
@@ -41,7 +41,7 @@ public class MavenDependentsResolver {
         this.data = data;
     }
 
-    public Set<Revision> resolve(String gav, ResolverConfig config) {
+    public Set<ResolvedRevision> resolve(String gav, ResolverConfig config) {
         failForInvalidScopes(config);
 
         var pom = data.findPom(gav, config.resolveAt);
@@ -49,7 +49,7 @@ public class MavenDependentsResolver {
             throw new MavenResolutionException(String.format("Cannot find coordinate %s", gav));
         }
 
-        var dependents = new HashSet<Revision>();
+        var dependents = new HashSet<ResolvedRevision>();
         resolve(pom, config, dependents, new HashSet<>(), false);
         return dependents;
     }
@@ -61,7 +61,7 @@ public class MavenDependentsResolver {
         }
     }
 
-    private void resolve(Pom pom, ResolverConfig config, Set<Revision> dependents, Set<Object> visited,
+    private void resolve(Pom pom, ResolverConfig config, Set<ResolvedRevision> dependents, Set<Object> visited,
             boolean isTransitiveDep) {
 
         visited.add(pom);
@@ -87,13 +87,17 @@ public class MavenDependentsResolver {
 
             // check whether version of pom matches the dependency declaration
             if (doesVersionMatch(decl, pom)) {
-                dependents.add(dpd.toRevision());
+                dependents.add(toRR(dpd, Scope.COMPILE));
 
                 if (config.depth == TRANSITIVE && shouldProcessDependent(config, decl)) {
                     resolve(dpd, config, dependents, visited, true);
                 }
             }
         }
+    }
+
+    private static ResolvedRevision toRR(Pom p, Scope s) {
+        return new ResolvedRevision(p.toRevision(), s);
     }
 
     private static boolean shouldProcessDependent(ResolverConfig config, Dependency decl) {

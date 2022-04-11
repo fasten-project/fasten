@@ -15,6 +15,7 @@
  */
 package eu.fasten.core.maven.resolution;
 
+import static eu.fasten.core.maven.data.Scope.IMPORT;
 import static eu.fasten.core.maven.data.Scope.TEST;
 import static eu.fasten.core.maven.resolution.ResolverDepth.DIRECT;
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
@@ -34,13 +35,15 @@ import org.junit.jupiter.api.Test;
 
 import eu.f4sten.test.HttpTestServer;
 import eu.f4sten.test.HttpTestServer.Request;
+import eu.fasten.core.maven.data.ResolvedRevision;
 import eu.fasten.core.maven.data.Revision;
 
 public class RestMavenResolverTest {
 
     private static final Set<String> SOME_DEPS = Set.of("g:a:1", "g2:a2:2");
 
-    private static final Revision DEFAULT_REVISION = new Revision("g", "a", "2.3.4", new Timestamp(1234567890000L));
+    private static final Revision DEFAULT_REVISION = new ResolvedRevision(0, "g", "a", "2.3.4",
+            new Timestamp(1234567890000L), IMPORT);
 
     private static final int PORT = 8080;
 
@@ -62,7 +65,7 @@ public class RestMavenResolverTest {
     public void setup() {
         httpd.reset();
         httpd.setResponse("application/json",
-                "[{\"groupId\":\"g\",\"artifactId\":\"a\",\"version\":\"2.3.4\",\"createdAt\":1234567890000}]");
+                "[{\"groupId\":\"g\",\"artifactId\":\"a\",\"version\":\"2.3.4\",\"createdAt\":1234567890000,\"scope\":\"IMPORT\"}]");
 
         sut = new RestMavenResolver("http://127.0.0.1:" + PORT + "/");
     }
@@ -157,6 +160,10 @@ public class RestMavenResolverTest {
         var expected = Set.of(DEFAULT_REVISION);
         var actual = sut.resolveDependencies(SOME_DEPS, new ResolverConfig());
         assertEquals(expected, actual);
+
+        var a = actual.iterator().next();
+        assertEquals(0L, a.id);
+        assertEquals(IMPORT, a.scope);
     }
 
     @Test
@@ -247,6 +254,10 @@ public class RestMavenResolverTest {
         var expected = Set.of(DEFAULT_REVISION);
         var actual = sut.resolveDependents("g", "a", "1", new ResolverConfig());
         assertEquals(expected, actual);
+
+        var a = actual.iterator().next();
+        assertEquals(0L, a.id);
+        assertEquals(IMPORT, a.scope);
     }
 
     private Request resolveSomeDependencies() {
