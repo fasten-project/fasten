@@ -20,6 +20,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -93,6 +94,24 @@ public class VersionConstraintTest {
         validate("[1.1],[1.2]", //
                 vc(false, true, "+1.1", "+1.1"), //
                 vc(false, true, "+1.2", "+1.2"));
+    }
+
+    @Test
+    public void parsingReturnsLinkedHashSet_softConstraint() {
+        var actual = VersionConstraint.parseVersionSpec("1");
+        assertEquals(LinkedHashSet.class, actual.getClass());
+    }
+
+    @Test
+    public void parsingReturnsLinkedHashSet_hardConstraint() {
+        var actual = VersionConstraint.parseVersionSpec("[1]");
+        assertEquals(LinkedHashSet.class, actual.getClass());
+    }
+
+    @Test
+    public void parsingReturnsLinkedHashSet_multiConstraint() {
+        var actual = VersionConstraint.parseVersionSpec("[1],[2]");
+        assertEquals(LinkedHashSet.class, actual.getClass());
     }
 
     @Test
