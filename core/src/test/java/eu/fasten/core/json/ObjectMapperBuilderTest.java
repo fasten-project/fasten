@@ -21,7 +21,9 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.Optional;
+import java.util.Set;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -70,6 +72,15 @@ public class ObjectMapperBuilderTest {
     }
 
     @Test
+    public void doesNotStoreNullEmptyOrDefaultFields() throws JsonProcessingException {
+        sut = new ObjectMapperBuilder().build();
+        var data = new TestData();
+        data.y3 = true;
+        var actual = sut.writeValueAsString(data);
+        assertEquals("{\"y1\":\"y1\",\"y2\":[\"y2\"],\"y3\":true,\"y4\":[],\"y5\":false,\"y6\":false}", actual);
+    }
+
+    @Test
     public void jsr310() throws JsonProcessingException {
         // will crash with missing import
         var ldt = LocalDateTime.now();
@@ -81,5 +92,22 @@ public class ObjectMapperBuilderTest {
         var o = Optional.of("...");
         var json = sut.writeValueAsString(o);
         assertEquals("\"...\"", json);
+    }
+
+    @SuppressWarnings("unused")
+    private static class TestData {
+        public String y1 = "y1";
+        public Set<String> y2 = Set.of("y2");
+        public boolean y3 = false;
+
+        // empty
+        public Set<String> y4 = new HashSet<>();
+
+        // defaults
+        public boolean y5;
+        public boolean y6 = false;
+
+        public String n1 = null;
+        public Set<String> n2 = null;
     }
 }
