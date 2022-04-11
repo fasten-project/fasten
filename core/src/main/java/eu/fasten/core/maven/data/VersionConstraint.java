@@ -131,7 +131,8 @@ public class VersionConstraint {
             assertTrue(!spec.contains("]"));
             assertTrue(!spec.contains("("));
             assertTrue(!spec.contains(")"));
-            return Set.of(new VersionConstraint(spec));
+            constraints.add(new VersionConstraint(spec));
+            return constraints;
         }
 
         // has to be hard constraint
