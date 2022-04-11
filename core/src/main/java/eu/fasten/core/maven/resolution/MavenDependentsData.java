@@ -29,7 +29,7 @@ public class MavenDependentsData {
     private final Map<String, Pom> pomForGAV = new HashMap<>();
     private final Map<String, Set<Pom>> dependentsForGA = new HashMap<>();
 
-    public void add(Pom pom) {
+    public synchronized void add(Pom pom) {
         var gav = toGAV(pom);
         pomForGAV.put(gav, pom);
         for (var dep : pom.dependencies) {
@@ -56,7 +56,7 @@ public class MavenDependentsData {
         poms.add(pom);
     }
 
-    public Pom findPom(String gav, long resolveAt) {
+    public synchronized Pom findPom(String gav, long resolveAt) {
         var pom = pomForGAV.get(gav);
         if (pom != null && pom.releaseDate <= resolveAt) {
             return pom;
@@ -64,7 +64,7 @@ public class MavenDependentsData {
         return null;
     }
 
-    public Set<Pom> findPotentialDependents(String ga, long resolveAt) {
+    public synchronized Set<Pom> findPotentialDependents(String ga, long resolveAt) {
         var dpds = dependentsForGA.getOrDefault(ga, Set.of());
         return dpds.stream() //
                 .filter(d -> d.releaseDate <= resolveAt) //
