@@ -25,7 +25,7 @@ import org.glassfish.jersey.client.ClientConfig;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import eu.fasten.core.json.ObjectMapperBuilder;
-import eu.fasten.core.maven.data.Revision;
+import eu.fasten.core.maven.data.ResolvedRevision;
 import eu.fasten.core.maven.data.Scope;
 import jakarta.ws.rs.client.ClientBuilder;
 import jakarta.ws.rs.client.Entity;
@@ -35,7 +35,7 @@ import jakarta.ws.rs.ext.ContextResolver;
 
 public class RestMavenResolver implements IMavenResolver {
 
-    private static final GenericType<Set<Revision>> SET_OF_REV = new GenericType<Set<Revision>>() {};
+    private static final GenericType<Set<ResolvedRevision>> SET_OF_REV = new GenericType<Set<ResolvedRevision>>() {};
     private static final ObjectMapper OM = new ObjectMapperBuilder().build();
 
     private WebTarget baseTarget;
@@ -53,14 +53,14 @@ public class RestMavenResolver implements IMavenResolver {
     }
 
     @Override
-    public Set<Revision> resolveDependencies(Collection<String> gavs, ResolverConfig config) {
+    public Set<ResolvedRevision> resolveDependencies(Collection<String> gavs, ResolverConfig config) {
         return getBase("dependencies", config) //
                 .request(APPLICATION_JSON) //
                 .post(Entity.entity(gavs, APPLICATION_JSON), SET_OF_REV);
     }
 
     @Override
-    public Set<Revision> resolveDependents(String gid, String aid, String version, ResolverConfig config) {
+    public Set<ResolvedRevision> resolveDependents(String gid, String aid, String version, ResolverConfig config) {
         return getBase("dependents", config) //
                 .path(gid).path(aid).path(version) //
                 .request(APPLICATION_JSON) //

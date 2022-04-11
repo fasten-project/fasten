@@ -15,6 +15,7 @@
  */
 package eu.fasten.core.maven.resolution;
 
+import static eu.fasten.core.maven.data.Scope.COMPILE;
 import static org.junit.Assert.fail;
 
 import java.sql.Timestamp;
@@ -25,7 +26,7 @@ import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.BeforeEach;
 
-import eu.fasten.core.maven.data.Revision;
+import eu.fasten.core.maven.data.ResolvedRevision;
 
 public class AbstractMavenDependencyResolverTest {
 
@@ -63,7 +64,7 @@ public class AbstractMavenDependencyResolverTest {
         var actuals = sut.resolve(Set.of(base), config);
         var expecteds = Arrays.stream(gavs) //
                 .map(gav -> gav.split(":")) //
-                .map(parts -> new Revision(parts[0], parts[0], parts[1], new Timestamp(-1L))) //
+                .map(parts -> new ResolvedRevision(-1, parts[0], parts[0], parts[1], new Timestamp(-1L), COMPILE)) //
                 .collect(Collectors.toSet());
 
         if (!expecteds.equals(actuals)) {

@@ -30,6 +30,7 @@ import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import eu.fasten.core.maven.data.ResolvedRevision;
 import eu.fasten.core.maven.data.Revision;
 
 public class IMavenResolverTest {
@@ -162,7 +163,7 @@ public class IMavenResolverTest {
         private ResolverConfig config;
 
         @Override
-        public Set<Revision> resolveDependencies(Collection<String> gavs, ResolverConfig config) {
+        public Set<ResolvedRevision> resolveDependencies(Collection<String> gavs, ResolverConfig config) {
             assertNull(methodCalled);
             methodCalled = "deps";
             this.gavs = gavs;
@@ -171,7 +172,7 @@ public class IMavenResolverTest {
         }
 
         @Override
-        public Set<Revision> resolveDependents(String g, String a, String v, ResolverConfig config) {
+        public Set<ResolvedRevision> resolveDependents(String g, String a, String v, ResolverConfig config) {
             assertNull(methodCalled);
             methodCalled = "dpts";
             this.gid = g;

@@ -20,7 +20,7 @@ import java.util.Set;
 
 import javax.inject.Inject;
 
-import eu.fasten.core.maven.data.Revision;
+import eu.fasten.core.maven.data.ResolvedRevision;
 
 public class MavenResolver implements IMavenResolver {
 
@@ -34,12 +34,12 @@ public class MavenResolver implements IMavenResolver {
     }
 
     @Override
-    public Set<Revision> resolveDependencies(Collection<String> gavs, ResolverConfig config) {
+    public Set<ResolvedRevision> resolveDependencies(Collection<String> gavs, ResolverConfig config) {
         return dependencyResolver.resolve(gavs, config);
     }
 
     @Override
-    public Set<Revision> resolveDependents(String gid, String aid, String version, ResolverConfig config) {
+    public Set<ResolvedRevision> resolveDependents(String gid, String aid, String version, ResolverConfig config) {
         var gav = String.format("%s:%s:%s", gid, aid, version);
         return dependentsResolver.resolve(gav, config);
     }
