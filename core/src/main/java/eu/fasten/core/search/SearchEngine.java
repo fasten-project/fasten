@@ -151,7 +151,9 @@ public class SearchEngine implements AutoCloseable {
 
 		@Override
 		public int compareTo(Result o) {
-			return Double.compare(o.score, score);
+			final int t = Double.compare(o.score, score);
+			if (t != 0) return t;
+			return Long.compare(gid, o.gid);
 		}
 	}
 
@@ -457,25 +459,29 @@ public class SearchEngine implements AutoCloseable {
 	 * will replace results with a lower score if the {@code maxResults} threshold is exceeded.
 	 */
 	protected static void bfs(final DirectedGraph graph, final boolean forward, final LongCollection seed, final LongPredicate filter, final Scorer scorer, final ObjectRBTreeSet<Result> results, final long maxResults) {
-		final LongArrayFIFOQueue queue = new LongArrayFIFOQueue(seed.size());
-		seed.forEach(x -> queue.enqueue(x)); // Load initial state
-		if (queue.isEmpty()) return; // All seed already visited
-		final LongOpenHashSet seen = new LongOpenHashSet(graph.numNodes(), 0.5f);
-		seed.forEach(x -> seen.add(x)); // Load initial state TODO: is this correct?
-		int d = -1;
-		long sentinel = queue.firstLong();
 		final LongSet nodes = graph.nodes();
+		final LongArrayFIFOQueue visitQueue = new LongArrayFIFOQueue(seed.size());
+		final LongOpenHashSet seen = new LongOpenHashSet(graph.numNodes(), 0.5f);
+		
+		seed.forEach(gid -> {
+			if (nodes.contains(gid)) {
+				visitQueue.enqueue(gid);
+				seen.add(gid);
+			}}); // Load initial state, skipping seeds out of graph
 
-		while (!queue.isEmpty()) {
-			final long gid = queue.dequeueLong();
+		if (visitQueue.isEmpty()) return;
+		
+		int d = -1;
+		long sentinel = visitQueue.firstLong();
+
+		while (!visitQueue.isEmpty()) {
+			final long gid = visitQueue.dequeueLong();
 			if (gid == sentinel) {
 				d++;
 				sentinel = -1;
 			}
 
-			if (!nodes.contains(gid)) continue; // We accept arbitrary seed sets
-
-			if (!seed.contains(gid) && filter.test(gid)) {
+			if (!seed.contains(gid) && filter.test(gid)) { // TODO: why?
 				final double score = scorer.score(graph, gid, d);
 				boolean changed = false;
 				synchronized(results) {
@@ -493,9 +499,9 @@ public class SearchEngine implements AutoCloseable {
 
 			while (iterator.hasNext()) {
 				final long x = iterator.nextLong();
-				if (! seen.contains(x)) {
+				if (seen.add(x)) {
 					if (sentinel == -1) sentinel = x;
-					queue.enqueue(x);
+					visitQueue.enqueue(x);
 				}
 			}
 		}
