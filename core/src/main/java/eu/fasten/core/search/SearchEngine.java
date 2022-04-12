@@ -29,6 +29,9 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Flow.Subscriber;
+import java.util.concurrent.Flow.Subscription;
+import java.util.concurrent.SubmissionPublisher;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.LongPredicate;
 import java.util.regex.Matcher;
@@ -456,7 +459,10 @@ public class SearchEngine implements AutoCloseable {
 	 * @param maxResults the maximum number of results deposited in {@code results}; results with a higher score
 	 * will replace results with a lower score if the {@code maxResults} threshold is exceeded.
 	 */
-	protected static void bfs(final DirectedGraph graph, final boolean forward, final LongCollection seed, final LongPredicate filter, final Scorer scorer, final ObjectRBTreeSet<Result> results, final long maxResults) {
+	protected static void bfs(final DirectedGraph graph, final boolean forward, 
+			final LongCollection seed, final LongPredicate filter, final Scorer scorer, 
+			final ObjectRBTreeSet<Result> results, final long maxResults,
+			final SubmissionPublisher<Result> publisher) {
 		final LongArrayFIFOQueue queue = new LongArrayFIFOQueue(seed.size());
 		seed.forEach(x -> queue.enqueue(x)); // Load initial state
 		if (queue.isEmpty()) return; // All seed already visited
@@ -477,16 +483,16 @@ public class SearchEngine implements AutoCloseable {
 
 			if (!seed.contains(gid) && filter.test(gid)) {
 				final double score = scorer.score(graph, gid, d);
-				boolean changed = false;
+				Result newResult = null;
 				synchronized(results) {
 					if (results.size() < maxResults || score > results.last().score) {
-						results.add(new Result(gid, score));
-						changed = true;
+						newResult = new Result(gid, score);
+						results.add(newResult);
 						if (results.size() > maxResults) results.remove(results.last());
 					}
 				}
 				
-				if (changed); // TODO call subscribers
+				if (newResult != null) publisher.submit(newResult);
 			}
 
 			final LongIterator iterator = forward ? graph.successorsIterator(gid) : graph.predecessorsIterator(gid);
@@ -499,6 +505,7 @@ public class SearchEngine implements AutoCloseable {
 				}
 			}
 		}
+		publisher.close();
 	}
 
 	/**
@@ -509,8 +516,8 @@ public class SearchEngine implements AutoCloseable {
 	 * @param maxResults the maximum number of results returned.
 	 * @return a list of {@linkplain Result results}.
 	 */
-	private List<Result> fromCallable(final long gid, final long maxResults) throws RocksDBException {
-		return fromCallable(gid, predicateFilters.stream().reduce(x -> true, LongPredicate::and), maxResults);
+	private List<Result> fromCallable(final long gid, final long maxResults, final SubmissionPublisher<Result> publisher) throws RocksDBException {
+		return fromCallable(gid, predicateFilters.stream().reduce(x -> true, LongPredicate::and), maxResults, publisher);
 	}
 
 	/**
@@ -522,8 +529,8 @@ public class SearchEngine implements AutoCloseable {
 	 * @param maxResults the maximum number of results returned.
 	 * @return a list of {@linkplain Result results}.
 	 */
-	public List<Result> fromCallable(final long gid, final LongPredicate filter, final long maxResults) throws RocksDBException {
-		return from(Util.getRevision(gid, context), LongSets.singleton(gid), filter, maxResults);
+	public List<Result> fromCallable(final long gid, final LongPredicate filter, final long maxResults, final SubmissionPublisher<Result> publisher) throws RocksDBException {
+		return from(Util.getRevision(gid, context), LongSets.singleton(gid), filter, maxResults, publisher);
 	}
 
 	/**
@@ -534,8 +541,8 @@ public class SearchEngine implements AutoCloseable {
 	 * @param maxResults the maximum number of results returned.
 	 * @return a list of {@linkplain Result results}.
 	 */
-	private List<Result> fromRevision(final FastenURI revisionUri, final long maxResults) throws RocksDBException {
-		return fromRevision(revisionUri, predicateFilters.stream().reduce(x -> true, LongPredicate::and), maxResults);
+	private List<Result> fromRevision(final FastenURI revisionUri, final long maxResults, final SubmissionPublisher<Result> publisher) throws RocksDBException {
+		return fromRevision(revisionUri, predicateFilters.stream().reduce(x -> true, LongPredicate::and), maxResults, publisher);
 	}
 
 	/**
@@ -547,11 +554,11 @@ public class SearchEngine implements AutoCloseable {
 	 * @param maxResults the maximum number of results returned.
 	 * @return a list of {@linkplain Result results}.
 	 */
-	public List<Result> fromRevision(final FastenURI revisionUri, final LongPredicate filter, final long maxResults) throws RocksDBException {
+	public List<Result> fromRevision(final FastenURI revisionUri, final LongPredicate filter, final long maxResults, final SubmissionPublisher<Result> publisher) throws RocksDBException {
 		// Fetch revision id
 		final long rev = Util.getRevisionId(revisionUri, context);
 		if (rev == -1) throw new IllegalArgumentException("Unknown revision " + revisionUri);
-		return from(rev, null, filter, maxResults);
+		return from(rev, null, filter, maxResults, publisher);
 	}
 
 	/**
@@ -565,7 +572,8 @@ public class SearchEngine implements AutoCloseable {
 	 * @param maxResults the maximum number of results returned.
 	 * @return a list of {@linkplain Result results}.
 	 */
-	public List<Result> from(final long rev, LongCollection seed, final LongPredicate filter, final long maxResults) throws RocksDBException {
+	public List<Result> from(final long rev, LongCollection seed, final LongPredicate filter, 
+			final long maxResults, final SubmissionPublisher<Result> publisher) throws RocksDBException {
 		final var graph = rocksDao.getGraphData(rev);
 		if (graph == null) throw new NoSuchElementException("Revision associated with callable missing from the graph database");
 		if (seed == null) seed = graph.nodes();
@@ -616,7 +624,7 @@ public class SearchEngine implements AutoCloseable {
 		final ObjectRBTreeSet<Result> results = new ObjectRBTreeSet<>();
 
 		visitTime -= System.nanoTime();
-		bfs(stitchedGraph, true, seed, filter, scorer, results, maxResults);
+		bfs(stitchedGraph, true, seed, filter, scorer, results, maxResults, publisher);
 		visitTime += System.nanoTime();
 
 		LOGGER.debug("Found " + results.size() + " reachable nodes");
@@ -632,8 +640,8 @@ public class SearchEngine implements AutoCloseable {
 	 * @param maxResults the maximum number of results returned.
 	 * @return a list of {@linkplain Result results}.
 	 */
-	private List<Result> toCallable(final long gid, final long maxResults) throws RocksDBException {
-		return toCallable(gid, predicateFilters.stream().reduce(x -> true, LongPredicate::and), maxResults);
+	private List<Result> toCallable(final long gid, final long maxResults, final SubmissionPublisher<Result> publisher) throws RocksDBException {
+		return toCallable(gid, predicateFilters.stream().reduce(x -> true, LongPredicate::and), maxResults, publisher);
 	}
 
 	/**
@@ -645,8 +653,8 @@ public class SearchEngine implements AutoCloseable {
 	 * @param maxResults the maximum number of results returned.
 	 * @return a list of {@linkplain Result results}.
 	 */
-	public List<Result> toCallable(final long gid, final LongPredicate filter, final long maxResults) throws RocksDBException {
-		return to(Util.getRevision(gid, context), LongSets.singleton(gid), filter, maxResults);
+	public List<Result> toCallable(final long gid, final LongPredicate filter, final long maxResults, final SubmissionPublisher<Result> publisher) throws RocksDBException {
+		return to(Util.getRevision(gid, context), LongSets.singleton(gid), filter, maxResults, publisher);
 	}
 
 	/**
@@ -657,8 +665,8 @@ public class SearchEngine implements AutoCloseable {
 	 * @param maxResults the maximum number of results returned.
 	 * @return a list of {@linkplain Result results}.
 	 */
-	private List<Result> toRevision(final FastenURI revisionUri, final long maxResults) throws RocksDBException {
-		return toRevision(revisionUri, predicateFilters.stream().reduce(x -> true, LongPredicate::and), maxResults);
+	private List<Result> toRevision(final FastenURI revisionUri, final long maxResults, final SubmissionPublisher<Result> publisher) throws RocksDBException {
+		return toRevision(revisionUri, predicateFilters.stream().reduce(x -> true, LongPredicate::and), maxResults, publisher);
 	}
 
 	/**
@@ -670,11 +678,11 @@ public class SearchEngine implements AutoCloseable {
 	 * @param maxResults the maximum number of results returned.
 	 * @return a list of {@linkplain Result results}.
 	 */
-	public List<Result> toRevision(final FastenURI revisionUri, final LongPredicate filter, final long maxResults) throws RocksDBException {
+	public List<Result> toRevision(final FastenURI revisionUri, final LongPredicate filter, final long maxResults, final SubmissionPublisher<Result> publisher) throws RocksDBException {
 		// Fetch revision id
 		final long rev = Util.getRevisionId(revisionUri, context);
 		if (rev == -1) throw new IllegalArgumentException("Unknown revision " + revisionUri);
-		return to(rev, null, filter, maxResults);
+		return to(rev, null, filter, maxResults, publisher);
 	}
 
 	/**
@@ -688,7 +696,7 @@ public class SearchEngine implements AutoCloseable {
 	 * @param maxResults the maximum number of results returned.
 	 * @return a list of {@linkplain Result results}.
 	 */
-	public List<Result> to(final long revId, LongCollection providedSeed, final LongPredicate filter, final long maxResults) throws RocksDBException {
+	public List<Result> to(final long revId, LongCollection providedSeed, final LongPredicate filter, final long maxResults, final SubmissionPublisher<Result> publisher) throws RocksDBException {
 		throwables.clear();
 		final var graph = rocksDao.getGraphData(revId);
 		if (graph == null) throw new NoSuchElementException("Revision associated with callable missing from the graph database");
@@ -771,7 +779,7 @@ public class SearchEngine implements AutoCloseable {
 			final int sizeBefore = results.size();
 
 			visitTime -= System.nanoTime();
-			bfs(stitchedGraph, false, seed, filter, scorer, results, maxResults);
+			bfs(stitchedGraph, false, seed, filter, scorer, results, maxResults, publisher);
 			visitTime += System.nanoTime();
 
 			LOGGER.debug("Found " + (results.size() - sizeBefore) + " coreachable nodes");
@@ -852,18 +860,31 @@ public class SearchEngine implements AutoCloseable {
 					searchEngine.stitchingTime = searchEngine.resolveTime = searchEngine.visitTime = 0;
 
 					final List<Result> r;
+					final SubmissionPublisher<Result> publisher = new SubmissionPublisher<>();
+					final FullyCollectSubscriber subscriber = new FullyCollectSubscriber();
+					publisher.subscribe(subscriber);
 
 					if (uri.getPath() == null) {
-						r = dir == '+' ? searchEngine.fromRevision(uri, searchEngine.limit) : searchEngine.toRevision(uri, searchEngine.limit);
+						r = dir == '+' ? searchEngine.fromRevision(uri, searchEngine.limit, publisher) : searchEngine.toRevision(uri, searchEngine.limit, publisher);
 						for (int i = 0; i < Math.min(searchEngine.limit, r.size()); i++) System.out.println(r.get(i).gid + "\t" + Util.getCallableName(r.get(i).gid, context) + "\t" + r.get(i).score);
+						synchronized(subscriber) {
+							while (!subscriber.ready) subscriber.wait();
+							System.out.println("***" + subscriber.result);
+						
+						}
 					} else {
 						final long gid = Util.getCallableGID(uri, context);
 						if (gid == -1) {
 							System.err.println("Unknown URI " + uri);
 							continue;
 						}
-						r = dir == '+' ? searchEngine.fromCallable(gid, searchEngine.limit) : searchEngine.toCallable(gid, searchEngine.limit);
+						r = dir == '+' ? searchEngine.fromCallable(gid, searchEngine.limit, publisher) : searchEngine.toCallable(gid, searchEngine.limit, publisher);
 						for (int i = 0; i < Math.min(searchEngine.limit, r.size()); i++) System.out.println(r.get(i).gid + "\t" + Util.getCallableName(r.get(i).gid, context) + "\t" + r.get(i).score);
+						synchronized(subscriber) {
+							while (!subscriber.ready) subscriber.wait();
+							System.out.println("***" + subscriber.result);
+						
+						}
 					}
 
 					for (final var t : searchEngine.throwables) {
@@ -877,4 +898,32 @@ public class SearchEngine implements AutoCloseable {
 			}
 		}
 	}
+	
+	
+	public static class FullyCollectSubscriber implements Subscriber<Result> {
+		public boolean ready = false;
+		public List<Result> result = new ObjectArrayList<>();
+		
+		@Override
+		public void onSubscribe(Subscription subscription) {
+			subscription.request(Long.MAX_VALUE);  // No limit on the number of items
+		}
+
+		@Override
+		public void onNext(Result item) {
+			result.add(item);
+		}
+
+		@Override
+		public void onError(Throwable throwable) {
+			throwable.printStackTrace(System.err);
+		}
+
+		@Override
+		public void onComplete() {
+			ready = true;
+		}
+		
+	}
+	
 }
