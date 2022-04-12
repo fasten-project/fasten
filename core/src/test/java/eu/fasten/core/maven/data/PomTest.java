@@ -302,7 +302,7 @@ public class PomTest {
         var om = new ObjectMapperBuilder().build();
         var json = om.writeValueAsString(sut);
         // make sure custom serializers are registered
-        assertTrue(json.contains("\"versionConstraints\":[\"0\"]"));
+        assertTrue(json.contains("\"v\":[\"0\"]"));
         var sut2 = om.readValue(json, Pom.class);
         assertEquals(sut, sut2);
         return sut2;
