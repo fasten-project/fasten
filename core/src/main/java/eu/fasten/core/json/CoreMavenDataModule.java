@@ -17,6 +17,7 @@ package eu.fasten.core.json;
 
 import java.io.IOException;
 import java.util.LinkedHashSet;
+import java.util.function.Consumer;
 
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 
@@ -37,6 +38,16 @@ import eu.fasten.core.maven.data.VersionConstraint;
 
 public class CoreMavenDataModule extends SimpleModule {
 
+    // TODO remove old handling once pipeline has been restarted
+    private static final String OLD_VERSION_CONSTRAINTS = "versionConstraints";
+    private static final String OLD_GROUP_ID = "groupId";
+    private static final String OLD_ARTIFACT_ID = "artifactId";
+    private static final String VERSION_CONSTRAINTS = "v";
+    private static final String GROUP_ID = "g";
+    private static final String ARTIFACT_ID = "a";
+
+    private static final String JAR = "jar";
+
     private static final long serialVersionUID = 8302574258846915634L;
 
     public CoreMavenDataModule() {
@@ -49,14 +60,24 @@ public class CoreMavenDataModule extends SimpleModule {
                     throws IOException {
                 gen.writeStartObject();
 
-                gen.writeStringField("artifactId", value.artifactId);
-                gen.writeStringField("classifier", value.classifier);
-                gen.writeObjectField("exclusions", value.exclusions);
-                gen.writeStringField("groupId", value.groupId);
-                gen.writeBooleanField("optional", value.optional);
-                gen.writeStringField("scope", value.scope.toString().toLowerCase());
-                gen.writeStringField("type", value.type);
-                gen.writeObjectField("versionConstraints", value.versionConstraints);
+                gen.writeStringField(ARTIFACT_ID, value.artifactId);
+                if (value.classifier != null && !value.classifier.isEmpty()) {
+                    gen.writeStringField("classifier", value.classifier);
+                }
+                if (value.exclusions != null && !value.exclusions.isEmpty()) {
+                    gen.writeObjectField("exclusions", value.exclusions);
+                }
+                gen.writeStringField(GROUP_ID, value.groupId);
+                if (value.optional) {
+                    gen.writeBooleanField("optional", value.optional);
+                }
+                if (value.scope != Scope.COMPILE) {
+                    gen.writeStringField("scope", value.scope.toString().toLowerCase());
+                }
+                if (value.type != null && !"jar".equals(value.type)) {
+                    gen.writeStringField("type", value.type);
+                }
+                gen.writeObjectField(VERSION_CONSTRAINTS, value.versionConstraints);
 
                 gen.writeEndObject();
             }
@@ -69,25 +90,28 @@ public class CoreMavenDataModule extends SimpleModule {
                 var oc = p.getCodec();
                 var node = (JsonNode) oc.readTree(p);
 
-                var a = node.get("artifactId").textValue();
-                var c = node.get("classifier").asText();
+                var a = getText(node, ARTIFACT_ID, OLD_ARTIFACT_ID);
+
+                var c = node.has("classifier") ? node.get("classifier").asText() : "";
 
                 var es = new LinkedHashSet<Exclusion>();
-                node.get("exclusions").forEach(exclusion -> {
-                    try {
-                        es.add(ctxt.readTreeAsValue(exclusion, Exclusion.class));
-                    } catch (IOException exception) {
-                        throw new RuntimeException(exception);
-                    }
-                });
+                if (node.has("exclusions")) {
+                    node.get("exclusions").forEach(exclusion -> {
+                        try {
+                            es.add(ctxt.readTreeAsValue(exclusion, Exclusion.class));
+                        } catch (IOException exception) {
+                            throw new RuntimeException(exception);
+                        }
+                    });
+                }
 
-                var g = node.get("groupId").asText();
-                var o = node.get("optional").asBoolean();
-                var s = Scope.valueOf(node.get("scope").asText().toUpperCase());
-                var t = node.get("type").asText();
+                var g = getText(node, GROUP_ID, OLD_GROUP_ID);
+                var o = node.has("optional") ? node.get("optional").asBoolean() : false;
+                var s = node.has("scope") ? Scope.valueOf(node.get("scope").asText().toUpperCase()) : Scope.COMPILE;
+                var t = node.has("type") ? node.get("type").asText() : JAR;
 
                 var vs = new LinkedHashSet<VersionConstraint>();
-                node.get("versionConstraints").forEach(vcjson -> {
+                Consumer<JsonNode> vcConsumer = vcjson -> {
                     try {
                         var vc = ctxt.readTreeAsValue(vcjson, VersionConstraint.class);
                         // TODO this check/fix will become irrelevant after the next pipeline reset
@@ -97,7 +121,12 @@ public class CoreMavenDataModule extends SimpleModule {
                     } catch (IOException exception) {
                         throw new RuntimeException(exception);
                     }
-                });
+                };
+                if (node.has(VERSION_CONSTRAINTS)) {
+                    node.get(VERSION_CONSTRAINTS).forEach(vcConsumer);
+                } else if (node.has(OLD_VERSION_CONSTRAINTS)) {
+                    node.get(OLD_VERSION_CONSTRAINTS).forEach(vcConsumer);
+                }
 
                 return new Dependency(g, a, vs, es, s, o, t, c);
 
@@ -149,5 +178,14 @@ public class CoreMavenDataModule extends SimpleModule {
                 return new DefaultArtifactVersion(p.getValueAsString());
             }
         });
+    }
+
+    private static String getText(JsonNode node, String... keys) {
+        for (var key : keys) {
+            if (node.has(key)) {
+                return node.get(key).textValue();
+            }
+        }
+        return null;
     }
 }

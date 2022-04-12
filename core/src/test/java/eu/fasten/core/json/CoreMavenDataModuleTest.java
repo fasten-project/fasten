@@ -50,16 +50,79 @@ public class CoreMavenDataModuleTest {
     }
 
     @Test
+    public void testDependencyOldCanBeRead() throws Exception {
+        var json = "{\"versionConstraints\":[\"[1,2]\"],\"groupId\":\"g1\",\"scope\":\"test\",\"classifier\":\"sources\",\"artifactId\":\"a1\",\"exclusions\":[\"g2:a2\"],\"optional\":false,\"type\":\"type\"}";
+        var actual = om.readValue(json, Dependency.class);
+        var expected = new Dependency("g1", "a1", Set.of(new VersionConstraint("[1,2]")),
+                Set.of(new Exclusion("g2", "a2")), Scope.TEST, false, "type", "sources");
+        assertEquals(expected, actual);
+    }
+
+    @Test
+    public void testDependencyFixNonEmptyVersionConstraintsOld() throws Exception {
+        var json = "{\"versionConstraints\":[\"\"],\"groupId\":\"g1\",\"scope\":\"test\",\"classifier\":\"sources\",\"artifactId\":\"a1\",\"exclusions\":[\"g2:a2\"],\"optional\":true,\"type\":\"type\"}";
+        var out = om.readValue(json, Dependency.class);
+        assertTrue(out.versionConstraints.isEmpty());
+    }
+
+    @Test
     public void testDependency() {
         var d = new Dependency("g1", "a1", Set.of(new VersionConstraint("[1,2]")), Set.of(new Exclusion("g2", "a2")),
+                Scope.TEST, true, "type", "sources");
+        var json = "{\"v\":[\"[1,2]\"],\"g\":\"g1\",\"scope\":\"test\",\"classifier\":\"sources\",\"a\":\"a1\",\"exclusions\":[\"g2:a2\"],\"optional\":true,\"type\":\"type\"}";
+        test(d, json);
+    }
+
+    @Test
+    public void testDependencyDefault() {
+        var d = new Dependency("g", "a", "v");
+        var json = "{\"v\":[\"v\"],\"g\":\"g\",\"a\":\"a\"}";
+        test(d, json);
+    }
+
+    @Test
+    public void testDependency_compileScope() {
+        var d = new Dependency("g1", "a1", Set.of(new VersionConstraint("[1,2]")), Set.of(new Exclusion("g2", "a2")),
+                Scope.COMPILE, true, "type", "sources");
+        var json = "{\"v\":[\"[1,2]\"],\"g\":\"g1\",\"classifier\":\"sources\",\"a\":\"a1\",\"exclusions\":[\"g2:a2\"],\"optional\":true,\"type\":\"type\"}";
+        test(d, json);
+    }
+
+    @Test
+    public void testDependency_nonOptional() {
+        var d = new Dependency("g1", "a1", Set.of(new VersionConstraint("[1,2]")), Set.of(new Exclusion("g2", "a2")),
                 Scope.TEST, false, "type", "sources");
-        var json = "{\"versionConstraints\":[\"[1,2]\"],\"groupId\":\"g1\",\"scope\":\"test\",\"classifier\":\"sources\",\"artifactId\":\"a1\",\"exclusions\":[\"g2:a2\"],\"optional\":false,\"type\":\"type\"}";
+        var json = "{\"v\":[\"[1,2]\"],\"g\":\"g1\",\"scope\":\"test\",\"classifier\":\"sources\",\"a\":\"a1\",\"exclusions\":[\"g2:a2\"],\"type\":\"type\"}";
+        test(d, json);
+    }
+
+    @Test
+    public void testDependency_noExclusions() {
+        var d = new Dependency("g1", "a1", Set.of(new VersionConstraint("[1,2]")), Set.of(), Scope.TEST, true, "type",
+                "sources");
+        var json = "{\"v\":[\"[1,2]\"],\"g\":\"g1\",\"scope\":\"test\",\"classifier\":\"sources\",\"a\":\"a1\",\"optional\":true,\"type\":\"type\"}";
+        test(d, json);
+    }
+
+    @Test
+    public void testDependency_jarType() {
+        var d = new Dependency("g1", "a1", Set.of(new VersionConstraint("[1,2]")), Set.of(new Exclusion("g2", "a2")),
+                Scope.TEST, true, "jar", "sources");
+        var json = "{\"v\":[\"[1,2]\"],\"g\":\"g1\",\"scope\":\"test\",\"classifier\":\"sources\",\"a\":\"a1\",\"exclusions\":[\"g2:a2\"],\"optional\":true}";
+        test(d, json);
+    }
+
+    @Test
+    public void testDependency_noClassifier() {
+        var d = new Dependency("g1", "a1", Set.of(new VersionConstraint("[1,2]")), Set.of(new Exclusion("g2", "a2")),
+                Scope.TEST, true, "type", "");
+        var json = "{\"v\":[\"[1,2]\"],\"g\":\"g1\",\"scope\":\"test\",\"a\":\"a1\",\"exclusions\":[\"g2:a2\"],\"optional\":true,\"type\":\"type\"}";
         test(d, json);
     }
 
     @Test
     public void testDependencyFixNonEmptyVersionConstraints() throws Exception {
-        var json = "{\"versionConstraints\":[\"\"],\"groupId\":\"g1\",\"scope\":\"test\",\"classifier\":\"sources\",\"artifactId\":\"a1\",\"exclusions\":[\"g2:a2\"],\"optional\":false,\"type\":\"type\"}";
+        var json = "{\"v\":[\"\"],\"g\":\"g1\",\"scope\":\"test\",\"classifier\":\"sources\",\"a\":\"a1\",\"exclusions\":[\"g2:a2\"],\"optional\":true,\"type\":\"type\"}";
         var out = om.readValue(json, Dependency.class);
         assertTrue(out.versionConstraints.isEmpty());
     }
@@ -96,6 +159,6 @@ public class CoreMavenDataModuleTest {
     }
 
     private void assertJsonEquals(String expectedJson, String actualJson) {
-        JSONAssert.assertEquals(expectedJson, actualJson, JSONCompareMode.STRICT_ORDER);
+        JSONAssert.assertEquals(expectedJson, actualJson, JSONCompareMode.STRICT);
     }
 }
