@@ -33,7 +33,7 @@ public class SearchEngineTest {
 		final SearchEngine.FullyCollectSubscriber subscriber = new SearchEngine.FullyCollectSubscriber();
 		publisher.subscribe(subscriber);
 		
-		SearchEngine.bfs(graph, true, LongIterators.pour(LongIterators.singleton(1)), x -> true, TrivialScorer.getInstance(), results, 100, publisher);
+		SearchEngine.bfs(graph, true, LongList.of(1), x -> true, TrivialScorer.getInstance(), results, 100, publisher);
 		// #node #indegree #outdegree #distance (from 1)
 		// 1 2 2 0
 		// 2 1 1 1

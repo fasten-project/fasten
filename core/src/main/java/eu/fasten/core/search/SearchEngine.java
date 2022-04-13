@@ -463,9 +463,8 @@ public class SearchEngine implements AutoCloseable {
 			final LongCollection seed, final LongPredicate filter, final Scorer scorer, 
 			final ObjectRBTreeSet<Result> results, final long maxResults,
 			final SubmissionPublisher<Result> publisher) {
-		final LongArrayFIFOQueue queue = new LongArrayFIFOQueue(seed.size());
-		seed.forEach(x -> queue.enqueue(x)); // Load initial state
-		if (queue.isEmpty()) return; // All seed already visited
+		final LongSet nodes = graph.nodes();
+		final LongArrayFIFOQueue visitQueue = new LongArrayFIFOQueue(seed.size());
 		final LongOpenHashSet seen = new LongOpenHashSet(graph.numNodes(), 0.5f);
 		seed.forEach(x -> seen.add(x)); // Load initial state TODO: is this correct?
 		int d = -1;
