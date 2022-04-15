@@ -22,67 +22,69 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 
 import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 
 public class VersionConstraint {
 
-    public String spec;
+    private int hashCode;
+    private String spec;
 
-    public boolean isRange;
-    public boolean isHard;
-
-    public String lowerBound;
-    public boolean isLowerBoundInclusive;
-    public String upperBound;
-    public boolean isUpperBoundInclusive;
-
-    @SuppressWarnings("unused")
-    private VersionConstraint() {
-        // exists for JSON object mappers
+    public String getSpec() {
+        return spec;
     }
 
-    /**
-     * Constructs a VersionConstraint object from specification. (From
-     * https://maven.apache.org/pom.html#Dependency_Version_Requirement_Specification)
-     *
-     * @param spec String specification of version constraint
-     */
-    public VersionConstraint(String spec) {
-        this.spec = spec;
+    public boolean isRange() {
+        return spec.contains(",");
+    }
 
-        isHard = spec.startsWith("[") || spec.startsWith("(");
-        isRange = spec.contains(",");
-        isLowerBoundInclusive = !isHard || spec.startsWith("[");
-        isUpperBoundInclusive = !isHard || spec.endsWith("]");
+    public boolean isHard() {
+        return spec.startsWith("[") || spec.startsWith("(");
+    }
 
-        if (isRange) {
+    public String getLowerBound() {
+        if (isRange()) {
             String asd = spec.substring(1, spec.length() - 1);
             var parts = asd.split(",", -1);
-            lowerBound = parts[0].isEmpty() ? "0" : parts[0];
-            upperBound = parts[1].isEmpty() ? "999" : parts[1];
-
-        } else {
-            if (isHard) {
-                upperBound = spec.substring(1, spec.length() - 1);
-            } else {
-                upperBound = spec;
-            }
-            lowerBound = upperBound;
+            return parts[0].isEmpty() ? "0" : parts[0];
         }
+        if (isHard()) {
+            return spec.substring(1, spec.length() - 1);
+        }
+        return spec;
+    }
+
+    public boolean isLowerBoundInclusive() {
+        return !isHard() || spec.startsWith("[");
+    }
+
+    public String getUpperBound() {
+        if (isRange()) {
+            String asd = spec.substring(1, spec.length() - 1);
+            var parts = asd.split(",", -1);
+            return parts[1].isEmpty() ? "999" : parts[1];
+
+        }
+        if (isHard()) {
+            return spec.substring(1, spec.length() - 1);
+        }
+        return spec;
+    }
+
+    public boolean isUpperBoundInclusive() {
+        return !isHard() || spec.endsWith("]");
     }
 
     public boolean matches(String version) {
 
         var v = new DefaultArtifactVersion(version);
 
-        var lower = new DefaultArtifactVersion(lowerBound);
-        var upper = new DefaultArtifactVersion(upperBound);
+        var lower = new DefaultArtifactVersion(getLowerBound());
+        var upper = new DefaultArtifactVersion(getUpperBound());
 
-        if (v.equals(lower) && isLowerBoundInclusive) {
+        if (v.equals(lower) && isLowerBoundInclusive()) {
             return true;
         }
-        if (v.equals(upper) && isUpperBoundInclusive) {
+        if (v.equals(upper) && isUpperBoundInclusive()) {
             return true;
         }
         if (v.compareTo(lower) > 0 && v.compareTo(upper) < 0) {
@@ -93,13 +95,13 @@ public class VersionConstraint {
     }
 
     @Override
-    public boolean equals(Object obj) {
-        return EqualsBuilder.reflectionEquals(this, obj);
+    public int hashCode() {
+        return hashCode;
     }
 
     @Override
-    public int hashCode() {
-        return HashCodeBuilder.reflectionHashCode(this);
+    public boolean equals(Object obj) {
+        return EqualsBuilder.reflectionEquals(this, obj);
     }
 
     @Override
@@ -107,13 +109,13 @@ public class VersionConstraint {
         return spec;
     }
 
-    /**
-     * Creates full list of version constraints from specification. (From
-     * https://maven.apache.org/pom.html#Dependency_Version_Requirement_Specification)
-     *
-     * @param spec String specification of version constraints
-     * @return List of Version Constraints
-     */
+    public static VersionConstraint init(String spec) {
+        var v = new VersionConstraint();
+        v.spec = spec;
+        v.hashCode = spec == null ? 31 : spec.hashCode() + 1;
+        return v;
+    }
+
     public static Set<VersionConstraint> parseVersionSpec(String spec) {
         assertNotNull(spec);
         spec = spec.replaceAll(" ", "").replaceAll("\n", "").replaceAll("\t", "");
@@ -131,7 +133,7 @@ public class VersionConstraint {
             assertTrue(!spec.contains("]"));
             assertTrue(!spec.contains("("));
             assertTrue(!spec.contains(")"));
-            constraints.add(new VersionConstraint(spec));
+            constraints.add(VersionConstraint.init(spec));
             return constraints;
         }
 
@@ -143,7 +145,7 @@ public class VersionConstraint {
         while (idxOpen != -1) {
             var idxClose = find(spec, idxOpen + 1, ')', ']');
             var vcSpec = spec.substring(idxOpen, idxClose + 1);
-            constraints.add(new VersionConstraint(vcSpec));
+            constraints.add(VersionConstraint.init(vcSpec));
             idxOpen = find(spec, idxClose, '(', '[');
         }
 

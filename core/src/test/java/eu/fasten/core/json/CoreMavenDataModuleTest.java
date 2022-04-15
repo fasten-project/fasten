@@ -17,6 +17,7 @@ package eu.fasten.core.json;
 
 import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 import java.util.Set;
 
@@ -32,6 +33,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 
 import eu.fasten.core.maven.data.Dependency;
 import eu.fasten.core.maven.data.Exclusion;
+import eu.fasten.core.maven.data.Pom;
 import eu.fasten.core.maven.data.Scope;
 import eu.fasten.core.maven.data.VersionConstraint;
 
@@ -53,7 +55,7 @@ public class CoreMavenDataModuleTest {
     public void testDependencyOldCanBeRead() throws Exception {
         var json = "{\"versionConstraints\":[\"[1,2]\"],\"groupId\":\"g1\",\"scope\":\"test\",\"classifier\":\"sources\",\"artifactId\":\"a1\",\"exclusions\":[\"g2:a2\"],\"optional\":false,\"type\":\"type\"}";
         var actual = om.readValue(json, Dependency.class);
-        var expected = new Dependency("g1", "a1", Set.of(new VersionConstraint("[1,2]")),
+        var expected = new Dependency("g1", "a1", Set.of(VersionConstraint.init("[1,2]")),
                 Set.of(Exclusion.init("g2", "a2")), Scope.TEST, false, "type", "sources");
         assertEquals(expected, actual);
     }
@@ -67,7 +69,7 @@ public class CoreMavenDataModuleTest {
 
     @Test
     public void testDependency() {
-        var d = new Dependency("g1", "a1", Set.of(new VersionConstraint("[1,2]")), Set.of(Exclusion.init("g2", "a2")),
+        var d = new Dependency("g1", "a1", Set.of(VersionConstraint.init("[1,2]")), Set.of(Exclusion.init("g2", "a2")),
                 Scope.TEST, true, "type", "sources");
         var json = "{\"v\":[\"[1,2]\"],\"g\":\"g1\",\"scope\":\"test\",\"classifier\":\"sources\",\"a\":\"a1\",\"exclusions\":[\"g2:a2\"],\"optional\":true,\"type\":\"type\"}";
         test(d, json);
@@ -82,7 +84,7 @@ public class CoreMavenDataModuleTest {
 
     @Test
     public void testDependency_compileScope() {
-        var d = new Dependency("g1", "a1", Set.of(new VersionConstraint("[1,2]")), Set.of(Exclusion.init("g2", "a2")),
+        var d = new Dependency("g1", "a1", Set.of(VersionConstraint.init("[1,2]")), Set.of(Exclusion.init("g2", "a2")),
                 Scope.COMPILE, true, "type", "sources");
         var json = "{\"v\":[\"[1,2]\"],\"g\":\"g1\",\"classifier\":\"sources\",\"a\":\"a1\",\"exclusions\":[\"g2:a2\"],\"optional\":true,\"type\":\"type\"}";
         test(d, json);
@@ -90,7 +92,7 @@ public class CoreMavenDataModuleTest {
 
     @Test
     public void testDependency_nonOptional() {
-        var d = new Dependency("g1", "a1", Set.of(new VersionConstraint("[1,2]")), Set.of(Exclusion.init("g2", "a2")),
+        var d = new Dependency("g1", "a1", Set.of(VersionConstraint.init("[1,2]")), Set.of(Exclusion.init("g2", "a2")),
                 Scope.TEST, false, "type", "sources");
         var json = "{\"v\":[\"[1,2]\"],\"g\":\"g1\",\"scope\":\"test\",\"classifier\":\"sources\",\"a\":\"a1\",\"exclusions\":[\"g2:a2\"],\"type\":\"type\"}";
         test(d, json);
@@ -98,7 +100,7 @@ public class CoreMavenDataModuleTest {
 
     @Test
     public void testDependency_noExclusions() {
-        var d = new Dependency("g1", "a1", Set.of(new VersionConstraint("[1,2]")), Set.of(), Scope.TEST, true, "type",
+        var d = new Dependency("g1", "a1", Set.of(VersionConstraint.init("[1,2]")), Set.of(), Scope.TEST, true, "type",
                 "sources");
         var json = "{\"v\":[\"[1,2]\"],\"g\":\"g1\",\"scope\":\"test\",\"classifier\":\"sources\",\"a\":\"a1\",\"optional\":true,\"type\":\"type\"}";
         test(d, json);
@@ -106,7 +108,7 @@ public class CoreMavenDataModuleTest {
 
     @Test
     public void testDependency_jarType() {
-        var d = new Dependency("g1", "a1", Set.of(new VersionConstraint("[1,2]")), Set.of(Exclusion.init("g2", "a2")),
+        var d = new Dependency("g1", "a1", Set.of(VersionConstraint.init("[1,2]")), Set.of(Exclusion.init("g2", "a2")),
                 Scope.TEST, true, "jar", "sources");
         var json = "{\"v\":[\"[1,2]\"],\"g\":\"g1\",\"scope\":\"test\",\"classifier\":\"sources\",\"a\":\"a1\",\"exclusions\":[\"g2:a2\"],\"optional\":true}";
         test(d, json);
@@ -114,7 +116,7 @@ public class CoreMavenDataModuleTest {
 
     @Test
     public void testDependency_noClassifier() {
-        var d = new Dependency("g1", "a1", Set.of(new VersionConstraint("[1,2]")), Set.of(Exclusion.init("g2", "a2")),
+        var d = new Dependency("g1", "a1", Set.of(VersionConstraint.init("[1,2]")), Set.of(Exclusion.init("g2", "a2")),
                 Scope.TEST, true, "type", "");
         var json = "{\"v\":[\"[1,2]\"],\"g\":\"g1\",\"scope\":\"test\",\"a\":\"a1\",\"exclusions\":[\"g2:a2\"],\"optional\":true,\"type\":\"type\"}";
         test(d, json);
@@ -129,7 +131,7 @@ public class CoreMavenDataModuleTest {
 
     @Test
     public void testVersionConstraint() {
-        var vc = new VersionConstraint("[1,2]");
+        var vc = VersionConstraint.init("[1,2]");
         test(vc, "\"[1,2]\"");
     }
 
@@ -140,8 +142,26 @@ public class CoreMavenDataModuleTest {
     }
 
     @Test
+    public void testHashCodeDependency() {
+        assertHashCodeAfterSerialization(new Dependency("g", "a", "v"));
+    }
+
+    @Test
+    public void testHashCodePom() {
+        var in = new Pom();
+        in.artifactId = "a";
+        in.groupId = "g";
+        assertHashCodeAfterSerialization(in);
+    }
+
+    @Test
     public void testHashCodeExclusion() {
         assertHashCodeAfterSerialization(Exclusion.init("gid", "aid"));
+    }
+
+    @Test
+    public void testHashCodeVersionConstraint() {
+        assertHashCodeAfterSerialization(VersionConstraint.init("1.2.3"));
     }
 
     private void assertHashCodeAfterSerialization(Object in) {

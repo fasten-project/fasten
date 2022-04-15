@@ -100,7 +100,7 @@ public class MavenDependencyDataTest {
     public void canReplaceRegisteredPom() {
         var a = addPom("a", "b", "1", SOME_TIME);
         var b = addPom("a", "b", "1", SOME_TIME + 1);
-        var c = sut.find("a:b", Set.of(new VersionConstraint("1")), SOME_TIME + 1);
+        var c = sut.find("a:b", Set.of(VersionConstraint.init("1")), SOME_TIME + 1);
         assertNotSame(a, c);
         assertSame(b, c);
     }
@@ -155,7 +155,7 @@ public class MavenDependencyDataTest {
 
     private Pom find(long resolveAt, String ga, String... specs) {
         var vcs = Arrays.stream(specs) //
-                .map(VersionConstraint::new) //
+                .map(VersionConstraint::init) //
                 .collect(Collectors.toSet());
         return sut.find(ga, vcs, resolveAt);
     }

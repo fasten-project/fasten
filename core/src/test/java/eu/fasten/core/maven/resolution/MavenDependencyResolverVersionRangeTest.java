@@ -123,7 +123,7 @@ public class MavenDependencyResolverVersionRangeTest extends AbstractMavenDepend
 
                 var vcs = Arrays.stream(partsTo[1].split(",")) //
                         .map(vc -> vc.replace('-', ',')) //
-                        .map(VersionConstraint::new) //
+                        .map(VersionConstraint::init) //
                         .collect(Collectors.toSet());
 
                 d.versionConstraints.addAll(vcs);
