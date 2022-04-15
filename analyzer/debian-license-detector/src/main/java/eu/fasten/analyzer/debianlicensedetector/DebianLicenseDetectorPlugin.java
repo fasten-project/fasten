@@ -228,19 +228,29 @@ public class DebianLicenseDetectorPlugin extends Plugin {
          * @param packageVersion the version of the package to be scanned.
          * @return the set of detected outbound licenses.
          */
-        protected Set<DetectedLicense> DebianOutboundLicenses(String packageName, String packageVersion) throws IOException, TimeoutException {
+        protected Set<DetectedLicense> DebianOutboundLicenses(String packageName, String packageVersion) throws IOException, TimeoutException, NullPointerException {
             // Retrieving the outbound license(s) from one of the copyright files (copyright, license or readme)
             JSONObject FileAndPath = retrieveCopyrightFile(packageName,packageVersion);
             System.out.println("Inside DebianOutboundLicenses function.");
             System.out.println(FileAndPath);
-            if (FileAndPath.getString("license")!= null){
-                DetectedLicense licenseFromDebianAPI;
-                licenseFromDebianAPI = new DetectedLicense(FileAndPath.getString("license"), DetectedLicenseSource.DEBIAN_PACKAGES);
-                return Sets.newHashSet(licenseFromDebianAPI);
-                //return FileAndPath;
+            System.out.println(FileAndPath.length());
+            if (FileAndPath.length()==0){//.has("license")){//FileAndPath == null ) {
+                System.out.println("Inside isEmpty function -- DebianOutboundLicenses function.");
+                if (!FileAndPath.isNull("license")) {//FileAndPath.getString("license")!= null){
+                    DetectedLicense licenseFromDebianAPI;
+                    licenseFromDebianAPI = new DetectedLicense(FileAndPath.getString("license"), DetectedLicenseSource.DEBIAN_PACKAGES);
+                    return Sets.newHashSet(licenseFromDebianAPI);
+                    //return FileAndPath;
+                }
             }
+            System.out.println("Inside else DebianOutboundLicenses");
+            DetectedLicense licenseFromDebianAPI;
+            licenseFromDebianAPI = new DetectedLicense(("not declared"), DetectedLicenseSource.DEBIAN_PACKAGES);
+            System.out.println("Inside else after DetectedLicense DebianOutboundLicenses");
+            return Sets.newHashSet(licenseFromDebianAPI);
 
-            return Collections.emptySet();
+
+            //return Collections.emptySet();
         }
 
 
@@ -383,7 +393,7 @@ public class DebianLicenseDetectorPlugin extends Plugin {
          * @param packageName the package name to be analyzed.
          * @param packageVersion the package version to be analyzed.
          */
-        protected JSONObject retrieveCopyrightFile(String packageName, String packageVersion) throws IOException, TimeoutException {
+        protected JSONObject retrieveCopyrightFile(String packageName, String packageVersion) throws IOException, TimeoutException, NullPointerException {
             JSONObject result = new JSONObject();
             URL url = new URL("https://sources.debian.org/api/src/" + packageName + "/" + packageVersion + "/");
             JSONObject LicenseAndPath = new JSONObject();
@@ -457,10 +467,12 @@ public class DebianLicenseDetectorPlugin extends Plugin {
                         System.out.println(obj2);
                         String version = obj2.getString("version");
                         if (version.equals(packageVersion)) {
-                            if (obj2.has("license")) {
+                            System.out.println("ElaborateCopyrightFileJSON: ");
+                            System.out.println(obj2);
+                            if (!obj2.isNull("license")){//obj2.has("license")) {
+                                System.out.println("Inside retrieveCopyright function.");
                                 license = obj2.getString("license");
                                 String path = obj2.getString("path");
-                                System.out.println("Inside retrieveCopyright function.");
                                 System.out.println(LicenseAndPath);
                                 System.out.println(license);
                                 JSONObject obj3 = new JSONObject();
