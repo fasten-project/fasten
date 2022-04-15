@@ -22,42 +22,68 @@ import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 public class Exclusion implements Serializable {
 
-	private static final long serialVersionUID = -1350444195222504726L;
+    private static final long serialVersionUID = -1350444195222504726L;
 
-	public String artifactId;
-	public String groupId;
+    private String artifactId;
+    private String groupId;
 
-    @SuppressWarnings("unused")
-    private Exclusion() {
-        // exists for JSON object mappers
+    private int hashCode = 0;
+
+    public void setArtifactId(String artifactId) {
+        this.artifactId = artifactId;
+        refreshHashCode();
     }
 
-	public Exclusion(final String groupId, final String artifactId) {
-		this.groupId = groupId;
-		this.artifactId = artifactId;
-	}
+    public void setGroupId(String groupId) {
+        this.groupId = groupId;
+        refreshHashCode();
+    }
 
-	public String toJSON() {
-		return String.format("%s:%s", groupId, artifactId);
-	}
+    public String getArtifactId() {
+        return artifactId;
+    }
 
-	@Override
-	public boolean equals(Object obj) {
-		return EqualsBuilder.reflectionEquals(this, obj);
-	}
+    public String getGroupId() {
+        return groupId;
+    }
 
-	@Override
-	public int hashCode() {
-		return HashCodeBuilder.reflectionHashCode(this);
-	}
+    @Override
+    public boolean equals(Object obj) {
+        return EqualsBuilder.reflectionEquals(this, obj);
+    }
 
-	@Override
-	public String toString() {
-		return toJSON();
-	}
+    @Override
+    public int hashCode() {
+        return hashCode;
+    }
 
-	public static Exclusion fromJSON(String json) {
-		String[] parts = json.split(":");
-		return new Exclusion(parts[0], parts[1]);
-	}
+    private void refreshHashCode() {
+        hashCode = HashCodeBuilder.reflectionHashCode(this);
+    }
+
+    @Override
+    public String toString() {
+        return String.format("%s:%s", groupId, artifactId);
+    }
+
+    public static Exclusion init(String groupId, String artifactId) {
+        var e = new Exclusion();
+        e.groupId = groupId;
+        e.artifactId = artifactId;
+        e.refreshHashCode();
+        return e;
+    }
+
+    // TODO remove everything below
+
+    @Deprecated
+    public String toJSON() {
+        return String.format("%s:%s", groupId, artifactId);
+    }
+
+    @Deprecated
+    public static Exclusion fromJSON(String json) {
+        String[] parts = json.split(":");
+        return Exclusion.init(parts[0], parts[1]);
+    }
 }

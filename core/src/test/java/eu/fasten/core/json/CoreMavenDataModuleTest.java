@@ -54,7 +54,7 @@ public class CoreMavenDataModuleTest {
         var json = "{\"versionConstraints\":[\"[1,2]\"],\"groupId\":\"g1\",\"scope\":\"test\",\"classifier\":\"sources\",\"artifactId\":\"a1\",\"exclusions\":[\"g2:a2\"],\"optional\":false,\"type\":\"type\"}";
         var actual = om.readValue(json, Dependency.class);
         var expected = new Dependency("g1", "a1", Set.of(new VersionConstraint("[1,2]")),
-                Set.of(new Exclusion("g2", "a2")), Scope.TEST, false, "type", "sources");
+                Set.of(Exclusion.init("g2", "a2")), Scope.TEST, false, "type", "sources");
         assertEquals(expected, actual);
     }
 
@@ -67,7 +67,7 @@ public class CoreMavenDataModuleTest {
 
     @Test
     public void testDependency() {
-        var d = new Dependency("g1", "a1", Set.of(new VersionConstraint("[1,2]")), Set.of(new Exclusion("g2", "a2")),
+        var d = new Dependency("g1", "a1", Set.of(new VersionConstraint("[1,2]")), Set.of(Exclusion.init("g2", "a2")),
                 Scope.TEST, true, "type", "sources");
         var json = "{\"v\":[\"[1,2]\"],\"g\":\"g1\",\"scope\":\"test\",\"classifier\":\"sources\",\"a\":\"a1\",\"exclusions\":[\"g2:a2\"],\"optional\":true,\"type\":\"type\"}";
         test(d, json);
@@ -82,7 +82,7 @@ public class CoreMavenDataModuleTest {
 
     @Test
     public void testDependency_compileScope() {
-        var d = new Dependency("g1", "a1", Set.of(new VersionConstraint("[1,2]")), Set.of(new Exclusion("g2", "a2")),
+        var d = new Dependency("g1", "a1", Set.of(new VersionConstraint("[1,2]")), Set.of(Exclusion.init("g2", "a2")),
                 Scope.COMPILE, true, "type", "sources");
         var json = "{\"v\":[\"[1,2]\"],\"g\":\"g1\",\"classifier\":\"sources\",\"a\":\"a1\",\"exclusions\":[\"g2:a2\"],\"optional\":true,\"type\":\"type\"}";
         test(d, json);
@@ -90,7 +90,7 @@ public class CoreMavenDataModuleTest {
 
     @Test
     public void testDependency_nonOptional() {
-        var d = new Dependency("g1", "a1", Set.of(new VersionConstraint("[1,2]")), Set.of(new Exclusion("g2", "a2")),
+        var d = new Dependency("g1", "a1", Set.of(new VersionConstraint("[1,2]")), Set.of(Exclusion.init("g2", "a2")),
                 Scope.TEST, false, "type", "sources");
         var json = "{\"v\":[\"[1,2]\"],\"g\":\"g1\",\"scope\":\"test\",\"classifier\":\"sources\",\"a\":\"a1\",\"exclusions\":[\"g2:a2\"],\"type\":\"type\"}";
         test(d, json);
@@ -106,7 +106,7 @@ public class CoreMavenDataModuleTest {
 
     @Test
     public void testDependency_jarType() {
-        var d = new Dependency("g1", "a1", Set.of(new VersionConstraint("[1,2]")), Set.of(new Exclusion("g2", "a2")),
+        var d = new Dependency("g1", "a1", Set.of(new VersionConstraint("[1,2]")), Set.of(Exclusion.init("g2", "a2")),
                 Scope.TEST, true, "jar", "sources");
         var json = "{\"v\":[\"[1,2]\"],\"g\":\"g1\",\"scope\":\"test\",\"classifier\":\"sources\",\"a\":\"a1\",\"exclusions\":[\"g2:a2\"],\"optional\":true}";
         test(d, json);
@@ -114,7 +114,7 @@ public class CoreMavenDataModuleTest {
 
     @Test
     public void testDependency_noClassifier() {
-        var d = new Dependency("g1", "a1", Set.of(new VersionConstraint("[1,2]")), Set.of(new Exclusion("g2", "a2")),
+        var d = new Dependency("g1", "a1", Set.of(new VersionConstraint("[1,2]")), Set.of(Exclusion.init("g2", "a2")),
                 Scope.TEST, true, "type", "");
         var json = "{\"v\":[\"[1,2]\"],\"g\":\"g1\",\"scope\":\"test\",\"a\":\"a1\",\"exclusions\":[\"g2:a2\"],\"optional\":true,\"type\":\"type\"}";
         test(d, json);
@@ -135,8 +135,24 @@ public class CoreMavenDataModuleTest {
 
     @Test
     public void testExclusion() {
-        var e = new Exclusion("gid", "aid");
+        var e = Exclusion.init("gid", "aid");
         test(e, "\"gid:aid\"");
+    }
+
+    @Test
+    public void testHashCodeExclusion() {
+        assertHashCodeAfterSerialization(Exclusion.init("gid", "aid"));
+    }
+
+    private void assertHashCodeAfterSerialization(Object in) {
+        try {
+            assertNotEquals(0, in.hashCode());
+            var json = om.writeValueAsString(in);
+            var out = om.readValue(json, in.getClass());
+            assertEquals(in.hashCode(), out.hashCode());
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     @Test

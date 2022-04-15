@@ -34,7 +34,7 @@ import org.junit.jupiter.api.Test;
 public class DependencyTest {
 
     private static final Dependency SOME_DEPENDENCY = new Dependency("gid", "aid",
-            Set.of(new VersionConstraint("(1.2.3,2.3.4]")), Set.of(new Exclusion("gid2", "aid2")), COMPILE, false,
+            Set.of(new VersionConstraint("(1.2.3,2.3.4]")), Set.of(Exclusion.init("gid2", "aid2")), COMPILE, false,
             "jar", "sources");
 
     @Test

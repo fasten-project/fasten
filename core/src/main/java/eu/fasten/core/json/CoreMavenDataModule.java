@@ -115,7 +115,7 @@ public class CoreMavenDataModule extends SimpleModule {
                     try {
                         var vc = ctxt.readTreeAsValue(vcjson, VersionConstraint.class);
                         // TODO this check/fix will become irrelevant after the next pipeline reset
-                        if (!vc.spec.isEmpty()) {
+                        if (!vc.getSpec().isEmpty()) {
                             vs.add(vc);
                         }
                     } catch (IOException exception) {
@@ -137,14 +137,14 @@ public class CoreMavenDataModule extends SimpleModule {
             @Override
             public void serialize(VersionConstraint value, JsonGenerator gen, SerializerProvider serializers)
                     throws IOException {
-                gen.writeString(value.spec);
+                gen.writeString(value.getSpec());
             }
         });
         addDeserializer(VersionConstraint.class, new JsonDeserializer<VersionConstraint>() {
             @Override
             public VersionConstraint deserialize(JsonParser p, DeserializationContext ctxt)
                     throws IOException, JacksonException {
-                return new VersionConstraint(p.getValueAsString());
+                return VersionConstraint.init(p.getValueAsString());
             }
         });
 
@@ -152,7 +152,7 @@ public class CoreMavenDataModule extends SimpleModule {
             @Override
             public void serialize(Exclusion value, JsonGenerator gen, SerializerProvider serializers)
                     throws IOException {
-                gen.writeString(String.format("%s:%s", value.groupId, value.artifactId));
+                gen.writeString(String.format("%s:%s", value.getGroupId(), value.getArtifactId()));
             }
         });
         addDeserializer(Exclusion.class, new JsonDeserializer<Exclusion>() {
@@ -160,7 +160,7 @@ public class CoreMavenDataModule extends SimpleModule {
             public Exclusion deserialize(JsonParser p, DeserializationContext ctxt)
                     throws IOException, JacksonException {
                 String[] parts = p.getValueAsString().split(":");
-                return new Exclusion(parts[0], parts[1]);
+                return Exclusion.init(parts[0], parts[1]);
             }
         });
 
