@@ -138,7 +138,7 @@ public class MavenDependencyResolver {
                 }
 
                 for (var excl : dep.exclusions) {
-                    depData.exclusions.add(String.format("%s:%s", excl.groupId, excl.artifactId));
+                    depData.exclusions.add(String.format("%s:%s", excl.getGroupId(), excl.getArtifactId()));
                 }
 
                 var couldBeManaged = !hasVersion(dep) || depData.isTransitiveDep();
