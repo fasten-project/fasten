@@ -243,98 +243,15 @@ public class DebianLicenseDetectorPlugin extends Plugin {
                     //return FileAndPath;
                 }
             }
-            System.out.println("Inside else DebianOutboundLicenses");
+            /*System.out.println("Inside else DebianOutboundLicenses");
             DetectedLicense licenseFromDebianAPI;
             licenseFromDebianAPI = new DetectedLicense(("not declared"), DetectedLicenseSource.DEBIAN_PACKAGES);
             System.out.println("Inside else after DetectedLicense DebianOutboundLicenses");
-            return Sets.newHashSet(licenseFromDebianAPI);
+            return Sets.newHashSet(licenseFromDebianAPI);*/
 
 
-            //return Collections.emptySet();
+            return Collections.emptySet();
         }
-
-
-
-        /**
-         * Retrieves the outbound license of a GitHub project using its API.
-         *
-         * @param repoUrl the repository URL whose license is of interest.
-         * @return the outbound license retrieved from GitHub's API.
-         * @throws IllegalArgumentException in case the repository is not hosted on GitHub.
-         * @throws IOException              in case there was a problem contacting the GitHub API.
-         */
-        /*
-        protected DetectedDebianLicense getDebianLicenseFromGitHub(String repoUrl)
-                throws IllegalArgumentException, IOException {
-
-            // Adding "https://" in case it's missing
-            if (!Pattern.compile(Pattern.quote("http"), Pattern.CASE_INSENSITIVE).matcher(repoUrl).find()) {
-                repoUrl = "https://" + repoUrl;
-            }
-
-            // Checking whether the repo URL is a valid URL or not
-            URL parsedRepoUrl;
-            try {
-                parsedRepoUrl = new URL(repoUrl);
-            } catch (MalformedURLException e) {
-                throw new MalformedURLException("Repo URL " + repoUrl + " is not a valid URL: " + e.getMessage());
-            }
-
-            // Checking whether the repo is hosted on GitHub
-            if (!Pattern.compile(Pattern.quote("github"), Pattern.CASE_INSENSITIVE).matcher(repoUrl).find()) {
-                throw new IllegalArgumentException("Repo URL " + repoUrl + " is not hosted on GitHub.");
-            }
-
-            // Parsing the GitHub repo URL
-            String path = parsedRepoUrl.getPath();
-            String[] splitPath = path.split("/");
-            if (splitPath.length < 3) { // should be: ["/", "owner", "repo"]
-                throw new MalformedURLException(
-                        "Repo URL " + repoUrl + " has no valid path: " + Arrays.toString(splitPath));
-            }
-            String owner = splitPath[1];
-            String repo = splitPath[2].replaceAll(".git", "");
-            logger.info("Retrieving outbound license from GitHub. Owner: " + owner + ", repo: " + repo + ".");
-
-            // Result
-            DebianDetectedLicense repoLicense;
-
-            // Querying the GitHub API
-            try {
-
-                // Format: "https://api.github.com/repos/`owner`/`repo`/license"
-                URL url = new URL("https://api.github.com/repos/" + owner + "/" + repo + "/license");
-                HttpURLConnection conn = (HttpURLConnection) url.openConnection();
-                conn.setRequestMethod("GET");
-                conn.setRequestProperty("Accept", "application/json");
-                if (conn.getResponseCode() != 200) {
-                    throw new RuntimeException("HTTP query failed. Error code: " + conn.getResponseCode());
-                }
-                InputStreamReader in = new InputStreamReader(conn.getInputStream());
-                BufferedReader br = new BufferedReader(in);
-                String jsonOutput = br.lines().collect(Collectors.joining());
-
-                // Retrieving the license SDPX ID
-                var jsonOutputPayload = new JSONObject(jsonOutput);
-                if (jsonOutputPayload.has("license")) {
-                    jsonOutputPayload = jsonOutputPayload.getJSONObject("license");
-                }
-                repoLicense = new DetectedLicense(jsonOutputPayload.getString("spdx_id"), DetectedLicenseSource.GITHUB);
-
-                conn.disconnect();
-            } catch (ProtocolException e) {
-                throw new ProtocolException(
-                        "Couldn't set the GET method while retrieving an outbound license from GitHub: " +
-                                e.getMessage());
-            } catch (IOException e) {
-                throw new IOException(
-                        "Couldn't get data from the HTTP response returned by GitHub's API: " + e.getMessage(),
-                        e.getCause());
-            }
-
-            return repoLicense;
-        }
-        */
         /**
          * ############################ TODO ########################
          *                  Here the input topic changed.
@@ -444,6 +361,8 @@ public class DebianLicenseDetectorPlugin extends Plugin {
                         if (checksum != null) {
                             LicenseAndPath = RetrieveLicenseAndPathJSON(checksum, packageName, packageVersion);
                             result = ElaborateCopyrightFileJSON(LicenseAndPath);
+                            System.out.println("Printing result, inside of readme copyright if");
+                            System.out.println(result);
                             return result;
                         }
                     }
@@ -477,6 +396,13 @@ public class DebianLicenseDetectorPlugin extends Plugin {
                                 System.out.println(license);
                                 JSONObject obj3 = new JSONObject();
                                 obj3.put("license", license);
+                                obj3.put("path", path);
+                                return obj3;
+                            }
+                            else{
+                                String path = obj2.getString("path");
+                                JSONObject obj3 = new JSONObject();
+                                obj3.put("license", "");
                                 obj3.put("path", path);
                                 return obj3;
                             }
