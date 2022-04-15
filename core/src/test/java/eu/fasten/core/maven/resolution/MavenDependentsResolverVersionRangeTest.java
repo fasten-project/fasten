@@ -83,7 +83,7 @@ public class MavenDependentsResolverVersionRangeTest extends AbstractMavenDepend
         var dep = new Dep();
         dep.coord = coord;
         dep.vcs = Arrays.stream(vcs) //
-                .map(VersionConstraint::new) //
+                .map(VersionConstraint::init) //
                 .collect(Collectors.toSet());
         return dep;
     }

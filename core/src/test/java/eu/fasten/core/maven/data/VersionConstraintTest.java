@@ -19,6 +19,7 @@ import static eu.fasten.core.maven.data.VersionConstraint.parseVersionSpec;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -31,8 +32,48 @@ import org.junit.jupiter.api.Test;
 @SuppressWarnings("unchecked")
 public class VersionConstraintTest {
 
-    // see
-    // https://maven.apache.org/pom.html#dependency-version-requirement-specification
+    @Test
+    public void defaults() {
+        var sut = new VersionConstraint();
+        assertEquals(null, sut.getSpec());
+    }
+
+    @Test
+    public void nonDefaults() {
+        var sut = VersionConstraint.init("1.2.3");
+        assertEquals("1.2.3", sut.getSpec());
+    }
+
+    @Test
+    public void equalityDefaults() {
+        var a = new VersionConstraint();
+        var b = new VersionConstraint();
+        assertEquals(a, b);
+        assertEquals(a.hashCode(), b.hashCode());
+    }
+
+    @Test
+    public void equalityNonDefaults() {
+        var a = VersionConstraint.init("1.2.3");
+        var b = VersionConstraint.init("1.2.3");
+        assertEquals(a, b);
+        assertEquals(a.hashCode(), b.hashCode());
+        assertNotEquals(0, a.hashCode());
+    }
+
+    @Test
+    public void equalityDifferentSpec() {
+        var a = VersionConstraint.init("1.2.3");
+        var b = VersionConstraint.init("2.3.4");
+        assertNotEquals(a, b);
+        assertNotEquals(a.hashCode(), b.hashCode());
+    }
+
+    @Test
+    public void hasToString() {
+        var sut = VersionConstraint.init("1.2.3");
+        assertEquals("1.2.3", sut.toString());
+    }
 
     @Test
     public void parsing0() {
@@ -117,7 +158,7 @@ public class VersionConstraintTest {
     @Test
     public void longAndComplicatedSpec() {
         var actual = parseVersionSpec("[1.1],[1.2,1.3],[1.4,],[,1.5],(1.6),(1.7,1.8),(1.9,),(,2.0)") //
-                .stream().map(vc -> vc.spec).collect(Collectors.toSet());
+                .stream().map(vc -> vc.getSpec()).collect(Collectors.toSet());
         var expected = Set.of("[1.1]", "[1.2,1.3]", "[1.4,]", "[,1.5]", "(1.6)", "(1.7,1.8)", "(1.9,)", "(,2.0)");
         assertEquals(expected, actual);
     }
@@ -144,20 +185,20 @@ public class VersionConstraintTest {
     }
 
     private void assertMatch(String version, String spec) {
-        var sut = new VersionConstraint(spec);
+        var sut = VersionConstraint.init(spec);
         assertTrue(sut.matches(version));
     }
 
     private void assertNoMatch(String version, String spec) {
-        var sut = new VersionConstraint(spec);
+        var sut = VersionConstraint.init(spec);
         assertFalse(sut.matches(version));
     }
 
     @Test
     public void equality() {
         for (var spec : new String[] { "1.0", "[1.0]", "(,1.0]", "[1.2,1.3]", "[1.0,2.0)", "[1.5,)" }) {
-            var a = new VersionConstraint(spec);
-            var b = new VersionConstraint(spec);
+            var a = VersionConstraint.init(spec);
+            var b = VersionConstraint.init(spec);
             assertEquals(a, b);
             assertEquals(a.hashCode(), b.hashCode());
         }
@@ -179,12 +220,12 @@ public class VersionConstraintTest {
             var isInclusiveUpper = upperBound.startsWith("+");
             var ub = isInclusiveUpper ? upperBound.substring(1) : upperBound;
 
-            assertEquals(isRange, vcs.isRange, "isRange: " + vcs.spec);
-            assertEquals(isHard, vcs.isHard, "isHard: " + vcs.spec);
-            assertEquals(isInclusiveLower, vcs.isLowerBoundInclusive, "isLowerBoundInclusive: " + vcs.spec);
-            assertEquals(lb, vcs.lowerBound, "lowerBound: " + vcs.spec);
-            assertEquals(isInclusiveUpper, vcs.isUpperBoundInclusive, "isUpperBoundInclusive: " + vcs.spec);
-            assertEquals(ub, vcs.upperBound, "upperBound: " + vcs.spec);
+            assertEquals(isRange, vcs.isRange(), "isRange: " + vcs.getSpec());
+            assertEquals(isHard, vcs.isHard(), "isHard: " + vcs.getSpec());
+            assertEquals(isInclusiveLower, vcs.isLowerBoundInclusive(), "isLowerBoundInclusive: " + vcs.getSpec());
+            assertEquals(lb, vcs.getLowerBound(), "lowerBound: " + vcs.getSpec());
+            assertEquals(isInclusiveUpper, vcs.isUpperBoundInclusive(), "isUpperBoundInclusive: " + vcs.getSpec());
+            assertEquals(ub, vcs.getUpperBound(), "upperBound: " + vcs.getSpec());
         };
     }
 }

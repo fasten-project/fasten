@@ -52,7 +52,7 @@ public class MavenDependencyResolver {
             var parts = gavs.iterator().next().split(":");
             var ga = String.format("%s:%s", parts[0], parts[1]);
 
-            var pom = this.graph.find(ga, Set.of(new VersionConstraint(parts[2])), config.resolveAt);
+            var pom = this.graph.find(ga, Set.of(VersionConstraint.init(parts[2])), config.resolveAt);
             if (pom == null) {
                 throw new MavenResolutionException(
                         String.format("Cannot find coordinate %s:%s:%s", parts[0], parts[1], parts[2]));
@@ -187,7 +187,7 @@ public class MavenDependencyResolver {
         }
         if (dep.versionConstraints.size() == 1) {
             // TODO this case should be obsolete
-            return !dep.versionConstraints.iterator().next().spec.isEmpty();
+            return !dep.versionConstraints.iterator().next().getSpec().isEmpty();
         }
         return true;
     }
