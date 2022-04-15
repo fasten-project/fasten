@@ -51,53 +51,53 @@ public class ResolverConfigTest {
 
     @Test
     public void equalityNonDefault() {
-        var a = getSomeConfig();
-        var b = getSomeConfig();
+        var a = getNonDefaultConfig();
+        var b = getNonDefaultConfig();
         assertEquals(a, b);
         assertEquals(a.hashCode(), b.hashCode());
     }
 
     @Test
     public void equalityDifferentDepth() {
-        var a = new ResolverConfig();
-        var b = new ResolverConfig();
-        b.depth = ResolverDepth.DIRECT;
+        var a = getNonDefaultConfig();
+        var b = getNonDefaultConfig();
+        b.depth = ResolverDepth.TRANSITIVE;
         assertNotEquals(a, b);
         assertNotEquals(a.hashCode(), b.hashCode());
     }
 
     @Test
     public void equalityDifferentScope() {
-        var a = new ResolverConfig();
-        var b = new ResolverConfig();
-        b.scope = Scope.COMPILE;
+        var a = getNonDefaultConfig();
+        var b = getNonDefaultConfig();
+        b.scope = Scope.PROVIDED;
         assertNotEquals(a, b);
         assertNotEquals(a.hashCode(), b.hashCode());
     }
 
     @Test
     public void equalityDifferentTime() {
-        var a = new ResolverConfig();
-        var b = new ResolverConfig();
-        b.resolveAt = 1234567890000L;
+        var a = getNonDefaultConfig();
+        var b = getNonDefaultConfig();
+        b.resolveAt = 1234567890123L;
         assertNotEquals(a, b);
         assertNotEquals(a.hashCode(), b.hashCode());
     }
 
     @Test
     public void equalityDifferentProvided() {
-        var a = new ResolverConfig();
-        var b = new ResolverConfig();
-        b.alwaysIncludeProvided = true;
+        var a = getNonDefaultConfig();
+        var b = getNonDefaultConfig();
+        b.alwaysIncludeProvided = false;
         assertNotEquals(a, b);
         assertNotEquals(a.hashCode(), b.hashCode());
     }
 
     @Test
     public void equalityDifferentOptional() {
-        var a = new ResolverConfig();
-        var b = new ResolverConfig();
-        b.alwaysIncludeOptional = true;
+        var a = getNonDefaultConfig();
+        var b = getNonDefaultConfig();
+        b.alwaysIncludeOptional = false;
         assertNotEquals(a, b);
         assertNotEquals(a.hashCode(), b.hashCode());
     }
@@ -115,6 +115,11 @@ public class ResolverConfigTest {
     public void builderReturnsDefault() {
         var a = new ResolverConfig();
         var b = ResolverConfig.resolve();
+
+        var diff = Math.abs(a.resolveAt - b.resolveAt);
+        assertTrue(diff < 100);
+        b.resolveAt = a.resolveAt;
+
         assertEquals(a, b);
         assertEquals(a.hashCode(), b.hashCode());
     }
@@ -154,7 +159,7 @@ public class ResolverConfigTest {
         assertTrue(sut.alwaysIncludeOptional);
     }
 
-    private static ResolverConfig getSomeConfig() {
+    private static ResolverConfig getNonDefaultConfig() {
         var cfg = new ResolverConfig();
         cfg.depth = ResolverDepth.DIRECT;
         cfg.scope = Scope.COMPILE;
