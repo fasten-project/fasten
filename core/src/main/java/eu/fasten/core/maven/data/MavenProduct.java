@@ -28,8 +28,8 @@ public class MavenProduct {
 
     public long id;
 
-    public String groupId;
-    public String artifactId;
+    protected String groupId;
+    protected String artifactId;
 
     public MavenProduct() {}
 
@@ -42,6 +42,22 @@ public class MavenProduct {
     public MavenProduct(long id, String groupId, String artifactId) {
         this.id = id;
         this.groupId = groupId;
+        this.artifactId = artifactId;
+    }
+
+    public String getGroupId() {
+        return groupId;
+    }
+
+    public void setGroupId(String groupId) {
+        this.groupId = groupId;
+    }
+
+    public String getArtifactId() {
+        return artifactId;
+    }
+
+    public void setArtifactId(String artifactId) {
         this.artifactId = artifactId;
     }
 

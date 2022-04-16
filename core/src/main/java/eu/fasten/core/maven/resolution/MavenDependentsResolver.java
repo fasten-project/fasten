@@ -70,18 +70,17 @@ public class MavenDependentsResolver {
         for (var dpd : data.findPotentialDependents(ga, config.resolveAt)) {
 
             if (visited.contains(dpd)) {
-                LOG.info("Dependency has been visited before, skipping.");
                 continue;
             }
 
             // find correct dependency declaration
             var decl = find(ga, dpd.dependencies);
 
-            if (!matchesScope(decl.scope, config.scope, config.alwaysIncludeProvided)) {
+            if (!matchesScope(decl.getScope(), config.scope, config.alwaysIncludeProvided)) {
                 continue;
             }
 
-            if (isTransitiveDep && decl.scope == Scope.PROVIDED) {
+            if (isTransitiveDep && decl.getScope() == Scope.PROVIDED) {
                 continue;
             }
 
@@ -101,8 +100,8 @@ public class MavenDependentsResolver {
     }
 
     private static boolean shouldProcessDependent(ResolverConfig config, Dependency decl) {
-        var isNonProvided = decl.scope != Scope.PROVIDED || config.alwaysIncludeProvided;
-        var isNonOptional = !decl.optional || config.alwaysIncludeOptional;
+        var isNonProvided = decl.getScope() != Scope.PROVIDED || config.alwaysIncludeProvided;
+        var isNonOptional = !decl.isOptional() || config.alwaysIncludeOptional;
         return isNonProvided && isNonOptional;
     }
 
@@ -124,7 +123,7 @@ public class MavenDependentsResolver {
     }
 
     private boolean doesVersionMatch(Dependency dep, Pom pom) {
-        for (var vc : dep.versionConstraints) {
+        for (var vc : dep.getVersionConstraints()) {
             if (vc.matches(pom.version)) {
                 return true;
             }
@@ -142,7 +141,7 @@ public class MavenDependentsResolver {
     }
 
     private static String toGA(Dependency dep) {
-        return String.format("%s:%s", dep.groupId, dep.artifactId);
+        return String.format("%s:%s", dep.getGroupId(), dep.getArtifactId());
     }
 
     private static String toGA(Pom pom) {

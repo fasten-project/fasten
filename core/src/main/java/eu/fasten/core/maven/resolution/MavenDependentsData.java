@@ -72,7 +72,7 @@ public class MavenDependentsData {
     }
 
     private static String toGA(Dependency dep) {
-        return String.format("%s:%s", dep.groupId, dep.artifactId);
+        return String.format("%s:%s", dep.getGroupId(), dep.getArtifactId());
     }
 
     private static String toGAV(Pom pom) {

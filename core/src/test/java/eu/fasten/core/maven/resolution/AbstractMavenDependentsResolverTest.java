@@ -56,13 +56,13 @@ public class AbstractMavenDependentsResolverTest {
             var sb = new StringBuilder();
             sb.append("Expected:\n");
             for (var e : expecteds) {
-                sb.append("- ").append(e.groupId).append(":").append(e.artifactId).append(":").append(e.version)
-                        .append("\n");
+                sb.append("- ").append(e.getGroupId()).append(":").append(e.getArtifactId()).append(":")
+                        .append(e.version).append("\n");
             }
             sb.append("But was:\n");
             for (var a : actuals) {
-                sb.append("- ").append(a.groupId).append(":").append(a.artifactId).append(":").append(a.version)
-                        .append("\n");
+                sb.append("- ").append(a.getGroupId()).append(":").append(a.getArtifactId()).append(":")
+                        .append(a.version).append("\n");
             }
             fail(sb.toString());
         }

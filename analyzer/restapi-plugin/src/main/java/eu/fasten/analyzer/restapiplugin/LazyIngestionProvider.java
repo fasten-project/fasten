@@ -79,7 +79,7 @@ public class LazyIngestionProvider {
         ingestArtifactIfNecessary(packageName, version, null, null);
         dependencies.forEach(d -> {
             try {
-                ingestArtifactIfNecessary(d.groupId + Constants.mvnCoordinateSeparator + d.artifactId, d.version.toString(), null, null);
+                ingestArtifactIfNecessary(d.getGroupId() + Constants.mvnCoordinateSeparator + d.getArtifactId(), d.version.toString(), null, null);
             } catch (IOException e) {
                 e.printStackTrace();
             }

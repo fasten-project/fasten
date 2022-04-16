@@ -108,12 +108,12 @@ public class MavenDependencyResolver {
             depSet.add(toRR(data.pom, COMPILE));
 
             for (var dep : data.pom.dependencies) {
-                var depGA = String.format("%s:%s", dep.groupId, dep.artifactId);
+                var depGA = String.format("%s:%s", dep.getGroupId(), dep.getArtifactId());
                 if (data.exclusions.contains(depGA)) {
                     continue;
                 }
 
-                if (!isScopeCovered(config.scope, dep.scope, config.alwaysIncludeProvided)) {
+                if (!isScopeCovered(config.scope, dep.getScope(), config.alwaysIncludeProvided)) {
                     continue;
                 }
 
@@ -124,27 +124,27 @@ public class MavenDependencyResolver {
                         continue;
                     }
 
-                    if (dep.optional && !config.alwaysIncludeOptional) {
+                    if (dep.isOptional() && !config.alwaysIncludeOptional) {
                         continue;
                     }
 
-                    if (dep.scope == Scope.PROVIDED && !config.alwaysIncludeProvided) {
+                    if (dep.getScope() == Scope.PROVIDED && !config.alwaysIncludeProvided) {
                         continue;
                     }
 
-                    if (dep.scope == TEST) {
+                    if (dep.getScope() == TEST) {
                         continue;
                     }
                 }
 
-                for (var excl : dep.exclusions) {
+                for (var excl : dep.getExclusions()) {
                     depData.exclusions.add(String.format("%s:%s", excl.getGroupId(), excl.getArtifactId()));
                 }
 
                 var couldBeManaged = !hasVersion(dep) || depData.isTransitiveDep();
                 var vcs = couldBeManaged && depData.depMgmt.containsKey(depGA) //
                         ? depData.depMgmt.get(depGA) //
-                        : dep.versionConstraints;
+                        : dep.getVersionConstraints();
 
                 var depPom = graph.find(depGA, vcs, config.resolveAt);
 
@@ -182,12 +182,12 @@ public class MavenDependencyResolver {
     }
 
     private static boolean hasVersion(Dependency dep) {
-        if (dep.versionConstraints.isEmpty()) {
+        if (dep.getVersionConstraints().isEmpty()) {
             return false;
         }
-        if (dep.versionConstraints.size() == 1) {
+        if (dep.getVersionConstraints().size() == 1) {
             // TODO this case should be obsolete
-            return !dep.versionConstraints.iterator().next().getSpec().isEmpty();
+            return !dep.getVersionConstraints().iterator().next().getSpec().isEmpty();
         }
         return true;
     }
@@ -215,8 +215,8 @@ public class MavenDependencyResolver {
         public void setPom(Pom pom) {
             this.pom = pom;
             for (var dm : pom.dependencyManagement) {
-                var ga = String.format("%s:%s", dm.groupId, dm.artifactId);
-                depMgmt.put(ga, dm.versionConstraints);
+                var ga = String.format("%s:%s", dm.getGroupId(), dm.getArtifactId());
+                depMgmt.put(ga, dm.getVersionConstraints());
             }
         }
 

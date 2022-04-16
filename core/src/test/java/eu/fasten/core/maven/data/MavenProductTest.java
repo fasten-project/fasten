@@ -28,24 +28,24 @@ public class MavenProductTest {
     public void defaultsInitNoArgs() {
         var sut = new MavenProduct();
         assertEquals(0, sut.id);
-        assertNull(sut.groupId);
-        assertNull(sut.artifactId);
+        assertNull(sut.getGroupId());
+        assertNull(sut.getArtifactId());
     }
 
     @Test
     public void defaultsInit1() {
         var sut = new MavenProduct("g", "a");
         assertEquals(0, sut.id);
-        assertEquals("g", sut.groupId);
-        assertEquals("a", sut.artifactId);
+        assertEquals("g", sut.getGroupId());
+        assertEquals("a", sut.getArtifactId());
     }
 
     @Test
     public void defaultsInit2() {
         var sut = new MavenProduct(1, "g", "a");
         assertEquals(1, sut.id);
-        assertEquals("g", sut.groupId);
-        assertEquals("a", sut.artifactId);
+        assertEquals("g", sut.getGroupId());
+        assertEquals("a", sut.getArtifactId());
     }
 
     @Test
@@ -86,6 +86,20 @@ public class MavenProductTest {
         var b = new MavenProduct(1, "g", "a2");
         assertNotEquals(a, b);
         assertNotEquals(a.hashCode(), b.hashCode());
+    }
+
+    @Test
+    public void setGroupId() {
+        var sut = new MavenProduct();
+        sut.setGroupId("g");
+        assertEquals("g", sut.getGroupId());
+    }
+
+    @Test
+    public void setArtifactId() {
+        var sut = new MavenProduct();
+        sut.setArtifactId("a");
+        assertEquals("a", sut.getArtifactId());
     }
 
     @Test

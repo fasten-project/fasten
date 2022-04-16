@@ -73,7 +73,7 @@ public class MavenDependentsResolverIncludeOptionalTest extends AbstractMavenDep
         for (var to : tos) {
             var partsTo = to.coord.split(":");
             var d = new Dependency(partsTo[0], partsTo[0], partsTo[1]);
-            d.optional = to.isOptional;
+            d.setOptional(to.isOptional);
             pom.dependencies.add(d);
         }
 

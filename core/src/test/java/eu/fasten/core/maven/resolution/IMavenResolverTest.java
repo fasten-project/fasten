@@ -150,7 +150,7 @@ public class IMavenResolverTest {
     }
 
     private static String toGAV(Revision r) {
-        return format("%s:%s:%s", r.groupId, r.artifactId, r.version);
+        return format("%s:%s:%s", r.getGroupId(), r.getArtifactId(), r.version);
     }
 
     private static class TestMavenResolver implements IMavenResolver {

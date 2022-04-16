@@ -17,11 +17,11 @@ package eu.fasten.core.maven.data;
 
 import static eu.fasten.core.utils.Asserts.assertNotNullOrEmpty;
 
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
 import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 import org.json.JSONArray;
@@ -29,213 +29,272 @@ import org.json.JSONObject;
 
 import eu.fasten.core.data.Constants;
 
-/**
- * A dependency declaration. Denotes a Revision's will to use the functionality
- * of the {@class MavenProduct} that matches the dependency's qualifiers.
- */
 public class Dependency extends MavenProduct {
-	public static final Dependency empty = new Dependency("", "", "");
 
-	public Set<VersionConstraint> versionConstraints;
-	public Set<Exclusion> exclusions;
-	public Scope scope = Scope.COMPILE;
-	public boolean optional;
-	public String type;
-	public String classifier;
+    private int hashCode;
 
-	@SuppressWarnings("unused")
-	private Dependency() {
-		// exists for JSON object mappers
-	}
+    private final Set<VersionConstraint> versionConstraints = new HashSet<>();
+    private final Set<Exclusion> exclusions = new HashSet<>();
+    private Scope scope = Scope.COMPILE;
+    private boolean optional;
+    private String type = "jar";
+    private String classifier;
 
-	/**
-	 * Constructor for Dependency object. (From
-	 * https://maven.apache.org/ref/3.6.3/maven-model/maven.html#class_dependency)
-	 *
-	 * @param groupId            groupId of dependency Maven coordinate
-	 * @param artifactId         artifactId of dependency Maven coordinate
-	 * @param versionConstraints List of version constraints of the dependency
-	 * @param exclusions         List of exclusions
-	 * @param scope              Scope of the dependency
-	 * @param optional           Is dependency optional
-	 * @param type               Type of the dependency
-	 * @param classifier         Classifier for dependency
-	 */
-	public Dependency(final String groupId, final String artifactId, final Set<VersionConstraint> versionConstraints,
-			final Set<Exclusion> exclusions, final Scope scope, final boolean optional, final String type,
-			final String classifier) {
-		super(groupId, artifactId);
-		this.versionConstraints = versionConstraints;
-		this.exclusions = exclusions;
-		this.scope = scope;
-		this.optional = optional;
-		this.type = type.toLowerCase();
-		assertNotNullOrEmpty(this.type);
-		this.classifier = classifier.toLowerCase();
-	}
+    public Dependency() {
+        this("", "", "");
+    }
 
-	public Dependency(final String groupId, final String artifactId, final String version,
-			final Set<Exclusion> exclusions, final Scope scope, final boolean optional, final String type,
-			final String classifier) {
-		this(groupId, artifactId, VersionConstraint.parseVersionSpec(version), exclusions, scope,
-				optional, type, classifier);
-	}
+    public Dependency(final String groupId, final String artifactId, final String version) {
+        this(groupId, artifactId, version, new HashSet<>(), Scope.COMPILE, false, "jar", "");
+    }
 
-	public Dependency(final String groupId, final String artifactId, final String version) {
-		this(groupId, artifactId, version, new HashSet<>(), Scope.COMPILE, false, "jar", "");
-	}
+    public Dependency(final String groupId, final String artifactId, final String version,
+            final Set<Exclusion> exclusions, final Scope scope, final boolean optional, final String type,
+            final String classifier) {
+        this(groupId, artifactId, VersionConstraint.parseVersionSpec(version), exclusions, scope, optional, type,
+                classifier);
+    }
 
-	public MavenProduct product() {
-		return new MavenProduct(groupId, artifactId);
-	}
+    public Dependency(final String groupId, final String artifactId, final Set<VersionConstraint> versionConstraints,
+            final Set<Exclusion> exclusions, final Scope scope, final boolean optional, final String type,
+            final String classifier) {
 
-	/**
-	 * Turns list of version constraints into string array of specifications.
-	 *
-	 * @return String array representation of the dependency version constraints
-	 */
-	public String[] getVersionConstraints() {
-		var constraints = new String[this.versionConstraints.size()];
-		var i = new int[] { 0 };
-		versionConstraints.forEach(vc -> {
-			constraints[i[0]++] = vc.spec;
-		});
-		return constraints;
-	}
+        this.groupId = groupId;
+        this.artifactId = artifactId;
 
-	/**
-	 * Converts Dependency object into JSON.
-	 *
-	 * @return JSONObject representation of dependency
-	 */
-	@Deprecated // see eu.fasten.core.json.CoreMavenDataModule
-	public JSONObject toJSON() {
-		final var json = new JSONObject();
-		json.put("artifactId", this.artifactId);
-		json.put("groupId", this.groupId);
-		final var constraintsJson = new JSONArray();
-		for (var constraint : this.versionConstraints) {
-			constraintsJson.put(constraint.spec);
-		}
-		json.put("versionConstraints", constraintsJson);
-		final var exclusionsJson = new JSONArray();
-		for (var exclusion : this.exclusions) {
-			exclusionsJson.put(exclusion.toJSON());
-		}
-		json.put("exclusions", exclusionsJson);
-		json.put("scope", this.scope);
-		json.put("optional", this.optional);
-		json.put("type", this.type);
-		json.put("classifier", this.classifier);
-		return json;
-	}
+        this.versionConstraints.addAll(versionConstraints);
+        this.exclusions.addAll(exclusions);
+        this.scope = scope;
+        this.optional = optional;
+        assertNotNullOrEmpty(type);
+        this.type = type.toLowerCase();
+        this.classifier = classifier.toLowerCase();
+        refreshHashCode();
+    }
 
-	public String getGroupId() {
-		return this.groupId;
-	}
+    public MavenProduct product() {
+        return new MavenProduct(groupId, artifactId);
+    }
 
-	public String getArtifactId() {
-		return this.artifactId;
-	}
+    @Override
+    public void setGroupId(String groupId) {
+        super.setGroupId(groupId);
+        refreshHashCode();
+    }
 
-	public String getVersion() {
-		return String.join(",", this.getVersionConstraints());
-	}
+    @Override
+    public void setArtifactId(String artifactId) {
+        super.setArtifactId(artifactId);
+        refreshHashCode();
+    }
 
-	public String toCanonicalForm() {
-		var builder = new StringBuilder();
-		builder.append(this.groupId);
-		builder.append(Constants.mvnCoordinateSeparator);
-		builder.append(this.artifactId);
-		builder.append(Constants.mvnCoordinateSeparator);
-		if (!this.type.isEmpty()) {
-			builder.append(this.type);
-			builder.append(Constants.mvnCoordinateSeparator);
-		}
-		if (!this.classifier.isEmpty()) {
-			builder.append(this.classifier);
-			builder.append(Constants.mvnCoordinateSeparator);
-		}
-		builder.append(this.getVersion());
-		return builder.toString();
-	}
+    public Set<VersionConstraint> getVersionConstraints() {
+        // keep immutability or hashCode will break
+        return Collections.unmodifiableSet(versionConstraints);
+    }
 
-	public String toMavenCoordinate() {
-		return this.groupId + Constants.mvnCoordinateSeparator + this.artifactId + Constants.mvnCoordinateSeparator
-				+ this.getVersion();
-	}
+    public Set<Exclusion> getExclusions() {
+        // keep immutability or hashCode will break
+        return Collections.unmodifiableSet(exclusions);
+    }
 
-	public String toFullCanonicalForm() {
-		var builder = new StringBuilder();
-		builder.append(this.groupId);
-		builder.append(Constants.mvnCoordinateSeparator);
-		builder.append(this.artifactId);
-		builder.append(Constants.mvnCoordinateSeparator);
-		if (!this.type.isEmpty()) {
-			builder.append(this.type);
-		} else {
-			builder.append("jar");
-		}
-		builder.append(Constants.mvnCoordinateSeparator);
-		if (!this.classifier.isEmpty()) {
-			builder.append(this.classifier);
-			builder.append(Constants.mvnCoordinateSeparator);
-		}
-		builder.append(this.getVersion());
-		builder.append(Constants.mvnCoordinateSeparator);
-		builder.append(this.scope);
-		return builder.toString();
-	}
+    public void addExclusion(Exclusion e) {
+        exclusions.add(e);
+        refreshHashCode();
+    }
 
-	/**
-	 * Creates a Dependency object from JSON.
-	 *
-	 * @param json JSONObject representation of dependency
-	 * @return Dependency object
-	 */
-	@Deprecated // see eu.fasten.core.json.CoreMavenDataModule
-	public static Dependency fromJSON(JSONObject json) {
-		var artifactId = json.getString("artifactId");
-		var groupId = json.getString("groupId");
-		var versionConstraints = new HashSet<VersionConstraint>();
-		if (json.has("versionConstraints")) {
-			json.getJSONArray("versionConstraints").forEach(s -> {
-				versionConstraints.add(new VersionConstraint((String) s));
-			});
-		}
-		var exclusions = new HashSet<Exclusion>();
-		if (json.has("exclusions")) {
-			var exclusionsJson = json.getJSONArray("exclusions");
-			for (var i = 0; i < exclusionsJson.length(); i++) {
-				var exclJson = exclusionsJson.getString(i);
-				exclusions.add(Exclusion.fromJSON(exclJson));
-			}
-		}
-		Scope scope;
-		var scopeStr = json.optString("scope").strip();
-		if(scopeStr == null || scopeStr.isEmpty()) {
-		    scope = Scope.COMPILE;
-		} else {
-		    scope = Scope.valueOf(scopeStr.toUpperCase());
-		}
-		var optional = json.optBoolean("optional", false);
-		var type = json.optString("type");
-		var classifier = json.optString("classifier");
-		return new Dependency(groupId, artifactId, versionConstraints, exclusions, scope, optional, type, classifier);
-	}
+    public void setOptional(boolean isOptional) {
+        this.optional = isOptional;
+        refreshHashCode();
+    }
 
-	@Override
-	public boolean equals(Object obj) {
-		return EqualsBuilder.reflectionEquals(this, obj);
-	}
+    public Scope getScope() {
+        return scope;
+    }
 
-	@Override
-	public int hashCode() {
-		return HashCodeBuilder.reflectionHashCode(this);
-	}
+    public boolean isOptional() {
+        return optional;
+    }
 
-	@Override
-	public String toString() {
-		return ToStringBuilder.reflectionToString(this, ToStringStyle.MULTI_LINE_STYLE);
-	}
+    public String getPackagingType() {
+        return type;
+    }
+
+    public String getClassifier() {
+        return classifier;
+    }
+
+    public void setScope(Scope scope) {
+        this.scope = scope;
+        refreshHashCode();
+    }
+
+    public void setVersionConstraints(Set<VersionConstraint> vcs) {
+        this.versionConstraints.clear();
+        this.versionConstraints.addAll(vcs);
+        refreshHashCode();
+    }
+
+    public void addVersionConstraint(VersionConstraint vc) {
+        this.versionConstraints.add(vc);
+        refreshHashCode();
+    }
+
+    public void setPackagingType(String type) {
+        this.type = type;
+        refreshHashCode();
+    }
+
+    public void setClassifier(String classifier) {
+        this.classifier = classifier;
+        refreshHashCode();
+    }
+
+    @Deprecated
+    public String[] getVersionConstraintsArr() {
+        var constraints = new String[this.versionConstraints.size()];
+        var i = new int[] { 0 };
+        versionConstraints.forEach(vc -> {
+            constraints[i[0]++] = vc.getSpec();
+        });
+        return constraints;
+    }
+
+    @Deprecated
+    public String getVersion() {
+        return String.join(",", this.getVersionConstraintsArr());
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        return EqualsBuilder.reflectionEquals(this, obj);
+    }
+
+    @Override
+    public int hashCode() {
+        return hashCode;
+    }
+
+    private void refreshHashCode() {
+        final var prime = 31;
+        hashCode = 0;
+        // MavenProduct
+        hashCode = prime * hashCode + ((groupId == null) ? 0 : groupId.hashCode());
+        hashCode = prime * hashCode + ((artifactId == null) ? 0 : artifactId.hashCode());
+        // Dependency
+        hashCode = prime * hashCode + ((versionConstraints == null) ? 0 : versionConstraints.hashCode());
+        hashCode = prime * hashCode + ((exclusions == null) ? 0 : exclusions.hashCode());
+        hashCode = prime * hashCode + ((scope == null) ? 0 : scope.hashCode());
+        hashCode = prime * hashCode + (optional ? 1231 : 1237);
+        hashCode = prime * hashCode + ((type == null) ? 0 : type.hashCode());
+        hashCode = prime * hashCode + ((classifier == null) ? 0 : classifier.hashCode());
+    }
+
+    @Override
+    public String toString() {
+        return ToStringBuilder.reflectionToString(this, ToStringStyle.MULTI_LINE_STYLE);
+    }
+
+    // TODO delete everything below
+
+    @Deprecated
+    public String toCanonicalForm() {
+        var builder = new StringBuilder();
+        builder.append(this.groupId);
+        builder.append(Constants.mvnCoordinateSeparator);
+        builder.append(this.artifactId);
+        builder.append(Constants.mvnCoordinateSeparator);
+        if (!this.type.isEmpty()) {
+            builder.append(this.type);
+            builder.append(Constants.mvnCoordinateSeparator);
+        }
+        if (!this.classifier.isEmpty()) {
+            builder.append(this.classifier);
+            builder.append(Constants.mvnCoordinateSeparator);
+        }
+        builder.append(this.getVersion());
+        return builder.toString();
+    }
+
+    @Deprecated
+    public String toMavenCoordinate() {
+        return this.groupId + Constants.mvnCoordinateSeparator + this.artifactId + Constants.mvnCoordinateSeparator
+                + this.getVersion();
+    }
+
+    @Deprecated
+    public String toFullCanonicalForm() {
+        var builder = new StringBuilder();
+        builder.append(this.groupId);
+        builder.append(Constants.mvnCoordinateSeparator);
+        builder.append(this.artifactId);
+        builder.append(Constants.mvnCoordinateSeparator);
+        if (!this.type.isEmpty()) {
+            builder.append(this.type);
+        } else {
+            builder.append("jar");
+        }
+        builder.append(Constants.mvnCoordinateSeparator);
+        if (!this.classifier.isEmpty()) {
+            builder.append(this.classifier);
+            builder.append(Constants.mvnCoordinateSeparator);
+        }
+        builder.append(this.getVersion());
+        builder.append(Constants.mvnCoordinateSeparator);
+        builder.append(this.scope);
+        return builder.toString();
+    }
+
+    @Deprecated // see eu.fasten.core.json.CoreMavenDataModule
+    public JSONObject toJSON() {
+        final var json = new JSONObject();
+        json.put("artifactId", this.artifactId);
+        json.put("groupId", this.groupId);
+        final var constraintsJson = new JSONArray();
+        for (var constraint : this.versionConstraints) {
+            constraintsJson.put(constraint.getSpec());
+        }
+        json.put("versionConstraints", constraintsJson);
+        final var exclusionsJson = new JSONArray();
+        for (var exclusion : this.exclusions) {
+            exclusionsJson.put(exclusion.toJSON());
+        }
+        json.put("exclusions", exclusionsJson);
+        json.put("scope", this.scope);
+        json.put("optional", this.optional);
+        json.put("type", this.type);
+        json.put("classifier", this.classifier);
+        return json;
+    }
+
+    @Deprecated // see eu.fasten.core.json.CoreMavenDataModule
+    public static Dependency fromJSON(JSONObject json) {
+        var artifactId = json.getString("artifactId");
+        var groupId = json.getString("groupId");
+        var versionConstraints = new HashSet<VersionConstraint>();
+        if (json.has("versionConstraints")) {
+            json.getJSONArray("versionConstraints").forEach(s -> {
+                versionConstraints.add(VersionConstraint.init((String) s));
+            });
+        }
+        var exclusions = new HashSet<Exclusion>();
+        if (json.has("exclusions")) {
+            var exclusionsJson = json.getJSONArray("exclusions");
+            for (var i = 0; i < exclusionsJson.length(); i++) {
+                var exclJson = exclusionsJson.getString(i);
+                exclusions.add(Exclusion.fromJSON(exclJson));
+            }
+        }
+        Scope scope;
+        var scopeStr = json.optString("scope").strip();
+        if (scopeStr == null || scopeStr.isEmpty()) {
+            scope = Scope.COMPILE;
+        } else {
+            scope = Scope.valueOf(scopeStr.toUpperCase());
+        }
+        var optional = json.optBoolean("optional", false);
+        var type = json.optString("type");
+        var classifier = json.optString("classifier");
+        return new Dependency(groupId, artifactId, versionConstraints, exclusions, scope, optional, type, classifier);
+    }
 }

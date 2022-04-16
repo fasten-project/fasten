@@ -116,7 +116,7 @@ public class MavenDependencyResolverExclusionTest extends AbstractMavenDependenc
             var partsTo = to.coord.split(":");
             var d = new Dependency(partsTo[0], partsTo[0], partsTo[1]);
             for (var excl : to.excls) {
-                d.exclusions.add(Exclusion.init(excl, excl));
+                d.addExclusion(Exclusion.init(excl, excl));
             }
             pom.dependencies.add(d);
         }
