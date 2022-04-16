@@ -64,7 +64,7 @@ public class CoreMavenDataModuleTest {
     public void testDependencyFixNonEmptyVersionConstraintsOld() throws Exception {
         var json = "{\"versionConstraints\":[\"\"],\"groupId\":\"g1\",\"scope\":\"test\",\"classifier\":\"sources\",\"artifactId\":\"a1\",\"exclusions\":[\"g2:a2\"],\"optional\":true,\"type\":\"type\"}";
         var out = om.readValue(json, Dependency.class);
-        assertTrue(out.versionConstraints.isEmpty());
+        assertTrue(out.getVersionConstraints().isEmpty());
     }
 
     @Test
@@ -126,7 +126,7 @@ public class CoreMavenDataModuleTest {
     public void testDependencyFixNonEmptyVersionConstraints() throws Exception {
         var json = "{\"v\":[\"\"],\"g\":\"g1\",\"scope\":\"test\",\"classifier\":\"sources\",\"a\":\"a1\",\"exclusions\":[\"g2:a2\"],\"optional\":true,\"type\":\"type\"}";
         var out = om.readValue(json, Dependency.class);
-        assertTrue(out.versionConstraints.isEmpty());
+        assertTrue(out.getVersionConstraints().isEmpty());
     }
 
     @Test
@@ -185,10 +185,12 @@ public class CoreMavenDataModuleTest {
 
     private void test(Object in, String expectedJson) {
         try {
+            assertNotEquals(0, in.hashCode());
             var json = om.writeValueAsString(in);
             assertJsonEquals(expectedJson, json);
             var out = om.readValue(json, in.getClass());
             assertEquals(in, out);
+            assertEquals(in.hashCode(), out.hashCode());
         } catch (JsonProcessingException e) {
             throw new RuntimeException(e);
         }

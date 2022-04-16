@@ -33,13 +33,13 @@ public class MyRunner {
         var deps = res.resolveDependencies("org.apache.commons", "commons-lang3", "3.2");
         System.out.println("Dependencies:");
         for (var d : deps) {
-            System.out.printf("- %s:%s:%s\n", d.groupId, d.artifactId, d.version.toString());
+            System.out.printf("- %s:%s:%s\n", d.getGroupId(), d.getArtifactId(), d.version.toString());
         }
 
         var dependents = res.resolveDependents("org.apache.commons", "commons-lang3", "3.2");
         System.out.println("Dependents:");
         for (var d : dependents) {
-            System.out.printf("- %s:%s:%s\n", d.groupId, d.artifactId, d.version.toString());
+            System.out.printf("- %s:%s:%s\n", d.getGroupId(), d.getArtifactId(), d.version.toString());
         }
     }
 }

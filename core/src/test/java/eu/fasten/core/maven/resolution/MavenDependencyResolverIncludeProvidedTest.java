@@ -102,7 +102,7 @@ public class MavenDependencyResolverIncludeProvidedTest extends AbstractMavenDep
             var partsTo = to.coord.split(":");
             var d = new Dependency(partsTo[0], partsTo[0], partsTo[1]);
             if (to.isProvided) {
-                d.scope = Scope.PROVIDED;
+                d.setScope(Scope.PROVIDED);
             }
             pom.dependencies.add(d);
         }

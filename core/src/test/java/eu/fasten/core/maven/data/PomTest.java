@@ -309,7 +309,7 @@ public class PomTest {
     }
 
     private static String assertSingleVersionConstraint(Dependency d) {
-        var cs = d.versionConstraints;
+        var cs = d.getVersionConstraints();
         assertEquals(1, cs.size());
         return cs.iterator().next().getSpec();
     }

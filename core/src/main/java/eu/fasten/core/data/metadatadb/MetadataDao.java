@@ -229,8 +229,8 @@ public class MetadataDao {
     public String insertPackageOutboundLicenses(Revision coordinates,
                                                 String outboundLicenses) {
         return insertPackageOutboundLicenses(
-                coordinates.groupId,
-                coordinates.artifactId,
+                coordinates.getGroupId(),
+                coordinates.getArtifactId(),
                 coordinates.version.toString(),
                 outboundLicenses);
     }
@@ -307,8 +307,8 @@ public class MetadataDao {
                                      String filePath,
                                      String fileLicenses) {
         return insertFileLicenses(
-                coordinates.groupId,
-                coordinates.artifactId,
+                coordinates.getGroupId(),
+                coordinates.getArtifactId(),
                 coordinates.version.toString(),
                 filePath,
                 fileLicenses);

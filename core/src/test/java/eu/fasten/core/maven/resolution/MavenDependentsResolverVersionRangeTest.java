@@ -72,7 +72,7 @@ public class MavenDependentsResolverVersionRangeTest extends AbstractMavenDepend
 
         for (var to : tos) {
             var d = new Dependency(to.coord, to.coord, "0");
-            d.versionConstraints = to.vcs;
+            d.setVersionConstraints(to.vcs);
             pom.dependencies.add(d);
         }
 

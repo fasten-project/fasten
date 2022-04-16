@@ -60,24 +60,24 @@ public class CoreMavenDataModule extends SimpleModule {
                     throws IOException {
                 gen.writeStartObject();
 
-                gen.writeStringField(ARTIFACT_ID, value.artifactId);
-                if (value.classifier != null && !value.classifier.isEmpty()) {
-                    gen.writeStringField("classifier", value.classifier);
+                gen.writeStringField(ARTIFACT_ID, value.getArtifactId());
+                if (value.getClassifier() != null && !value.getClassifier().isEmpty()) {
+                    gen.writeStringField("classifier", value.getClassifier());
                 }
-                if (value.exclusions != null && !value.exclusions.isEmpty()) {
-                    gen.writeObjectField("exclusions", value.exclusions);
+                if (value.getExclusions() != null && !value.getExclusions().isEmpty()) {
+                    gen.writeObjectField("exclusions", value.getExclusions());
                 }
-                gen.writeStringField(GROUP_ID, value.groupId);
-                if (value.optional) {
-                    gen.writeBooleanField("optional", value.optional);
+                gen.writeStringField(GROUP_ID, value.getGroupId());
+                if (value.isOptional()) {
+                    gen.writeBooleanField("optional", value.isOptional());
                 }
-                if (value.scope != Scope.COMPILE) {
-                    gen.writeStringField("scope", value.scope.toString().toLowerCase());
+                if (value.getScope() != Scope.COMPILE) {
+                    gen.writeStringField("scope", value.getScope().toString().toLowerCase());
                 }
-                if (value.type != null && !"jar".equals(value.type)) {
-                    gen.writeStringField("type", value.type);
+                if (value.getPackagingType() != null && !"jar".equals(value.getPackagingType())) {
+                    gen.writeStringField("type", value.getPackagingType());
                 }
-                gen.writeObjectField(VERSION_CONSTRAINTS, value.versionConstraints);
+                gen.writeObjectField(VERSION_CONSTRAINTS, value.getVersionConstraints());
 
                 gen.writeEndObject();
             }

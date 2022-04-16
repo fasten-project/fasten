@@ -119,15 +119,11 @@ public class MavenDependencyResolverVersionRangeTest extends AbstractMavenDepend
 
             boolean isConstraint = partsTo[1].contains("[") || partsTo[1].contains("(");
             if (isConstraint) {
-                d.versionConstraints.clear();
-
                 var vcs = Arrays.stream(partsTo[1].split(",")) //
                         .map(vc -> vc.replace('-', ',')) //
                         .map(VersionConstraint::init) //
                         .collect(Collectors.toSet());
-
-                d.versionConstraints.addAll(vcs);
-
+                d.setVersionConstraints(vcs);
             }
             pom.dependencies.add(d);
         }

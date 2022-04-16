@@ -53,23 +53,23 @@ public interface IMavenResolver {
 
     default Set<ResolvedRevision> resolveDependenciesForRevisions(Collection<Revision> revisions, ResolverConfig config) {
         var gavs = revisions.stream() //
-                .map(r -> String.format("%s:%s:%s", r.groupId, r.artifactId, r.version)) //
+                .map(r -> String.format("%s:%s:%s", r.getGroupId(), r.getArtifactId(), r.version)) //
                 .collect(Collectors.toSet());
         return resolveDependencies(gavs, config);
     }
 
     default Set<ResolvedRevision> resolveDependencies(Revision r, ResolverConfig config) {
-        return resolveDependencies(r.groupId, r.artifactId, r.version.toString(), config);
+        return resolveDependencies(r.getGroupId(), r.getArtifactId(), r.version.toString(), config);
     }
 
     default Set<ResolvedRevision> resolveDependents(Revision r, ResolverConfig config) {
-        return resolveDependents(r.groupId, r.artifactId, r.version.toString(), config);
+        return resolveDependents(r.getGroupId(), r.getArtifactId(), r.version.toString(), config);
     }
 
     // revision and no config
 
     default Set<ResolvedRevision> resolveDependencies(Revision r) {
-        return resolveDependencies(r.groupId, r.artifactId, r.version.toString(), new ResolverConfig());
+        return resolveDependencies(r.getGroupId(), r.getArtifactId(), r.version.toString(), new ResolverConfig());
     }
 
     default Set<ResolvedRevision> resolveDependenciesForRevisions(Collection<Revision> revisions) {
