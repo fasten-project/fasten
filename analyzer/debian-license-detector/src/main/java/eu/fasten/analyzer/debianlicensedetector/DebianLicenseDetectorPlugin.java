@@ -353,7 +353,11 @@ public class DebianLicenseDetectorPlugin extends Plugin {
                 //System.out.println(" No contents key in this JSON");
                 return LicenseAndPath;
             }
-            return LicenseAndPath;
+            JSONObject obj3 = new JSONObject();
+            obj3.put("license", "");
+            obj3.put("path", "");
+            return obj3;
+            //return LicenseAndPath;
         }
         protected JSONObject ElaborateCopyrightFileJSON(JSONObject LicenseAndPath) {
             //JSONObject LicenseAndPath = new JSONObject();
@@ -368,7 +372,7 @@ public class DebianLicenseDetectorPlugin extends Plugin {
                         //System.out.println(obj2);
                         String version = obj2.getString("version");
                         if (version.equals(packageVersion)) {
-                            if (obj2.has("license")) {
+                            if (!obj2.isNull("license")) {
                                 license = obj2.getString("license");
                                 String path = obj2.getString("path");
                                 //System.out.println("Inside retrieveCopyright function.");
@@ -376,6 +380,13 @@ public class DebianLicenseDetectorPlugin extends Plugin {
                                 //System.out.println(license);
                                 JSONObject obj3 = new JSONObject();
                                 obj3.put("license", license);
+                                obj3.put("path", path);
+                                return obj3;
+                            }
+                            else{
+                                String path = obj2.getString("path");
+                                JSONObject obj3 = new JSONObject();
+                                obj3.put("license", "");
                                 obj3.put("path", path);
                                 return obj3;
                             }
