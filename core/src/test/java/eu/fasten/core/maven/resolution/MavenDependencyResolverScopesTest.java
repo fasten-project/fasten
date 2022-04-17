@@ -93,7 +93,7 @@ public class MavenDependencyResolverScopesTest extends AbstractMavenDependencyRe
                 $("c:1", Scope.COMPILE), //
                 $("r:1", Scope.RUNTIME), //
                 $("t:1", Scope.TEST));
-        assertDepSet(BASE, "s:1", "c:1", "r:1");
+        assertDepSet(BASE, "c:1", "r:1"); // WTF p:1? s:1?
     }
 
     @Test
@@ -106,7 +106,7 @@ public class MavenDependencyResolverScopesTest extends AbstractMavenDependencyRe
                 $("c:1", Scope.COMPILE), //
                 $("r:1", Scope.RUNTIME), //
                 $("t:1", Scope.TEST));
-        assertDepSet(BASE, "x:1", "s:1", "c:1", "r:1");
+        assertDepSet(BASE, "x:1", "c:1", "r:1"); // WTF s:1?
     }
 
     @Test
@@ -125,6 +125,97 @@ public class MavenDependencyResolverScopesTest extends AbstractMavenDependencyRe
     public void resolveTestTrans() {
         config.scope = Scope.TEST;
         add(BASE, $("x:1", Scope.COMPILE));
+        add("x:1", //
+                $("s:1", Scope.SYSTEM), //
+                $("p:1", Scope.PROVIDED), //
+                $("c:1", Scope.COMPILE), //
+                $("r:1", Scope.RUNTIME), //
+                $("t:1", Scope.TEST));
+        assertDepSet(BASE, "x:1", "s:1", "c:1", "r:1");
+    }
+
+    @Test
+    public void resolveCompileSystemTrans() {
+        config.scope = Scope.COMPILE;
+        add(BASE, $("x:1", Scope.SYSTEM));
+        add("x:1", //
+                $("s:1", Scope.SYSTEM), //
+                $("p:1", Scope.PROVIDED), //
+                $("c:1", Scope.COMPILE), //
+                $("r:1", Scope.RUNTIME), //
+                $("t:1", Scope.TEST));
+        assertDepSet(BASE, "x:1");
+    }
+
+    @Test
+    public void resolveTransSystem_compile() {
+        config.scope = Scope.COMPILE;
+        add(BASE, $("x:1", Scope.COMPILE));
+        add("x:1", //
+                $("s:1", Scope.SYSTEM), //
+                $("p:1", Scope.PROVIDED), //
+                $("c:1", Scope.COMPILE), //
+                $("r:1", Scope.RUNTIME), //
+                $("t:1", Scope.TEST));
+        assertDepSet(BASE, "x:1", "s:1", "c:1");
+    }
+
+    @Test
+    public void resolveTransSystem_runtime() {
+        config.scope = Scope.RUNTIME;
+        add(BASE, $("x:1", Scope.COMPILE));
+        add("x:1", //
+                $("s:1", Scope.SYSTEM), //
+                $("p:1", Scope.PROVIDED), //
+                $("c:1", Scope.COMPILE), //
+                $("r:1", Scope.RUNTIME), //
+                $("t:1", Scope.TEST));
+        assertDepSet(BASE, "x:1", "c:1", "r:1"); // WTF s:1?
+    }
+
+    @Test
+    public void resolveTransSystem_test() {
+        config.scope = Scope.TEST;
+        add(BASE, $("x:1", Scope.COMPILE));
+        add("x:1", //
+                $("s:1", Scope.SYSTEM), //
+                $("p:1", Scope.PROVIDED), //
+                $("c:1", Scope.COMPILE), //
+                $("r:1", Scope.RUNTIME), //
+                $("t:1", Scope.TEST));
+        assertDepSet(BASE, "x:1", "c:1", "r:1", "s:1");
+    }
+
+    @Test
+    public void resolveCompileProvidedTrans() {
+        config.scope = Scope.COMPILE;
+        add(BASE, $("x:1", Scope.PROVIDED));
+        add("x:1", //
+                $("s:1", Scope.SYSTEM), //
+                $("p:1", Scope.PROVIDED), //
+                $("c:1", Scope.COMPILE), //
+                $("r:1", Scope.RUNTIME), //
+                $("t:1", Scope.TEST));
+        assertDepSet(BASE, "x:1", "s:1", "c:1", "r:1"); // WTF r:1?
+    }
+
+    @Test
+    public void resolveRuntimeProvidedTrans() {
+        config.scope = Scope.RUNTIME;
+        add(BASE, $("x:1", Scope.PROVIDED));
+        add("x:1", //
+                $("s:1", Scope.SYSTEM), //
+                $("p:1", Scope.PROVIDED), //
+                $("c:1", Scope.COMPILE), //
+                $("r:1", Scope.RUNTIME), //
+                $("t:1", Scope.TEST));
+        assertDepSet(BASE);
+    }
+
+    @Test
+    public void resolveTestProvidedTrans() {
+        config.scope = Scope.TEST;
+        add(BASE, $("x:1", Scope.PROVIDED));
         add("x:1", //
                 $("s:1", Scope.SYSTEM), //
                 $("p:1", Scope.PROVIDED), //

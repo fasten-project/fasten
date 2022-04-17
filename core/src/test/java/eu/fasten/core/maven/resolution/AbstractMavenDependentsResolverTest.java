@@ -17,14 +17,14 @@ package eu.fasten.core.maven.resolution;
 
 import static org.junit.Assert.fail;
 
-import java.sql.Timestamp;
 import java.util.Arrays;
+import java.util.Set;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.BeforeEach;
 
 import eu.fasten.core.maven.data.ResolvedRevision;
-import eu.fasten.core.maven.data.Scope;
 
 public class AbstractMavenDependentsResolverTest {
 
@@ -43,28 +43,50 @@ public class AbstractMavenDependentsResolverTest {
         config = new ResolverConfig();
     }
 
-    protected void assertDependents(String shortTarget, String... depSet) {
+    protected Set<ResolvedRevision> assertDependents(String shortTarget, String... depSet) {
+        addDangling();
         var targetParts = shortTarget.split(":");
         var target = String.format("%s:%s:%s", targetParts[0], targetParts[0], targetParts[1]);
-        var actuals = sut.resolve(target, config);
+        var actualsRaw = sut.resolve(target, config);
+
+        var actuals = actualsRaw.stream() //
+                .map(rr -> String.format("%s:%s:%s", rr.getGroupId(), rr.getArtifactId(), rr.version)) //
+                .collect(Collectors.toCollection(TreeSet::new));
         var expecteds = Arrays.stream(depSet) //
                 .map(gav -> gav.split(":")) //
-                .map(parts -> new ResolvedRevision(-1, parts[0], parts[0], parts[1], new Timestamp(-1L), Scope.COMPILE)) //
+                .map(parts -> String.format("%s:%s:%s", parts[0], parts[0], parts[1])) //
                 .collect(Collectors.toSet());
 
         if (!expecteds.equals(actuals)) {
             var sb = new StringBuilder();
-            sb.append("Expected:\n");
-            for (var e : expecteds) {
-                sb.append("- ").append(e.getGroupId()).append(":").append(e.getArtifactId()).append(":")
-                        .append(e.version).append("\n");
+
+            sb.append("Resolution has returned an unexpected set of dependencies:\n\n");
+            sb.append("Config: ").append(config).append("\n\n");
+
+            if (expecteds.isEmpty()) {
+                sb.append("Expected empty resolution result, ");
+            } else {
+                sb.append("Expected:\n");
+                for (var e : expecteds) {
+                    sb.append("- ").append(e).append("\n");
+                }
             }
-            sb.append("But was:\n");
-            for (var a : actuals) {
-                sb.append("- ").append(a.getGroupId()).append(":").append(a.getArtifactId()).append(":")
-                        .append(a.version).append("\n");
+
+            if (actuals.isEmpty()) {
+                sb.append("But resolution result was empty");
+            } else {
+                sb.append("But was:\n");
+                for (var a : actuals) {
+                    sb.append("- ").append(a).append("\n");
+                }
             }
             fail(sb.toString());
         }
+
+        return actualsRaw;
+    }
+
+    protected void addDangling() {
+        // override if necessary
     }
 }
