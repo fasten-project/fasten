@@ -22,6 +22,7 @@ import java.sql.Timestamp;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -46,10 +47,6 @@ public class AbstractMavenDependencyResolverTest {
         sut = new MavenDependencyResolver();
         sut.setData(data);
         config = new ResolverConfig();
-    }
-
-    @BeforeEach
-    public void setup() {
         danglingGAVs = new HashSet<>();
     }
 
@@ -57,7 +54,7 @@ public class AbstractMavenDependencyResolverTest {
         // override when needed
     }
 
-    protected void assertDepSet(String... gavs) {
+    protected Set<ResolvedRevision> assertDepSet(String... gavs) {
         addDangling();
         var baseParts = gavs[0].split(":");
         var base = String.format("%s:%s:%s", baseParts[0], baseParts[0], baseParts[1]);
@@ -70,16 +67,21 @@ public class AbstractMavenDependencyResolverTest {
         if (!expecteds.equals(actuals)) {
             var sb = new StringBuilder();
             sb.append("Expected:\n");
-            for (var e : expecteds) {
-                sb.append("- ").append(e.getGroupId()).append(":").append(e.getArtifactId()).append(":")
-                        .append(e.version).append("\n");
+            for (var e : sort(expecteds)) {
+                sb.append("- ").append(e).append("\n");
             }
             sb.append("But was:\n");
-            for (var a : actuals) {
-                sb.append("- ").append(a.getGroupId()).append(":").append(a.getArtifactId()).append(":")
-                        .append(a.version).append("\n");
+            for (var a : sort(actuals)) {
+                sb.append("- ").append(a).append("\n");
             }
             fail(sb.toString());
         }
+        return actuals;
+    }
+
+    private static Set<String> sort(Set<ResolvedRevision> rs) {
+        return rs.stream() //
+                .map(r -> String.format("%s:%s:%s", r.getGroupId(), r.getArtifactId(), r.version)) //
+                .collect(Collectors.toCollection(TreeSet::new));
     }
 }
