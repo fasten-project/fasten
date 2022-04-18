@@ -187,7 +187,7 @@ public class MavenDependentsResolverResolvedScopeTest extends AbstractMavenDepen
         base = "pc:1";
         withoutIncludeProvided(() -> {
             assertCompile(p(COMPILE), base(PROVIDED));
-            assertRuntime();
+            assertRuntime(p(COMPILE));
             assertTesting(p(COMPILE), base(PROVIDED));
         });
         withIncludeProvided(() -> {
@@ -226,9 +226,9 @@ public class MavenDependentsResolverResolvedScopeTest extends AbstractMavenDepen
     public void cs() {
         base = "cs:1";
         independentOfIncludeProvided(() -> {
-            assertCompile(p(SYSTEM), base(SYSTEM));
+            assertCompile(c(SYSTEM), base(SYSTEM));
             assertRuntime();
-            assertTesting(p(SYSTEM), base(SYSTEM));
+            assertTesting(c(SYSTEM), base(SYSTEM));
         });
     }
 
@@ -296,9 +296,9 @@ public class MavenDependentsResolverResolvedScopeTest extends AbstractMavenDepen
             assertTesting(r(PROVIDED));
         });
         withIncludeProvided(() -> {
-            RESOLVABLE_SCOPES.forEach(scope -> {
-                assertScope(scope, r(PROVIDED), base(PROVIDED));
-            });
+            assertCompile(r(PROVIDED));
+            assertRuntime(r(PROVIDED), base(PROVIDED));
+            assertTesting(r(PROVIDED), base(PROVIDED));
         });
     }
 
@@ -351,9 +351,9 @@ public class MavenDependentsResolverResolvedScopeTest extends AbstractMavenDepen
             assertTesting(t(PROVIDED));
         });
         withIncludeProvided(() -> {
-            RESOLVABLE_SCOPES.forEach(scope -> {
-                assertScope(scope, t(PROVIDED), base(PROVIDED));
-            });
+            assertCompile(t(PROVIDED));
+            assertRuntime(t(PROVIDED));
+            assertTesting(t(PROVIDED), base(PROVIDED));
         });
     }
 
@@ -372,8 +372,8 @@ public class MavenDependentsResolverResolvedScopeTest extends AbstractMavenDepen
         base = "tr:1";
         independentOfIncludeProvided(() -> {
             assertCompile();
-            assertRuntime(r(RUNTIME));
-            assertTesting(r(RUNTIME), base(TEST));
+            assertRuntime(t(RUNTIME));
+            assertTesting(t(RUNTIME), base(TEST));
         });
     }
 
@@ -462,7 +462,9 @@ public class MavenDependentsResolverResolvedScopeTest extends AbstractMavenDepen
 
         if (!expecteds.equals(actuals)) {
             var sb = new StringBuilder();
-            sb.append("Resolution has returned unexpected dependency scopes.\nExpected:\n");
+            sb.append("Resolution has returned unexpected dependency scopes.\n\n");
+            sb.append(config).append("\n\n");
+            sb.append("Expected:\n");
             for (var e : expecteds) {
                 sb.append("\t- ").append(e).append("\n");
             }
