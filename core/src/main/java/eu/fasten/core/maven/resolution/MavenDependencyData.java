@@ -31,23 +31,34 @@ public class MavenDependencyData {
     private Map<String, Pom> pomForGav = new HashMap<>();
 
     public synchronized void add(Pom pom) {
-        var gav = toGAV(pom);
+        var gav = pom.toGAV();
         if (hasGAV(gav)) {
             remove(pom, gav);
         }
         pomForGav.put(gav, pom);
-        put(pomsForGa, toGA(pom), pom);
+        put(pomsForGa, pom.toGA(), pom);
     }
 
     private void remove(Pom pom, String gav) {
         pomForGav.remove(gav);
-        var it = pomsForGa.get(toGA(pom)).iterator();
+        var it = pomsForGa.get(pom.toGA()).iterator();
         while (it.hasNext()) {
             var pom2 = it.next();
-            if (pom.toCoordinate().equals(pom2.toCoordinate())) {
+            if (hasEqualGAV(pom, pom2)) {
                 it.remove();
             }
         }
+    }
+
+    private static boolean hasEqualGAV(Pom a, Pom b) {
+        if (a.artifactId.equals(b.artifactId)) {
+            if (a.groupId.equals(b.groupId)) {
+                if (a.version.equals(b.version)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     private boolean hasGAV(String gav) {
@@ -94,13 +105,5 @@ public class MavenDependencyData {
 
     private synchronized Set<Pom> findGA(String ga) {
         return pomsForGa.getOrDefault(ga, Set.of());
-    }
-
-    private static String toGA(Pom pom) {
-        return String.format("%s:%s", pom.groupId, pom.artifactId);
-    }
-
-    private static String toGAV(Pom pom) {
-        return String.format("%s:%s:%s", pom.groupId, pom.artifactId, pom.version);
     }
 }

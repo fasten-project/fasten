@@ -262,6 +262,20 @@ public class PomTest {
     }
 
     @Test
+    public void toGAV() {
+        var actual = somePomAnalysisResult().toGAV();
+        var expected = "g:a:n";
+        assertEquals(expected, actual);
+    }
+
+    @Test
+    public void toGA() {
+        var actual = somePomAnalysisResult().toGA();
+        var expected = "g:a";
+        assertEquals(expected, actual);
+    }
+
+    @Test
     public void toProduct() {
         var actual = somePomAnalysisResult().toProduct();
         var expected = new MavenProduct("g", "a");

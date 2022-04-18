@@ -45,7 +45,7 @@ public class RestMavenResolverTest {
     private static final Revision DEFAULT_REVISION = new ResolvedRevision(0, "g", "a", "2.3.4",
             new Timestamp(1234567890000L), IMPORT);
 
-    private static final int PORT = 8080;
+    private static final int PORT = 8081;
 
     private static HttpTestServer httpd;
     private RestMavenResolver sut;

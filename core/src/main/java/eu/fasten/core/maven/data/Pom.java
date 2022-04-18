@@ -15,7 +15,6 @@
  */
 package eu.fasten.core.maven.data;
 
-import static java.lang.String.format;
 import static org.apache.commons.lang3.builder.ToStringStyle.MULTI_LINE_STYLE;
 
 import java.sql.Timestamp;
@@ -24,7 +23,6 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 
 import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
 import eu.fasten.core.data.Constants;
@@ -57,7 +55,17 @@ public class Pom implements Cloneable {
 
     /** gid:aid:packaging:version */
     public String toCoordinate() {
-        return format("%s:%s:%s:%s", groupId, artifactId, packagingType, version);
+        return new StringBuilder().append(groupId).append(':').append(artifactId).append(':').append(packagingType)
+                .append(':').append(version).toString();
+    }
+
+    public String toGAV() {
+        return new StringBuilder().append(groupId).append(':').append(artifactId).append(':').append(version)
+                .toString();
+    }
+
+    public String toGA() {
+        return new StringBuilder().append(groupId).append(':').append(artifactId).toString();
     }
 
     public MavenProduct toProduct() {
@@ -101,7 +109,23 @@ public class Pom implements Cloneable {
 
     @Override
     public int hashCode() {
-        return HashCodeBuilder.reflectionHashCode(this);
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ((artifactId == null) ? 0 : artifactId.hashCode());
+        result = prime * result + ((artifactRepository == null) ? 0 : artifactRepository.hashCode());
+        result = prime * result + ((commitTag == null) ? 0 : commitTag.hashCode());
+        result = prime * result + ((dependencies == null) ? 0 : dependencies.hashCode());
+        result = prime * result + ((dependencyManagement == null) ? 0 : dependencyManagement.hashCode());
+        result = prime * result + ((forge == null) ? 0 : forge.hashCode());
+        result = prime * result + ((groupId == null) ? 0 : groupId.hashCode());
+        result = prime * result + ((packagingType == null) ? 0 : packagingType.hashCode());
+        result = prime * result + ((parentCoordinate == null) ? 0 : parentCoordinate.hashCode());
+        result = prime * result + ((projectName == null) ? 0 : projectName.hashCode());
+        result = prime * result + (int) (releaseDate ^ (releaseDate >>> 32));
+        result = prime * result + ((repoUrl == null) ? 0 : repoUrl.hashCode());
+        result = prime * result + ((sourcesUrl == null) ? 0 : sourcesUrl.hashCode());
+        result = prime * result + ((version == null) ? 0 : version.hashCode());
+        return result;
     }
 
     @Override

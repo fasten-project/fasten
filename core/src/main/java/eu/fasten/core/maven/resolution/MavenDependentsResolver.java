@@ -63,7 +63,7 @@ public class MavenDependentsResolver {
 
         visited.add(pom);
 
-        var ga = toGA(pom);
+        var ga = pom.toGA();
         for (var dpd : data.findPotentialDependents(ga, config.resolveAt)) {
 
             if (visited.contains(dpd)) {
@@ -141,18 +141,10 @@ public class MavenDependentsResolver {
 
     private static Dependency findCorrectDependencyDecl(String ga, Set<Dependency> dependencies) {
         for (var dep : dependencies) {
-            if (ga.equals(toGA(dep))) {
+            if (ga.equals(dep.toGA())) {
                 return dep;
             }
         }
         throw new IllegalStateException("Cannot find reported dependency");
-    }
-
-    private static String toGA(Dependency dep) {
-        return String.format("%s:%s", dep.getGroupId(), dep.getArtifactId());
-    }
-
-    private static String toGA(Pom pom) {
-        return String.format("%s:%s", pom.groupId, pom.artifactId);
     }
 }
