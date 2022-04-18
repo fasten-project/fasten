@@ -91,6 +91,13 @@ public class DependencyTest {
     }
 
     @Test
+    public void toGA() {
+        var actual = new Dependency("g", "a", "1.2.3").toGA();
+        var expected = "g:a";
+        assertEquals(expected, actual);
+    }
+
+    @Test
     public void equalityDefaults() {
         var a = new Dependency();
         var b = new Dependency();

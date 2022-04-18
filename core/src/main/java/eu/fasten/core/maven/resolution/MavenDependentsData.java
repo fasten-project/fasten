@@ -21,7 +21,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-import eu.fasten.core.maven.data.Dependency;
 import eu.fasten.core.maven.data.Pom;
 
 public class MavenDependentsData {
@@ -30,11 +29,10 @@ public class MavenDependentsData {
     private final Map<String, Set<Pom>> dependentsForGA = new HashMap<>();
 
     public synchronized void add(Pom pom) {
-        var gav = toGAV(pom);
+        var gav = pom.toGAV();
         pomForGAV.put(gav, pom);
         for (var dep : pom.dependencies) {
-            var depGA = toGA(dep);
-            addDependent(depGA, pom);
+            addDependent(dep.toGA(), pom);
         }
     }
 
@@ -48,12 +46,23 @@ public class MavenDependentsData {
             var it = poms.iterator();
             while (it.hasNext()) {
                 var pom2 = it.next();
-                if (pom.toCoordinate().equals(pom2.toCoordinate())) {
+                if (hasEqualGAV(pom, pom2)) {
                     it.remove();
                 }
             }
         }
         poms.add(pom);
+    }
+
+    private static boolean hasEqualGAV(Pom a, Pom b) {
+        if (a.artifactId.equals(b.artifactId)) {
+            if (a.groupId.equals(b.groupId)) {
+                if (a.version.equals(b.version)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     public synchronized Pom findPom(String gav, long resolveAt) {
@@ -69,13 +78,5 @@ public class MavenDependentsData {
         return dpds.stream() //
                 .filter(d -> d.releaseDate <= resolveAt) //
                 .collect(Collectors.toSet());
-    }
-
-    private static String toGA(Dependency dep) {
-        return String.format("%s:%s", dep.getGroupId(), dep.getArtifactId());
-    }
-
-    private static String toGAV(Pom pom) {
-        return String.format("%s:%s:%s", pom.groupId, pom.artifactId, pom.version);
     }
 }

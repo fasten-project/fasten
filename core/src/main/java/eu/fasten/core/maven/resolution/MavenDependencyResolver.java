@@ -112,7 +112,7 @@ public class MavenDependencyResolver {
             }
 
             for (var dep : data.pom.dependencies) {
-                var depGA = String.format("%s:%s", dep.getGroupId(), dep.getArtifactId());
+                var depGA = dep.toGA();
                 if (data.exclusions.contains(depGA)) {
                     continue;
                 }
@@ -146,7 +146,9 @@ public class MavenDependencyResolver {
                 }
 
                 for (var excl : dep.getExclusions()) {
-                    depData.exclusions.add(String.format("%s:%s", excl.getGroupId(), excl.getArtifactId()));
+                    var exclGA = new StringBuilder().append(excl.getGroupId()).append(':').append(excl.getArtifactId())
+                            .toString();
+                    depData.exclusions.add(exclGA);
                 }
 
                 var couldBeManaged = !hasVersion(dep) || depData.isTransitiveDep();
@@ -224,8 +226,7 @@ public class MavenDependencyResolver {
         public void setPom(Pom pom) {
             this.pom = pom;
             for (var dm : pom.dependencyManagement) {
-                var ga = String.format("%s:%s", dm.getGroupId(), dm.getArtifactId());
-                depMgmt.put(ga, dm.getVersionConstraints());
+                depMgmt.put(dm.toGA(), dm.getVersionConstraints());
             }
         }
 

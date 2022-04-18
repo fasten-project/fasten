@@ -76,6 +76,10 @@ public class Dependency extends MavenProduct {
         return new MavenProduct(groupId, artifactId);
     }
 
+    public String toGA() {
+        return new StringBuilder().append(groupId).append(':').append(artifactId).toString();
+    }
+
     @Override
     public void setGroupId(String groupId) {
         super.setGroupId(groupId);
