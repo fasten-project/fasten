@@ -76,7 +76,7 @@ public class MavenDependentsResolverScopesTest extends AbstractMavenDependentsRe
     public void resolveRuntimeDirectDependents() {
         addDependentsWithAllScopes(DEST);
         config.scope = RUNTIME;
-        assertDependents(DEST, "c:1", "r:1", "s:1");
+        assertDependents(DEST, "c:1", "r:1");
     }
 
     @Test
@@ -91,7 +91,7 @@ public class MavenDependentsResolverScopesTest extends AbstractMavenDependentsRe
         add("x:1", $(DEST, COMPILE));
         addDependentsWithAllScopes("x:1");
         config.scope = COMPILE;
-        assertDependents(DEST, "x:1", "c:1", "s:1");
+        assertDependents(DEST, "x:1", "c:1", "s:1", "p:1");
     }
 
     @Test
@@ -99,7 +99,7 @@ public class MavenDependentsResolverScopesTest extends AbstractMavenDependentsRe
         add("x:1", $(DEST, COMPILE));
         addDependentsWithAllScopes("x:1");
         config.scope = RUNTIME;
-        assertDependents(DEST, "x:1", "c:1", "r:1", "s:1");
+        assertDependents(DEST, "x:1", "c:1", "r:1");
     }
 
     @Test
@@ -107,7 +107,7 @@ public class MavenDependentsResolverScopesTest extends AbstractMavenDependentsRe
         add("x:1", $(DEST, COMPILE));
         addDependentsWithAllScopes("x:1");
         config.scope = TEST;
-        assertDependents(DEST, "x:1", "c:1", "r:1", "t:1", "s:1");
+        assertDependents(DEST, "x:1", "c:1", "r:1", "t:1", "s:1", "p:1");
     }
 
     @Test

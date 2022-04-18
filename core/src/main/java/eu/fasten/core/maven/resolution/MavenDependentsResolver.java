@@ -16,6 +16,7 @@
 package eu.fasten.core.maven.resolution;
 
 import static eu.fasten.core.maven.data.Scope.COMPILE;
+import static eu.fasten.core.maven.data.Scope.PROVIDED;
 import static eu.fasten.core.maven.data.Scope.RUNTIME;
 import static eu.fasten.core.maven.data.Scope.SYSTEM;
 import static eu.fasten.core.maven.data.Scope.TEST;
@@ -24,16 +25,12 @@ import static eu.fasten.core.maven.resolution.ResolverDepth.TRANSITIVE;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.slf4j.Logger;
-
 import eu.fasten.core.maven.data.Dependency;
 import eu.fasten.core.maven.data.Pom;
 import eu.fasten.core.maven.data.ResolvedRevision;
 import eu.fasten.core.maven.data.Scope;
 
 public class MavenDependentsResolver {
-
-    private static final Logger LOG = org.slf4j.LoggerFactory.getLogger(MavenDependentsResolver.class);
 
     private MavenDependentsData data;
 
@@ -50,11 +47,11 @@ public class MavenDependentsResolver {
         }
 
         var dependents = new HashSet<ResolvedRevision>();
-        resolve(pom, config, dependents, new HashSet<>(), false);
+        resolve(pom, config, dependents, new HashSet<>(), false, false, COMPILE);
         return dependents;
     }
 
-    private void failForInvalidScopes(ResolverConfig config) {
+    private static void failForInvalidScopes(ResolverConfig config) {
         if (config.scope == Scope.IMPORT || config.scope == Scope.PROVIDED || config.scope == Scope.SYSTEM) {
             var msg = "Invalid resolution scope: %s";
             throw new IllegalArgumentException(String.format(msg, config.scope));
@@ -62,7 +59,7 @@ public class MavenDependentsResolver {
     }
 
     private void resolve(Pom pom, ResolverConfig config, Set<ResolvedRevision> dependents, Set<Object> visited,
-            boolean isTransitiveDep) {
+            boolean isTransitiveDep, boolean stopAfterThis, Scope propagatedScope) {
 
         visited.add(pom);
 
@@ -73,26 +70,38 @@ public class MavenDependentsResolver {
                 continue;
             }
 
-            // find correct dependency declaration
-            var decl = find(ga, dpd.dependencies);
+            var decl = findCorrectDependencyDecl(ga, dpd.dependencies);
 
-            if (!matchesScope(decl.getScope(), config.scope, config.alwaysIncludeProvided)) {
+            if (!matchesScope(decl.getScope(), config.scope, config.alwaysIncludeProvided, isTransitiveDep)) {
                 continue;
             }
 
-            if (isTransitiveDep && decl.getScope() == Scope.PROVIDED) {
-                continue;
-            }
+            if (doesPomVersionMatchDecl(decl, pom)) {
+                propagatedScope = deriveScope(propagatedScope, decl.getScope());
+                dependents.add(toRR(dpd, propagatedScope));
 
-            // check whether version of pom matches the dependency declaration
-            if (doesVersionMatch(decl, pom)) {
-                dependents.add(toRR(dpd, Scope.COMPILE));
-
-                if (config.depth == TRANSITIVE && shouldProcessDependent(config, decl)) {
-                    resolve(dpd, config, dependents, visited, true);
+                if (config.depth == TRANSITIVE && !stopAfterThis && shouldProcessDependent(config, decl)) {
+                    var onlyOneMore = decl.getScope() == PROVIDED;
+                    resolve(dpd, config, dependents, visited, true, onlyOneMore, propagatedScope);
                 }
             }
         }
+    }
+
+    private static Scope deriveScope(Scope prop, Scope dep) {
+        if (dep == SYSTEM || prop == SYSTEM) {
+            return SYSTEM;
+        }
+        if (dep == PROVIDED || prop == PROVIDED) {
+            return PROVIDED;
+        }
+        if (dep == TEST) {
+            return TEST;
+        }
+        if (dep == RUNTIME && prop == COMPILE) {
+            return RUNTIME;
+        }
+        return prop;
     }
 
     private static ResolvedRevision toRR(Pom p, Scope s) {
@@ -100,29 +109,28 @@ public class MavenDependentsResolver {
     }
 
     private static boolean shouldProcessDependent(ResolverConfig config, Dependency decl) {
-        var isNonProvided = decl.getScope() != Scope.PROVIDED || config.alwaysIncludeProvided;
+        var isNonTest = decl.getScope() != TEST;
+        var isNonProvided = decl.getScope() != PROVIDED || config.alwaysIncludeProvided;
         var isNonOptional = !decl.isOptional() || config.alwaysIncludeOptional;
-        return isNonProvided && isNonOptional;
+        return isNonTest && isNonProvided && isNonOptional;
     }
 
-    private boolean matchesScope(Scope dep, Scope request, boolean alwaysIncludeProvided) {
+    private static boolean matchesScope(Scope dep, Scope request, boolean alwaysIncludeProvided,
+            boolean isTransitiveDep) {
 
-        if (dep == Scope.PROVIDED && alwaysIncludeProvided) {
+        if (dep == PROVIDED && alwaysIncludeProvided) {
             return true;
         }
-
         if (request == Scope.COMPILE) {
-            return dep == COMPILE || dep == SYSTEM || dep == Scope.PROVIDED;
+            return dep == COMPILE || dep == SYSTEM || dep == PROVIDED;
         }
-
-        if (request == Scope.RUNTIME) {
-            return dep == RUNTIME || dep == COMPILE || dep == SYSTEM;
-        } else {
-            return dep == TEST || dep == RUNTIME || dep == COMPILE || dep == SYSTEM || dep == Scope.PROVIDED;
+        if (request == RUNTIME) {
+            return dep == RUNTIME || dep == COMPILE;
         }
+        return dep == TEST || dep == RUNTIME || dep == COMPILE || dep == SYSTEM || dep == PROVIDED;
     }
 
-    private boolean doesVersionMatch(Dependency dep, Pom pom) {
+    private static boolean doesPomVersionMatchDecl(Dependency dep, Pom pom) {
         for (var vc : dep.getVersionConstraints()) {
             if (vc.matches(pom.version)) {
                 return true;
@@ -131,7 +139,7 @@ public class MavenDependentsResolver {
         return false;
     }
 
-    private static Dependency find(String ga, Set<Dependency> dependencies) {
+    private static Dependency findCorrectDependencyDecl(String ga, Set<Dependency> dependencies) {
         for (var dep : dependencies) {
             if (ga.equals(toGA(dep))) {
                 return dep;

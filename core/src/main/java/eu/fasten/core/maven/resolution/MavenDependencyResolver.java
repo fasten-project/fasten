@@ -105,7 +105,11 @@ public class MavenDependencyResolver {
             }
             addedProducts.add(p);
 
-            depSet.add(toRR(data.pom, COMPILE));
+            depSet.add(toRR(data));
+
+            if (data.scope == SYSTEM) {
+                continue;
+            }
 
             for (var dep : data.pom.dependencies) {
                 var depGA = String.format("%s:%s", dep.getGroupId(), dep.getArtifactId());
@@ -113,11 +117,11 @@ public class MavenDependencyResolver {
                     continue;
                 }
 
-                if (!isScopeCovered(config.scope, dep.getScope(), config.alwaysIncludeProvided)) {
+                if (!isScopeCovered(config.scope, dep.getScope(), config.alwaysIncludeProvided, data.scope)) {
                     continue;
                 }
 
-                var depData = QueueData.nest(data);
+                var depData = QueueData.nest(data, dep.getScope());
                 if (depData.isTransitiveDep()) {
 
                     if (config.depth == ResolverDepth.DIRECT) {
@@ -125,6 +129,10 @@ public class MavenDependencyResolver {
                     }
 
                     if (dep.isOptional() && !config.alwaysIncludeOptional) {
+                        continue;
+                    }
+
+                    if (dep.getScope() == Scope.SYSTEM && config.scope == RUNTIME) {
                         continue;
                     }
 
@@ -158,22 +166,22 @@ public class MavenDependencyResolver {
         return depSet;
     }
 
-    private static ResolvedRevision toRR(Pom pom, Scope s) {
-        return new ResolvedRevision(pom.toRevision(), s);
+    private static ResolvedRevision toRR(QueueData data) {
+        return new ResolvedRevision(data.pom.toRevision(), data.scope);
     }
 
-    private static boolean isScopeCovered(Scope request, Scope dep, boolean alwaysIncludeProvided) {
+    private static boolean isScopeCovered(Scope request, Scope dep, boolean alwaysIncludeProvided, Scope inherited) {
         if (dep == request) {
             return true;
         }
         if (dep == SYSTEM) {
-            return true;
+            return request != RUNTIME;
         }
         if (dep == PROVIDED) {
-            return alwaysIncludeProvided || request == COMPILE || request == TEST;
+            return alwaysIncludeProvided || request != RUNTIME;
         }
         if (dep == RUNTIME) {
-            return request == TEST;
+            return request == TEST || inherited == PROVIDED;
         }
         if (dep == COMPILE) {
             return request == RUNTIME || request == TEST;
@@ -204,6 +212,7 @@ public class MavenDependencyResolver {
         private int depth = 0;
 
         public Pom pom;
+        public Scope scope = COMPILE;
         public final Set<String> exclusions = new HashSet<>();
         public final Map<String, Set<VersionConstraint>> depMgmt = new HashMap<>();
 
@@ -220,12 +229,32 @@ public class MavenDependencyResolver {
             }
         }
 
-        public static QueueData nest(QueueData outer) {
+        public static QueueData nest(QueueData outer, Scope depScope) {
             var inner = new QueueData();
             inner.exclusions.addAll(outer.exclusions);
             inner.depth = outer.depth + 1;
             inner.depMgmt.putAll(outer.depMgmt);
+            inner.scope = getMostSpecific(outer.scope, depScope);
             return inner;
+        }
+
+        private static Scope getMostSpecific(Scope cur, Scope dep) {
+            if (dep == SYSTEM || dep == PROVIDED) {
+                return dep;
+            }
+            if (cur == PROVIDED) {
+                return cur;
+            }
+            if (cur == COMPILE) {
+                return dep;
+            }
+            if (cur == RUNTIME) {
+                if (dep == COMPILE) {
+                    return RUNTIME;
+                }
+                return dep;
+            }
+            return TEST;
         }
 
         private static QueueData startFrom(Pom pom) {
