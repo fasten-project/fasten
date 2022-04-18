@@ -15,31 +15,49 @@
  */
 package eu.fasten.core.maven.runners;
 
+import static eu.fasten.core.maven.data.Scope.TEST;
+import static eu.fasten.core.maven.resolution.ResolverConfig.resolve;
+
+import java.io.File;
+import java.sql.SQLException;
+
+import org.jooq.DSLContext;
+
 import eu.fasten.core.dbconnectors.PostgresConnector;
-import eu.fasten.core.maven.resolution.DependencyGraphBuilder;
-import eu.fasten.core.maven.resolution.IMavenResolver;
+import eu.fasten.core.maven.resolution.MavenResolverIO;
+import eu.fasten.core.maven.resolution.ResolverConfig;
 
 public class MyRunner {
 
     private static final String MNT = "/Users/seb/tmp/foo2/";
-    private static final String GRAPH_FILE = MNT + "depgraph.db";
+    private static final File DIR_DEPGRAPH = new File(MNT + "depgraph/");
+
+    private static final ResolverConfig CONFIG = resolve().scope(TEST).alwaysIncludeProvided(true);
 
     public static void main(String[] args) throws Exception {
-        var dbContext = PostgresConnector.getDSLContext("jdbc:postgresql://localhost:5432/fasten_java", "fasten",
-                false);
 
-        IMavenResolver res = DependencyGraphBuilder.init(dbContext, GRAPH_FILE);
+        if (!DIR_DEPGRAPH.exists()) {
+            DIR_DEPGRAPH.mkdirs();
+        }
 
-        var deps = res.resolveDependencies("org.apache.commons", "commons-lang3", "3.2");
+        var resolver = new MavenResolverIO(getDbContext(), DIR_DEPGRAPH).loadResolver();
+
+        var coord = "org.springframework:spring-beans:4.1.4.RELEASE".split(":");
+
+        var deps = resolver.resolveDependencies(coord[0], coord[1], coord[2], CONFIG);
         System.out.println("Dependencies:");
         for (var d : deps) {
-            System.out.printf("- %s:%s:%s\n", d.getGroupId(), d.getArtifactId(), d.version.toString());
+            System.out.printf("- %s:%s:%s (%s)\n", d.getGroupId(), d.getArtifactId(), d.version.toString(), d.scope);
         }
 
-        var dependents = res.resolveDependents("org.apache.commons", "commons-lang3", "3.2");
+        var dependents = resolver.resolveDependents(coord[0], coord[1], coord[2], CONFIG);
         System.out.println("Dependents:");
         for (var d : dependents) {
-            System.out.printf("- %s:%s:%s\n", d.getGroupId(), d.getArtifactId(), d.version.toString());
+            System.out.printf("- %s:%s:%s (%s)\n", d.getGroupId(), d.getArtifactId(), d.version.toString(), d.scope);
         }
+    }
+
+    private static DSLContext getDbContext() throws SQLException {
+        return PostgresConnector.getDSLContext("jdbc:postgresql://localhost:5432/fasten_java", "fasten", false);
     }
 }
