@@ -12,6 +12,7 @@ import eu.fasten.core.search.SearchEngine.Result;
 import it.unimi.dsi.bits.Fast;
 import it.unimi.dsi.fastutil.longs.Long2DoubleOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongIterators;
+import it.unimi.dsi.fastutil.longs.LongList;
 import it.unimi.dsi.fastutil.objects.ObjectRBTreeSet;
 
 public class SearchEngineTest {

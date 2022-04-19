@@ -29,9 +29,9 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Flow.Subscriber;
-import java.util.concurrent.Flow.Subscription;
 import java.util.concurrent.SubmissionPublisher;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.LongPredicate;
 import java.util.regex.Matcher;
@@ -464,12 +464,11 @@ public class SearchEngine implements AutoCloseable {
 			final ObjectRBTreeSet<Result> results, final long maxResults,
 			final SubmissionPublisher<Result> publisher) {
 		final LongSet nodes = graph.nodes();
-		final LongArrayFIFOQueue visitQueue = new LongArrayFIFOQueue(seed.size());
+		final LongArrayFIFOQueue queue = new LongArrayFIFOQueue(seed.size());
 		final LongOpenHashSet seen = new LongOpenHashSet(graph.numNodes(), 0.5f);
 		seed.forEach(x -> seen.add(x)); // Load initial state TODO: is this correct?
 		int d = -1;
 		long sentinel = queue.firstLong();
-		final LongSet nodes = graph.nodes();
 
 		while (!queue.isEmpty()) {
 			final long gid = queue.dequeueLong();
@@ -827,8 +826,18 @@ public class SearchEngine implements AutoCloseable {
 		final String rocksDb = jsapResult.getString("rocksDb");
 		final String cacheDir = jsapResult.getString("cache");
 		final String resolverGraph = jsapResult.getString("resolverGraph");
+		
+		
+    	ThreadPoolExecutor threadPool = (ThreadPoolExecutor) Executors.newCachedThreadPool();
+
 
 		try (SearchEngine searchEngine = new SearchEngine(jdbcURI, database, rocksDb, cacheDir, resolverGraph, null)) {
+	    	//Create Publisher and Subscribers
+	    	SubmissionPublisher<Result> publisher = new SubmissionPublisher<>(threadPool, 100);
+	    	SearchEngineTopKProcessor<Result> topKProcessor = new SearchEngineTopKProcessor<>(searchEngine.limit, threadPool, 100);
+	    	SearchEnginePrintSubscriber<Result> printSubscriber = new SearchEnginePrintSubscriber<>(threadPool);
+	    	publisher.subscribe(topKProcessor);
+	    	topKProcessor.subscribe(printSubscriber);
 
 			final DSLContext context = searchEngine.context;
 			context.settings().withParseUnknownFunctions(ParseUnknownFunctions.IGNORE);
@@ -859,18 +868,13 @@ public class SearchEngine implements AutoCloseable {
 					searchEngine.stitchingTime = searchEngine.resolveTime = searchEngine.visitTime = 0;
 
 					final List<Result> r;
-					final SubmissionPublisher<Result> publisher = new SubmissionPublisher<>();
-					final FullyCollectSubscriber subscriber = new FullyCollectSubscriber();
-					publisher.subscribe(subscriber);
 
 					if (uri.getPath() == null) {
 						r = dir == '+' ? searchEngine.fromRevision(uri, searchEngine.limit, publisher) : searchEngine.toRevision(uri, searchEngine.limit, publisher);
 						for (int i = 0; i < Math.min(searchEngine.limit, r.size()); i++) System.out.println(r.get(i).gid + "\t" + Util.getCallableName(r.get(i).gid, context) + "\t" + r.get(i).score);
-						synchronized(subscriber) {
-							while (!subscriber.ready) subscriber.wait();
-							System.out.println("***" + subscriber.result);
-						
-						}
+				        while (!threadPool.awaitTermination(1000, TimeUnit.MILLISECONDS)) {
+				        	System.out.println("Thread pool: " + threadPool);
+				        }
 					} else {
 						final long gid = Util.getCallableGID(uri, context);
 						if (gid == -1) {
@@ -879,11 +883,9 @@ public class SearchEngine implements AutoCloseable {
 						}
 						r = dir == '+' ? searchEngine.fromCallable(gid, searchEngine.limit, publisher) : searchEngine.toCallable(gid, searchEngine.limit, publisher);
 						for (int i = 0; i < Math.min(searchEngine.limit, r.size()); i++) System.out.println(r.get(i).gid + "\t" + Util.getCallableName(r.get(i).gid, context) + "\t" + r.get(i).score);
-						synchronized(subscriber) {
-							while (!subscriber.ready) subscriber.wait();
-							System.out.println("***" + subscriber.result);
-						
-						}
+				        while (!threadPool.awaitTermination(1000, TimeUnit.MILLISECONDS)) {
+				        	System.out.println("Thread pool: " + threadPool);
+				        }
 					}
 
 					for (final var t : searchEngine.throwables) {
@@ -897,32 +899,5 @@ public class SearchEngine implements AutoCloseable {
 			}
 		}
 	}
-	
-	
-	public static class FullyCollectSubscriber implements Subscriber<Result> {
-		public boolean ready = false;
-		public List<Result> result = new ObjectArrayList<>();
 		
-		@Override
-		public void onSubscribe(Subscription subscription) {
-			subscription.request(Long.MAX_VALUE);  // No limit on the number of items
-		}
-
-		@Override
-		public void onNext(Result item) {
-			result.add(item);
-		}
-
-		@Override
-		public void onError(Throwable throwable) {
-			throwable.printStackTrace(System.err);
-		}
-
-		@Override
-		public void onComplete() {
-			ready = true;
-		}
-		
-	}
-	
 }
