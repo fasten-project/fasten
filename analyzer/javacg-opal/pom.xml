@@ -3,27 +3,27 @@
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
-	<modelVersion>4.0.0</modelVersion>
+    <modelVersion>4.0.0</modelVersion>
 
-	<parent>
-		<artifactId>analyzer</artifactId>
-		<groupId>eu.fasten</groupId>
-		<version>0.0.5-SNAPSHOT</version>
-	</parent>
+    <parent>
+        <artifactId>analyzer</artifactId>
+        <groupId>eu.fasten</groupId>
+        <version>0.0.6-SNAPSHOT</version>
+    </parent>
 
-	<groupId>eu.fasten.analyzer</groupId>
-	<artifactId>javacg-opal</artifactId>
-	<version>0.0.5-SNAPSHOT</version>
-	<packaging>jar</packaging>
+    <groupId>eu.fasten.analyzer</groupId>
+    <artifactId>javacg-opal</artifactId>
+    <version>0.0.6-SNAPSHOT</version>
+    <packaging>jar</packaging>
 
-	<name>javacg-opal</name>
+    <name>javacg-opal</name>
 
-	<dependencies>
-		<dependency>
-			<groupId>eu.fasten</groupId>
-			<artifactId>core</artifactId>
-			<version>0.0.5-SNAPSHOT</version>
-		</dependency>
+    <dependencies>
+        <dependency>
+            <groupId>eu.fasten</groupId>
+            <artifactId>core</artifactId>
+            <version>0.0.6-SNAPSHOT</version>
+        </dependency>
 		<dependency>
 			<groupId>de.opal-project</groupId>
 			<artifactId>bytecode-representation_2.12</artifactId>
