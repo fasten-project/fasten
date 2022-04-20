@@ -18,6 +18,8 @@ package eu.fasten.core.json;
 import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.MapperFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -32,7 +34,9 @@ public class ObjectMapperBuilder {
     public ObjectMapper build() {
         var builder = JsonMapper.builder() //
                 .disable(MapperFeature.AUTO_DETECT_GETTERS) //
-                .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
+                .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES) //
+                .disable(JsonParser.Feature.AUTO_CLOSE_SOURCE) //
+                .disable(JsonGenerator.Feature.AUTO_CLOSE_TARGET);
 
         var omPre = addBuilderOptions(builder).build() //
                 .setVisibility(PropertyAccessor.ALL, Visibility.ANY) //
