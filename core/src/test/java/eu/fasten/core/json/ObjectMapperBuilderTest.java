@@ -16,17 +16,24 @@
 package eu.fasten.core.json;
 
 import static com.fasterxml.jackson.databind.SerializationFeature.USE_EQUALITY_FOR_OBJECT_ID;
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
 
+import org.apache.commons.io.FileUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -38,6 +45,9 @@ public class ObjectMapperBuilderTest {
     private static final SerializationFeature SOME_FEATURE = USE_EQUALITY_FOR_OBJECT_ID;
 
     private ObjectMapper sut;
+
+    @TempDir
+    private File tempDir;
 
     @BeforeEach
     public void setup() {
@@ -78,6 +88,29 @@ public class ObjectMapperBuilderTest {
         data.y3 = true;
         var actual = sut.writeValueAsString(data);
         assertEquals("{\"y1\":\"y1\",\"y2\":[\"y2\"],\"y3\":true,\"y4\":[],\"y5\":false,\"y6\":false}", actual);
+    }
+
+    @Test
+    public void doesNotCloseTargets() throws IOException {
+        sut = new ObjectMapperBuilder().build();
+        var f = new File(tempDir, "abc.asd");
+        try (var os = new FileOutputStream(f)) {
+            sut.writeValue(os, "123");
+            os.write("4".getBytes());
+        }
+        // test is successful if no exception is thrown
+    }
+
+    @Test
+    public void doesNotCloseSources() throws IOException {
+        sut = new ObjectMapperBuilder().build();
+        var f = new File(tempDir, "abc.asd");
+        FileUtils.writeStringToFile(f, "\"abc\"", UTF_8);
+        try (var os = new FileInputStream(f)) {
+            sut.readValue(os, String.class);
+            os.read();
+        }
+        // test is successful if no exception is thrown
     }
 
     @Test
