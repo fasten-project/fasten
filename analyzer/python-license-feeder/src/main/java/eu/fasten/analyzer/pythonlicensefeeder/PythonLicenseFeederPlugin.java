@@ -181,16 +181,16 @@ public class PythonLicenseFeederPlugin extends Plugin {
             JSONArray fileLicenses = payload.getJSONArray("files");
             logger.info("About to insert file licenses...");
             fileLicenses.forEach(f -> {
-                logger.info("(cycling files) Object f: " + f);
+                logger.debug("(cycling files) Object f: " + f);
                 JSONObject file = (JSONObject) f;
-                logger.info("(cycling files) JSONObject f: " + file + " has " +
+                logger.debug("(cycling files) JSONObject f: " + file + " has " +
                         (file.has("path") ? "" : "no ") + "path and " +
                         (file.has("licenses") ? file.getJSONArray("licenses").length() : "no") + " license.");
                 if (file.has("path") && file.has("licenses")) {
                     String path = file.getString("path");
                     path = path.replace(sourcePath+"/","");
-                    logger.info("path before to insertFileLicenses:");
-                    logger.info(path);
+                    //logger.info("path before to insertFileLicenses:");
+                    //logger.info(path);
                     JSONArray FileLicenses = file.getJSONArray("licenses");
                     JSONArray FileLicensesParsed = new JSONArray();
                     JSONObject packageLicenseInfo = new JSONObject();
@@ -203,12 +203,12 @@ public class PythonLicenseFeederPlugin extends Plugin {
                         }
                         if (jsonObj.has("key")){
                             String license_key = jsonObj.getString("key");
-                            System.out.println("license_key");
-                            System.out.println(license_key);
+                            //System.out.println("license_key");
+                            //System.out.println(license_key);
                             packageLicenseInfo.put("key", license_key);
                             FileLicensesParsed.put(packageLicenseInfo);
                         }
-                    } 
+                    }
                     String fileMetadata = new JSONObject().put("licenses", FileLicensesParsed).toString();
                     metadataDao.insertFileLicenses(
                             packageName,
