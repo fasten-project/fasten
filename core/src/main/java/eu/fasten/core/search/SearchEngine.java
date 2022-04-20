@@ -21,6 +21,7 @@ package eu.fasten.core.search;
 import static eu.fasten.core.maven.resolution.ResolverConfig.resolve;
 import static eu.fasten.core.maven.resolution.ResolverDepth.TRANSITIVE;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -54,8 +55,8 @@ import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
 import eu.fasten.core.dbconnectors.PostgresConnector;
 import eu.fasten.core.maven.data.ResolvedRevision;
 import eu.fasten.core.maven.data.Revision;
-import eu.fasten.core.maven.resolution.DependencyGraphBuilder;
 import eu.fasten.core.maven.resolution.IMavenResolver;
+import eu.fasten.core.maven.resolution.MavenResolverIO;
 import eu.fasten.core.merge.CGMerger;
 import eu.fasten.core.search.predicate.CachingPredicateFactory;
 import eu.fasten.core.search.predicate.PredicateFactory;
@@ -213,7 +214,7 @@ public class SearchEngine {
 		this.context = context;
 		this.rocksDao = rocksDao;
 		this.scorer = scorer == null ? TrivialScorer.getInstance() : scorer;
-		resolver = DependencyGraphBuilder.init(context, resolverGraph);
+		resolver = new MavenResolverIO(context, new File(resolverGraph)).loadResolver();
 		this.predicateFactory = new CachingPredicateFactory(context);
 	}
 

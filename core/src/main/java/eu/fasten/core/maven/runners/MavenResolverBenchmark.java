@@ -18,7 +18,7 @@ import org.slf4j.LoggerFactory;
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.dbconnectors.PostgresConnector;
 import eu.fasten.core.maven.data.ResolvedRevision;
-import eu.fasten.core.maven.resolution.DependencyGraphBuilder;
+import eu.fasten.core.maven.resolution.MavenResolverIO;
 import eu.fasten.core.maven.resolution.NativeMavenResolver;
 import picocli.CommandLine;
 
@@ -84,7 +84,7 @@ public class MavenResolverBenchmark implements Runnable {
         }
         logger.info("Starting benchmark - " + new Date());
         var mavenResolver = new NativeMavenResolver();
-        var graphResolver = DependencyGraphBuilder.init(dbContext, graphPath);
+        var graphResolver = new MavenResolverIO(dbContext, new File(graphPath)).loadResolver();
         var artifactCount = 0;
         var dbCount = 0;
         var onlineCount = 0;
