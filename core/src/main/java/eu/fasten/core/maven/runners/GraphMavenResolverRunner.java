@@ -18,6 +18,7 @@ package eu.fasten.core.maven.runners;
 import static eu.fasten.core.maven.resolution.ResolverConfig.resolve;
 import static eu.fasten.core.maven.resolution.ResolverDepth.TRANSITIVE;
 
+import java.io.File;
 import java.sql.SQLException;
 import java.util.Comparator;
 import java.util.Scanner;
@@ -31,9 +32,9 @@ import org.slf4j.LoggerFactory;
 import eu.fasten.core.dbconnectors.PostgresConnector;
 import eu.fasten.core.maven.data.ResolvedRevision;
 import eu.fasten.core.maven.data.Revision;
-import eu.fasten.core.maven.resolution.DependencyGraphBuilder;
 import eu.fasten.core.maven.resolution.IMavenResolver;
 import eu.fasten.core.maven.resolution.MavenResolver;
+import eu.fasten.core.maven.resolution.MavenResolverIO;
 import picocli.CommandLine;
 
 @CommandLine.Command(name = "GraphMavenResolverRunner")
@@ -79,7 +80,7 @@ public class GraphMavenResolverRunner implements Runnable {
         }
 
         try {
-            graphResolver = DependencyGraphBuilder.init(dbContext, serializedPath);
+            graphResolver = new MavenResolverIO(dbContext, new File(serializedPath)).loadResolver();
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

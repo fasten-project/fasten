@@ -18,6 +18,7 @@
 
 package eu.fasten.analyzer.restapiplugin.api;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -48,8 +49,8 @@ import eu.fasten.core.dependents.GraphResolver;
 import eu.fasten.core.maven.data.ResolvedRevision;
 import eu.fasten.core.maven.data.Revision;
 import eu.fasten.core.maven.data.Scope;
-import eu.fasten.core.maven.resolution.DependencyGraphBuilder;
 import eu.fasten.core.maven.resolution.IMavenResolver;
+import eu.fasten.core.maven.resolution.MavenResolverIO;
 import eu.fasten.core.maven.resolution.NativeMavenResolver;
 import eu.fasten.core.maven.resolution.ResolverConfig;
 import eu.fasten.core.maven.resolution.ResolverDepth;
@@ -69,7 +70,7 @@ public class ResolutionApi {
         switch(KnowledgeBaseConnector.forge) {
             case Constants.mvnForge: {
                 try {
-                    var graphMavenResolver = DependencyGraphBuilder.init(KnowledgeBaseConnector.dbContext, KnowledgeBaseConnector.dependencyGraphPath);
+                    var graphMavenResolver = new MavenResolverIO(KnowledgeBaseConnector.dbContext, new File(KnowledgeBaseConnector.dependencyGraphPath)).loadResolver();
                     this.graphMavenResolver = graphMavenResolver;
                 } catch (Exception e) {
                     logger.error("Error constructing dependency graph maven resolver", e);
