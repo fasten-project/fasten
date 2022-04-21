@@ -70,6 +70,7 @@ public class DebianLicenseFeederPlugin extends Plugin {
 
                 // Inserting detected outbound into the database
                 var metadataDao = new MetadataDao(dslContext);
+                System.out.println("After new MetadataDao(dslContext) ");
                 dslContext.transaction(transaction -> {
                     metadataDao.setContext(DSL.using(transaction));
                     insertOutboundLicenses(packageName, packageVersion, record, metadataDao);
@@ -146,12 +147,15 @@ public class DebianLicenseFeederPlugin extends Plugin {
          * @param metadataDao Data Access Object to insert records in the database.
          */
         protected void insertOutboundLicenses(String packageName, String packageVersion, String record, MetadataDao metadataDao) {
+            System.out.println("[BEGINNING] inside of insertOutboundLicenses");
             var payload = new JSONObject(record);
             if (payload.has("payload")) {
                 payload = payload.getJSONObject("payload");
             }
 
             JSONArray outboundLicenses = payload.getJSONArray("outbound");
+            System.out.println("After payload.getJSONArray outbound");
+            System.out.println(outboundLicenses);
             logger.info("About to insert outbound licenses...");
             metadataDao.insertPackageOutboundLicenses(
                     packageName,
