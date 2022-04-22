@@ -42,6 +42,7 @@ import eu.fasten.core.dbconnectors.PostgresConnector;
 import eu.fasten.core.maven.GraphMavenResolver;
 import eu.fasten.core.maven.data.Revision;
 import eu.fasten.core.search.predicate.CachingPredicateFactory;
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.lang.ObjectParser;
 
 public class GraphDepStats {
@@ -89,8 +90,13 @@ public class GraphDepStats {
 		final DSLContext context = graphDepStats.context;
 
 		RocksDB graphDb = RocksDB.openReadOnly(rocksDb);
+
 		RocksIterator iterator = graphDb.newIterator();
-		iterator.seekToFirst();
+		final LongOpenHashSet keys = new LongOpenHashSet();
+		for(iterator.seekToFirst(); iterator.isValid(); iterator.next()) keys.add(Longs.fromByteArray(iterator.key()));
+		iterator.close();
+		
+		iterator = graphDb.newIterator();
 		for(iterator.seekToFirst(); iterator.isValid(); iterator.next()) {
 			long gid = Longs.fromByteArray(iterator.key());
 			final var graph = graphDepStats.rocksDao.getGraphData(gid);
@@ -124,6 +130,8 @@ public class GraphDepStats {
 	
 			System.out.println(gid + "\t" + name + "\t" + numDependencies + "\t" + dependencySet.size() + "\t" + numDependents + "\t" + allDependents); 
 		}
+		
+		iterator.close();
 	}
 
 }
