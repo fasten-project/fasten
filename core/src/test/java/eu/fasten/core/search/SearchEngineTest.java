@@ -31,8 +31,6 @@ public class SearchEngineTest {
 		final ArrayImmutableDirectedGraph graph = builder.build();
     	final ObjectRBTreeSet<Result> results = new ObjectRBTreeSet<>();
     	final SubmissionPublisher<Result> publisher = new SubmissionPublisher<>();
-		final SearchEngine.FullyCollectSubscriber subscriber = new SearchEngine.FullyCollectSubscriber();
-		publisher.subscribe(subscriber);
 		
 		SearchEngine.bfs(graph, true, LongList.of(1), x -> true, TrivialScorer.getInstance(), results, 100, publisher);
 		// #node #indegree #outdegree #distance (from 1)
@@ -51,14 +49,6 @@ public class SearchEngineTest {
 		for (final Result r: results) {
 			assertTrue(node2score.containsKey(r.gid));
 			assertEquals(node2score.get(r.gid), r.score);
-		}
-		synchronized(subscriber) {
-			while (!subscriber.ready) subscriber.wait();
-			for (final Result r: subscriber.result) {
-				assertTrue(node2score.containsKey(r.gid));
-				assertEquals(node2score.get(r.gid), r.score);
-			}
-		
 		}
 		
     }
