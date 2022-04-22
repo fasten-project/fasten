@@ -44,6 +44,8 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -75,6 +77,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
     private final int skipOffsets;
 
     private final String writeDirectory;
+    private final String readDirectory;
     private final String writeLink;
 
     // Configuration for consumer timeout.
@@ -99,9 +102,9 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
      * @param skipOffsets            skip offset number
      */
     public FastenKafkaPlugin(boolean enableKafka, Properties consumerNormProperties, Properties consumerPrioProperties,
-            Properties producerProperties, KafkaPlugin plugin, int skipOffsets, String writeDirectory, String writeLink,
-            String outputTopic, boolean consumeTimeoutEnabled, long consumeTimeout, boolean exitOnTimeout,
-            boolean enableLocalStorage, String localStorageDir) {
+                             Properties producerProperties, KafkaPlugin plugin, int skipOffsets, String writeDirectory, String readDirectory,
+                             String writeLink, String outputTopic, boolean consumeTimeoutEnabled, long consumeTimeout, boolean exitOnTimeout,
+                             boolean enableLocalStorage, String localStorageDir) {
         this.plugin = plugin;
 
         if (enableKafka) {
@@ -120,6 +123,9 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
         } else {
             this.writeDirectory = null;
         }
+
+        this.readDirectory = readDirectory;
+
         if (writeLink != null) {
             this.writeLink = writeLink.endsWith(File.separator) ? writeLink.substring(0, writeLink.length() - 1)
                     : writeLink;
@@ -144,11 +150,11 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
     }
 
     public FastenKafkaPlugin(Properties consumerNormProperties, Properties consumerPrioProperties,
-            Properties producerProperties, KafkaPlugin plugin, int skipOffsets, String writeDirectory, String writeLink,
-            String outputTopic, boolean consumeTimeoutEnabled, long consumeTimeout, boolean exitOnTimeout,
-            boolean enableLocalStorage, String localStorageDir) {
+                             Properties producerProperties, KafkaPlugin plugin, int skipOffsets, String writeDirectory, String readDirectory, String writeLink,
+                             String outputTopic, boolean consumeTimeoutEnabled, long consumeTimeout, boolean exitOnTimeout,
+                             boolean enableLocalStorage, String localStorageDir) {
         this(true, consumerNormProperties, consumerPrioProperties, producerProperties, plugin, skipOffsets,
-                writeDirectory, writeLink, outputTopic, consumeTimeoutEnabled, consumeTimeout, exitOnTimeout,
+                writeDirectory, readDirectory, writeLink, outputTopic, consumeTimeoutEnabled, consumeTimeout, exitOnTimeout,
                 enableLocalStorage, localStorageDir);
     }
 
@@ -302,6 +308,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
      */
     public void processRecord(ConsumerRecord<String, String> record, ProcessingLane lane) {
         long consumeTimestamp = System.currentTimeMillis();
+        record = fixPathInRecord(record);
 
         try {
             if (localStorage != null) { // If local storage is enabled.
@@ -349,6 +356,28 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
 
         // We always produce, it does not matter if local storage is enabled or not.
         handleProducing(record.value(), consumeTimestamp, lane);
+    }
+
+    /**
+     * Fixes paths to the FASTEN data/artifacts on-the-fly for backward-compatibility.
+     * Before this, absolute paths were stored in Kafka records.
+     */
+    private ConsumerRecord<String, String> fixPathInRecord(ConsumerRecord<String, String> record) {
+        var recordJson = new JSONObject(record.value());
+        if (recordJson.getJSONObject("payload").has("dir")) {
+            // Plug-ins with "dir" have an output path but this check enforces this.
+            if (this.readDirectory == null) {
+                throw new RuntimeException("Provide input path (--pi) for the plug-in where its data are stored.");
+            }
+            var path = recordJson.getJSONObject("payload").get("dir");
+            // Backward-compatible check
+            // If the path is not absolute, add the base dir to it.
+            if (!Files.exists(Paths.get(String.valueOf(path)))) {
+                recordJson.getJSONObject("payload").put("dir", Paths.get(this.readDirectory, String.valueOf(path)));
+                record = new ConsumerRecord<>(record.topic(), record.partition(), record.offset(), record.key(), recordJson.toString());
+            }
+        }
+        return record;
     }
 
     /**
@@ -427,7 +456,8 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
         fw.close();
 
         JSONObject link = new JSONObject();
-        link.put("dir", file.getAbsolutePath());
+        // Stores relative path
+        link.put("dir", path);
 
         if (this.writeLink != null && !this.writeLink.equals("")) {
             link.put("link", this.writeLink + path);

@@ -1,18 +1,17 @@
 package eu.fasten.server.plugins.kafka;
 
-import static eu.fasten.core.plugins.KafkaPlugin.ProcessingLane.NORMAL;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import eu.fasten.core.plugins.KafkaPlugin;
+import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.concurrent.TimeoutException;
 
-import org.junit.jupiter.api.Test;
-
-import eu.fasten.core.plugins.KafkaPlugin;
+import static eu.fasten.core.plugins.KafkaPlugin.ProcessingLane.NORMAL;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class KafkaConsumeTimeoutTest {
 
@@ -20,7 +19,7 @@ public class KafkaConsumeTimeoutTest {
     public void testDisableTimeout() {
         DummyPlugin dummyPlugin = new DummyPlugin(false, 0);
 
-        FastenKafkaPlugin plugin = new FastenKafkaPlugin(false, new Properties(), new Properties(), new Properties(), dummyPlugin, 0, null, null, "", false, -1, false, false, "");
+        FastenKafkaPlugin plugin = new FastenKafkaPlugin(false, new Properties(), new Properties(), new Properties(), dummyPlugin, 0, null, null, null, "", false, -1, false, false, "");
 
         assertFalse(plugin.isConsumeTimeoutEnabled());
         assertEquals(-1, plugin.getConsumeTimeout());
@@ -30,7 +29,7 @@ public class KafkaConsumeTimeoutTest {
     public void testEnableTimeout() {
         DummyPlugin dummyPlugin = new DummyPlugin(false, 0);
 
-        FastenKafkaPlugin plugin = new FastenKafkaPlugin(false, new Properties(), new Properties(), new Properties(), dummyPlugin, 0, null, null, "", true, 10, false, false, "");
+        FastenKafkaPlugin plugin = new FastenKafkaPlugin(false, new Properties(), new Properties(), new Properties(), dummyPlugin, 0, null, null, null, "", true, 10, false, false, "");
 
         assertTrue(plugin.isConsumeTimeoutEnabled());
         assertEquals(10, plugin.getConsumeTimeout());
@@ -42,7 +41,7 @@ public class KafkaConsumeTimeoutTest {
         long timeOut = 3;
         DummyPlugin dummyPlugin = new DummyPlugin(true, blockTime);
 
-        FastenKafkaPlugin plugin = new FastenKafkaPlugin(false, new Properties(), new Properties(), new Properties(), dummyPlugin, 0, null, null, "", true, timeOut, false, false, "");
+        FastenKafkaPlugin plugin = new FastenKafkaPlugin(false, new Properties(), new Properties(), new Properties(), dummyPlugin, 0, null, null, null, "", true, timeOut, false, false, "");
 
         long startTime  = System.currentTimeMillis();
         plugin.consumeWithTimeout("dummy", timeOut, false, NORMAL);
@@ -58,7 +57,7 @@ public class KafkaConsumeTimeoutTest {
         long timeOut = 2;
         DummyPlugin dummyPlugin = new DummyPlugin(true, blockTime);
 
-        FastenKafkaPlugin plugin = new FastenKafkaPlugin(false, new Properties(), new Properties(), new Properties(), dummyPlugin, 0, null, null, "", true, timeOut, false, false, "");
+        FastenKafkaPlugin plugin = new FastenKafkaPlugin(false, new Properties(), new Properties(), new Properties(), dummyPlugin, 0, null, null, null, "", true, timeOut, false, false, "");
 
         long startTime  = System.currentTimeMillis();
         plugin.consumeWithTimeout("dummy", timeOut, false, NORMAL);
@@ -76,7 +75,7 @@ public class KafkaConsumeTimeoutTest {
         long timeOut = 2;
         DummyPlugin dummyPlugin = new DummyPlugin(true, blockTime);
 
-        FastenKafkaPlugin plugin = new FastenKafkaPlugin(false, new Properties(), new Properties(), new Properties(), dummyPlugin, 0, null, null, "", true, timeOut, false, false, "");
+        FastenKafkaPlugin plugin = new FastenKafkaPlugin(false, new Properties(), new Properties(), new Properties(), dummyPlugin, 0, null, null, null, "", true, timeOut, false, false, "");
 
         long startTime  = System.currentTimeMillis();
         plugin.consumeWithTimeout("dummy", timeOut, false, NORMAL);

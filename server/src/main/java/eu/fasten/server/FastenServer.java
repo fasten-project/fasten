@@ -65,25 +65,30 @@ public class FastenServer implements Runnable {
     boolean shouldExitAfterPluginInit;
 
     @Option(names = {"-pl", "--plugin_list"},
-        paramLabel = "plugins",
-        description = "List of plugins to FastenServerStartup. Can be used multiple times.",
-        split = ",")
+            paramLabel = "plugins",
+            description = "List of plugins to FastenServerStartup. Can be used multiple times.",
+            split = ",")
     List<String> plugins;
 
     @Option(names = {"-po", "--plugin_output"},
-        paramLabel = "dir",
-        description = "Path to directory where plugin output messages will be stored")
+            paramLabel = "dir",
+            description = "Path to directory where plugin output messages will be stored")
     Map<String, String> outputDirs;
 
+    @Option(names = {"-pi", "--plugin_input"},
+            paramLabel = "dir",
+            description = "Path to directory where plugin input messages are stored")
+    Map<String, String> inputDirs;
+
     @Option(names = {"-pol", "--plugin_output_link"},
-        paramLabel = "dir",
-        description = "HTTP link to the root directory where output messages will be stored")
+            paramLabel = "dir",
+            description = "HTTP link to the root directory where output messages will be stored")
     Map<String, String> outputLinks;
 
     // TODO rename parameter to better transport meaning, e.g., either use param (and enum in code)
     // like --mode DEV or rename it to --deploymentMode or --devMode
     @Option(names = {"-m", "--mode"},
-        description = "Deployment or Development mode")
+            description = "Deployment or Development mode")
     boolean isDeployed;
 
     @Option(names = {"-k", "--kafka_server"},
@@ -276,6 +281,7 @@ public class FastenServer implements Runnable {
 
                 return new FastenKafkaPlugin(consumerNormProperties, consumerPrioProperties, producerProperties, k, skipOffsets,
                         (outputDirs != null) ? outputDirs.get(k.getClass().getSimpleName()) : null,
+                        (inputDirs != null) ? inputDirs.get(k.getClass().getSimpleName()) : null,
                         (outputLinks != null) ? outputLinks.get(k.getClass().getSimpleName()) : null,
                         (outputTopic != null) ? outputTopic : k.getClass().getSimpleName(),
                         (consumeTimeout != -1) ? true : false,
