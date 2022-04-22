@@ -437,22 +437,22 @@ public class GraphMavenResolver implements Runnable {
         }
 
         var workQueue = new ObjectArrayFIFOQueue<Revision>();
-        workQueue.enqueue(artifact);
         var seen = new LongOpenHashSet();
+        workQueue.enqueue(artifact);
+        seen.add(artifact.id);
         var result = new ArrayBlockingQueue<Revision>(100);
 
         Executors.newSingleThreadExecutor().execute(() -> {
 			var countDown = maxDeps;
         	while (!workQueue.isEmpty()) {
         		var rev = workQueue.dequeue();
-        		seen.add(rev.id);
         		if (!dependentGraph.containsVertex(rev)) continue; // Ignore missing revisions
 				try {
 	        		result.put(rev);
 					if (countDown-- == 0) break;
 				} catch(InterruptedException cantHappen) {}
 
-        		filterDependentsByTimestamp(StreamSupport.stream(dependentGraph.iterables().outgoingEdgesOf(rev).spliterator(), false).map(edge -> edge.target), timestamp).filter(dependent -> !seen.contains(dependent.id)).forEach(dependent -> workQueue.enqueue(dependent));
+        		filterDependentsByTimestamp(StreamSupport.stream(dependentGraph.iterables().outgoingEdgesOf(rev).spliterator(), false).map(edge -> edge.target), timestamp).forEach(dependent -> { if (seen.add(dependent.id)) workQueue.enqueue(dependent);});
         		if (! transitive) break;
         	}
         	
