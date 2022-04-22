@@ -19,6 +19,7 @@
 package eu.fasten.core.search;
 
 import java.util.Set;
+import java.util.concurrent.BlockingQueue;
 
 import org.jooq.DSLContext;
 import org.jooq.Record2;
@@ -102,7 +103,7 @@ public class GraphDepStats {
 			final String artifactId = a[1];
 			final String version = record.component2();
 			final Set<Revision> dependencySet = graphDepStats.resolver.resolveDependencies(groupId, artifactId, version, -1, context, true);
-			final Set<Revision> dependentSet = graphDepStats.resolver.resolveDependents(groupId, artifactId, version, -1, true);
+			final BlockingQueue<Revision> dependentsQueue = graphDepStats.resolver.resolveDependentsPipeline(groupId, artifactId, version, -1,  true, Long.MAX_VALUE,  1);
 			final String name = groupId + ":" + artifactId + "$" + version;
 
 			long numDependencies = 0;
@@ -111,12 +112,14 @@ public class GraphDepStats {
 				if (g != null && graphDepStats.rocksDao.getGraphMetadata(r.id, g) != null) numDependencies++;
 			}
 			long numDependents = 0;
-			for(Revision r: dependentSet) {
+			for(;;) {
+				final var r = dependentsQueue.take();
+				if (r == GraphMavenResolver.END) break;
 				final var g = graphDepStats.rocksDao.getGraphData(r.id);
 				if (g != null && graphDepStats.rocksDao.getGraphMetadata(r.id, g) != null) numDependents++;
 			}
 	
-			System.out.println(gid + "\t" + name + "\t" + numDependencies + "\t" + dependencySet.size() + "\t" + numDependents + "\t" + dependentSet.size()); 
+			System.out.println(gid + "\t" + name + "\t" + numDependencies + "\t" + dependencySet.size() + "\t" + numDependents + "\t" + dependentsQueue.size()); 
 		}
 	}
 
