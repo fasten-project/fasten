@@ -39,8 +39,8 @@ public class DebianLicenseDetectorPlugin extends Plugin {
 
     @Extension
     public static class DebianLicenseDetectorExtension implements KafkaPlugin {
-        private static String packageVersion = "latest";
-        private static String packageName ;
+        private static String packageVersion = null;
+        private static String packageName = null;
         private static int HttpGetCount = 0;
         private static int FilesCount=0;
         private static int FilesWithLicensesCount=0;
@@ -89,6 +89,7 @@ public class DebianLicenseDetectorPlugin extends Plugin {
             try { // Fasten error-handling guidelines
                 reset();
                 JSONObject json = new JSONObject(record);
+                object = new JSONObject();
                 logger.info("Debian license detector started.");
 
                 // Retrieving the package name
