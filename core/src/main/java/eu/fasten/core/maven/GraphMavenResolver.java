@@ -26,14 +26,12 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
@@ -61,7 +59,7 @@ import eu.fasten.core.maven.data.Revision;
 import eu.fasten.core.maven.utils.DependencyGraphUtilities;
 import it.unimi.dsi.fastutil.objects.ObjectArrayFIFOQueue;
 import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenHashSet;
-import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
+import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import picocli.CommandLine;
 
 @CommandLine.Command(name = "GraphMavenResolver")
@@ -439,9 +437,9 @@ public class GraphMavenResolver implements Runnable {
         }
 
         var workQueue = new ObjectArrayFIFOQueue<Revision>();
-        var seen = new LongOpenHashSet();
+        var seen = new ObjectOpenHashSet<Revision>();
         workQueue.enqueue(artifact);
-        seen.add(artifact.id);
+        seen.add(artifact);
         var result = new ArrayBlockingQueue<Revision>(100);
 
         Executors.newSingleThreadExecutor().execute(() -> {
@@ -454,7 +452,7 @@ public class GraphMavenResolver implements Runnable {
 					if (countDown-- == 0) break;
 				} catch(InterruptedException cantHappen) {}
 
-        		filterDependentsByTimestamp(StreamSupport.stream(dependentGraph.iterables().outgoingEdgesOf(rev).spliterator(), false).map(edge -> edge.target), timestamp).forEach(dependent -> { if (seen.add(dependent.id)) workQueue.enqueue(dependent);});
+        		filterDependentsByTimestamp(StreamSupport.stream(dependentGraph.iterables().outgoingEdgesOf(rev).spliterator(), false).map(edge -> edge.target), timestamp).forEach(dependent -> { if (seen.add(dependent)) workQueue.enqueue(dependent);});
         		if (! transitive) break;
         	}
         	
