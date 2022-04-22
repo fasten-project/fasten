@@ -95,7 +95,7 @@ public class GraphDepStats {
 			long gid = Longs.fromByteArray(iterator.key());
 			final var graph = graphDepStats.rocksDao.getGraphData(gid);
 			if (graph == null) continue;
-			if (graphDepStats.rocksDao.getGraphMetadata(gid, graph) == null) continue;
+//			if (graphDepStats.rocksDao.getGraphMetadata(gid, graph) == null) continue;
 
 			final Record2<String, String> record = context.select(Packages.PACKAGES.PACKAGE_NAME, PackageVersions.PACKAGE_VERSIONS.VERSION).from(PackageVersions.PACKAGE_VERSIONS).join(Packages.PACKAGES).on(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.eq(Packages.PACKAGES.ID)).where(PackageVersions.PACKAGE_VERSIONS.ID.eq(Long.valueOf(gid))).fetchOne();
 			final String[] a = record.component1().split(":");
@@ -109,7 +109,8 @@ public class GraphDepStats {
 			long numDependencies = 0;
 			for(Revision r: dependencySet) {
 				final var g = graphDepStats.rocksDao.getGraphData(r.id);
-				if (g != null && graphDepStats.rocksDao.getGraphMetadata(r.id, g) != null) numDependencies++;
+				if (g != null) numDependencies++;
+				//if (g != null && graphDepStats.rocksDao.getGraphMetadata(r.id, g) != null) numDependencies++;
 			}
 			long numDependents = 0, allDependents = 0;
 			for(;;) {
@@ -117,7 +118,8 @@ public class GraphDepStats {
 				if (r == GraphMavenResolver.END) break;
 				allDependents++;
 				final var g = graphDepStats.rocksDao.getGraphData(r.id);
-				if (g != null && graphDepStats.rocksDao.getGraphMetadata(r.id, g) != null) numDependents++;
+				if (g != null) numDependents++;
+				//if (g != null && graphDepStats.rocksDao.getGraphMetadata(r.id, g) != null) numDependents++;
 			}
 	
 			System.out.println(gid + "\t" + name + "\t" + numDependencies + "\t" + dependencySet.size() + "\t" + numDependents + "\t" + allDependents); 
