@@ -103,7 +103,7 @@ public class GraphDepStats {
 			final String artifactId = a[1];
 			final String version = record.component2();
 			final Set<Revision> dependencySet = graphDepStats.resolver.resolveDependencies(groupId, artifactId, version, -1, context, true);
-			final BlockingQueue<Revision> dependentsQueue = graphDepStats.resolver.resolveDependentsPipeline(groupId, artifactId, version, -1,  true, Long.MAX_VALUE,  1);
+			final BlockingQueue<Revision> dependentsQueue = graphDepStats.resolver.resolveDependentsPipeline(groupId, artifactId, version, -1,  true, Long.MAX_VALUE, 1);
 			final String name = groupId + ":" + artifactId + "$" + version;
 
 			long numDependencies = 0;
@@ -111,15 +111,16 @@ public class GraphDepStats {
 				final var g = graphDepStats.rocksDao.getGraphData(r.id);
 				if (g != null && graphDepStats.rocksDao.getGraphMetadata(r.id, g) != null) numDependencies++;
 			}
-			long numDependents = 0;
+			long numDependents = 0, allDependents = 0;
 			for(;;) {
 				final var r = dependentsQueue.take();
 				if (r == GraphMavenResolver.END) break;
+				allDependents++;
 				final var g = graphDepStats.rocksDao.getGraphData(r.id);
 				if (g != null && graphDepStats.rocksDao.getGraphMetadata(r.id, g) != null) numDependents++;
 			}
 	
-			System.out.println(gid + "\t" + name + "\t" + numDependencies + "\t" + dependencySet.size() + "\t" + numDependents + "\t" + dependentsQueue.size()); 
+			System.out.println(gid + "\t" + name + "\t" + numDependencies + "\t" + dependencySet.size() + "\t" + numDependents + "\t" + allDependents); 
 		}
 	}
 
