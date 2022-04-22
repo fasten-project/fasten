@@ -22,6 +22,7 @@ import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -272,7 +273,8 @@ public class GraphMavenResolver implements Runnable {
         var excludeProducts = new ArrayList<Pair<Revision, MavenProduct>>();
         var artifact = new Revision(groupId, artifactId, version, new Timestamp(timestamp));
         if (!dependencyGraph.containsVertex(artifact)) {
-            throw new RuntimeException("Revision " + artifact + " is not in the dependency graph. Probably it is missing in the database");
+            logger.warn("Revision " + artifact + " is not in the dependency graph. Probably it is missing in the database");
+            return new ImmutableTriple<>(new ObjectLinkedOpenHashSet<>(), Collections.emptyList(), Collections.emptyMap());
         }
         var edges = dependencyGraph.outgoingEdgesOf(artifact);
         for (var exclusionEdge : edges.stream().filter(e -> !e.exclusions.isEmpty()).collect(Collectors.toList())) {
