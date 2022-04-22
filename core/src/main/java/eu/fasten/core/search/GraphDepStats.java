@@ -116,7 +116,7 @@ public class GraphDepStats {
 			long numDependencies = 0;
 			for(Revision r: dependencySet) {
 				if (keys.contains(r.id)) numDependencies++;
-				else LOGGER.warn("Missing dependency " + r);
+				//else LOGGER.warn("Missing dependency " + r);
 				//final var g = graphDepStats.rocksDao.getGraphData(r.id);
 				//if (g != null && graphDepStats.rocksDao.getGraphMetadata(r.id, g) != null) numDependencies++;
 			}
@@ -126,7 +126,7 @@ public class GraphDepStats {
 				if (r == GraphMavenResolver.END) break;
 				allDependents++;
 				if (keys.contains(r.id)) numDependents++;
-				else LOGGER.warn("Missing dependent " + r);
+				//else LOGGER.warn("Missing dependent " + r);
 				//final var g = graphDepStats.rocksDao.getGraphData(r.id);
 				//if (g != null && graphDepStats.rocksDao.getGraphMetadata(r.id, g) != null) numDependents++;
 			}
