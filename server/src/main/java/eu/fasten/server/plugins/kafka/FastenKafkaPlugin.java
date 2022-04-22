@@ -364,7 +364,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
      */
     private ConsumerRecord<String, String> fixPathInRecord(ConsumerRecord<String, String> record) {
         var recordJson = new JSONObject(record.value());
-        if (recordJson.getJSONObject("payload").has("dir")) {
+        if (recordJson.has("payload") && recordJson.has("dir")) {
             // Plug-ins with "dir" have an output path but this check enforces this.
             if (this.readDirectory == null) {
                 throw new RuntimeException("Provide input path (--pi) for the plug-in where its data are stored.");
