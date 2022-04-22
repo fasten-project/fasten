@@ -114,8 +114,8 @@ public class GraphDepStats {
 
 			long numDependencies = 0;
 			for(Revision r: dependencySet) {
-				final var g = graphDepStats.rocksDao.getGraphData(r.id);
-				if (g != null) numDependencies++;
+				if (keys.contains(r.id)) numDependencies++;
+				//final var g = graphDepStats.rocksDao.getGraphData(r.id);
 				//if (g != null && graphDepStats.rocksDao.getGraphMetadata(r.id, g) != null) numDependencies++;
 			}
 			long numDependents = 0, allDependents = 0;
@@ -123,8 +123,8 @@ public class GraphDepStats {
 				final var r = dependentsQueue.take();
 				if (r == GraphMavenResolver.END) break;
 				allDependents++;
-				final var g = graphDepStats.rocksDao.getGraphData(r.id);
-				if (g != null) numDependents++;
+				if (keys.contains(r.id)) numDependents++;
+				//final var g = graphDepStats.rocksDao.getGraphData(r.id);
 				//if (g != null && graphDepStats.rocksDao.getGraphMetadata(r.id, g) != null) numDependents++;
 			}
 	
