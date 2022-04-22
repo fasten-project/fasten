@@ -60,7 +60,7 @@ import eu.fasten.core.maven.data.Revision;
 import eu.fasten.core.maven.utils.DependencyGraphUtilities;
 import it.unimi.dsi.fastutil.objects.ObjectArrayFIFOQueue;
 import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenHashSet;
-import it.unimi.dsi.fastutil.objects.ReferenceOpenHashSet;
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import picocli.CommandLine;
 
 @CommandLine.Command(name = "GraphMavenResolver")
@@ -438,21 +438,21 @@ public class GraphMavenResolver implements Runnable {
 
         var workQueue = new ObjectArrayFIFOQueue<Revision>();
         workQueue.enqueue(artifact);
-        var seen = new ReferenceOpenHashSet<Revision>();
+        var seen = new LongOpenHashSet();
         var result = new ArrayBlockingQueue<Revision>(100);
 
         Executors.newSingleThreadExecutor().execute(() -> {
 			var countDown = maxDeps;
         	while (!workQueue.isEmpty()) {
         		var rev = workQueue.dequeue();
-        		seen.add(rev);
+        		seen.add(rev.id);
         		if (!dependentGraph.containsVertex(rev)) continue; // Ignore missing revisions
 				try {
 	        		result.put(rev);
 					if (countDown-- == 0) break;
 				} catch(InterruptedException cantHappen) {}
 
-        		filterDependentsByTimestamp(StreamSupport.stream(dependentGraph.iterables().outgoingEdgesOf(rev).spliterator(), false).map(edge -> edge.target), timestamp).filter(dependent -> !seen.contains(dependent)).forEach(dependent -> workQueue.enqueue(dependent));
+        		filterDependentsByTimestamp(StreamSupport.stream(dependentGraph.iterables().outgoingEdgesOf(rev).spliterator(), false).map(edge -> edge.target), timestamp).filter(dependent -> !seen.contains(dependent.id)).forEach(dependent -> workQueue.enqueue(dependent));
         		if (! transitive) break;
         	}
         	
