@@ -94,6 +94,7 @@ public class GraphDepStats {
 			long gid = Longs.fromByteArray(iterator.key());
 			final var graph = graphDepStats.rocksDao.getGraphData(gid);
 			if (graph == null) continue;
+			if (graphDepStats.rocksDao.getGraphMetadata(gid, graph) == null) continue;
 
 			final Record2<String, String> record = context.select(Packages.PACKAGES.PACKAGE_NAME, PackageVersions.PACKAGE_VERSIONS.VERSION).from(PackageVersions.PACKAGE_VERSIONS).join(Packages.PACKAGES).on(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.eq(Packages.PACKAGES.ID)).where(PackageVersions.PACKAGE_VERSIONS.ID.eq(Long.valueOf(gid))).fetchOne();
 			final String[] a = record.component1().split(":");
@@ -101,15 +102,21 @@ public class GraphDepStats {
 			final String artifactId = a[1];
 			final String version = record.component2();
 			final Set<Revision> dependencySet = graphDepStats.resolver.resolveDependencies(groupId, artifactId, version, -1, context, true);
+			final Set<Revision> dependentSet = graphDepStats.resolver.resolveDependents(groupId, artifactId, version, -1, true);
 			final String name = groupId + ":" + artifactId + "$" + version;
-			LOGGER.info("Analyzing graph " + name  + " with id " + gid);
 
-
-			long c = 0;
-			for(Revision r: dependencySet) if (graphDepStats.rocksDao.getGraphData(r.id) != null) c++;
+			long numDependencies = 0;
+			for(Revision r: dependencySet) {
+				final var g = graphDepStats.rocksDao.getGraphData(r.id);
+				if (g != null && graphDepStats.rocksDao.getGraphMetadata(r.id, g) != null) numDependencies++;
+			}
+			long numDependents = 0;
+			for(Revision r: dependentSet) {
+				final var g = graphDepStats.rocksDao.getGraphData(r.id);
+				if (g != null && graphDepStats.rocksDao.getGraphMetadata(r.id, g) != null) numDependents++;
+			}
 	
-			if (c != 0 && dependencySet.size() != 0) System.out.println(gid + "\t" + name + "\t" + c + "\t" + dependencySet.size() + "\t" + 100. * c / dependencySet.size());
-			LOGGER.info("Deps: " + dependencySet.size() + " known: " + c + " (" + 100. * c / dependencySet.size() + "%)");
+			System.out.println(gid + "\t" + name + "\t" + numDependencies + "\t" + dependencySet.size() + "\t" + numDependents + "\t" + dependentSet.size()); 
 		}
 	}
 
