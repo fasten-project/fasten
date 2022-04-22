@@ -175,11 +175,11 @@ public class UpdateCache {
 				continue;
 			}
 			
-			if (availableIds.size() < 0.9 * dependencyIds.size()) {
+/*			if (availableIds.size() < 0.9 * dependencyIds.size()) {
 				LOGGER.warn("Not enough dependencies for gid " + gid + " (" + name + ")");
 				continue;
 			}
-			
+*/			
 			final DirectedGraph stitchedGraph;
 
 			final var dm = new CGMerger(dependencyIds, context, update.rocksDao);
