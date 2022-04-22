@@ -87,6 +87,7 @@ public class GraphDepStats {
 		final String resolverGraph = jsapResult.getString("resolverGraph");
 
 		final GraphDepStats graphDepStats = new GraphDepStats(jdbcURI, database, rocksDb, resolverGraph, null);
+		graphDepStats.resolver.setIgnoreMissing(true);
 		final DSLContext context = graphDepStats.context;
 
 		RocksDB graphDb = RocksDB.openReadOnly(rocksDb);
