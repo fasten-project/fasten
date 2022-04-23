@@ -19,6 +19,7 @@
 package eu.fasten.core.search;
 
 import java.io.BufferedReader;
+import java.io.FileInputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -841,7 +842,7 @@ public class SearchEngine implements AutoCloseable {
 		final String cacheDir = jsapResult.getString("cache");
 		final String resolverGraph = jsapResult.getString("resolverGraph");
 		final LongOpenHashSet blacklist = new LongOpenHashSet();
-		if (jsapResult.userSpecified("blacklist")) TextIO.asLongIterator(new BufferedReader(new InputStreamReader(System.in, StandardCharsets.US_ASCII))).forEachRemaining(x -> blacklist.add(x));
+		if (jsapResult.userSpecified("blacklist")) TextIO.asLongIterator(new BufferedReader(new InputStreamReader(new FileInputStream(jsapResult.getString("blacklist")), StandardCharsets.US_ASCII))).forEachRemaining(x -> blacklist.add(x));
 		
 		try (SearchEngine searchEngine = new SearchEngine(jdbcURI, database, rocksDb, cacheDir, resolverGraph, null, blacklist)) {
 
