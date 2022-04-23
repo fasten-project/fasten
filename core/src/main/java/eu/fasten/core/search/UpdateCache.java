@@ -119,7 +119,7 @@ public class UpdateCache {
 			pl.update();
 			// We try to speed up the scan assuming enumeration happens always in the same order
 			if (gid == last[0]) foundLast = true;
-			if (!foundLast) continue;
+			//if (!foundLast) continue;
 
 			if (blackList.contains(gid)) {
 				LOGGER.info("Skipping potential OOM caused by graph with gid " + gid);
