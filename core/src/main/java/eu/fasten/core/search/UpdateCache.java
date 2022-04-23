@@ -172,6 +172,8 @@ public class UpdateCache {
 			var prevAvailableIds = cache.get(componentsHandle, key);
 			if (prevAvailableIds != null && availableIds.equals(SerializationUtils.deserialize(prevAvailableIds))) {
 				LOGGER.info("Unchanged available dependencies for gid " + gid + " (" + name + ")");
+				if (! (SerializationUtils.deserialize(cache.get(mergedHandle, key)) instanceof ArrayImmutableDirectedGraph))
+					LOGGER.error("Cached graph for GID " + gid + " is of merged type");
 				continue;
 			}
 			
