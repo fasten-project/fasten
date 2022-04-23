@@ -18,6 +18,9 @@
 
 package eu.fasten.core.search;
 
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -46,6 +49,7 @@ import org.rocksdb.RocksDBException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.martiansoftware.jsap.FlaggedOption;
 import com.martiansoftware.jsap.JSAP;
 import com.martiansoftware.jsap.JSAPResult;
 import com.martiansoftware.jsap.Parameter;
@@ -67,6 +71,7 @@ import eu.fasten.core.search.predicate.CachingPredicateFactory;
 import eu.fasten.core.search.predicate.PredicateFactory;
 import eu.fasten.core.search.predicate.PredicateFactory.MetadataSource;
 import it.unimi.dsi.fastutil.HashCommon;
+import it.unimi.dsi.fastutil.io.TextIO;
 import it.unimi.dsi.fastutil.longs.LongArrayFIFOQueue;
 import it.unimi.dsi.fastutil.longs.LongCollection;
 import it.unimi.dsi.fastutil.longs.LongIterator;
@@ -169,6 +174,8 @@ public class SearchEngine implements AutoCloseable {
 	private final PredicateFactory predicateFactory;
 	/** The scorer that will be used to rank results. */
 	private final Scorer scorer;
+	/** A blacklist of GIDs that will be considered as missing. */
+	private final LongOpenHashSet blacklist;
 
 	/** The maximum number of results that should be printed. */
 	private int limit = DEFAULT_LIMIT;
@@ -252,9 +259,10 @@ public class SearchEngine implements AutoCloseable {
 	 *            exist).
 	 * @param scorer an {@link ObjectParser} specification providing a scorer; if {@code null}, a
 	 *            {@link TrivialScorer} will be used instead.
+	 * @param blacklist a blacklist of GIDs that will be considered as missing.
 	 */
-	public SearchEngine(final String jdbcURI, final String database, final String rocksDb, final String cacheDir, final String resolverGraph, final String scorer) throws Exception {
-		this(PostgresConnector.getDSLContext(jdbcURI, database, false), new RocksDao(rocksDb, true), new PersistentCache(cacheDir, false), resolverGraph, scorer == null ? TrivialScorer.getInstance() : ObjectParser.fromSpec(scorer, Scorer.class));
+	public SearchEngine(final String jdbcURI, final String database, final String rocksDb, final String cacheDir, final String resolverGraph, final String scorer, final LongOpenHashSet blacklist) throws Exception {
+		this(PostgresConnector.getDSLContext(jdbcURI, database, false), new RocksDao(rocksDb, true), new PersistentCache(cacheDir, false), resolverGraph, scorer == null ? TrivialScorer.getInstance() : ObjectParser.fromSpec(scorer, Scorer.class), blacklist);
 	}
 
 	/**
@@ -266,13 +274,15 @@ public class SearchEngine implements AutoCloseable {
 	 *            exist).
 	 * @param scorer a scorer that will be used to sort results; if {@code null}, a
 	 *            {@link TrivialScorer} will be used instead.
+	 * @param blacklist a blacklist of GIDs that will be considered as missing.
 	 */
 
-	public SearchEngine(final DSLContext context, final RocksDao rocksDao, final PersistentCache cache, final String resolverGraph, final Scorer scorer) throws Exception {
+	public SearchEngine(final DSLContext context, final RocksDao rocksDao, final PersistentCache cache, final String resolverGraph, final Scorer scorer, final LongOpenHashSet blacklist) throws Exception {
 		this.context = context;
 		this.rocksDao = rocksDao;
 		this.cache = cache;
 		this.scorer = scorer == null ? TrivialScorer.getInstance() : scorer;
+		this.blacklist = blacklist;
 		resolver = new GraphMavenResolver();
 		resolver.buildDependencyGraph(context, resolverGraph);
 		resolver.setIgnoreMissing(true);
@@ -572,6 +582,7 @@ public class SearchEngine implements AutoCloseable {
 	 * @return a list of {@linkplain Result results}.
 	 */
 	public List<Result> from(final long rev, LongCollection seed, final LongPredicate filter, final long maxResults) throws RocksDBException {
+		if (blacklist.contains(rev)) throw new NoSuchElementException("Revision associated with callable is blacklisted");
 		final var graph = rocksDao.getGraphData(rev);
 		if (graph == null) throw new NoSuchElementException("Revision associated with callable missing from the graph database");
 		if (seed == null) seed = graph.nodes();
@@ -696,6 +707,7 @@ public class SearchEngine implements AutoCloseable {
 	 */
 	public List<Result> to(final long revId, LongCollection providedSeed, final LongPredicate filter, final long maxResults) throws RocksDBException {
 		throwables.clear();
+		if (blacklist.contains(revId)) throw new NoSuchElementException("Revision associated with callable is blacklisted");
 		final var graph = rocksDao.getGraphData(revId);
 		if (graph == null) throw new NoSuchElementException("Revision associated with callable missing from the graph database");
 		final var seed = providedSeed == null ? graph.nodes() : providedSeed;
@@ -715,74 +727,75 @@ public class SearchEngine implements AutoCloseable {
 		AtomicLong trueDependents = new AtomicLong(0);
 
 		for(int i = 0; i < numberOfThreads; i++) executorCompletionService.submit(() -> {
-			final Revision dependent;
-			try {
-				dependent = s.take();
-			} catch(InterruptedException cantHappen) {
-				throw new RuntimeException(cantHappen);
-			}
-			if (dependent == GraphMavenResolver.END) return null;
-
-			var dependentId = dependent.id;
-
-			DirectedGraph stitchedGraph = cache.getMerged(dependentId);
-			if (stitchedGraph == NO_GRAPH) return null;
-			if (stitchedGraph == null) {
-				LOGGER.debug("Analyzing dependent " + dependent.groupId + ":" + dependent.artifactId + ":" + dependent.version.toString());
-
-				final LongLinkedOpenHashSet depFromCache = cache.getDeps(dependentId);
-
-				final LongLinkedOpenHashSet dependencyIds;
-				if (depFromCache == null) {
-					resolveTime -= System.nanoTime();
-					final Set<Revision> dependencySet = resolver.resolveDependencies(dependent.groupId, dependent.artifactId, dependent.version.toString(), -1, context, true);
-					dependencyIds = LongLinkedOpenHashSet.toSet(dependencySet.stream().mapToLong(x -> x.id));
-					dependencyIds.addAndMoveToFirst(dependentId);
-					resolveTime += System.nanoTime();
-					cache.putDeps(dependentId, dependencyIds);
-				} else dependencyIds = depFromCache;
-
-				LOGGER.debug("Dependent has " + graph.numNodes() + " nodes");
-				LOGGER.debug("Found " + dependencyIds.size() + " dependencies");
-
-				if (dependentId != revId && !dependencyIds.contains(revId)) {
-					LOGGER.debug("False dependent");
-					return null; // We cannot possibly reach the callable
-				}
-
-				trueDependents.incrementAndGet();
-
-				stitchingTime -= System.nanoTime();
-				final var dm = new CGMerger(dependencyIds, context, rocksDao);
-
+			for(;;) {
+				final Revision dependent;
 				try {
-					stitchedGraph = getStitchedGraph(dm, dependentId);
-				} catch (final Throwable t) {
-					throwables.add(t);
-					LOGGER.error("mergeWithCHA threw an exception", t);
+					dependent = s.take();
+				} catch(InterruptedException cantHappen) {
+					throw new RuntimeException(cantHappen);
 				}
-				stitchingTime += System.nanoTime();
+				if (dependent == GraphMavenResolver.END) return null;
 
+				var dependentId = dependent.id;
+				if (blacklist.contains(dependentId)) continue;
+
+				DirectedGraph stitchedGraph = cache.getMerged(dependentId);
+				if (stitchedGraph == NO_GRAPH) return null;
 				if (stitchedGraph == null) {
-					cache.putMerged(dependentId, null);
-					LOGGER.error("mergeWithCHA returned null on gid " + dependentId);
-					return null;
-				} else {
-					stitchedGraph = ArrayImmutableDirectedGraph.copyOf(stitchedGraph, false);
-					cache.putMerged(dependentId, (ArrayImmutableDirectedGraph)stitchedGraph);
+					LOGGER.debug("Analyzing dependent " + dependent.groupId + ":" + dependent.artifactId + ":" + dependent.version.toString());
+
+					final LongLinkedOpenHashSet depFromCache = cache.getDeps(dependentId);
+
+					final LongLinkedOpenHashSet dependencyIds;
+					if (depFromCache == null) {
+						resolveTime -= System.nanoTime();
+						final Set<Revision> dependencySet = resolver.resolveDependencies(dependent.groupId, dependent.artifactId, dependent.version.toString(), -1, context, true);
+						dependencyIds = LongLinkedOpenHashSet.toSet(dependencySet.stream().mapToLong(x -> x.id));
+						dependencyIds.addAndMoveToFirst(dependentId);
+						resolveTime += System.nanoTime();
+						cache.putDeps(dependentId, dependencyIds);
+					} else dependencyIds = depFromCache;
+
+					LOGGER.debug("Dependent has " + graph.numNodes() + " nodes");
+					LOGGER.debug("Found " + dependencyIds.size() + " dependencies");
+
+					if (dependentId != revId && !dependencyIds.contains(revId)) {
+						LOGGER.debug("False dependent");
+						return null; // We cannot possibly reach the callable
+					}
+
+					trueDependents.incrementAndGet();
+
+					stitchingTime -= System.nanoTime();
+					final var dm = new CGMerger(dependencyIds, context, rocksDao);
+
+					try {
+						stitchedGraph = getStitchedGraph(dm, dependentId);
+					} catch (final Throwable t) {
+						throwables.add(t);
+						LOGGER.error("mergeWithCHA threw an exception", t);
+					}
+					stitchingTime += System.nanoTime();
+
+					if (stitchedGraph == null) {
+						cache.putMerged(dependentId, null);
+						LOGGER.error("mergeWithCHA returned null on gid " + dependentId);
+						return null;
+					} else {
+						stitchedGraph = ArrayImmutableDirectedGraph.copyOf(stitchedGraph, false);
+						cache.putMerged(dependentId, (ArrayImmutableDirectedGraph)stitchedGraph);
+					}
 				}
+
+				LOGGER.debug("Stiched graph has " + stitchedGraph.numNodes() + " nodes");
+				final int sizeBefore = results.size();
+
+				visitTime -= System.nanoTime();
+				bfs(stitchedGraph, false, seed, filter, scorer, results, maxResults);
+				visitTime += System.nanoTime();
+
+				LOGGER.debug("Found " + (results.size() - sizeBefore) + " coreachable nodes");
 			}
-
-			LOGGER.debug("Stiched graph has " + stitchedGraph.numNodes() + " nodes");
-			final int sizeBefore = results.size();
-
-			visitTime -= System.nanoTime();
-			bfs(stitchedGraph, false, seed, filter, scorer, results, maxResults);
-			visitTime += System.nanoTime();
-
-			LOGGER.debug("Found " + (results.size() - sizeBefore) + " coreachable nodes");
-			
-			return null;
 		});
 
 		try {
@@ -812,6 +825,7 @@ public class SearchEngine implements AutoCloseable {
 	@SuppressWarnings("boxing")
 	public static void main(final String args[]) throws Exception {
 		final SimpleJSAP jsap = new SimpleJSAP(SearchEngine.class.getName(), "Creates an instance of SearchEngine and answers queries from the command line (rlwrap recommended).", new Parameter[] {
+				new FlaggedOption("blacklist", JSAP.STRING_PARSER, null, JSAP.NOT_REQUIRED, 'b', "blacklist", "A blacklist of GIDs of revision call graphs that should be considered as missing."),
 				new UnflaggedOption("jdbcURI", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.REQUIRED, JSAP.NOT_GREEDY, "The JDBC URI."),
 				new UnflaggedOption("database", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.REQUIRED, JSAP.NOT_GREEDY, "The database name."),
 				new UnflaggedOption("rocksDb", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.REQUIRED, JSAP.NOT_GREEDY, "The path to the RocksDB database of revision call graphs."),
@@ -826,8 +840,10 @@ public class SearchEngine implements AutoCloseable {
 		final String rocksDb = jsapResult.getString("rocksDb");
 		final String cacheDir = jsapResult.getString("cache");
 		final String resolverGraph = jsapResult.getString("resolverGraph");
-
-		try (SearchEngine searchEngine = new SearchEngine(jdbcURI, database, rocksDb, cacheDir, resolverGraph, null)) {
+		final LongOpenHashSet blacklist = new LongOpenHashSet();
+		if (jsapResult.userSpecified("blacklist")) TextIO.asLongIterator(new BufferedReader(new InputStreamReader(System.in, StandardCharsets.US_ASCII))).forEachRemaining(x -> blacklist.add(x));
+		
+		try (SearchEngine searchEngine = new SearchEngine(jdbcURI, database, rocksDb, cacheDir, resolverGraph, null, blacklist)) {
 
 			final DSLContext context = searchEngine.context;
 			context.settings().withParseUnknownFunctions(ParseUnknownFunctions.IGNORE);
