@@ -111,6 +111,9 @@ public class GraphDepStats {
 			final String version = record.component2();
 			final Set<Revision> dependencySet = graphDepStats.resolver.resolveDependencies(groupId, artifactId, version, -1, context, true);
 			final BlockingQueue<Revision> dependentsQueue = graphDepStats.resolver.resolveDependentsPipeline(groupId, artifactId, version, -1,  true, Long.MAX_VALUE, 1);
+
+			if (dependentsQueue == null) continue;
+
 			final String name = groupId + ":" + artifactId + "$" + version;
 
 			long numDependencies = 0;
