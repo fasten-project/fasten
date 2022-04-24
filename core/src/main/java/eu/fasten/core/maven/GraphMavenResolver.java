@@ -31,9 +31,10 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Scanner;
 import java.util.Set;
-import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
@@ -57,10 +58,9 @@ import eu.fasten.core.maven.data.DependencyEdge;
 import eu.fasten.core.maven.data.MavenProduct;
 import eu.fasten.core.maven.data.Revision;
 import eu.fasten.core.maven.utils.DependencyGraphUtilities;
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.objects.ObjectArrayFIFOQueue;
 import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenHashSet;
-import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
-import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import picocli.CommandLine;
 
 @CommandLine.Command(name = "GraphMavenResolver")
@@ -407,9 +407,9 @@ public class GraphMavenResolver implements Runnable {
      * provided timestamp determines which nodes will be ignored when traversing dependent nodes. Effectively, the
      * returned dependent set only includes nodes that where released AFTER the provided timestamp.
      */
-    public BlockingQueue<Revision> resolveDependentsPipeline(String groupId, String artifactId, String version, long timestamp,
+    public Future<?> resolveDependentsPipeline(String groupId, String artifactId, String version, final BlockingQueue<Revision> result, long timestamp,
                                                                boolean transitive, long maxDeps, int numberOfThreads) {
-        return dependentBFSPipeline(groupId, artifactId, version, timestamp, transitive, maxDeps, numberOfThreads);
+        return dependentBFSPipeline(groupId, artifactId, version, result, timestamp, transitive, maxDeps, numberOfThreads);
     }
 
     /**
@@ -417,8 +417,8 @@ public class GraphMavenResolver implements Runnable {
      * used to determine which nodes will be ignored when traversing dependent nodes. Effectively, the returned
      * dependent set only includes nodes that where released AFTER the provided revision.
      */
-    public BlockingQueue<Revision> resolveDependentsPipeline(Revision r, boolean transitive, long maxDeps, int numberOfThreads) {
-        return dependentBFSPipeline(r.groupId, r.artifactId, r.version.toString(), r.createdAt.getTime(), transitive, maxDeps, numberOfThreads);
+    public Future<?> resolveDependentsPipeline(Revision r, final BlockingQueue<Revision> result, boolean transitive, long maxDeps, int numberOfThreads) {
+        return dependentBFSPipeline(r.groupId, r.artifactId, r.version.toString(), result, r.createdAt.getTime(), transitive, maxDeps, numberOfThreads);
     }
 
     /**
@@ -429,7 +429,7 @@ public class GraphMavenResolver implements Runnable {
      * @param transitive - Whether the BFS should recurse into the graph
      * @param numberOfThreads 
      */
-    public BlockingQueue<Revision> dependentBFSPipeline(String groupId, String artifactId, String version, long timestamp,
+    public Future<?> dependentBFSPipeline(String groupId, String artifactId, String version, final BlockingQueue<Revision> result, long timestamp,
                                                           boolean transitive, final long maxDeps, int numberOfThreads) {
         var artifact = new Revision(groupId, artifactId, version, new Timestamp(timestamp));
 
@@ -439,11 +439,9 @@ public class GraphMavenResolver implements Runnable {
         var seen = new LongOpenHashSet();
         workQueue.enqueue(artifact);
         // seen.add(artifact.id); No, fake GID
-        var result = new ArrayBlockingQueue<Revision>(100);
 
-		new Thread() {
-			@Override
-			public void run() {
+        ExecutorService singleThreadExecutor = Executors.newSingleThreadExecutor();
+        Future<?> future = singleThreadExecutor.submit(() -> {
 				var countDown = maxDeps;
 				while (!workQueue.isEmpty()) {
 					var rev = workQueue.dequeue();
@@ -465,9 +463,9 @@ public class GraphMavenResolver implements Runnable {
 				} catch (InterruptedException cantHappen) {
 				}
 			}
-		}.start();
-        
-        return result;
+		);
+        singleThreadExecutor.shutdown();
+        return future;
     }
 
     public ObjectLinkedOpenHashSet<Revision> filterDependenciesByExclusions(Set<Revision> dependencies,

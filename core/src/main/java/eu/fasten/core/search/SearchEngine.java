@@ -28,11 +28,13 @@ import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
 import java.util.Set;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.LongPredicate;
 import java.util.regex.Matcher;
@@ -719,7 +721,8 @@ public class SearchEngine implements AutoCloseable {
 		String version = data[2];
 
 		final int numberOfThreads = Runtime.getRuntime().availableProcessors();
-		final BlockingQueue<Revision> s = resolver.resolveDependentsPipeline(groupId, artifactId, version, -1, true, maxDependents, numberOfThreads);
+		final ArrayBlockingQueue<Revision> s = new ArrayBlockingQueue<>(numberOfThreads * 10);
+		Future<?> pipeline = resolver.resolveDependentsPipeline(groupId, artifactId, version, s, -1, true, maxDependents, numberOfThreads);
 
 		final ObjectRBTreeSet<Result> results = new ObjectRBTreeSet<>();
 
@@ -801,6 +804,7 @@ public class SearchEngine implements AutoCloseable {
 
 		try {
 			for(int i = 0; i < numberOfThreads; i++) executorCompletionService.take().get();
+			pipeline.get();			
 		} catch (final InterruptedException e) {
 			throw new RuntimeException(e);
 		} catch (final ExecutionException e) {

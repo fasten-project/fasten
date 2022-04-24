@@ -19,7 +19,9 @@
 package eu.fasten.core.search;
 
 import java.util.Set;
+import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Future;
 
 import org.jooq.DSLContext;
 import org.jooq.Record2;
@@ -110,9 +112,10 @@ public class GraphDepStats {
 			final String artifactId = a[1];
 			final String version = record.component2();
 			final Set<Revision> dependencySet = graphDepStats.resolver.resolveDependencies(groupId, artifactId, version, -1, context, true);
-			final BlockingQueue<Revision> dependentsQueue = graphDepStats.resolver.resolveDependentsPipeline(groupId, artifactId, version, -1,  true, Long.MAX_VALUE, 1);
+			final BlockingQueue<Revision> dependentsQueue = new ArrayBlockingQueue<>(100);
+			Future<?> pipeline = graphDepStats.resolver.resolveDependentsPipeline(groupId, artifactId, version, dependentsQueue, -1,  true, Long.MAX_VALUE, 1);
 
-			if (dependentsQueue == null) continue;
+			if (pipeline == null) continue;
 
 			final String name = groupId + ":" + artifactId + "$" + version;
 
@@ -134,6 +137,7 @@ public class GraphDepStats {
 				//if (g != null && graphDepStats.rocksDao.getGraphMetadata(r.id, g) != null) numDependents++;
 			}
 	
+			pipeline.get();
 			System.out.println(gid + "\t" + name + "\t" + numDependencies + "\t" + dependencySet.size() + "\t" + numDependents + "\t" + allDependents); 
 		}
 		
