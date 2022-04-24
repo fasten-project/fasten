@@ -803,8 +803,8 @@ public class SearchEngine implements AutoCloseable {
 		});
 
 		try {
-			for(int i = 0; i < numberOfThreads; i++) executorCompletionService.take().get();
 			pipeline.get();			
+			for(int i = 0; i < numberOfThreads; i++) executorCompletionService.take().get();
 		} catch (final InterruptedException e) {
 			throw new RuntimeException(e);
 		} catch (final ExecutionException e) {
