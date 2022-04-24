@@ -183,7 +183,7 @@ public class RocksDao implements Closeable, Iterable<byte[]> {
         }
     }
 
-    public void saveToRocksDb(final ExtendedGidGraph extendedGidGraph) throws IOException, RocksDBException {
+    public synchronized void saveToRocksDb(final ExtendedGidGraph extendedGidGraph) throws IOException, RocksDBException {
         // Save and obtain graph
         final DirectedGraph graph = saveToRocksDb(extendedGidGraph.getIndex(), extendedGidGraph.getNodes(),
                 extendedGidGraph.getNumInternalNodes(), extendedGidGraph.getEdges());
@@ -244,7 +244,7 @@ public class RocksDao implements Closeable, Iterable<byte[]> {
 	 * @throws IOException if there was a problem writing to files
 	 * @throws RocksDBException if there was a problem inserting in the database
 	 */
-    public DirectedGraph saveToRocksDb(final long index, List<Long> nodes, int numInternal, final List<List<Long>> edges)
+    public synchronized DirectedGraph saveToRocksDb(final long index, List<Long> nodes, int numInternal, final List<List<Long>> edges)
             throws IOException, RocksDBException {
         final var internalIds = new LongArrayList(numInternal);
         final var externalIds = new LongArrayList(nodes.size() - numInternal);
@@ -424,7 +424,7 @@ public class RocksDao implements Closeable, Iterable<byte[]> {
      * @return the directed graph stored in the database
      * @throws RocksDBException if there was problem retrieving data from RocksDB
      */
-    public DirectedGraph getGraphData(final long index) throws RocksDBException {
+    public synchronized DirectedGraph getGraphData(final long index) throws RocksDBException {
         try {
             final byte[] buffer;
             synchronized(this) {
@@ -467,7 +467,7 @@ public class RocksDao implements Closeable, Iterable<byte[]> {
      * if no metadata record exists for the provided graph
      * @throws RocksDBException if there was problem retrieving data from RocksDB
      */
-    public GraphMetadata getGraphMetadata(final long index, final DirectedGraph graph) {
+    public synchronized GraphMetadata getGraphMetadata(final long index, final DirectedGraph graph) {
         byte[] metadata = getMetaData(index);
         if (metadata == null) {
             return null;
@@ -527,7 +527,7 @@ public class RocksDao implements Closeable, Iterable<byte[]> {
      * @param index Index of thr graph (package_version.id)
      * @return true if deleted successfully, false otherwise
      */
-    public boolean deleteCallGraph(final long index) {
+    public synchronized boolean deleteCallGraph(final long index) {
         try {
         	synchronized(this) {
         		rocksDb.delete(defaultHandle, Longs.toByteArray(index));
