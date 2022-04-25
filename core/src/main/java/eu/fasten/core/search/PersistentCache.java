@@ -51,7 +51,7 @@ public class PersistentCache implements AutoCloseable {
 	/** The handle for dependencies in the persistent cache. */
 	private ColumnFamilyHandle dependenciesHandle;
 	/** A size-bound cache from GIDs to memory-cached merged graphs. */
-	private final SizeBoundCache<ArrayImmutableDirectedGraph> mergedCache = new SizeBoundCache<>(8L << 30, x -> x.numNodes() * 32L + x.numArcs() * 8L);
+	private final SizeBoundCache<ArrayImmutableDirectedGraph> mergedCache = new SizeBoundCache<>(64L << 30, x -> x.numNodes() * 32L + x.numArcs() * 8L);
 	/** A size-bound cache from GIDs to memory-cached resolved dependency sets. */
 	private final SizeBoundCache<LongLinkedOpenHashSet> depsCache = new SizeBoundCache<>(8L << 30, x -> x.size() * 16L);
 
