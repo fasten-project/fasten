@@ -24,12 +24,12 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
@@ -470,11 +470,13 @@ public class SearchEngine implements AutoCloseable {
 	 * @param results a list of {@linkplain Result results} that will be filled during the visit.
 	 * @param maxResults the maximum number of results deposited in {@code results}; results with a higher score
 	 * will replace results with a lower score if the {@code maxResults} threshold is exceeded.
+	 * @return 
 	 */
-	protected static void bfs(final DirectedGraph graph, final boolean forward, final LongCollection seed, final LongPredicate filter, final Scorer scorer, final ObjectRBTreeSet<Result> results, final long maxResults) {
+	protected static ObjectRBTreeSet<Result> bfs(final DirectedGraph graph, final boolean forward, final LongCollection seed, final LongPredicate filter, final Scorer scorer, final long maxResults) {
 		final LongSet nodes = graph.nodes();
 		final LongArrayFIFOQueue visitQueue = new LongArrayFIFOQueue(seed.size());
 		final LongOpenHashSet seen = new LongOpenHashSet(graph.numNodes(), 0.5f);
+		final ObjectRBTreeSet<Result> results = new ObjectRBTreeSet<>();
 		
 		seed.forEach(gid -> {
 			if (nodes.contains(gid)) {
@@ -482,7 +484,7 @@ public class SearchEngine implements AutoCloseable {
 				seen.add(gid);
 			}}); // Load initial state, skipping seeds out of graph
 
-		if (visitQueue.isEmpty()) return;
+		if (visitQueue.isEmpty()) return results;
 		
 		int d = -1;
 		long sentinel = visitQueue.firstLong();
@@ -496,16 +498,10 @@ public class SearchEngine implements AutoCloseable {
 
 			if (!seed.contains(gid) && filter.test(gid)) { // TODO: why?
 				final double score = scorer.score(graph, gid, d);
-				boolean changed = false;
-				synchronized(results) {
-					if (results.size() < maxResults || score > results.last().score) {
-						results.add(new Result(gid, score));
-						changed = true;
-						if (results.size() > maxResults) results.remove(results.last());
-					}
+				if (results.size() < maxResults || score > results.last().score) {
+					results.add(new Result(gid, score));
+					if (results.size() > maxResults) results.remove(results.last());
 				}
-				
-				if (changed); // TODO call subscribers
 			}
 
 			final LongIterator iterator = forward ? graph.successorsIterator(gid) : graph.predecessorsIterator(gid);
@@ -518,6 +514,8 @@ public class SearchEngine implements AutoCloseable {
 				}
 			}
 		}
+		
+		return results;
 	}
 
 	/**
@@ -633,10 +631,8 @@ public class SearchEngine implements AutoCloseable {
 
 		LOGGER.debug("Stiched graph has " + stitchedGraph.numNodes() + " nodes");
 
-		final ObjectRBTreeSet<Result> results = new ObjectRBTreeSet<>();
-
 		visitTime -= System.nanoTime();
-		bfs(stitchedGraph, true, seed, filter, scorer, results, maxResults);
+		final ObjectRBTreeSet<Result> results = bfs(stitchedGraph, true, seed, filter, scorer, maxResults);
 		visitTime += System.nanoTime();
 
 		LOGGER.debug("Found " + results.size() + " reachable nodes");
@@ -794,8 +790,8 @@ public class SearchEngine implements AutoCloseable {
 				LOGGER.debug("Stiched graph has " + stitchedGraph.numNodes() + " nodes");
 				final int sizeBefore = results.size();
 
-				visitTime -= System.nanoTime();
-				bfs(stitchedGraph, false, seed, filter, scorer, results, maxResults);
+				visitTime -= System.nanoTime();				
+				merge(results, bfs(stitchedGraph, false, seed, filter, scorer, maxResults), maxResults);
 				visitTime += System.nanoTime();
 
 				LOGGER.debug("Found " + (results.size() - sizeBefore) + " coreachable nodes");
@@ -819,6 +815,22 @@ public class SearchEngine implements AutoCloseable {
 		LOGGER.debug("Found overall " + results.size() + " coreachable nodes");
 
 		return new ArrayList<>(results);
+	}
+
+	private static boolean merge(ObjectRBTreeSet<Result> results, ObjectRBTreeSet<Result> bfsResults, final long maxResults) {
+		synchronized(results) {
+			boolean changed = false;
+			final Iterator<Result> iterator = bfsResults.iterator();
+			for(int i = 0; i < bfsResults.size(); i++) {
+				final Result result = iterator.next();
+				if (results.size() < maxResults || result.score > results.last().score) {
+					results.add(result);
+					changed = true;
+					if (results.size() > maxResults) results.remove(results.last());
+				}
+			}
+			return changed;
+		}
 	}
 
 	@Override

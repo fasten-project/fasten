@@ -9,7 +9,6 @@ import eu.fasten.core.data.ArrayImmutableDirectedGraph;
 import eu.fasten.core.search.SearchEngine.Result;
 import it.unimi.dsi.bits.Fast;
 import it.unimi.dsi.fastutil.longs.Long2DoubleOpenHashMap;
-import it.unimi.dsi.fastutil.longs.LongIterators;
 import it.unimi.dsi.fastutil.longs.LongList;
 import it.unimi.dsi.fastutil.objects.ObjectRBTreeSet;
 
@@ -27,8 +26,7 @@ public class SearchEngineTest {
 		builder.addArc(3, 4);
 		builder.addArc(4, 1);
 		final ArrayImmutableDirectedGraph graph = builder.build();
-    	final ObjectRBTreeSet<Result> results = new ObjectRBTreeSet<>();
-		SearchEngine.bfs(graph, true, LongList.of(1), x -> true, TrivialScorer.getInstance(), results, 100);
+    	final ObjectRBTreeSet<Result> results = SearchEngine.bfs(graph, true, LongList.of(1), x -> true, TrivialScorer.getInstance(), 100);
 		// #node #indegree #outdegree #distance (from 1)
 		// 1 2 2 0
 		// 2 1 1 1
