@@ -140,13 +140,17 @@ public class PersistentCache implements AutoCloseable {
 	 * it is known that the graph cannot be merged; a merged graph for the given GID, otherwise. 
 	 */
 	public synchronized ArrayImmutableDirectedGraph getMerged(final long key) throws RocksDBException {
+		System.err.println(Thread.currentThread() + ": Looking for " + key);
 		ArrayImmutableDirectedGraph merged = mergedCache.get(key);
+		if (merged != null) System.err.println(Thread.currentThread() + ": Found in memory cache");
 		if (merged != null) return merged;
 		final byte[] array = cache.get(mergedHandle, Longs.toByteArray(key));
 		if (array == null) return null;
 		if (array.length == 0) merged = NO_GRAPH;
 		else merged = SerializationUtils.deserialize(array);
+		System.err.println(Thread.currentThread() + ": Found in persistent cache");
 		mergedCache.put(key, merged);
+		System.err.println(Thread.currentThread() + ": Memory cache size now " + mergedCache.size() + " / " + mergedCache.bytes() + "B");
 		return merged;
 	}
 	

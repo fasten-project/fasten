@@ -68,4 +68,20 @@ public class SizeBoundCache<T>  {
 	public T get(final long key) {
 		return cache.get(key);
 	}
+
+	/** Returns the number of elements in the cache.
+	  *
+	  * @return the number of elements in the cache.
+	  */
+	public int size() {
+		return cache.size();
+	}
+
+	/** Returns the estimated number of bytes currently contained in the cache.
+	  *
+	  * @return the estimated number of bytes currently contained in the cache.
+	  */
+	public long bytes() {
+		return currentSize;
+	}
 }
