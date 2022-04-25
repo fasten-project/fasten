@@ -744,7 +744,7 @@ public class SearchEngine implements AutoCloseable {
 				if (blacklist.contains(dependentId)) continue;
 
 				DirectedGraph stitchedGraph = cache.getMerged(dependentId);
-				if (stitchedGraph == NO_GRAPH) return null;
+				if (stitchedGraph == NO_GRAPH) continue;
 				if (stitchedGraph == null) {
 					LOGGER.debug("Analyzing dependent " + dependent.groupId + ":" + dependent.artifactId + ":" + dependent.version.toString());
 
@@ -765,7 +765,7 @@ public class SearchEngine implements AutoCloseable {
 
 					if (dependentId != revId && !dependencyIds.contains(revId)) {
 						LOGGER.debug("False dependent");
-						return null; // We cannot possibly reach the callable
+						continue; // We cannot possibly reach the callable
 					}
 
 					trueDependents.incrementAndGet();
@@ -784,7 +784,7 @@ public class SearchEngine implements AutoCloseable {
 					if (stitchedGraph == null) {
 						cache.putMerged(dependentId, null);
 						LOGGER.error("mergeWithCHA returned null on gid " + dependentId);
-						return null;
+						continue;
 					} else {
 						stitchedGraph = ArrayImmutableDirectedGraph.copyOf(stitchedGraph, false);
 						cache.putMerged(dependentId, (ArrayImmutableDirectedGraph)stitchedGraph);
