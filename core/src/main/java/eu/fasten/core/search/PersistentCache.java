@@ -43,8 +43,10 @@ import it.unimi.dsi.fastutil.longs.LongLinkedOpenHashSet;
  */
 
 public class PersistentCache implements AutoCloseable {
-	/** Marker singleton for revision whose merged graph cannot be computed. */
+	/** Marker singleton for revisions whose merged graph cannot be computed. */
 	public static final ArrayImmutableDirectedGraph NO_GRAPH = new ArrayImmutableDirectedGraph.Builder().build();
+	/** Marker singleton for revisions that are not present in the database. */
+	public static final ArrayImmutableDirectedGraph NULL_GRAPH = new ArrayImmutableDirectedGraph.Builder().build();
 
 	/** The persistent cache. */
 	private final RocksDB cache;
@@ -142,20 +144,22 @@ public class PersistentCache implements AutoCloseable {
 	 * it is known that the graph cannot be merged; a merged graph for the given GID, otherwise. 
 	 */
 	public ArrayImmutableDirectedGraph getMerged(final long key) throws RocksDBException {
-		System.err.println(Thread.currentThread() + ": Looking for " + key);
+		//System.err.println(Thread.currentThread() + ": Looking for " + key);
 		ArrayImmutableDirectedGraph merged = mergedCache.get(key);
-		if (merged != null) System.err.println(Thread.currentThread() + ": Found in memory cache");
+		if (merged == NULL_GRAPH) return null;
+		//if (merged != null) System.err.println(Thread.currentThread() + ": Found in memory cache");
 		if (merged != null) return merged;
-		final byte[] array;
-		synchronized(this) {
-			array = cache.get(mergedHandle, Longs.toByteArray(key));
+		final byte[] array = cache.get(mergedHandle, Longs.toByteArray(key));
+		//System.err.println(Thread.currentThread() + ": Accessing persistent cache");
+		if (array == null) {
+			mergedCache.put(key, NULL_GRAPH);
+			return null;
 		}
-		if (array == null) return null;
 		if (array.length == 0) merged = NO_GRAPH;
 		else merged = SerializationUtils.deserialize(array);
-		System.err.println(Thread.currentThread() + ": Found in persistent cache");
+		// System.err.println(Thread.currentThread() + ": Found in persistent cache");
 		mergedCache.put(key, merged);
-		System.err.println(Thread.currentThread() + ": Memory cache size now " + mergedCache.size() + " / " + mergedCache.bytes() + "B / " + it.unimi.dsi.Util.format(mergedCache.occupation() * 100));
+		// System.err.println(Thread.currentThread() + ": Memory cache size now " + mergedCache.size() + " / " + mergedCache.bytes() + "B / " + it.unimi.dsi.Util.format(mergedCache.occupation() * 100));
 		return merged;
 	}
 	
@@ -171,10 +175,7 @@ public class PersistentCache implements AutoCloseable {
 	public LongLinkedOpenHashSet getDeps(final long key) throws RocksDBException {
 		LongLinkedOpenHashSet deps = depsCache.get(key);
 		if (deps != null) return deps;
-		final byte[] array;
-		synchronized(this) {
-			 array = cache.get(dependenciesHandle, Longs.toByteArray(key));
-		}
+		final byte[] array = cache.get(dependenciesHandle, Longs.toByteArray(key));
 		if (array == null) return null;
 		deps = SerializationUtils.deserialize(array);
 		depsCache.put(key, deps);
