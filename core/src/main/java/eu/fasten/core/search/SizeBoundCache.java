@@ -27,6 +27,8 @@ import it.unimi.dsi.fastutil.longs.Long2ObjectLinkedOpenHashMap;
  * 
  * <p>Elements are purged by the cache following an LRU logic to maintain
  * the cache size within the provided bound.
+ * 
+ * <p>This class is thread safe.
  */
 
 public class SizeBoundCache<T>  {
@@ -54,7 +56,7 @@ public class SizeBoundCache<T>  {
 	 * @param key a key.
 	 * @param o an associated value.
 	 */
-	public void put(final long key, T o) {
+	public synchronized void put(final long key, T o) {
 		cache.putAndMoveToFirst(key, o);
 		currentSize += size.applyAsLong(o);
 		while(currentSize > maxSize) currentSize -= size.applyAsLong(cache.removeLast());
@@ -65,7 +67,7 @@ public class SizeBoundCache<T>  {
 	 * @param key a key.
 	 * @return the associated value, or {@code null} if no such value is present.
 	 */
-	public T get(final long key) {
+	public synchronized T get(final long key) {
 		return cache.get(key);
 	}
 
@@ -73,7 +75,7 @@ public class SizeBoundCache<T>  {
 	  *
 	  * @return the number of elements in the cache.
 	  */
-	public int size() {
+	public synchronized int size() {
 		return cache.size();
 	}
 
@@ -83,5 +85,13 @@ public class SizeBoundCache<T>  {
 	  */
 	public long bytes() {
 		return currentSize;
+	}
+
+	/** Returns the estimated occupied fraction of the cache.
+	  *
+	  * @return the estimated occupied fraction of the cache.
+	  */
+	public double occupation() {
+		return (double)currentSize / maxSize;
 	}
 }

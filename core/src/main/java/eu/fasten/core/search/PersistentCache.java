@@ -28,6 +28,8 @@ import org.rocksdb.ColumnFamilyOptions;
 import org.rocksdb.DBOptions;
 import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.google.common.primitives.Longs;
 
@@ -139,18 +141,21 @@ public class PersistentCache implements AutoCloseable {
 	 * @return {@code null} if the graph is not present in the cache; {@link #NO_GRAPH} if
 	 * it is known that the graph cannot be merged; a merged graph for the given GID, otherwise. 
 	 */
-	public synchronized ArrayImmutableDirectedGraph getMerged(final long key) throws RocksDBException {
+	public ArrayImmutableDirectedGraph getMerged(final long key) throws RocksDBException {
 		System.err.println(Thread.currentThread() + ": Looking for " + key);
 		ArrayImmutableDirectedGraph merged = mergedCache.get(key);
 		if (merged != null) System.err.println(Thread.currentThread() + ": Found in memory cache");
 		if (merged != null) return merged;
-		final byte[] array = cache.get(mergedHandle, Longs.toByteArray(key));
+		final byte[] array;
+		synchronized(this) {
+			array = cache.get(mergedHandle, Longs.toByteArray(key));
+		}
 		if (array == null) return null;
 		if (array.length == 0) merged = NO_GRAPH;
 		else merged = SerializationUtils.deserialize(array);
 		System.err.println(Thread.currentThread() + ": Found in persistent cache");
 		mergedCache.put(key, merged);
-		System.err.println(Thread.currentThread() + ": Memory cache size now " + mergedCache.size() + " / " + mergedCache.bytes() + "B");
+		System.err.println(Thread.currentThread() + ": Memory cache size now " + mergedCache.size() + " / " + mergedCache.bytes() + "B / " + it.unimi.dsi.Util.format(mergedCache.occupation() * 100));
 		return merged;
 	}
 	
@@ -163,10 +168,13 @@ public class PersistentCache implements AutoCloseable {
 	 * @param key the GID of the revision for which the resolved dependency set is requested.
 	 * @return the resolved dependency set for the given GID, if present; {@code null}, otherwise. 
 	 */
-	public synchronized LongLinkedOpenHashSet getDeps(final long key) throws RocksDBException {
+	public LongLinkedOpenHashSet getDeps(final long key) throws RocksDBException {
 		LongLinkedOpenHashSet deps = depsCache.get(key);
 		if (deps != null) return deps;
-		final byte[] array = cache.get(dependenciesHandle, Longs.toByteArray(key));
+		final byte[] array;
+		synchronized(this) {
+			 array = cache.get(dependenciesHandle, Longs.toByteArray(key));
+		}
 		if (array == null) return null;
 		deps = SerializationUtils.deserialize(array);
 		depsCache.put(key, deps);
