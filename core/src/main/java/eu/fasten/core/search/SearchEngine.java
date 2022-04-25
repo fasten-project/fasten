@@ -817,6 +817,13 @@ public class SearchEngine implements AutoCloseable {
 		return new ArrayList<>(results);
 	}
 
+	/** Merges into the global results tree a new local (from BFS) results tree.
+	 * 
+	 * @param results the global results tree.
+	 * @param bfsResults the local (from BFS) results tree.
+	 * @param maxResults the maximum number of desired results.
+	 * @return true of {@code results} has been modified.
+	 */
 	private static boolean merge(ObjectRBTreeSet<Result> results, ObjectRBTreeSet<Result> bfsResults, final long maxResults) {
 		synchronized(results) {
 			boolean changed = false;
