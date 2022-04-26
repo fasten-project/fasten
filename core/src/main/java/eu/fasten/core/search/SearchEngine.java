@@ -34,9 +34,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Flow;
 import java.util.concurrent.Flow.Subscriber;
-import java.util.concurrent.Flow.Subscription;
 import java.util.concurrent.Future;
 import java.util.concurrent.SubmissionPublisher;
 import java.util.concurrent.atomic.AtomicLong;
@@ -74,7 +72,6 @@ import eu.fasten.core.dbconnectors.PostgresConnector;
 import eu.fasten.core.maven.GraphMavenResolver;
 import eu.fasten.core.maven.data.Revision;
 import eu.fasten.core.merge.CGMerger;
-import eu.fasten.core.search.SearchEngineTopKProcessor.Update;
 import eu.fasten.core.search.predicate.CachingPredicateFactory;
 import eu.fasten.core.search.predicate.PredicateFactory;
 import eu.fasten.core.search.predicate.PredicateFactory.MetadataSource;
@@ -178,13 +175,14 @@ public class SearchEngine implements AutoCloseable {
 	private final GraphMavenResolver resolver;
 	/** The persistent cache. */
 	private final PersistentCache cache;
+	/** A cache for the available revisions. */
+	private final RevisionCache revisionCache;
 	/** The predicate factory to be used to create predicates for this search engine. */
 	private final PredicateFactory predicateFactory;
 	/** The scorer that will be used to rank results. */
 	private final Scorer scorer;
 	/** A blacklist of GIDs that will be considered as missing. */
 	private final LongOpenHashSet blacklist;
-
 	/** The maximum number of results that should be printed. */
 	private int limit = DEFAULT_LIMIT;
 	/** Maximum number of dependents used by {@link #to}. */
@@ -295,6 +293,7 @@ public class SearchEngine implements AutoCloseable {
 		resolver.buildDependencyGraph(context, resolverGraph);
 		resolver.setIgnoreMissing(true);
 		this.predicateFactory = new CachingPredicateFactory(context);
+		this.revisionCache = new RevisionCache(rocksDao);
 	}
 
 	/**
@@ -882,32 +881,7 @@ public class SearchEngine implements AutoCloseable {
 			    	SearchEngineTopKProcessor topKProcessor = new SearchEngineTopKProcessor(searchEngine.limit);
 			    	publisher.subscribe(topKProcessor);
 			    	
-			    	final Update[] last = new Update[1];
-			    	final boolean[] done = new boolean[1];
-			    	
-			    	Subscriber<Update> subscriber = new Flow.Subscriber<>() {
-						@Override
-						public void onSubscribe(Subscription subscription) {
-							subscription.request(Long.MAX_VALUE);
-						}
-
-						@Override
-						public void onNext(Update item) {
-							last[0] = item;
-						}
-
-						@Override
-						public void onError(Throwable throwable) {
-							throwable.printStackTrace(); // This really shouldn't happen
-						}
-
-						@Override
-						public synchronized void onComplete() {
-							System.err.println("COMPLETED");
-							done[0] = true;
-							notify();
-						}
-					};
+			    	WaitOnTerminateSubscriber subscriber = new WaitOnTerminateSubscriber();
 					
 					topKProcessor.subscribe(subscriber);
 			    	
@@ -917,10 +891,10 @@ public class SearchEngine implements AutoCloseable {
 						else searchEngine.toRevision(uri, searchEngine.limit, publisher);
 
 						synchronized (subscriber) {
-							while (! done[0]) subscriber.wait();							
+							while (! subscriber.done()) subscriber.wait();							
 						}
 
-						r = last[0].current;
+						r = subscriber.results();
 						for (int i = 0; i < Math.min(searchEngine.limit, r.length); i++) System.out.println(r[i].gid + "\t" + Util.getCallableName(r[i].gid, context) + "\t" + r[i].score);
 					} else {
 						final long gid = Util.getCallableGID(uri, context);

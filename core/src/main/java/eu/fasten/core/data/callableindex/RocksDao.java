@@ -520,6 +520,10 @@ public class RocksDao implements Closeable, Iterable<byte[]> {
         }
     }
 
+    public boolean contains(final long index) {
+    	final byte[] key = Longs.toByteArray(index);
+    	return rocksDb.keyMayExist(key, null) && rocksDb.keyMayExist(metadataHandle, key, null);
+    }
 
     /**
      * Deletes a graph from the graph database based on its index.
