@@ -47,7 +47,7 @@ public class MavenDependentsResolver {
         }
 
         var dependents = new HashSet<ResolvedRevision>();
-        resolve(pom, config, dependents, new HashSet<>(), false, false, COMPILE);
+        resolve(pom, config, dependents, new HashSet<>(), false, COMPILE);
         return dependents;
     }
 
@@ -59,7 +59,7 @@ public class MavenDependentsResolver {
     }
 
     private void resolve(Pom pom, ResolverConfig config, Set<ResolvedRevision> dependents, Set<Object> visited,
-            boolean isTransitiveDep, boolean stopAfterThis, Scope propagatedScope) {
+            boolean stopAfterThis, Scope propagatedScope) {
 
         visited.add(pom);
 
@@ -72,7 +72,7 @@ public class MavenDependentsResolver {
 
             var decl = findCorrectDependencyDecl(ga, dpd.dependencies);
 
-            if (!matchesScope(decl.getScope(), config.scope, config.alwaysIncludeProvided, isTransitiveDep)) {
+            if (!matchesScope(decl.getScope(), config.scope, config.alwaysIncludeProvided)) {
                 continue;
             }
 
@@ -82,7 +82,7 @@ public class MavenDependentsResolver {
 
                 if (config.depth == TRANSITIVE && !stopAfterThis && shouldProcessDependent(config, decl)) {
                     var onlyOneMore = decl.getScope() == PROVIDED;
-                    resolve(dpd, config, dependents, visited, true, onlyOneMore, propagatedScope);
+                    resolve(dpd, config, dependents, visited, onlyOneMore, propagatedScope);
                 }
             }
         }
@@ -115,8 +115,7 @@ public class MavenDependentsResolver {
         return isNonTest && isNonProvided && isNonOptional;
     }
 
-    private static boolean matchesScope(Scope dep, Scope request, boolean alwaysIncludeProvided,
-            boolean isTransitiveDep) {
+    private static boolean matchesScope(Scope dep, Scope request, boolean alwaysIncludeProvided) {
 
         if (dep == PROVIDED && alwaysIncludeProvided) {
             return true;
