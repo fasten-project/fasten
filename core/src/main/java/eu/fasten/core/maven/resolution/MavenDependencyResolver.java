@@ -105,7 +105,7 @@ public class MavenDependencyResolver {
             }
             addedProducts.add(p);
 
-            depSet.add(toRR(data));
+            depSet.add(toResolvedRevision(data));
 
             if (data.scope == SYSTEM) {
                 continue;
@@ -168,7 +168,7 @@ public class MavenDependencyResolver {
         return depSet;
     }
 
-    private static ResolvedRevision toRR(QueueData data) {
+    private static ResolvedRevision toResolvedRevision(QueueData data) {
         return new ResolvedRevision(data.pom.toRevision(), data.scope);
     }
 

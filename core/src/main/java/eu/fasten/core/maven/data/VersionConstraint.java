@@ -59,8 +59,7 @@ public class VersionConstraint {
 
     public String getUpperBound() {
         if (isRange()) {
-            String asd = spec.substring(1, spec.length() - 1);
-            var parts = asd.split(",", -1);
+            var parts = spec.substring(1, spec.length() - 1).split(",", -1);
             return parts[1].isEmpty() ? "999" : parts[1];
 
         }
@@ -153,8 +152,7 @@ public class VersionConstraint {
     }
 
     private static int find(String hay, int idx, char... needles) {
-        var found = false;
-        while (!found && idx < hay.length()) {
+        while (idx < hay.length()) {
             char cur = hay.charAt(idx);
             for (var needle : needles) {
                 if (cur == needle) {
