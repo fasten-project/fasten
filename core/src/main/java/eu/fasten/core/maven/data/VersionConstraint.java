@@ -26,8 +26,13 @@ import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 
 public class VersionConstraint {
 
-    private int hashCode;
-    private String spec;
+    private final String spec;
+    private final int hashCode;
+
+    public VersionConstraint(String spec) {
+        this.spec = spec;
+        this.hashCode = spec == null ? 31 : spec.hashCode() + 1;
+    }
 
     public String getSpec() {
         return spec;
@@ -108,13 +113,6 @@ public class VersionConstraint {
         return spec;
     }
 
-    public static VersionConstraint init(String spec) {
-        var v = new VersionConstraint();
-        v.spec = spec;
-        v.hashCode = spec == null ? 31 : spec.hashCode() + 1;
-        return v;
-    }
-
     public static Set<VersionConstraint> parseVersionSpec(String spec) {
         assertNotNull(spec);
         spec = spec.replaceAll(" ", "").replaceAll("\n", "").replaceAll("\t", "");
@@ -132,7 +130,7 @@ public class VersionConstraint {
             assertTrue(!spec.contains("]"));
             assertTrue(!spec.contains("("));
             assertTrue(!spec.contains(")"));
-            constraints.add(VersionConstraint.init(spec));
+            constraints.add(new VersionConstraint(spec));
             return constraints;
         }
 
@@ -144,7 +142,7 @@ public class VersionConstraint {
         while (idxOpen != -1) {
             var idxClose = find(spec, idxOpen + 1, ')', ']');
             var vcSpec = spec.substring(idxOpen, idxClose + 1);
-            constraints.add(VersionConstraint.init(vcSpec));
+            constraints.add(new VersionConstraint(vcSpec));
             idxOpen = find(spec, idxClose, '(', '[');
         }
 

@@ -144,7 +144,7 @@ public class CoreMavenDataModule extends SimpleModule {
             @Override
             public VersionConstraint deserialize(JsonParser p, DeserializationContext ctxt)
                     throws IOException, JacksonException {
-                return VersionConstraint.init(p.getValueAsString());
+                return new VersionConstraint(p.getValueAsString());
             }
         });
 

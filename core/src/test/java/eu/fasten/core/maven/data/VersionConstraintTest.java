@@ -34,28 +34,30 @@ public class VersionConstraintTest {
 
     @Test
     public void defaults() {
-        var sut = new VersionConstraint();
+        var sut = new VersionConstraint(null);
         assertEquals(null, sut.getSpec());
+        assertEquals(31, sut.hashCode());
     }
 
     @Test
     public void nonDefaults() {
-        var sut = VersionConstraint.init("1.2.3");
+        var sut = new VersionConstraint("1.2.3");
         assertEquals("1.2.3", sut.getSpec());
+        assertEquals("1.2.3".hashCode() + 1, sut.hashCode());
     }
 
     @Test
     public void equalityDefaults() {
-        var a = new VersionConstraint();
-        var b = new VersionConstraint();
+        var a = new VersionConstraint(null);
+        var b = new VersionConstraint(null);
         assertEquals(a, b);
         assertEquals(a.hashCode(), b.hashCode());
     }
 
     @Test
     public void equalityNonDefaults() {
-        var a = VersionConstraint.init("1.2.3");
-        var b = VersionConstraint.init("1.2.3");
+        var a = new VersionConstraint("1.2.3");
+        var b = new VersionConstraint("1.2.3");
         assertEquals(a, b);
         assertEquals(a.hashCode(), b.hashCode());
         assertNotEquals(0, a.hashCode());
@@ -63,15 +65,15 @@ public class VersionConstraintTest {
 
     @Test
     public void equalityDifferentSpec() {
-        var a = VersionConstraint.init("1.2.3");
-        var b = VersionConstraint.init("2.3.4");
+        var a = new VersionConstraint("1.2.3");
+        var b = new VersionConstraint("2.3.4");
         assertNotEquals(a, b);
         assertNotEquals(a.hashCode(), b.hashCode());
     }
 
     @Test
     public void hasToString() {
-        var sut = VersionConstraint.init("1.2.3");
+        var sut = new VersionConstraint("1.2.3");
         assertEquals("1.2.3", sut.toString());
     }
 
@@ -185,20 +187,20 @@ public class VersionConstraintTest {
     }
 
     private void assertMatch(String version, String spec) {
-        var sut = VersionConstraint.init(spec);
+        var sut = new VersionConstraint(spec);
         assertTrue(sut.matches(version));
     }
 
     private void assertNoMatch(String version, String spec) {
-        var sut = VersionConstraint.init(spec);
+        var sut = new VersionConstraint(spec);
         assertFalse(sut.matches(version));
     }
 
     @Test
     public void equality() {
         for (var spec : new String[] { "1.0", "[1.0]", "(,1.0]", "[1.2,1.3]", "[1.0,2.0)", "[1.5,)" }) {
-            var a = VersionConstraint.init(spec);
-            var b = VersionConstraint.init(spec);
+            var a = new VersionConstraint(spec);
+            var b = new VersionConstraint(spec);
             assertEquals(a, b);
             assertEquals(a.hashCode(), b.hashCode());
         }
