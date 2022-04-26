@@ -549,11 +549,6 @@ public class RocksDao implements Closeable, Iterable<byte[]> {
         if (defaultHandle != null) {
             defaultHandle.close();
         }
-        if (rocksDb != null) {
-        	synchronized(this) {
-                rocksDb.close();
-        		
-        	}
-        }
+        if (rocksDb != null) rocksDb.close();
     }
 }

@@ -44,11 +44,6 @@ import java.util.regex.Pattern;
 import org.jooq.DSLContext;
 import org.jooq.Record2;
 import org.jooq.conf.ParseUnknownFunctions;
-import org.rocksdb.ColumnFamilyDescriptor;
-import org.rocksdb.ColumnFamilyHandle;
-import org.rocksdb.ColumnFamilyOptions;
-import org.rocksdb.DBOptions;
-import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -207,47 +202,6 @@ public class SearchEngine implements AutoCloseable {
 	private long visitTime;
 	/** Throwables thrown by mergeWithCHA(). */
 	private final List<Throwable> throwables = new ArrayList<>();
-
-	/** Structure gathering the fields returned by {@link #openCache(String, boolean)}. */
-	public static final class RocksDBData {
-		/** A reference to the RocksDB cache. */
-		public final RocksDB cache;
-		/** The available columns of the RocksDB cache; in order:
-		 * <ul>
-		 * <li>the merged graph;
-		 * <li>the known dependencies of the merged graph at merge time;
-		 * <li>the actual components used to build the merged graph (as some dependencies might be missing at merge time).
-		 * </ul> 
-		 */
-		public final List<ColumnFamilyHandle> columnFamilyHandles;
-
-		public RocksDBData(RocksDB cache, List<ColumnFamilyHandle> columnFamilyHandles) {
-			this.cache = cache;
-			this.columnFamilyHandles = columnFamilyHandles;
-		}
-	}
-	
-	/** Utility method to open the persistent cache.
-	 * 
-	 * @param cacheDir the path to the persistent cache.
-	 * @param readOnly open RocksDB read-only.
-	 * @return a {@link RocksDBData} structure.
-	 */
-	public static final RocksDBData openCache(final String cacheDir, final boolean readOnly) throws RocksDBException {
-		RocksDB.loadLibrary();
-		final ColumnFamilyOptions defaultOptions = new ColumnFamilyOptions();
-		@SuppressWarnings("resource")
-		final DBOptions dbOptions = new DBOptions().setCreateIfMissing(true).setCreateMissingColumnFamilies(true);
-		final List<ColumnFamilyDescriptor> cfDescriptors = List.of(new ColumnFamilyDescriptor(
-				RocksDB.DEFAULT_COLUMN_FAMILY, defaultOptions), 
-				new ColumnFamilyDescriptor("merged".getBytes(), defaultOptions), 
-				new ColumnFamilyDescriptor("dependencies".getBytes(), defaultOptions),
-				new ColumnFamilyDescriptor("components".getBytes(), defaultOptions));
-		final List<ColumnFamilyHandle> columnFamilyHandles = new ArrayList<>();
-		return new RocksDBData(readOnly ?
-				RocksDB.openReadOnly(dbOptions, cacheDir, cfDescriptors, columnFamilyHandles) :
-				RocksDB.open(dbOptions, cacheDir, cfDescriptors, columnFamilyHandles), columnFamilyHandles); 
-	}
 
 	/**
 	 * Creates a new search engine using a given JDBC URI, database name and path to RocksDB.

@@ -48,7 +48,7 @@ import eu.fasten.core.dbconnectors.PostgresConnector;
 import eu.fasten.core.maven.GraphMavenResolver;
 import eu.fasten.core.maven.data.Revision;
 import eu.fasten.core.merge.CGMerger;
-import eu.fasten.core.search.SearchEngine.RocksDBData;
+import eu.fasten.core.search.PersistentCache.RocksDBData;
 import eu.fasten.core.search.predicate.CachingPredicateFactory;
 import it.unimi.dsi.fastutil.doubles.DoubleArrayList;
 import it.unimi.dsi.fastutil.io.FastBufferedOutputStream;
@@ -117,7 +117,7 @@ public class TauStats {
 		final String cacheDir = jsapResult.getString("cache");
 		final String resolverGraph = jsapResult.getString("resolverGraph");
 
-		RocksDBData cacheData = SearchEngine.openCache(cacheDir, database == null);
+		RocksDBData cacheData = PersistentCache.openCache(cacheDir, database == null);
 		var cache = cacheData.cache;
 		var mergedHandle = cacheData.columnFamilyHandles.get(0);
 		var dependenciesHandle = cacheData.columnFamilyHandles.get(1);

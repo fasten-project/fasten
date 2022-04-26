@@ -46,7 +46,7 @@ import eu.fasten.core.dbconnectors.PostgresConnector;
 import eu.fasten.core.maven.GraphMavenResolver;
 import eu.fasten.core.maven.data.Revision;
 import eu.fasten.core.merge.CGMerger;
-import eu.fasten.core.search.SearchEngine.RocksDBData;
+import eu.fasten.core.search.PersistentCache.RocksDBData;
 import eu.fasten.core.search.predicate.CachingPredicateFactory;
 import it.unimi.dsi.fastutil.io.TextIO;
 import it.unimi.dsi.fastutil.longs.LongLinkedOpenHashSet;
@@ -93,7 +93,7 @@ public class UpdateCache {
 		final String cacheDir = jsapResult.getString("cache");
 		final String resolverGraph = jsapResult.getString("resolverGraph");
 
-		final RocksDBData cacheData = SearchEngine.openCache(cacheDir, false);
+		final RocksDBData cacheData = PersistentCache.openCache(cacheDir, false);
 		var cache = cacheData.cache;
 		var mergedHandle = cacheData.columnFamilyHandles.get(0);
 		var dependenciesHandle = cacheData.columnFamilyHandles.get(1);
