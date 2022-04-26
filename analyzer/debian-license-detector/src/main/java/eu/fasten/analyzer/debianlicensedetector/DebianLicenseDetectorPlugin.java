@@ -277,10 +277,10 @@ public class DebianLicenseDetectorPlugin extends Plugin {
             if (json.has("input")) {
                 JSONObject json2 = json.getJSONObject("input");
                 //if (json2.has("input")) {
-                if (json2.has("payload")) {
-                    JSONObject json3 = json2.getJSONObject("payload");
-                    if (json3.has("product")) {
-                        return json3.getString("product");
+                if (json2.has("input")) {
+                    JSONObject json3 = json2.getJSONObject("input");
+                    if (json3.has("source")) {
+                        return json3.getString("source");
                     } else {
                         String packageNameNotFound = "Package name not found";
                         return packageNameNotFound;
