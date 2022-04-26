@@ -20,6 +20,7 @@ package eu.fasten.core.search;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
@@ -459,35 +460,40 @@ public class SearchEngine implements AutoCloseable {
 	 * @param maxResults the maximum number of results deposited in {@code results}; results with a higher score
 	 * will replace results with a lower score if the {@code maxResults} threshold is exceeded.
 	 */
-	protected static void bfs(final DirectedGraph graph, final boolean forward, 
+	protected static ObjectRBTreeSet<Result> bfs(final DirectedGraph graph, final boolean forward, 
 			final LongCollection seed, final LongPredicate filter, final Scorer scorer, 
-			final ObjectRBTreeSet<Result> results, final long maxResults,
+			final long maxResults,
 			final SubmissionPublisher<Result> publisher) {
 		final LongSet nodes = graph.nodes();
-		final LongArrayFIFOQueue queue = new LongArrayFIFOQueue(seed.size());
+		final LongArrayFIFOQueue visitQueue = new LongArrayFIFOQueue(seed.size());
 		final LongOpenHashSet seen = new LongOpenHashSet(graph.numNodes(), 0.5f);
-		seed.forEach(x -> seen.add(x)); // Load initial state TODO: is this correct?
-		int d = -1;
-		long sentinel = queue.firstLong();
+		final ObjectRBTreeSet<Result> results = new ObjectRBTreeSet<>();
+		
+		seed.forEach(gid -> {
+			if (nodes.contains(gid)) {
+				visitQueue.enqueue(gid);
+				seen.add(gid);
+			}}); // Load initial state, skipping seeds out of graph
 
-		while (!queue.isEmpty()) {
-			final long gid = queue.dequeueLong();
+		if (visitQueue.isEmpty()) return results;
+		
+		int d = -1;
+		long sentinel = visitQueue.firstLong();
+
+		while (!visitQueue.isEmpty()) {
+			final long gid = visitQueue.dequeueLong();
 			if (gid == sentinel) {
 				d++;
 				sentinel = -1;
 			}
 
-			if (!nodes.contains(gid)) continue; // We accept arbitrary seed sets
-
 			if (!seed.contains(gid) && filter.test(gid)) {
 				final double score = scorer.score(graph, gid, d);
 				Result newResult = null;
-				synchronized(results) {
-					if (results.size() < maxResults || score > results.last().score) {
-						newResult = new Result(gid, score);
-						results.add(newResult);
-						if (results.size() > maxResults) results.remove(results.last());
-					}
+				if (results.size() < maxResults || score > results.last().score) {
+					newResult = new Result(gid, score);
+					results.add(newResult);
+					if (results.size() > maxResults) results.remove(results.last());
 				}
 				
 				if (newResult != null) publisher.submit(newResult);
@@ -499,11 +505,12 @@ public class SearchEngine implements AutoCloseable {
 				final long x = iterator.nextLong();
 				if (! seen.contains(x)) {
 					if (sentinel == -1) sentinel = x;
-					queue.enqueue(x);
+					visitQueue.enqueue(x);
 				}
 			}
 		}
 		publisher.close();
+		return results;
 	}
 
 	/**
@@ -619,10 +626,8 @@ public class SearchEngine implements AutoCloseable {
 
 		LOGGER.debug("Stiched graph has " + stitchedGraph.numNodes() + " nodes");
 
-		final ObjectRBTreeSet<Result> results = new ObjectRBTreeSet<>();
-
 		visitTime -= System.nanoTime();
-		bfs(stitchedGraph, true, seed, filter, scorer, results, maxResults, publisher);
+		final ObjectRBTreeSet<Result> results = bfs(stitchedGraph, true, seed, filter, scorer, maxResults, publisher);
 		visitTime += System.nanoTime();
 
 		LOGGER.debug("Found " + results.size() + " reachable nodes");
@@ -777,7 +782,7 @@ public class SearchEngine implements AutoCloseable {
 			final int sizeBefore = results.size();
 
 			visitTime -= System.nanoTime();
-			bfs(stitchedGraph, false, seed, filter, scorer, results, maxResults, publisher);
+			merge(results, bfs(stitchedGraph, false, seed, filter, scorer, maxResults, publisher), maxResults);
 			visitTime += System.nanoTime();
 
 			LOGGER.debug("Found " + (results.size() - sizeBefore) + " coreachable nodes");
@@ -803,6 +808,29 @@ public class SearchEngine implements AutoCloseable {
 		return new ArrayList<>(results);
 	}
 
+	
+	/** Merges into the global results tree a new local (from BFS) results tree.
+	 * 
+	 * @param results the global results tree.
+	 * @param bfsResults the local (from BFS) results tree.
+	 * @param maxResults the maximum number of desired results.
+	 * @return true of {@code results} has been modified.
+	 */
+	private static boolean merge(ObjectRBTreeSet<Result> results, ObjectRBTreeSet<Result> bfsResults, final long maxResults) {
+		synchronized(results) {
+			boolean changed = false;
+			final Iterator<Result> iterator = bfsResults.iterator();
+			for(int i = 0; i < bfsResults.size(); i++) {
+				final Result result = iterator.next();
+				if (results.size() < maxResults || result.score > results.last().score) {
+					results.add(result);
+					changed = true;
+					if (results.size() > maxResults) results.remove(results.last());
+				}
+			}
+			return changed;
+		}
+	}
 	@Override
 	public void close() throws Exception {
 		cache.close();
