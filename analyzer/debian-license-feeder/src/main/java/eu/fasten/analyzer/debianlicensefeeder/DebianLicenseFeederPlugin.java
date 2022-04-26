@@ -63,18 +63,19 @@ public class DebianLicenseFeederPlugin extends Plugin {
 
                 String packageName = extractPackageName(record);
                 String packageVersion = extractPackageVersion(record);
+                String productName = extractProductName(record);
 
                 //Revision coordinates = extractDebianCoordinates(record);
                 logger.info("Package name: " + packageName + ".");
                 logger.info("Package version: " + packageVersion + ".");
-
+                logger.info("Product name: " + productName + ".");
                 // Inserting detected outbound into the database
                 var metadataDao = new MetadataDao(dslContext);
                 System.out.println("After new MetadataDao(dslContext) ");
                 dslContext.transaction(transaction -> {
                     metadataDao.setContext(DSL.using(transaction));
-                    insertOutboundLicenses(packageName, packageVersion, record, metadataDao);
-                    insertFileLicenses(packageName, packageVersion, record, metadataDao);
+                    insertOutboundLicenses(productName, packageVersion, record, metadataDao);
+                    insertFileLicenses(productName, packageVersion, record, metadataDao);
                 });
 
                 // TODO Inserting licenses in files
@@ -114,9 +115,43 @@ public class DebianLicenseFeederPlugin extends Plugin {
                     return packageName;
                 }
             }
-            System.out.println("Package version not retrieved.");
+            System.out.println("Package name not retrieved.");
             return null;
         }
+
+        /**
+         * Retrieves the C/Debian coordinate of the input record (product and version).
+         * TODO Unit tests.
+         *
+         * @param record the input record containing repository information (`fasten.MetadataDBCExtension.out`).
+         * @return the product and version of the input record.
+         * @throws IllegalArgumentException in case the function couldn't find coordinate information
+         *                                  in the input record.
+         */
+        // To check if Revision is still an acceptable type of data
+
+
+
+        protected String extractProductName(String record) {
+            var payload = new JSONObject(record);
+            if (payload.has("payload")) {
+                payload = payload.getJSONObject("payload");
+            }
+            JSONArray array1 = payload.getJSONArray("files");
+            logger.info("Product name:");
+            for (int j = 0; j < array1.length(); j++) {
+                JSONObject obj2 = array1.getJSONObject(j);
+                //System.out.println(obj2);
+                if (obj2.has("productName")){
+                    String productName = obj2.getString("productName");
+                    System.out.println(productName);
+                    return productName;
+                }
+            }
+            System.out.println("Product name not retrieved.");
+            return null;
+        }
+
 
         protected String extractPackageVersion(String record) {
             var payload = new JSONObject(record);
