@@ -903,12 +903,13 @@ public class SearchEngine implements AutoCloseable {
 
 						@Override
 						public synchronized void onComplete() {
+							System.err.println("COMPLETED");
 							done[0] = true;
 							notify();
 						}
 					};
 					
-					
+					topKProcessor.subscribe(subscriber);
 			    	
 					final Result[] r;
 					if (uri.getPath() == null) {
