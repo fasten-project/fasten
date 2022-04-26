@@ -73,7 +73,7 @@ public class DependencyTest {
         String[] x = sut.getVersionConstraintsArr();
         assertArrayEquals(new String[] { "(1.2.3,2.3.4]" }, x);
 
-        assertEquals(Set.of(Exclusion.init("gid2", "aid2")), sut.getExclusions());
+        assertEquals(Set.of(new Exclusion("gid2", "aid2")), sut.getExclusions());
         assertEquals("sources", sut.getClassifier());
         assertEquals("pom", sut.getPackagingType());
         assertEquals(PROVIDED, sut.getScope());
@@ -135,7 +135,7 @@ public class DependencyTest {
     public void equalityDiffExclusions() {
         var a = getSomeDep();
         var b = getSomeDep();
-        b.addExclusion(Exclusion.init("gx", "ax"));
+        b.addExclusion(new Exclusion("gx", "ax"));
         assertNotEquals(a, b);
         assertNotEquals(a.hashCode(), b.hashCode());
     }
@@ -225,7 +225,7 @@ public class DependencyTest {
     @Test
     public void hashCodeAddExclusion() {
         assertHashCodeChange(new Dependency(), d -> {
-            d.addExclusion(Exclusion.init("g", "a"));
+            d.addExclusion(new Exclusion("g", "a"));
         });
     }
 
@@ -383,6 +383,6 @@ public class DependencyTest {
 
     public static Dependency getSomeDep() {
         return new Dependency("gid", "aid", Set.of(new VersionConstraint("(1.2.3,2.3.4]")),
-                Set.of(Exclusion.init("gid2", "aid2")), PROVIDED, true, "pom", "sources");
+                Set.of(new Exclusion("gid2", "aid2")), PROVIDED, true, "pom", "sources");
     }
 }

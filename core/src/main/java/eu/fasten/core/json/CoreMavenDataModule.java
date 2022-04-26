@@ -152,7 +152,7 @@ public class CoreMavenDataModule extends SimpleModule {
             @Override
             public void serialize(Exclusion value, JsonGenerator gen, SerializerProvider serializers)
                     throws IOException {
-                gen.writeString(String.format("%s:%s", value.getGroupId(), value.getArtifactId()));
+                gen.writeString(String.format("%s:%s", value.groupId, value.artifactId));
             }
         });
         addDeserializer(Exclusion.class, new JsonDeserializer<Exclusion>() {
@@ -160,7 +160,7 @@ public class CoreMavenDataModule extends SimpleModule {
             public Exclusion deserialize(JsonParser p, DeserializationContext ctxt)
                     throws IOException, JacksonException {
                 String[] parts = p.getValueAsString().split(":");
-                return Exclusion.init(parts[0], parts[1]);
+                return new Exclusion(parts[0], parts[1]);
             }
         });
 

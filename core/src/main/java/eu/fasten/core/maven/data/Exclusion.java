@@ -24,27 +24,14 @@ public class Exclusion implements Serializable {
 
     private static final long serialVersionUID = -1350444195222504726L;
 
-    private String artifactId;
-    private String groupId;
+    public final String artifactId;
+    public final String groupId;
+    private final int hashCode;
 
-    private int hashCode = 0;
-
-    public void setArtifactId(String artifactId) {
-        this.artifactId = artifactId;
-        refreshHashCode();
-    }
-
-    public void setGroupId(String groupId) {
+    public Exclusion(String groupId, String artifactId) {
         this.groupId = groupId;
-        refreshHashCode();
-    }
-
-    public String getArtifactId() {
-        return artifactId;
-    }
-
-    public String getGroupId() {
-        return groupId;
+        this.artifactId = artifactId;
+        this.hashCode = HashCodeBuilder.reflectionHashCode(this, "hashCode");
     }
 
     @Override
@@ -57,21 +44,9 @@ public class Exclusion implements Serializable {
         return hashCode;
     }
 
-    private void refreshHashCode() {
-        hashCode = HashCodeBuilder.reflectionHashCode(this);
-    }
-
     @Override
     public String toString() {
         return String.format("%s:%s", groupId, artifactId);
-    }
-
-    public static Exclusion init(String groupId, String artifactId) {
-        var e = new Exclusion();
-        e.groupId = groupId;
-        e.artifactId = artifactId;
-        e.refreshHashCode();
-        return e;
     }
 
     // TODO remove everything below
@@ -84,6 +59,6 @@ public class Exclusion implements Serializable {
     @Deprecated
     public static Exclusion fromJSON(String json) {
         String[] parts = json.split(":");
-        return Exclusion.init(parts[0], parts[1]);
+        return new Exclusion(parts[0], parts[1]);
     }
 }
