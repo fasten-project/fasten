@@ -592,7 +592,7 @@ public class SearchEngine implements AutoCloseable {
 	 * @return a list of {@linkplain Result results}.
 	 */
 	public void from(final long rev, LongCollection seed, final LongPredicate filter, final int maxResults, final SubmissionPublisher<SortedSet<Result>> publisher) throws RocksDBException {
-		if (blacklist.contains(rev)) throw new NoSuchElementException("Revision associated with callable is blacklisted");
+		if (blacklist.contains(rev)) throw new NoSuchElementException("Revision " + rev + " is blacklisted");
 		final var graph = rocksDao.getGraphData(rev);
 		if (graph == null) throw new NoSuchElementException("Revision associated with callable missing from the graph database");
 		if (seed == null) seed = graph.nodes();
@@ -623,6 +623,9 @@ public class SearchEngine implements AutoCloseable {
 
 			LOGGER.debug("Found " + dependencyIds.size() + " dependencies");
 
+			for(LongIterator iterator =  dependencyIds.iterator(); iterator.hasNext();) 
+				if (!revisionCache.contains(iterator.nextLong())) iterator.remove();
+			
 			stitchingTime -= System.nanoTime();
 			final var dm = new CGMerger(dependencyIds, context, rocksDao);
 			stitchedGraph = getStitchedGraph(dm, rev);
@@ -715,7 +718,7 @@ public class SearchEngine implements AutoCloseable {
 	 */
 	public void to(final long revId, LongCollection providedSeed, final LongPredicate filter, final int maxResults, final SubmissionPublisher<SortedSet<Result>> publisher) throws RocksDBException {
 		throwables.clear();
-		if (blacklist.contains(revId)) throw new NoSuchElementException("Revision associated with callable is blacklisted");
+		if (blacklist.contains(revId)) throw new NoSuchElementException("Revision " + revId + " is blacklisted");
 		final var graph = rocksDao.getGraphData(revId);
 		if (graph == null) throw new NoSuchElementException("Revision associated with callable missing from the graph database");
 		final var seed = providedSeed == null ? graph.nodes() : providedSeed;
@@ -772,6 +775,9 @@ public class SearchEngine implements AutoCloseable {
 					}
 
 					trueDependents.incrementAndGet();
+
+					for(LongIterator iterator =  dependencyIds.iterator(); iterator.hasNext();) 
+						if (!revisionCache.contains(iterator.nextLong())) iterator.remove();
 
 					stitchingTime -= System.nanoTime();
 					final var dm = new CGMerger(dependencyIds, context, rocksDao);
