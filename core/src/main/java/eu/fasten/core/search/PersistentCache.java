@@ -34,6 +34,7 @@ import org.slf4j.LoggerFactory;
 import com.google.common.primitives.Longs;
 
 import eu.fasten.core.data.ArrayImmutableDirectedGraph;
+import eu.fasten.core.data.DirectedGraph;
 import it.unimi.dsi.fastutil.longs.LongLinkedOpenHashSet;
 
 /**
@@ -43,6 +44,7 @@ import it.unimi.dsi.fastutil.longs.LongLinkedOpenHashSet;
  */
 
 public class PersistentCache implements AutoCloseable {
+	private static final Logger LOGGER = LoggerFactory.getLogger(PersistentCache.class);
 	/** Marker singleton for revisions whose merged graph cannot be computed. */
 	public static final ArrayImmutableDirectedGraph NO_GRAPH = new ArrayImmutableDirectedGraph.Builder().build();
 	/** Marker singleton for revisions that are not present in the database. */
@@ -156,7 +158,16 @@ public class PersistentCache implements AutoCloseable {
 			return null;
 		}
 		if (array.length == 0) merged = NO_GRAPH;
-		else merged = SerializationUtils.deserialize(array);
+		else {
+			DirectedGraph temp = SerializationUtils.deserialize(array);
+			// Temporary kluge to work around a few cached graph of the wrong type
+			if (temp instanceof ArrayImmutableDirectedGraph) merged = (ArrayImmutableDirectedGraph)temp;
+			else {
+				LOGGER.warn("Cached graph for GID " + key + " is of type " + temp.getClass().getSimpleName() + " (fixing now)");
+				merged = ArrayImmutableDirectedGraph.copyOf(temp, false);
+				cache.put(mergedHandle, Longs.toByteArray(key), SerializationUtils.serialize(merged));
+			}
+		}
 		// System.err.println(Thread.currentThread() + ": Found in persistent cache");
 		mergedCache.put(key, merged);
 		// System.err.println(Thread.currentThread() + ": Memory cache size now " + mergedCache.size() + " / " + mergedCache.bytes() + "B / " + it.unimi.dsi.Util.format(mergedCache.occupation() * 100));
