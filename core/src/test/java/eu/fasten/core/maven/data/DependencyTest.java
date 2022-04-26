@@ -114,7 +114,7 @@ public class DependencyTest {
     }
 
     @Test
-    public void equalitDiffVersionsSet() {
+    public void equalityDiffVersionsSet() {
         var a = getSomeDep();
         var b = getSomeDep();
         b.setVersionConstraints(VersionConstraint.parseVersionSpec("1.2.3"));
@@ -123,7 +123,7 @@ public class DependencyTest {
     }
 
     @Test
-    public void equalitDiffVersionsAdd() {
+    public void equalityDiffVersionsAdd() {
         var a = getSomeDep();
         var b = getSomeDep();
         b.addVersionConstraint(VersionConstraint.init("1.2.3"));
@@ -132,7 +132,7 @@ public class DependencyTest {
     }
 
     @Test
-    public void equalitDiffExclusions() {
+    public void equalityDiffExclusions() {
         var a = getSomeDep();
         var b = getSomeDep();
         b.addExclusion(Exclusion.init("gx", "ax"));
@@ -141,7 +141,7 @@ public class DependencyTest {
     }
 
     @Test
-    public void equalitDiffGroup() {
+    public void equalityDiffGroup() {
         var a = getSomeDep();
         var b = getSomeDep();
         b.setGroupId("g2");
@@ -150,7 +150,7 @@ public class DependencyTest {
     }
 
     @Test
-    public void equalitDiffArtifact() {
+    public void equalityDiffArtifact() {
         var a = getSomeDep();
         var b = getSomeDep();
         b.setArtifactId("a2");
@@ -159,7 +159,7 @@ public class DependencyTest {
     }
 
     @Test
-    public void equalitDiffType() {
+    public void equalityDiffType() {
         var a = getSomeDep();
         var b = getSomeDep();
         b.setPackagingType("asd");
@@ -168,7 +168,7 @@ public class DependencyTest {
     }
 
     @Test
-    public void equalitDiffClassifier() {
+    public void equalityDiffClassifier() {
         var a = getSomeDep();
         var b = getSomeDep();
         b.setClassifier("asd");
@@ -177,7 +177,7 @@ public class DependencyTest {
     }
 
     @Test
-    public void equalitDiffScope() {
+    public void equalityDiffScope() {
         var a = getSomeDep();
         var b = getSomeDep();
         b.setScope(TEST);
@@ -186,7 +186,7 @@ public class DependencyTest {
     }
 
     @Test
-    public void equalitDiffOptional() {
+    public void equalityDiffOptional() {
         var a = getSomeDep();
         var b = getSomeDep();
         b.setOptional(false);
