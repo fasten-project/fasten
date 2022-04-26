@@ -83,6 +83,7 @@ import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.fastutil.longs.LongSets;
 import it.unimi.dsi.fastutil.objects.ObjectArrayList;
+import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import it.unimi.dsi.fastutil.objects.ObjectRBTreeSet;
 import it.unimi.dsi.lang.ObjectParser;
 
@@ -704,7 +705,7 @@ public class SearchEngine implements AutoCloseable {
 	 * @param maxResults the maximum number of results returned.
 	 * @return a list of {@linkplain Result results}.
 	 */
-	public List<Result> to(final long revId, LongCollection providedSeed, final LongPredicate filter, final long maxResults) throws RocksDBException {
+	public List<Result> to(final long revId, LongCollection providedSeed, final LongPredicate filter, final int maxResults) throws RocksDBException {
 		throwables.clear();
 		if (blacklist.contains(revId)) throw new NoSuchElementException("Revision associated with callable is blacklisted");
 		final var graph = rocksDao.getGraphData(revId);
@@ -720,7 +721,8 @@ public class SearchEngine implements AutoCloseable {
 		final ArrayBlockingQueue<Revision> s = new ArrayBlockingQueue<>(numberOfThreads * 10);
 		Future<?> pipeline = resolver.resolveDependentsPipeline(groupId, artifactId, version, s, -1, true, maxDependents, numberOfThreads);
 
-		final ObjectRBTreeSet<Result> results = new ObjectRBTreeSet<>();
+		final ObjectOpenHashSet<Result> results = new ObjectOpenHashSet<>(maxResults, 0.5f);
+		final ObjectRBTreeSet<Result> sortedResults = new ObjectRBTreeSet<>();
 
 		final ExecutorService executorService = Executors.newFixedThreadPool(numberOfThreads);
 		final ExecutorCompletionService<Void> executorCompletionService = new ExecutorCompletionService<>(executorService);
@@ -791,7 +793,7 @@ public class SearchEngine implements AutoCloseable {
 				final int sizeBefore = results.size();
 
 				visitTime -= System.nanoTime();				
-				merge(results, bfs(stitchedGraph, false, seed, filter, scorer, maxResults), maxResults);
+				merge(results, sortedResults, bfs(stitchedGraph, false, seed, filter, scorer, maxResults), maxResults);
 				visitTime += System.nanoTime();
 
 				LOGGER.debug("Found " + (results.size() - sizeBefore) + " coreachable nodes");
@@ -819,21 +821,40 @@ public class SearchEngine implements AutoCloseable {
 
 	/** Merges into the global results tree a new local (from BFS) results tree.
 	 * 
-	 * @param results the global results tree.
+	 * @param results the global results set.
+	 * @param sortedResults the global results tree.
 	 * @param bfsResults the local (from BFS) results tree.
 	 * @param maxResults the maximum number of desired results.
 	 * @return true of {@code results} has been modified.
 	 */
-	private static boolean merge(ObjectRBTreeSet<Result> results, ObjectRBTreeSet<Result> bfsResults, final long maxResults) {
+	private static boolean merge(ObjectOpenHashSet<Result> results, ObjectRBTreeSet<Result> sortedResults, ObjectRBTreeSet<Result> bfsResults, final int maxResults) {
 		synchronized(results) {
 			boolean changed = false;
 			final Iterator<Result> iterator = bfsResults.iterator();
 			for(int i = 0; i < bfsResults.size(); i++) {
 				final Result result = iterator.next();
-				if (results.size() < maxResults || result.score > results.last().score) {
+				
+				final Result oldResult = results.get(result);
+				
+				if (oldResult != null) {
+					if (oldResult.score < result.score) {
+						results.add(result);
+						sortedResults.remove(oldResult);
+						sortedResults.add(result);
+						changed = true;
+					}
+				} else if (sortedResults.size() < maxResults) {
 					results.add(result);
+					sortedResults.add(result);
 					changed = true;
-					if (results.size() > maxResults) results.remove(results.last());
+				} else if (result.score > sortedResults.last().score) {
+					final Result last = sortedResults.last();
+					results.remove(last);
+					sortedResults.remove(last);
+					
+					results.add(result);
+					sortedResults.add(result);
+					changed = true;
 				}
 			}
 			return changed;
