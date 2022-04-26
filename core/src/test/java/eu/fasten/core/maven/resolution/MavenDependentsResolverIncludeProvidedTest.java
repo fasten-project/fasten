@@ -44,21 +44,21 @@ public class MavenDependentsResolverIncludeProvidedTest extends AbstractMavenDep
     public void ifUnsetIncludeDirectProvidedDepsForCompile() {
         config.scope = Scope.COMPILE;
         add("a:1", $(DEST, PROVIDED));
-        assertDependents(DEST, "a:1");
+        assertResolution(DEST, "a:1");
     }
 
     @Test
     public void ifUnsetDoNotIncludeDirectProvidedDepsForRuntime() {
         config.scope = Scope.RUNTIME;
         add("a:1", $(DEST, PROVIDED));
-        assertDependents(DEST);
+        assertResolution(DEST);
     }
 
     @Test
     public void ifUnsetIncludeDirectProvidedDepsForTest() {
         config.scope = Scope.TEST;
         add("a:1", $(DEST, PROVIDED));
-        assertDependents(DEST, "a:1");
+        assertResolution(DEST, "a:1");
     }
 
     @Test
@@ -66,7 +66,7 @@ public class MavenDependentsResolverIncludeProvidedTest extends AbstractMavenDep
         config.scope = Scope.COMPILE;
         add("a:1", $("b:1", COMPILE));
         add("b:1", $(DEST, PROVIDED));
-        assertDependents(DEST, "b:1");
+        assertResolution(DEST, "b:1");
     }
 
     @Test
@@ -74,7 +74,7 @@ public class MavenDependentsResolverIncludeProvidedTest extends AbstractMavenDep
         config.scope = Scope.RUNTIME;
         add("a:1", $("b:1", COMPILE));
         add("b:1", $(DEST, PROVIDED));
-        assertDependents(DEST);
+        assertResolution(DEST);
     }
 
     @Test
@@ -82,7 +82,7 @@ public class MavenDependentsResolverIncludeProvidedTest extends AbstractMavenDep
         config.scope = Scope.TEST;
         add("a:1", $("b:1", COMPILE));
         add("b:1", $(DEST, PROVIDED));
-        assertDependents(DEST, "b:1");
+        assertResolution(DEST, "b:1");
     }
 
     @Test
@@ -92,7 +92,7 @@ public class MavenDependentsResolverIncludeProvidedTest extends AbstractMavenDep
         for (var scope : SCOPES) {
             config.alwaysIncludeProvided = true;
             config.scope = scope;
-            assertDependents(DEST, "a:1");
+            assertResolution(DEST, "a:1");
         }
     }
 
@@ -104,7 +104,7 @@ public class MavenDependentsResolverIncludeProvidedTest extends AbstractMavenDep
         for (var scope : SCOPES) {
             config.alwaysIncludeProvided = true;
             config.scope = scope;
-            assertDependents(DEST, "a:1", "b:1");
+            assertResolution(DEST, "a:1", "b:1");
         }
     }
 

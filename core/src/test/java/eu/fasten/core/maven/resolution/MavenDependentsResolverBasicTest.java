@@ -34,21 +34,21 @@ public class MavenDependentsResolverBasicTest extends AbstractMavenDependentsRes
     @Test
     public void direct() {
         add("a:1", DEST);
-        assertDependents(DEST, "a:1");
+        assertResolution(DEST, "a:1");
     }
 
     @Test
     public void transitive() {
         add("a:1", DEST);
         add("b:1", "a:1");
-        assertDependents(DEST, "a:1", "b:1");
+        assertResolution(DEST, "a:1", "b:1");
     }
 
     @Test
     public void multipleBranches() {
         add("a:1", DEST);
         add("b:1", DEST);
-        assertDependents(DEST, "a:1", "b:1");
+        assertResolution(DEST, "a:1", "b:1");
     }
 
     @Test
@@ -57,14 +57,14 @@ public class MavenDependentsResolverBasicTest extends AbstractMavenDependentsRes
         add("aa:1", "a:1");
         add("b:1", DEST);
         add("bb:1", "b:1");
-        assertDependents(DEST, "a:1", "aa:1", "b:1", "bb:1");
+        assertResolution(DEST, "a:1", "aa:1", "b:1", "bb:1");
     }
 
     @Test
     public void cycleDirect() {
         add("a:1", DEST);
         add(DEST, "a:1");
-        assertDependents(DEST, "a:1");
+        assertResolution(DEST, "a:1");
     }
 
     @Test
@@ -72,7 +72,7 @@ public class MavenDependentsResolverBasicTest extends AbstractMavenDependentsRes
         add("a:1", DEST);
         add("b:1", "a:1");
         add(DEST, "b:1");
-        assertDependents(DEST, "a:1", "b:1");
+        assertResolution(DEST, "a:1", "b:1");
     }
 
     @Test
@@ -88,7 +88,7 @@ public class MavenDependentsResolverBasicTest extends AbstractMavenDependentsRes
         add("a:1", DEST);
         add("b:1", "a:1");
         add(DEST, "b:1");
-        assertDependents(DEST, "a:1", "b:1");
+        assertResolution(DEST, "a:1", "b:1");
     }
 
     private void add(String from, String... tos) {

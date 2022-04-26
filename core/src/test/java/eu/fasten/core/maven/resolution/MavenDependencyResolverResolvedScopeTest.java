@@ -91,7 +91,7 @@ public class MavenDependencyResolverResolvedScopeTest extends AbstractMavenDepen
     @Test
     public void resolveCompile() {
         config.scope = Scope.COMPILE;
-        assertScopedDepSet(compile(BASE), //
+        assertScopedResolution(compile(BASE), //
                 compile("c:1"), compile("cc:1"), system("cs:1"), //
                 provided("p:1"), provided("pc:1"), provided("pr:1"), system("ps:1"), //
                 system("s:1"));
@@ -100,7 +100,7 @@ public class MavenDependencyResolverResolvedScopeTest extends AbstractMavenDepen
     @Test
     public void resolveRuntime() {
         config.scope = Scope.RUNTIME;
-        assertScopedDepSet(compile(BASE), //
+        assertScopedResolution(compile(BASE), //
                 compile("c:1"), compile("cc:1"), runtime("cr:1"), //
                 runtime("r:1"), runtime("rc:1"), runtime("rr:1"));
     }
@@ -108,7 +108,7 @@ public class MavenDependencyResolverResolvedScopeTest extends AbstractMavenDepen
     @Test
     public void resolveTest() {
         config.scope = Scope.TEST;
-        assertScopedDepSet(compile(BASE), //
+        assertScopedResolution(compile(BASE), //
                 compile("c:1"), compile("cc:1"), runtime("cr:1"), system("cs:1"), //
                 runtime("r:1"), runtime("rc:1"), runtime("rr:1"), system("rs:1"), //
                 test("t:1"), test("tc:1"), test("tr:1"), system("ts:1"), //
@@ -120,7 +120,7 @@ public class MavenDependencyResolverResolvedScopeTest extends AbstractMavenDepen
     public void resolveCompileAlwaysProvided() {
         config.scope = Scope.COMPILE;
         config.alwaysIncludeProvided = true;
-        assertScopedDepSet(compile(BASE), //
+        assertScopedResolution(compile(BASE), //
                 compile("c:1"), compile("cc:1"), system("cs:1"), /* + */ provided("cp:1"), //
                 provided("p:1"), provided("pc:1"), provided("pr:1"), system("ps:1"), /* + */ provided("pp:1"), //
                 system("s:1"));
@@ -130,7 +130,7 @@ public class MavenDependencyResolverResolvedScopeTest extends AbstractMavenDepen
     public void resolveRuntimeAlwaysProvided() {
         config.scope = Scope.RUNTIME;
         config.alwaysIncludeProvided = true;
-        assertScopedDepSet(compile(BASE), //
+        assertScopedResolution(compile(BASE), //
                 compile("c:1"), compile("cc:1"), runtime("cr:1"), /* + */ provided("cp:1"), //
                 runtime("r:1"), runtime("rc:1"), runtime("rr:1"), /* + */ provided("rp:1"), //
                 /* + */ provided("p:1"), provided("pc:1"), provided("pr:1"), provided("pp:1"));
@@ -140,7 +140,7 @@ public class MavenDependencyResolverResolvedScopeTest extends AbstractMavenDepen
     public void resolveTestAlwaysProvided() {
         config.scope = Scope.TEST;
         config.alwaysIncludeProvided = true;
-        assertScopedDepSet(compile(BASE), //
+        assertScopedResolution(compile(BASE), //
                 compile("c:1"), compile("cc:1"), runtime("cr:1"), system("cs:1"), /* + */ provided("cp:1"), //
                 runtime("r:1"), runtime("rc:1"), runtime("rr:1"), system("rs:1"), /* + */ provided("rp:1"), //
                 test("t:1"), test("tc:1"), test("tr:1"), system("ts:1"), /* + */ provided("tp:1"), //
@@ -174,12 +174,12 @@ public class MavenDependencyResolverResolvedScopeTest extends AbstractMavenDepen
         }
     }
 
-    private void assertScopedDepSet(Dep... deps) {
+    private void assertScopedResolution(Dep... deps) {
         var gavsSet = Arrays.stream(deps).map(d -> d.coord).collect(Collectors.toCollection(LinkedHashSet::new));
         var gavs = new String[gavsSet.size()];
         gavs = gavsSet.toArray(gavs);
 
-        var actuals = assertDepSet(gavs).stream() //
+        var actuals = assertResolution(gavs).stream() //
                 .map(rr -> String.format("%s:%s:%s:%s", rr.getGroupId(), rr.getArtifactId(), rr.version, rr.scope)) //
                 .collect(Collectors.toCollection(TreeSet::new));
         var expecteds = Arrays.stream(deps) //
@@ -189,6 +189,10 @@ public class MavenDependencyResolverResolvedScopeTest extends AbstractMavenDepen
                 }) //
                 .collect(Collectors.toCollection(TreeSet::new));
 
+        assertEquals(expecteds, actuals);
+    }
+
+    protected static void assertEquals(TreeSet<String> expecteds, TreeSet<String> actuals) {
         if (!expecteds.equals(actuals)) {
             var sb = new StringBuilder();
             sb.append("Unexpected dependencies. Expected:\n");

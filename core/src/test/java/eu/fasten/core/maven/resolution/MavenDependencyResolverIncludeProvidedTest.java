@@ -38,21 +38,21 @@ public class MavenDependencyResolverIncludeProvidedTest extends AbstractMavenDep
     public void ifUnsetIncludeDirectProvidedDepsForCompile() {
         config.scope = Scope.COMPILE;
         add(BASE, dep("a:1"), prov("b:1"));
-        assertDepSet(BASE, "a:1", "b:1");
+        assertResolution(BASE, "a:1", "b:1");
     }
 
     @Test
     public void ifUnsetDoNotIncludeDirectProvidedDepsForRuntime() {
         config.scope = Scope.RUNTIME;
         add(BASE, dep("a:1"), prov("b:1"));
-        assertDepSet(BASE, "a:1");
+        assertResolution(BASE, "a:1");
     }
 
     @Test
     public void ifUnsetIncludeDirectProvidedDepsForTest() {
         config.scope = Scope.TEST;
         add(BASE, dep("a:1"), prov("b:1"));
-        assertDepSet(BASE, "a:1", "b:1");
+        assertResolution(BASE, "a:1", "b:1");
     }
 
     @Test
@@ -62,7 +62,7 @@ public class MavenDependencyResolverIncludeProvidedTest extends AbstractMavenDep
 
         for (var scope : SCOPES) {
             config.scope = scope;
-            assertDepSet(BASE, "a:1", "b:1");
+            assertResolution(BASE, "a:1", "b:1");
         }
     }
 
@@ -73,7 +73,7 @@ public class MavenDependencyResolverIncludeProvidedTest extends AbstractMavenDep
 
         for (var scope : SCOPES) {
             config.scope = scope;
-            assertDepSet(BASE, "a:1", "b:1");
+            assertResolution(BASE, "a:1", "b:1");
         }
     }
 
@@ -85,7 +85,7 @@ public class MavenDependencyResolverIncludeProvidedTest extends AbstractMavenDep
 
         for (var scope : SCOPES) {
             config.scope = scope;
-            assertDepSet(BASE, "a:1", "b:1", "c:1");
+            assertResolution(BASE, "a:1", "b:1", "c:1");
         }
     }
 

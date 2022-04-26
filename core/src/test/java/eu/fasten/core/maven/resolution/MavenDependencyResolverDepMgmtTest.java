@@ -31,14 +31,14 @@ public class MavenDependencyResolverDepMgmtTest extends AbstractMavenDependencyR
     public void directDependency() {
         add($(BASE, "a:1"), "a");
         addMultiple("a:1");
-        assertDepSet(BASE, "a:1");
+        assertResolution(BASE, "a:1");
     }
 
     @Test
     public void directDependencyWithVersion() {
         add($(BASE, "a:1"), "a:2");
         addMultiple("a:1", "a:2");
-        assertDepSet(BASE, "a:2");
+        assertResolution(BASE, "a:2");
     }
 
     @Test
@@ -46,7 +46,7 @@ public class MavenDependencyResolverDepMgmtTest extends AbstractMavenDependencyR
         add($(BASE, "b:1"), "a:1");
         add($("a:1"), "b");
         addMultiple("b:1");
-        assertDepSet(BASE, "a:1", "b:1");
+        assertResolution(BASE, "a:1", "b:1");
     }
 
     @Test
@@ -54,7 +54,7 @@ public class MavenDependencyResolverDepMgmtTest extends AbstractMavenDependencyR
         add($(BASE, "b:1"), "a:1");
         add($("a:1"), "b:2");
         addMultiple("b:1", "b:2");
-        assertDepSet(BASE, "a:1", "b:1");
+        assertResolution(BASE, "a:1", "b:1");
     }
 
     private void add(Pom2 from, String... tos) {

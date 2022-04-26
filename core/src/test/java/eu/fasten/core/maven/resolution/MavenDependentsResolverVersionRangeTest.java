@@ -31,28 +31,28 @@ public class MavenDependentsResolverVersionRangeTest extends AbstractMavenDepend
     public void softConstraint() {
         add("dest:1");
         add("a:1", $("dest", "1"));
-        assertDependents("dest:1", "a:1");
+        assertResolution("dest:1", "a:1");
     }
 
     @Test
     public void hardConstraint() {
         add("dest:1");
         add("a:1", $("dest", "[1]"));
-        assertDependents("dest:1", "a:1");
+        assertResolution("dest:1", "a:1");
     }
 
     @Test
     public void simpleRange() {
         add("dest:1.2");
         add("a:1", $("dest", "[1,2]"));
-        assertDependents("dest:1.2", "a:1");
+        assertResolution("dest:1.2", "a:1");
     }
 
     @Test
     public void multiRange() {
         add("dest:1.2");
         add("a:1", $("dest", "[1.0]", "[1.1,1.3]"));
-        assertDependents("dest:1.2", "a:1");
+        assertResolution("dest:1.2", "a:1");
     }
 
     @Test
@@ -60,7 +60,7 @@ public class MavenDependentsResolverVersionRangeTest extends AbstractMavenDepend
         add("dest:1.2");
         add("a:1", $("dest", "[1.0]", "[1.1,1.3]"));
         add("b:1", $("a", "[1,2]"));
-        assertDependents("dest:1.2", "a:1", "b:1");
+        assertResolution("dest:1.2", "a:1", "b:1");
     }
 
     private void add(String from, Dep... tos) {
