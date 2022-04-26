@@ -34,7 +34,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.Flow.Subscriber;
 import java.util.concurrent.Future;
 import java.util.concurrent.SubmissionPublisher;
 import java.util.concurrent.atomic.AtomicLong;
@@ -72,6 +71,7 @@ import eu.fasten.core.dbconnectors.PostgresConnector;
 import eu.fasten.core.maven.GraphMavenResolver;
 import eu.fasten.core.maven.data.Revision;
 import eu.fasten.core.merge.CGMerger;
+import eu.fasten.core.search.SearchEngineTopKProcessor.Update;
 import eu.fasten.core.search.predicate.CachingPredicateFactory;
 import eu.fasten.core.search.predicate.PredicateFactory;
 import eu.fasten.core.search.predicate.PredicateFactory.MetadataSource;
@@ -881,20 +881,15 @@ public class SearchEngine implements AutoCloseable {
 			    	SearchEngineTopKProcessor topKProcessor = new SearchEngineTopKProcessor(searchEngine.limit);
 			    	publisher.subscribe(topKProcessor);
 			    	
-			    	WaitOnTerminateSubscriber subscriber = new WaitOnTerminateSubscriber();
+			    	final WaitOnTerminateFutureSubscriber<Update> futureSubscriber = new WaitOnTerminateFutureSubscriber<>();
 					
-					topKProcessor.subscribe(subscriber);
+					topKProcessor.subscribe(futureSubscriber);
 			    	
 					final Result[] r;
 					if (uri.getPath() == null) {
 						if (dir == '+') searchEngine.fromRevision(uri, searchEngine.limit, publisher);
 						else searchEngine.toRevision(uri, searchEngine.limit, publisher);
-
-						synchronized (subscriber) {
-							while (! subscriber.done()) subscriber.wait();							
-						}
-
-						r = subscriber.results();
+						r = futureSubscriber.get().current;
 						for (int i = 0; i < Math.min(searchEngine.limit, r.length); i++) System.out.println(r[i].gid + "\t" + Util.getCallableName(r[i].gid, context) + "\t" + r[i].score);
 					} else {
 						final long gid = Util.getCallableGID(uri, context);
@@ -904,12 +899,7 @@ public class SearchEngine implements AutoCloseable {
 						}
 						if (dir == '+') searchEngine.fromCallable(gid, searchEngine.limit, publisher);
 						else searchEngine.toCallable(gid, searchEngine.limit, publisher);
-
-						synchronized (subscriber) {
-							while (! done[0]) subscriber.wait();							
-						}
-						
-						r = last[0].current;
+						r = futureSubscriber.get().current;
 						for (int i = 0; i < Math.min(searchEngine.limit, r.length); i++) System.out.println(r[i].gid + "\t" + Util.getCallableName(r[i].gid, context) + "\t" + r[i].score);
 					}
 

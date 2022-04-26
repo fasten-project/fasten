@@ -18,9 +18,13 @@
 
 package eu.fasten.core.search;
 
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Flow;
 import java.util.concurrent.Flow.Subscriber;
 import java.util.concurrent.Flow.Subscription;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /**
  * A subscriber that makes it easy to wait for the final call on {@link Subscriber#onComplete()} and
@@ -30,16 +34,13 @@ import java.util.concurrent.Flow.Subscription;
  * Typical usage is as follows:
  * 
  * <pre>
- * WaitOnTerminateSubscriber<> subscriber = new WaitOnTerminateSubscriber<Update>(); // create subscriber
- * topKProcessor.subscribe(subscriber); // subscribe to result processor
+ * WaitOnTerminateFutureSubscriber<Update> futureSubscriber = new WaitOnTerminateFutureSubscriber<>(); // create future subscriber
+ * topKProcessor.subscribe(futureSubscriber); // subscribe to result processor
  * [...] // invoke search method using result processor
- * synchronized (subscriber) {
- *     while (! subscriber.done()) subscriber.wait(); // wait for termination
- * }							
- * var results = subscriber.results(); // use results
+ * Result[] results = futureSubscriber.get().current; // use results
  * </pre>
  */
-final class WaitOnTerminateSubscriber<T> implements Flow.Subscriber<T> {
+final class WaitOnTerminateFutureSubscriber<T> implements Flow.Subscriber<T>, Future<T> {
 	private boolean done;
 	@SuppressWarnings("null")
 	private T last;
@@ -59,27 +60,36 @@ final class WaitOnTerminateSubscriber<T> implements Flow.Subscriber<T> {
 		throwable.printStackTrace(); // This really shouldn't happen
 	}
 
-	/**
-	 * Returns true when {@link #onComplete()} has been called.
-	 * 
-	 * @return true when {@link #onComplete()} has been called.
-	 */
-	public boolean done() {
-		return done;
-	}
-
-	/**
-	 * The last value passed to {@link #onNext(Object)}.
-	 * 
-	 * @return last value passed to {@link #onNext(Object)}.
-	 */
-	public T results() {
-		return last;
-	}
-
 	@Override
 	public synchronized void onComplete() {
 		done = true;
 		notify();
+	}
+
+	@Override
+	public boolean cancel(boolean mayInterruptIfRunning) {
+		return false;
+	}
+
+	@Override
+	public boolean isCancelled() {
+		return false;
+	}
+
+	@Override
+	public synchronized T get() throws InterruptedException, ExecutionException {
+		while( ! done) wait();
+		return last;
+	}
+
+	@Override
+	public synchronized T get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
+		if ( ! done) wait(unit.toMillis(timeout));
+		return last;
+	}
+
+	@Override
+	public synchronized boolean isDone() {
+		return done;
 	}
 }
