@@ -43,7 +43,7 @@ public class AbstractMavenDependentsResolverTest {
         config = new ResolverConfig();
     }
 
-    protected Set<ResolvedRevision> assertDependents(String shortTarget, String... depSet) {
+    protected Set<ResolvedRevision> assertResolution(String shortTarget, String... depSet) {
         addDangling();
         var targetParts = shortTarget.split(":");
         var target = String.format("%s:%s:%s", targetParts[0], targetParts[0], targetParts[1]);
@@ -57,6 +57,11 @@ public class AbstractMavenDependentsResolverTest {
                 .map(parts -> String.format("%s:%s:%s", parts[0], parts[0], parts[1])) //
                 .collect(Collectors.toSet());
 
+        assertEquals(expecteds, actuals);
+        return actualsRaw;
+    }
+
+    private void assertEquals(Set<String> expecteds, TreeSet<String> actuals) {
         if (!expecteds.equals(actuals)) {
             var sb = new StringBuilder();
 
@@ -82,8 +87,6 @@ public class AbstractMavenDependentsResolverTest {
             }
             fail(sb.toString());
         }
-
-        return actualsRaw;
     }
 
     protected void addDangling() {

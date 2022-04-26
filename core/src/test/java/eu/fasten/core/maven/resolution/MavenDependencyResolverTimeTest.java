@@ -86,10 +86,10 @@ public class MavenDependencyResolverTimeTest extends AbstractMavenDependencyReso
         add(1, "a:1", "b:1");
         add(2, "b:1");
         assertThrows(MavenResolutionException.class, () -> {
-            assertDepSetAt(0, "a:1");
+            assertResolutionAt(0, "a:1");
         });
-        assertDepSetAt(1, "a:1");
-        assertDepSetAt(2, "a:1", "b:1");
+        assertResolutionAt(1, "a:1");
+        assertResolutionAt(2, "a:1", "b:1");
     }
 
     @Test
@@ -98,10 +98,10 @@ public class MavenDependencyResolverTimeTest extends AbstractMavenDependencyReso
         add(2, "b:1.1");
         add(3, "b:1.2");
         add(4, "b:1.3");
-        assertDepSetAt(1, "a:1");
-        assertDepSetAt(2, "a:1", "b:1.1");
-        assertDepSetAt(3, "a:1", "b:1.2");
-        assertDepSetAt(4, "a:1", "b:1.3");
+        assertResolutionAt(1, "a:1");
+        assertResolutionAt(2, "a:1", "b:1.1");
+        assertResolutionAt(3, "a:1", "b:1.2");
+        assertResolutionAt(4, "a:1", "b:1.3");
     }
 
     private void add(long releaseDate, String from, String... tos) {
@@ -121,9 +121,9 @@ public class MavenDependencyResolverTimeTest extends AbstractMavenDependencyReso
         data.add(pom);
     }
 
-    private void assertDepSetAt(long resolveAt, String... deps) {
+    private void assertResolutionAt(long resolveAt, String... deps) {
         config.resolveAt = resolveAt;
-        assertDepSet(deps);
+        assertResolution(deps);
     }
 
     private static Pom getPom(String g, String a, String v, long releaseDate) {

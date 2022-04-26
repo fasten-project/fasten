@@ -34,21 +34,21 @@ public class MavenDependencyResolverIncludeOptionalTest extends AbstractMavenDep
     @Test
     public void byDefaultIncludeDirectDependency() {
         add(BASE, dep("a:1"), opt("b:1"));
-        assertDepSet(BASE, "a:1", "b:1");
+        assertResolution(BASE, "a:1", "b:1");
     }
 
     @Test
     public void byDefaultDontIncludeTransitiveDependency() {
         add(BASE, dep("a:1"));
         add("a:1", dep("b:1"), opt("c:1"));
-        assertDepSet(BASE, "a:1", "b:1");
+        assertResolution(BASE, "a:1", "b:1");
     }
 
     @Test
     public void whenSetIncludeDirectDependency() {
         config.alwaysIncludeOptional = true;
         add(BASE, dep("a:1"), opt("b:1"));
-        assertDepSet(BASE, "a:1", "b:1");
+        assertResolution(BASE, "a:1", "b:1");
     }
 
     @Test
@@ -56,7 +56,7 @@ public class MavenDependencyResolverIncludeOptionalTest extends AbstractMavenDep
         config.alwaysIncludeOptional = true;
         add(BASE, dep("a:1"));
         add("a:1", dep("b:1"), opt("c:1"));
-        assertDepSet(BASE, "a:1", "b:1", "c:1");
+        assertResolution(BASE, "a:1", "b:1", "c:1");
     }
 
     private void add(String from, Dep... tos) {

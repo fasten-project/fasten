@@ -38,21 +38,21 @@ public class MavenDependentsResolverIncludeOptionalTest extends AbstractMavenDep
     @Test
     public void ifUnsetIncludeDirectOptionalDeps() {
         add("a:1", opt(DEST));
-        assertDependents(DEST, "a:1");
+        assertResolution(DEST, "a:1");
     }
 
     @Test
     public void ifUnsetDoNotIncludeTransitiveOptionalDeps() {
         add("a:1", m("b:1"));
         add("b:1", opt(DEST));
-        assertDependents(DEST, "b:1");
+        assertResolution(DEST, "b:1");
     }
 
     @Test
     public void whenSetIncludeDirectOptionalDeps() {
         config.alwaysIncludeOptional = true;
         add("a:1", opt(DEST));
-        assertDependents(DEST, "a:1");
+        assertResolution(DEST, "a:1");
     }
 
     @Test
@@ -60,7 +60,7 @@ public class MavenDependentsResolverIncludeOptionalTest extends AbstractMavenDep
         config.alwaysIncludeOptional = true;
         add("a:1", m("b:1"));
         add("b:1", opt(DEST));
-        assertDependents(DEST, "a:1", "b:1");
+        assertResolution(DEST, "a:1", "b:1");
     }
 
     private void add(String from, Dep... tos) {

@@ -27,28 +27,28 @@ public class MavenDependencyResolverMediationTest extends AbstractMavenDependenc
     @Test
     public void directDependency() {
         add(BASE, "b:1");
-        assertDepSet(BASE, "b:1");
+        assertResolution(BASE, "b:1");
     }
 
     @Test
     public void transitiveDependency() {
         add(BASE, "b:1");
         add("b:1", "c:1");
-        assertDepSet(BASE, "b:1", "c:1");
+        assertResolution(BASE, "b:1", "c:1");
     }
 
     @Test
     public void mediationDirectDep1() {
         add(BASE, "c:1", "b:1");
         add("b:1", "c:2");
-        assertDepSet(BASE, "b:1", "c:1");
+        assertResolution(BASE, "b:1", "c:1");
     }
 
     @Test
     public void mediationDirectDep2() {
         add(BASE, "b:1", "c:1");
         add("b:1", "c:2");
-        assertDepSet(BASE, "b:1", "c:1");
+        assertResolution(BASE, "b:1", "c:1");
     }
 
     @Test
@@ -56,7 +56,7 @@ public class MavenDependencyResolverMediationTest extends AbstractMavenDependenc
         add(BASE, "b:1", "c:1");
         add("b:1", "d:1");
         add("c:1", "d:2");
-        assertDepSet(BASE, "b:1", "c:1", "d:1");
+        assertResolution(BASE, "b:1", "c:1", "d:1");
     }
 
     @Test
@@ -64,7 +64,7 @@ public class MavenDependencyResolverMediationTest extends AbstractMavenDependenc
         add(BASE, "c:1", "b:1");
         add("b:1", "d:1");
         add("c:1", "d:2");
-        assertDepSet(BASE, "b:1", "c:1", "d:2");
+        assertResolution(BASE, "b:1", "c:1", "d:2");
     }
 
     @Test
@@ -73,7 +73,7 @@ public class MavenDependencyResolverMediationTest extends AbstractMavenDependenc
         add("b:1", "x:1");
         add("c:1", "cc:1");
         add("cc:1", "x:2");
-        assertDepSet(BASE, "b:1", "x:1", "c:1", "cc:1");
+        assertResolution(BASE, "b:1", "x:1", "c:1", "cc:1");
     }
 
     @Test
@@ -82,7 +82,7 @@ public class MavenDependencyResolverMediationTest extends AbstractMavenDependenc
         add("b:1", "x:1");
         add("c:1", "cc:1");
         add("cc:1", "x:2");
-        assertDepSet(BASE, "c:1", "cc:1", "b:1", "x:1");
+        assertResolution(BASE, "c:1", "cc:1", "b:1", "x:1");
     }
 
     @Test
@@ -90,7 +90,7 @@ public class MavenDependencyResolverMediationTest extends AbstractMavenDependenc
         add(BASE, "a:1");
         add("a:1", BASE);
         danglingGAVs.clear();
-        assertDepSet(BASE, "a:1");
+        assertResolution(BASE, "a:1");
     }
 
     @Test
@@ -99,7 +99,7 @@ public class MavenDependencyResolverMediationTest extends AbstractMavenDependenc
         add("a:1", "b:1");
         add("b:1", BASE);
         danglingGAVs.clear();
-        assertDepSet(BASE, "a:1", "b:1");
+        assertResolution(BASE, "a:1", "b:1");
     }
 
     @Test
@@ -107,7 +107,7 @@ public class MavenDependencyResolverMediationTest extends AbstractMavenDependenc
         add(BASE, "a:1", "b:1");
         add("a:1", "b:1");
         add("b:1", "a:1");
-        assertDepSet(BASE, "a:1", "b:1");
+        assertResolution(BASE, "a:1", "b:1");
     }
 
     private void add(String from, String... tos) {

@@ -69,21 +69,21 @@ public class MavenDependentsResolverScopesTest extends AbstractMavenDependentsRe
     public void resolveCompileDirectDependents() {
         addDependentsWithAllScopes(DEST);
         config.scope = COMPILE;
-        assertDependents(DEST, "c:1", "s:1", "p:1");
+        assertResolution(DEST, "c:1", "s:1", "p:1");
     }
 
     @Test
     public void resolveRuntimeDirectDependents() {
         addDependentsWithAllScopes(DEST);
         config.scope = RUNTIME;
-        assertDependents(DEST, "c:1", "r:1");
+        assertResolution(DEST, "c:1", "r:1");
     }
 
     @Test
     public void resolveTestDirectDependents() {
         addDependentsWithAllScopes(DEST);
         config.scope = TEST;
-        assertDependents(DEST, "c:1", "r:1", "t:1", "s:1", "p:1");
+        assertResolution(DEST, "c:1", "r:1", "t:1", "s:1", "p:1");
     }
 
     @Test
@@ -91,7 +91,7 @@ public class MavenDependentsResolverScopesTest extends AbstractMavenDependentsRe
         add("x:1", $(DEST, COMPILE));
         addDependentsWithAllScopes("x:1");
         config.scope = COMPILE;
-        assertDependents(DEST, "x:1", "c:1", "s:1", "p:1");
+        assertResolution(DEST, "x:1", "c:1", "s:1", "p:1");
     }
 
     @Test
@@ -99,7 +99,7 @@ public class MavenDependentsResolverScopesTest extends AbstractMavenDependentsRe
         add("x:1", $(DEST, COMPILE));
         addDependentsWithAllScopes("x:1");
         config.scope = RUNTIME;
-        assertDependents(DEST, "x:1", "c:1", "r:1");
+        assertResolution(DEST, "x:1", "c:1", "r:1");
     }
 
     @Test
@@ -107,14 +107,14 @@ public class MavenDependentsResolverScopesTest extends AbstractMavenDependentsRe
         add("x:1", $(DEST, COMPILE));
         addDependentsWithAllScopes("x:1");
         config.scope = TEST;
-        assertDependents(DEST, "x:1", "c:1", "r:1", "t:1", "s:1", "p:1");
+        assertResolution(DEST, "x:1", "c:1", "r:1", "t:1", "s:1", "p:1");
     }
 
     @Test
     public void invalidDepForFullCoverage() {
         config.scope = TEST;
         add("x:1", $(DEST, IMPORT));
-        assertDependents(DEST);
+        assertResolution(DEST);
     }
 
     private void add(String from, Dep... tos) {

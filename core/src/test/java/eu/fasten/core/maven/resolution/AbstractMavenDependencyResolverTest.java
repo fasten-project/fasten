@@ -54,7 +54,7 @@ public class AbstractMavenDependencyResolverTest {
         // override when needed
     }
 
-    protected Set<ResolvedRevision> assertDepSet(String... gavs) {
+    protected Set<ResolvedRevision> assertResolution(String... gavs) {
         addDangling();
         var baseParts = gavs[0].split(":");
         var base = String.format("%s:%s:%s", baseParts[0], baseParts[0], baseParts[1]);
@@ -64,6 +64,12 @@ public class AbstractMavenDependencyResolverTest {
                 .map(parts -> new ResolvedRevision(-1, parts[0], parts[0], parts[1], new Timestamp(-1L), COMPILE)) //
                 .collect(Collectors.toSet());
 
+        assertEquals(expecteds, actuals);
+        return actuals;
+    }
+
+    private static void assertEquals(Set<ResolvedRevision> expecteds,
+                                    Set<ResolvedRevision> actuals) {
         if (!expecteds.equals(actuals)) {
             var sb = new StringBuilder();
             sb.append("Expected:\n");
@@ -76,7 +82,6 @@ public class AbstractMavenDependencyResolverTest {
             }
             fail(sb.toString());
         }
-        return actuals;
     }
 
     private static Set<String> sort(Set<ResolvedRevision> rs) {

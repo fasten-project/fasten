@@ -34,14 +34,14 @@ public class MavenDependentsResolverDepthTest extends AbstractMavenDependentsRes
     @Test
     public void ifTransitiveIncludeTransitive() {
         addDepChain();
-        assertDependents(DEST, "a:1", "b:1");
+        assertResolution(DEST, "a:1", "b:1");
     }
 
     @Test
     public void ifDirectOnlyIncludeDirect() {
         addDepChain();
         config.depth = DIRECT;
-        assertDependents(DEST, "b:1");
+        assertResolution(DEST, "b:1");
     }
 
     private void addDepChain() {

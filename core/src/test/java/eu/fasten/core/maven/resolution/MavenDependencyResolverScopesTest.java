@@ -68,7 +68,7 @@ public class MavenDependencyResolverScopesTest extends AbstractMavenDependencyRe
                 $("c:1", Scope.COMPILE), //
                 $("r:1", Scope.RUNTIME), //
                 $("t:1", Scope.TEST));
-        assertDepSet(BASE, "s:1", "p:1", "c:1");
+        assertResolution(BASE, "s:1", "p:1", "c:1");
     }
 
     @Test
@@ -81,7 +81,7 @@ public class MavenDependencyResolverScopesTest extends AbstractMavenDependencyRe
                 $("c:1", Scope.COMPILE), //
                 $("r:1", Scope.RUNTIME), //
                 $("t:1", Scope.TEST));
-        assertDepSet(BASE, "x:1", "s:1", "c:1");
+        assertResolution(BASE, "x:1", "s:1", "c:1");
     }
 
     @Test
@@ -93,7 +93,7 @@ public class MavenDependencyResolverScopesTest extends AbstractMavenDependencyRe
                 $("c:1", Scope.COMPILE), //
                 $("r:1", Scope.RUNTIME), //
                 $("t:1", Scope.TEST));
-        assertDepSet(BASE, "c:1", "r:1"); // WTF p:1? s:1?
+        assertResolution(BASE, "c:1", "r:1"); // WTF p:1? s:1?
     }
 
     @Test
@@ -106,7 +106,7 @@ public class MavenDependencyResolverScopesTest extends AbstractMavenDependencyRe
                 $("c:1", Scope.COMPILE), //
                 $("r:1", Scope.RUNTIME), //
                 $("t:1", Scope.TEST));
-        assertDepSet(BASE, "x:1", "c:1", "r:1"); // WTF s:1?
+        assertResolution(BASE, "x:1", "c:1", "r:1"); // WTF s:1?
     }
 
     @Test
@@ -118,7 +118,7 @@ public class MavenDependencyResolverScopesTest extends AbstractMavenDependencyRe
                 $("c:1", Scope.COMPILE), //
                 $("r:1", Scope.RUNTIME), //
                 $("t:1", Scope.TEST));
-        assertDepSet(BASE, "s:1", "p:1", "c:1", "r:1", "t:1");
+        assertResolution(BASE, "s:1", "p:1", "c:1", "r:1", "t:1");
     }
 
     @Test
@@ -131,7 +131,7 @@ public class MavenDependencyResolverScopesTest extends AbstractMavenDependencyRe
                 $("c:1", Scope.COMPILE), //
                 $("r:1", Scope.RUNTIME), //
                 $("t:1", Scope.TEST));
-        assertDepSet(BASE, "x:1", "s:1", "c:1", "r:1");
+        assertResolution(BASE, "x:1", "s:1", "c:1", "r:1");
     }
 
     @Test
@@ -144,7 +144,7 @@ public class MavenDependencyResolverScopesTest extends AbstractMavenDependencyRe
                 $("c:1", Scope.COMPILE), //
                 $("r:1", Scope.RUNTIME), //
                 $("t:1", Scope.TEST));
-        assertDepSet(BASE, "x:1");
+        assertResolution(BASE, "x:1");
     }
 
     @Test
@@ -157,7 +157,7 @@ public class MavenDependencyResolverScopesTest extends AbstractMavenDependencyRe
                 $("c:1", Scope.COMPILE), //
                 $("r:1", Scope.RUNTIME), //
                 $("t:1", Scope.TEST));
-        assertDepSet(BASE, "x:1", "s:1", "c:1");
+        assertResolution(BASE, "x:1", "s:1", "c:1");
     }
 
     @Test
@@ -170,7 +170,7 @@ public class MavenDependencyResolverScopesTest extends AbstractMavenDependencyRe
                 $("c:1", Scope.COMPILE), //
                 $("r:1", Scope.RUNTIME), //
                 $("t:1", Scope.TEST));
-        assertDepSet(BASE, "x:1", "c:1", "r:1"); // WTF s:1?
+        assertResolution(BASE, "x:1", "c:1", "r:1"); // WTF s:1?
     }
 
     @Test
@@ -183,7 +183,7 @@ public class MavenDependencyResolverScopesTest extends AbstractMavenDependencyRe
                 $("c:1", Scope.COMPILE), //
                 $("r:1", Scope.RUNTIME), //
                 $("t:1", Scope.TEST));
-        assertDepSet(BASE, "x:1", "c:1", "r:1", "s:1");
+        assertResolution(BASE, "x:1", "c:1", "r:1", "s:1");
     }
 
     @Test
@@ -196,7 +196,7 @@ public class MavenDependencyResolverScopesTest extends AbstractMavenDependencyRe
                 $("c:1", Scope.COMPILE), //
                 $("r:1", Scope.RUNTIME), //
                 $("t:1", Scope.TEST));
-        assertDepSet(BASE, "x:1", "s:1", "c:1", "r:1"); // WTF r:1?
+        assertResolution(BASE, "x:1", "s:1", "c:1", "r:1"); // WTF r:1?
     }
 
     @Test
@@ -209,7 +209,7 @@ public class MavenDependencyResolverScopesTest extends AbstractMavenDependencyRe
                 $("c:1", Scope.COMPILE), //
                 $("r:1", Scope.RUNTIME), //
                 $("t:1", Scope.TEST));
-        assertDepSet(BASE);
+        assertResolution(BASE);
     }
 
     @Test
@@ -222,7 +222,7 @@ public class MavenDependencyResolverScopesTest extends AbstractMavenDependencyRe
                 $("c:1", Scope.COMPILE), //
                 $("r:1", Scope.RUNTIME), //
                 $("t:1", Scope.TEST));
-        assertDepSet(BASE, "x:1", "s:1", "c:1", "r:1");
+        assertResolution(BASE, "x:1", "s:1", "c:1", "r:1");
     }
 
     private void add(String from, Dep... tos) {

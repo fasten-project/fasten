@@ -450,7 +450,7 @@ public class MavenDependentsResolverResolvedScopeTest extends AbstractMavenDepen
         var gavs = new String[gavsSet.size()];
         gavs = gavsSet.toArray(gavs);
 
-        var actuals = assertDependents(base, gavs).stream() //
+        var actuals = assertResolution(base, gavs).stream() //
                 .map(rr -> String.format("%s:%s:%s:%s", rr.getGroupId(), rr.getArtifactId(), rr.version, rr.scope)) //
                 .collect(Collectors.toCollection(TreeSet::new));
         var expecteds = Arrays.stream(deps) //

@@ -36,21 +36,21 @@ public class MavenDependencyResolverDepthTest extends AbstractMavenDependencyRes
     @Test
     public void directDependency() {
         add(BASE, "a:1");
-        assertDepSet(BASE, "a:1");
+        assertResolution(BASE, "a:1");
     }
 
     @Test
     public void transitiveDependency() {
         add(BASE, "a:1");
         add("a:1", "b:1");
-        assertDepSet(BASE, "a:1", "b:1");
+        assertResolution(BASE, "a:1", "b:1");
     }
 
     @Test
     public void onlyDirectDependency() {
         config.depth = DIRECT;
         add(BASE, "a:1");
-        assertDepSet(BASE, "a:1");
+        assertResolution(BASE, "a:1");
     }
 
     @Test
@@ -58,7 +58,7 @@ public class MavenDependencyResolverDepthTest extends AbstractMavenDependencyRes
         config.depth = DIRECT;
         add(BASE, "a:1");
         add("a:1", "b:1");
-        assertDepSet(BASE, "a:1");
+        assertResolution(BASE, "a:1");
     }
 
     private void add(String from, String... tos) {

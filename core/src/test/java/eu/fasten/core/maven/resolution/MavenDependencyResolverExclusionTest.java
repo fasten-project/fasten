@@ -32,14 +32,14 @@ public class MavenDependencyResolverExclusionTest extends AbstractMavenDependenc
     @Test
     public void happyPath() {
         add(BASE, $("a:1"));
-        assertDepSet(BASE, "a:1");
+        assertResolution(BASE, "a:1");
     }
 
     @Test
     public void basicExclusion() {
         add(BASE, $("a:1", "b"));
         add("a:1", $("b:1"));
-        assertDepSet(BASE, "a:1");
+        assertResolution(BASE, "a:1");
     }
 
     @Test
@@ -47,7 +47,7 @@ public class MavenDependencyResolverExclusionTest extends AbstractMavenDependenc
         add(BASE, $("a:1", "x"), $("b:1"));
         add("a:1", $("x:1"));
         add("b:1", $("x:2"));
-        assertDepSet(BASE, "a:1", "b:1", "x:2");
+        assertResolution(BASE, "a:1", "b:1", "x:2");
     }
 
     @Test
@@ -55,7 +55,7 @@ public class MavenDependencyResolverExclusionTest extends AbstractMavenDependenc
         add(BASE, $("a:1"), $("b:1", "x"));
         add("a:1", $("x:1"));
         add("b:1", $("x:2"));
-        assertDepSet(BASE, "a:1", "b:1", "x:1");
+        assertResolution(BASE, "a:1", "b:1", "x:1");
     }
 
     @Test
@@ -64,7 +64,7 @@ public class MavenDependencyResolverExclusionTest extends AbstractMavenDependenc
         add("a:1", $("b:1"));
         add("b:1", $("c:1"));
         add("c:1", $("x:1"));
-        assertDepSet(BASE, "a:1", "b:1", "c:1");
+        assertResolution(BASE, "a:1", "b:1", "c:1");
     }
 
     @Test
@@ -73,7 +73,7 @@ public class MavenDependencyResolverExclusionTest extends AbstractMavenDependenc
         add("a:1", $("b:1", "y"));
         add("b:1", $("c:1"));
         add("c:1", $("x:1"), $("y:1"));
-        assertDepSet(BASE, "a:1", "b:1", "c:1");
+        assertResolution(BASE, "a:1", "b:1", "c:1");
     }
 
     @Test
@@ -82,7 +82,7 @@ public class MavenDependencyResolverExclusionTest extends AbstractMavenDependenc
         add("b1:1", $("c:1"));
         add("b2:1", $("c:1"));
         add("c:1", $("x:1"));
-        assertDepSet(BASE, "b1:1", "b2:1", "c:1");
+        assertResolution(BASE, "b1:1", "b2:1", "c:1");
     }
 
     @Test
@@ -91,7 +91,7 @@ public class MavenDependencyResolverExclusionTest extends AbstractMavenDependenc
         add("b1:1", $("c:1"));
         add("b2:1", $("c:1"));
         add("c:1", $("x:1"));
-        assertDepSet(BASE, "b1:1", "b2:1", "c:1", "x:1");
+        assertResolution(BASE, "b1:1", "b2:1", "c:1", "x:1");
     }
 
     private Dep $(String coord, String... excls) {

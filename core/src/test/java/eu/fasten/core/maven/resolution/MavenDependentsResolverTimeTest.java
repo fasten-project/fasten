@@ -95,6 +95,6 @@ public class MavenDependentsResolverTimeTest extends AbstractMavenDependentsReso
 
     private void assertDependentsAt(long resolveAtDelta, String shortTarget, String... depSet) {
         config.resolveAt = SOME_TIME + resolveAtDelta;
-        assertDependents(shortTarget, depSet);
+        assertResolution(shortTarget, depSet);
     }
 }

@@ -37,7 +37,7 @@ public class MavenDependencyResolverVersionRangeTest extends AbstractMavenDepend
         add(BASE, "x:[1.1-1.2]");
         addXs();
 
-        assertDepSet(BASE, "x:1.2.0");
+        assertResolution(BASE, "x:1.2.0");
     }
 
     @Test
@@ -45,7 +45,7 @@ public class MavenDependencyResolverVersionRangeTest extends AbstractMavenDepend
         add(BASE, "x:[1.1-1.2)");
         addXs();
 
-        assertDepSet(BASE, "x:1.1.9");
+        assertResolution(BASE, "x:1.1.9");
     }
 
     @Test
@@ -53,7 +53,7 @@ public class MavenDependencyResolverVersionRangeTest extends AbstractMavenDepend
         add(BASE, "x:[1.1-1.2],[1.7-1.8],[1.3-1.4]");
         addXs();
 
-        assertDepSet(BASE, "x:1.8.0");
+        assertResolution(BASE, "x:1.8.0");
     }
 
     @Test
@@ -62,7 +62,7 @@ public class MavenDependencyResolverVersionRangeTest extends AbstractMavenDepend
         add("a:1", "x:[1.1-1.2]");
         addXs();
 
-        assertDepSet(BASE, "a:1", "x:1.2.0");
+        assertResolution(BASE, "a:1", "x:1.2.0");
     }
 
     @Test
@@ -71,7 +71,7 @@ public class MavenDependencyResolverVersionRangeTest extends AbstractMavenDepend
         add("a:1", "x:[1.1.0-1.2.0)");
         addXs();
 
-        assertDepSet(BASE, "a:1", "x:1.1.9");
+        assertResolution(BASE, "a:1", "x:1.1.9");
     }
 
     @Test
@@ -82,7 +82,7 @@ public class MavenDependencyResolverVersionRangeTest extends AbstractMavenDepend
         add("b:1", "x:[1.1-1.2]");
         addXs();
 
-        assertDepSet(BASE, "a:1", "b:1", "x:2");
+        assertResolution(BASE, "a:1", "b:1", "x:2");
     }
 
     @Test
@@ -93,7 +93,7 @@ public class MavenDependencyResolverVersionRangeTest extends AbstractMavenDepend
         add("x:2");
         addXs();
 
-        assertDepSet(BASE, "a:1", "b:1", "x:1.2.0");
+        assertResolution(BASE, "a:1", "b:1", "x:1.2.0");
     }
 
     @Test
@@ -103,7 +103,7 @@ public class MavenDependencyResolverVersionRangeTest extends AbstractMavenDepend
         add("b:1", "x:[1.2-1.3]");
         addXs();
 
-        assertDepSet(BASE, "a:1", "b:1", "x:1.1");
+        assertResolution(BASE, "a:1", "b:1", "x:1.1");
     }
 
     private void add(String from, String... tos) {
