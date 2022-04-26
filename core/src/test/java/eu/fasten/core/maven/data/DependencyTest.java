@@ -69,7 +69,7 @@ public class DependencyTest {
         assertEquals("aid", sut.getArtifactId());
 
         assertEquals("(1.2.3,2.3.4]", sut.getVersion());
-        assertEquals(Set.of(VersionConstraint.init("(1.2.3,2.3.4]")), sut.getVersionConstraints());
+        assertEquals(Set.of(new VersionConstraint("(1.2.3,2.3.4]")), sut.getVersionConstraints());
         String[] x = sut.getVersionConstraintsArr();
         assertArrayEquals(new String[] { "(1.2.3,2.3.4]" }, x);
 
@@ -126,7 +126,7 @@ public class DependencyTest {
     public void equalityDiffVersionsAdd() {
         var a = getSomeDep();
         var b = getSomeDep();
-        b.addVersionConstraint(VersionConstraint.init("1.2.3"));
+        b.addVersionConstraint(new VersionConstraint("1.2.3"));
         assertNotEquals(a, b);
         assertNotEquals(a.hashCode(), b.hashCode());
     }
@@ -218,7 +218,7 @@ public class DependencyTest {
     @Test
     public void hashCodeVersionAdd() {
         assertHashCodeChange(new Dependency(), d -> {
-            d.addVersionConstraint(VersionConstraint.init("1.2.3"));
+            d.addVersionConstraint(new VersionConstraint("1.2.3"));
         });
     }
 
@@ -267,8 +267,8 @@ public class DependencyTest {
 
     @Test
     public void versionSetDoesNotChangeInstance() {
-        var v1 = VersionConstraint.init("1.2.3");
-        var v2 = VersionConstraint.init("2.3.4");
+        var v1 = new VersionConstraint("1.2.3");
+        var v2 = new VersionConstraint("2.3.4");
 
         var sut = new Dependency();
         sut.addVersionConstraint(v1);
@@ -375,14 +375,14 @@ public class DependencyTest {
 
     private Dependency someDep() {
         var vcs = new HashSet<VersionConstraint>();
-        vcs.add(VersionConstraint.init("(,1.0]"));
-        vcs.add(VersionConstraint.init("[1.2)"));
+        vcs.add(new VersionConstraint("(,1.0]"));
+        vcs.add(new VersionConstraint("[1.2)"));
         var excls = new HashSet<Exclusion>();
         return new Dependency("g", "a", vcs, excls, COMPILE, true, "jar", "c");
     }
 
     public static Dependency getSomeDep() {
-        return new Dependency("gid", "aid", Set.of(VersionConstraint.init("(1.2.3,2.3.4]")),
+        return new Dependency("gid", "aid", Set.of(new VersionConstraint("(1.2.3,2.3.4]")),
                 Set.of(Exclusion.init("gid2", "aid2")), PROVIDED, true, "pom", "sources");
     }
 }

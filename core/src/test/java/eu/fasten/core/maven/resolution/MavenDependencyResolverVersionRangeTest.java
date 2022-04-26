@@ -121,7 +121,7 @@ public class MavenDependencyResolverVersionRangeTest extends AbstractMavenDepend
             if (isConstraint) {
                 var vcs = Arrays.stream(partsTo[1].split(",")) //
                         .map(vc -> vc.replace('-', ',')) //
-                        .map(VersionConstraint::init) //
+                        .map(VersionConstraint::new) //
                         .collect(Collectors.toSet());
                 d.setVersionConstraints(vcs);
             }

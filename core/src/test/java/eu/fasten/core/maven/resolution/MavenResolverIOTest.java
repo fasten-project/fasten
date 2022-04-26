@@ -76,9 +76,9 @@ public class MavenResolverIOTest {
         var pom = pom("g", "a", "v");
         pom.artifactRepository = "ar";
         pom.commitTag = "ct";
-        pom.dependencies.add(new Dependency("dg", "da", Set.of(VersionConstraint.init("dv")),
+        pom.dependencies.add(new Dependency("dg", "da", Set.of(new VersionConstraint("dv")),
                 Set.of(Exclusion.init("eg", "ea")), Scope.TEST, true, "jar", "cla"));
-        pom.dependencyManagement.add(new Dependency("dmg", "dma", Set.of(VersionConstraint.init("dmv")),
+        pom.dependencyManagement.add(new Dependency("dmg", "dma", Set.of(new VersionConstraint("dmv")),
                 Set.of(Exclusion.init("emg", "ema")), Scope.IMPORT, true, "pom", "foo"));
         pom.forge = "f";
         pom.packagingType = "pt";
@@ -96,12 +96,12 @@ public class MavenResolverIOTest {
         expected.artifactId = "a";
         expected.version = "v";
         expected.forge = null;
-        var d1 = new Dependency("dg", "da", Set.of(VersionConstraint.init("dv")), Set.of(Exclusion.init("eg", "ea")),
+        var d1 = new Dependency("dg", "da", Set.of(new VersionConstraint("dv")), Set.of(Exclusion.init("eg", "ea")),
                 Scope.TEST, true, "jar", "cla");
         d1.setClassifier(null);
         d1.setPackagingType(null);
         expected.dependencies.add(d1);
-        var dm1 = new Dependency("dmg", "dma", Set.of(VersionConstraint.init("dmv")),
+        var dm1 = new Dependency("dmg", "dma", Set.of(new VersionConstraint("dmv")),
                 Set.of(Exclusion.init("emg", "ema")), Scope.IMPORT, true, "pom", "foo");
         dm1.setClassifier(null);
         dm1.setPackagingType(null);
@@ -174,7 +174,7 @@ public class MavenResolverIOTest {
     }
 
     public class MyProvider implements MockDataProvider {
-        
+
         // see https://www.jooq.org/doc/latest/manual/sql-execution/mocking-connection/
 
         public int numExecutes = 0;
@@ -201,9 +201,8 @@ public class MavenResolverIOTest {
                     var rec = create.newRecord(PACKAGE_VERSIONS.METADATA, PACKAGE_VERSIONS.ID).values(jsonb, id);
                     result.add(rec);
                 }
-                return new MockResult[] { new MockResult(poms.size(), result)};
-            }
-            else {
+                return new MockResult[] { new MockResult(poms.size(), result) };
+            } else {
                 throw new SQLException("Statement not supported: " + sql);
             }
         }

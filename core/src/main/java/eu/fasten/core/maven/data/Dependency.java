@@ -278,7 +278,7 @@ public class Dependency extends MavenProduct {
         var versionConstraints = new HashSet<VersionConstraint>();
         if (json.has("versionConstraints")) {
             json.getJSONArray("versionConstraints").forEach(s -> {
-                versionConstraints.add(VersionConstraint.init((String) s));
+                versionConstraints.add(new VersionConstraint((String) s));
             });
         }
         var exclusions = new HashSet<Exclusion>();

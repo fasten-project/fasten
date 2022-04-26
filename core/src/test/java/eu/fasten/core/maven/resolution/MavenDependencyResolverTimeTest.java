@@ -50,7 +50,7 @@ public class MavenDependencyResolverTimeTest extends AbstractMavenDependencyReso
         addMockData("a", "b", "1", resolveAt, getPom("a", "b", "1", 0));
 
         resolve(resolveAt, "a:b:1");
-        verify(data).find("a:b", Set.of(VersionConstraint.init("1")), resolveAt);
+        verify(data).find("a:b", Set.of(new VersionConstraint("1")), resolveAt);
     }
 
     @Test
@@ -142,7 +142,7 @@ public class MavenDependencyResolverTimeTest extends AbstractMavenDependencyReso
 
     private void addMockData(String g, String a, String v, long resolveAt, Pom pom) {
         var ga = String.format("%s:%s", g, a);
-        when(data.find(ga, Set.of(VersionConstraint.init(v)), resolveAt)).thenReturn(pom);
+        when(data.find(ga, Set.of(new VersionConstraint(v)), resolveAt)).thenReturn(pom);
     }
 
     private void resolve(long resolveAt, String... coords) {
