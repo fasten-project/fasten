@@ -244,7 +244,7 @@ public class RocksDao implements Closeable, Iterable<byte[]> {
 	 * @throws IOException if there was a problem writing to files
 	 * @throws RocksDBException if there was a problem inserting in the database
 	 */
-    public synchronized DirectedGraph saveToRocksDb(final long index, List<Long> nodes, int numInternal, final List<List<Long>> edges)
+    public DirectedGraph saveToRocksDb(final long index, List<Long> nodes, int numInternal, final List<List<Long>> edges)
             throws IOException, RocksDBException {
         final var internalIds = new LongArrayList(numInternal);
         final var externalIds = new LongArrayList(nodes.size() - numInternal);
@@ -287,13 +287,13 @@ public class RocksDao implements Closeable, Iterable<byte[]> {
             final ArrayImmutableDirectedGraph graph = builder.build();
             final FastByteArrayOutputStream fbaos = new FastByteArrayOutputStream();
             final ByteBufferOutput bbo = new ByteBufferOutput(fbaos);
-            kryo.writeObject(bbo, Boolean.FALSE);
-            kryo.writeObject(bbo, graph);
+            synchronized(kryo) {
+            	kryo.writeObject(bbo, Boolean.FALSE);
+                kryo.writeObject(bbo, graph);
+            }
             bbo.flush();
             // Write to DB
-            synchronized(this) {
-            	rocksDb.put(defaultHandle, Longs.toByteArray(index), 0, 8, fbaos.array, 0, fbaos.length);
-            }
+           	rocksDb.put(defaultHandle, Longs.toByteArray(index), 0, 8, fbaos.array, 0, fbaos.length);
             return graph;
         } else {
             /*
@@ -357,9 +357,13 @@ public class RocksDao implements Closeable, Iterable<byte[]> {
             propertyFile.close();
             final FastByteArrayOutputStream fbaos = new FastByteArrayOutputStream();
             final ByteBufferOutput bbo = new ByteBufferOutput(fbaos);
-            kryo.writeObject(bbo, Boolean.TRUE);
+            synchronized(kryo) {
+            	kryo.writeObject(bbo, Boolean.TRUE);
+            }
             final ImmutableGraph storedGraph = BVGraph.load(file.toString());
-            kryo.writeObject(bbo, storedGraph);
+            synchronized(kryo) {
+            	kryo.writeObject(bbo, storedGraph);
+            }
 
             // Compute LIDs according to the current node numbering based on the LLP permutation
             final long[] LID2GID = new long[temporary2GID.length];
@@ -376,19 +380,19 @@ public class RocksDao implements Closeable, Iterable<byte[]> {
             transposeProperties.load(propertyFile);
             propertyFile.close();
             final ImmutableGraph storedTranspose = BVGraph.load(file.toString());
-            kryo.writeObject(bbo, storedTranspose);
-            kryo.writeObject(bbo, numInternal);
-            // Write out properties
-            kryo.writeObject(bbo, graphProperties);
-            kryo.writeObject(bbo, transposeProperties);
-            // Write out maps
-            kryo.writeObject(bbo, LID2GID);
-            kryo.writeObject(bbo, GID2LID);
+            synchronized (kryo) {
+                kryo.writeObject(bbo, storedTranspose);
+                kryo.writeObject(bbo, numInternal);
+                // Write out properties
+                kryo.writeObject(bbo, graphProperties);
+                kryo.writeObject(bbo, transposeProperties);
+                // Write out maps
+                kryo.writeObject(bbo, LID2GID);
+                kryo.writeObject(bbo, GID2LID);				
+			}
             bbo.flush();
             // Write to DB
-            synchronized(this) {
-            	rocksDb.put(defaultHandle, Longs.toByteArray(index), 0, 8, fbaos.array, 0, fbaos.length);
-            }
+           	rocksDb.put(defaultHandle, Longs.toByteArray(index), 0, 8, fbaos.array, 0, fbaos.length);
 			final var fileProperties = new File(file + BVGraph.PROPERTIES_EXTENSION);
 			final var fileOffsets = new File(file + BVGraph.OFFSETS_EXTENSION);
 			final var fileGraph = new File(file + BVGraph.GRAPH_EXTENSION);
@@ -424,33 +428,33 @@ public class RocksDao implements Closeable, Iterable<byte[]> {
      * @return the directed graph stored in the database
      * @throws RocksDBException if there was problem retrieving data from RocksDB
      */
-    public synchronized DirectedGraph getGraphData(final long index) throws RocksDBException {
+    public DirectedGraph getGraphData(final long index) throws RocksDBException {
         try {
             final byte[] buffer;
-            synchronized(this) {
-                buffer = rocksDb.get(Longs.toByteArray(index));            	
-            }
+            buffer = rocksDb.get(Longs.toByteArray(index));            	
             final Input input = new Input(buffer);
             assert kryo != null;
 
-            final boolean compressed = kryo.readObject(input, Boolean.class);
-            if (compressed) {
-                final var graphs = new ImmutableGraph[]{
-                        kryo.readObject(input, BVGraph.class),
-                        kryo.readObject(input, BVGraph.class)
-                };
-                final int numInternal = kryo.readObject(input, int.class);
-                final Properties[] properties = new Properties[]{
-                        kryo.readObject(input, Properties.class),
-                        kryo.readObject(input, Properties.class)
-                };
-                final long[] LID2GID = kryo.readObject(input, long[].class);
-                final GOV3LongFunction GID2LID = kryo.readObject(input, GOV3LongFunction.class);
-                return new CallGraphData(graphs[0], graphs[1], properties[0], properties[1],
-                        LID2GID, GID2LID, numInternal, buffer.length);
-            } else {
-                return kryo.readObject(input, ArrayImmutableDirectedGraph.class);
-            }
+            synchronized (kryo) {
+                final boolean compressed = kryo.readObject(input, Boolean.class);
+                if (compressed) {
+                    final var graphs = new ImmutableGraph[]{
+                            kryo.readObject(input, BVGraph.class),
+                            kryo.readObject(input, BVGraph.class)
+                    };
+                    final int numInternal = kryo.readObject(input, int.class);
+                    final Properties[] properties = new Properties[]{
+                            kryo.readObject(input, Properties.class),
+                            kryo.readObject(input, Properties.class)
+                    };
+                    final long[] LID2GID = kryo.readObject(input, long[].class);
+                    final GOV3LongFunction GID2LID = kryo.readObject(input, GOV3LongFunction.class);
+                    return new CallGraphData(graphs[0], graphs[1], properties[0], properties[1],
+                            LID2GID, GID2LID, numInternal, buffer.length);
+                } else {
+                    return kryo.readObject(input, ArrayImmutableDirectedGraph.class);
+                }				
+			}
         } catch (final NullPointerException e) {
             // TODO fix this handling of a null pointer exception more maturely
             logger.warn("Graph with index " + index + " could not be found");
@@ -467,7 +471,7 @@ public class RocksDao implements Closeable, Iterable<byte[]> {
      * if no metadata record exists for the provided graph
      * @throws RocksDBException if there was problem retrieving data from RocksDB
      */
-    public synchronized GraphMetadata getGraphMetadata(final long index, final DirectedGraph graph) {
+    public GraphMetadata getGraphMetadata(final long index, final DirectedGraph graph) {
         byte[] metadata = getMetaData(index);
         if (metadata == null) {
             return null;
@@ -512,9 +516,7 @@ public class RocksDao implements Closeable, Iterable<byte[]> {
 
     private byte[] getMetaData(final long index) {
         try {
-        	synchronized(this) {
-        		return rocksDb.get(metadataHandle, Longs.toByteArray(index));
-        	}
+       		return rocksDb.get(metadataHandle, Longs.toByteArray(index));
         } catch (RocksDBException e) {
             throw new RuntimeException(e);
         }
@@ -533,10 +535,8 @@ public class RocksDao implements Closeable, Iterable<byte[]> {
      */
     public synchronized boolean deleteCallGraph(final long index) {
         try {
-        	synchronized(this) {
-        		rocksDb.delete(defaultHandle, Longs.toByteArray(index));
-        		rocksDb.delete(metadataHandle, Longs.toByteArray(index));
-        	}
+       		rocksDb.delete(defaultHandle, Longs.toByteArray(index));
+       		rocksDb.delete(metadataHandle, Longs.toByteArray(index));
         } catch (final RocksDBException e) {
             logger.error("Could not delete graph with index " + index, e);
             return false;
