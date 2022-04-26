@@ -92,7 +92,11 @@ public class ArrayImmutableDirectedGraphTest {
 
         ArrayImmutableDirectedGraph copy = ArrayImmutableDirectedGraph.copyOf(graph, false);
         assertEquals(graph.nodes(), copy.nodes());
-        for(long x: graph) assertEquals(new LongOpenHashSet(graph.successors(x)), new LongOpenHashSet(copy.successors(x)));
+        for(long x: graph) {
+        	assertEquals(graph.successors(x).size(), graph.outdegree(x));
+        	assertEquals(graph.predecessors(x).size(), graph.indegree(x));
+        	assertEquals(new LongOpenHashSet(graph.successors(x)), new LongOpenHashSet(copy.successors(x)));
+        }
         for(long x: graph) assertEquals(new LongOpenHashSet(graph.predecessors(x)), new LongOpenHashSet(copy.predecessors(x)));
         
         for(long x: graph) assertEquals(new LongOpenHashSet(graph.successors(x)), new LongOpenHashSet(graph.successorsIterator(x)));

@@ -187,6 +187,20 @@ public class ArrayImmutableDirectedGraph implements DirectedGraph, Serializable 
 	}
 
 	@Override
+	public int indegree(final long node) {
+		int offset = GID2Offset.get(node);
+		if (offset == -1) throw new IllegalArgumentException("No such node: " + node);
+		return (int)(succpred[offset] >>> 32);
+	}
+	
+	@Override
+	public int outdegree(final long node) {
+		final int offset = GID2Offset.get(node);
+		if (offset == -1) throw new IllegalArgumentException("No such node: " + node);
+		return (int)succpred[offset];
+	}
+	
+	@Override
 	public LongList successors(final long node) {
 		final int offset = GID2Offset.get(node);
 		if (offset == -1) throw new IllegalArgumentException("No such node: " + node);
