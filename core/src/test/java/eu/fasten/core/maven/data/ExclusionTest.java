@@ -25,93 +25,55 @@ public class ExclusionTest {
 
     @Test
     public void defaultValues() {
-        var sut = new Exclusion();
-        assertNull(sut.getArtifactId());
-        assertNull(sut.getGroupId());
+        var sut = new Exclusion(null, null);
+        assertNull(sut.artifactId);
+        assertNull(sut.groupId);
     }
 
     @Test
-    public void canSetGroupId() {
-        var sut = new Exclusion();
-        sut.setGroupId("g");
-        assertEquals("g", sut.getGroupId());
-    }
-
-    @Test
-    public void canSetArtifactId() {
-        var sut = new Exclusion();
-        sut.setArtifactId("a");
-        assertEquals("a", sut.getArtifactId());
-    }
-
-    @Test
-    public void staticInitializer() {
-        var sut = Exclusion.init("g", "a");
-        assertEquals("g", sut.getGroupId());
-        assertEquals("a", sut.getArtifactId());
+    public void nonDefaultValues() {
+        var sut = new Exclusion("g", "a");
+        assertEquals("g", sut.groupId);
+        assertEquals("a", sut.artifactId);
         assertNotEquals(0, sut.hashCode());
     }
 
     @Test
     public void equalityDefault() {
-        var a = new Exclusion();
-        var b = new Exclusion();
+        var a = new Exclusion(null, null);
+        var b = new Exclusion(null, null);
         assertEquals(a, b);
         assertEquals(a.hashCode(), b.hashCode());
     }
 
     @Test
     public void equalityNonDefault() {
-        var a = getNonDefaultExclusion();
-        var b = getNonDefaultExclusion();
+        var a = new Exclusion("g", "a");
+        var b = new Exclusion("g", "a");
         assertEquals(a, b);
         assertEquals(a.hashCode(), b.hashCode());
     }
 
     @Test
     public void equalityDifferentGroup() {
-        var a = getNonDefaultExclusion();
-        var b = getNonDefaultExclusion();
-        b.setGroupId("g2");
+        var a = new Exclusion("g", "a");
+        var b = new Exclusion("g2", "a");
         assertNotEquals(a, b);
         assertNotEquals(a.hashCode(), b.hashCode());
     }
 
     @Test
     public void equalityDifferentArtifact() {
-        var a = getNonDefaultExclusion();
-        var b = getNonDefaultExclusion();
-        b.setArtifactId("a2");
+        var a = new Exclusion("g", "a");
+        var b = new Exclusion("g", "a2");
         assertNotEquals(a, b);
         assertNotEquals(a.hashCode(), b.hashCode());
     }
 
     @Test
-    public void setGroupChangesHashCode() {
-        var sut = getNonDefaultExclusion();
-        var a = sut.hashCode();
-        sut.setGroupId("g2");
-        var b = sut.hashCode();
-        assertNotEquals(a, b);
-    }
-
-    @Test
-    public void setArtifactChangesHashCode() {
-        var sut = getNonDefaultExclusion();
-        var a = sut.hashCode();
-        sut.setArtifactId("a2");
-        var b = sut.hashCode();
-        assertNotEquals(a, b);
-    }
-
-    private static Exclusion getNonDefaultExclusion() {
-        return Exclusion.init("g", "a");
-    }
-
-    @Test
     @SuppressWarnings("deprecation")
     public void legacyJson() {
-        var sut = Exclusion.init("g", "a");
+        var sut = new Exclusion("g", "a");
         assertEquals("g:a", sut.toJSON());
         var clone = Exclusion.fromJSON("g:a");
         assertEquals(sut, clone);

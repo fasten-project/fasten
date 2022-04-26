@@ -146,7 +146,7 @@ public class MavenDependencyResolver {
                 }
 
                 for (var excl : dep.getExclusions()) {
-                    var exclGA = new StringBuilder().append(excl.getGroupId()).append(':').append(excl.getArtifactId())
+                    var exclGA = new StringBuilder().append(excl.groupId).append(':').append(excl.artifactId)
                             .toString();
                     depData.exclusions.add(exclGA);
                 }
