@@ -41,6 +41,9 @@ public class DebianLicenseDetectorPlugin extends Plugin {
     public static class DebianLicenseDetectorExtension implements KafkaPlugin {
         private static String packageVersion = null;
         private static String packageName = null;
+
+        private static String productName = null;
+
         private static int HttpGetCount = 0;
         private static int FilesCount=0;
         private static int FilesWithLicensesCount=0;
@@ -98,11 +101,17 @@ public class DebianLicenseDetectorPlugin extends Plugin {
                 // Retrieving the package version
                 packageVersion = extractPackageVersion(json);
                 logger.info("The package version is:"+packageVersion+".");
+                // Retrieving the product name
+                productName = extractProductName(json);
+                logger.info("The product name is:"+productName+".");
+
+
 
                 //Adding packageName and packageVersion to the out message (object).
                 JSONObject packageInfo = new JSONObject();
                 packageInfo.put("packageName", packageName);
                 packageInfo.put("packageVersion", packageVersion);
+                packageInfo.put("productName", packageVersion);
                 // forcing the packageName and packageVersion information into the files JSONArray
                 object.accumulate("files", packageInfo);
 
@@ -289,6 +298,30 @@ public class DebianLicenseDetectorPlugin extends Plugin {
             }
             return null;
         }
+
+        /**
+         * Retrieves the product name of the input record.
+         *
+         * @param json the input record containing package information.
+         * @return the package name.
+         */
+        protected static String extractProductName(JSONObject json) {
+            if (json.has("input")) {
+                JSONObject json2 = json.getJSONObject("input");
+                //if (json2.has("input")) {
+                if (json2.has("payload")) {
+                    JSONObject json3 = json2.getJSONObject("payload");
+                    if (json3.has("product")) {
+                        return json3.getString("product");
+                    } else {
+                        String packageNameNotFound = "Package name not found";
+                        return packageNameNotFound;
+                    }
+                }
+            }
+            return null;
+        }
+
 
         /**
          * Retrieves the copyright file given a package name and the package version path.
