@@ -721,15 +721,16 @@ public class SearchEngine implements AutoCloseable {
 
 		final ExecutorService executorService = Executors.newFixedThreadPool(numberOfThreads);
 		final ExecutorCompletionService<Void> executorCompletionService = new ExecutorCompletionService<>(executorService);
+		final ArrayList<Future> futures = new ArrayList<>();
 		AtomicLong trueDependents = new AtomicLong(0);
 
-		for(int i = 0; i < numberOfThreads; i++) executorCompletionService.submit(() -> {
+		for(int i = 0; i < numberOfThreads; i++) futures.add(executorCompletionService.submit(() -> {
 			for(;;) {
 				final Revision dependent;
 				try {
 					dependent = s.take();
-				} catch(InterruptedException cantHappen) {
-					throw new RuntimeException(cantHappen);
+				} catch(InterruptedException canceled) {
+					return null;
 				}
 				if (dependent == GraphMavenResolver.END) return null;
 
@@ -791,16 +792,20 @@ public class SearchEngine implements AutoCloseable {
 
 				publisher.submit(bfs(stitchedGraph, false, seed, filter, scorer, maxResults, visitTime, visitedArcs));
 			}
-		});
+		}));
 
 		final ExecutorService singleThreadExecutor = Executors.newSingleThreadExecutor();
 		
 		final Future<Void> result = singleThreadExecutor.submit(() -> {
+			int i = 0;
 			try {
 				pipeline.get();			
-				for(int i = 0; i < numberOfThreads; i++) executorCompletionService.take().get();
-			} catch (final InterruptedException e) {
-				throw new RuntimeException(e);
+				for(; i < numberOfThreads; i++) executorCompletionService.take();
+			} catch (final InterruptedException canceled) {
+				pipeline.cancel(true);
+				pipeline.get();
+				for(var future: futures) future.cancel(true);
+				for(; i < numberOfThreads; i++) executorCompletionService.take();
 			} catch (final ExecutionException e) {
 				final Throwable cause = e.getCause();
 				throw new RuntimeException(cause);
