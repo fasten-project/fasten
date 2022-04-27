@@ -473,7 +473,8 @@ public class SearchEngine implements AutoCloseable {
 				sentinel = -1;
 			}
 
-			if (!seed.contains(gid) && filter.test(gid)) { // TODO: why?
+			// We do not want the seed in the result
+			if (!seed.contains(gid) && filter.test(gid)) {
 				final double score = scorer.score(graph, gid, d);
 				if (results.size() < maxResults || score > results.last().score) {
 					results.add(new Result(gid, score));
@@ -869,7 +870,7 @@ public class SearchEngine implements AutoCloseable {
 					
 					topKProcessor.subscribe(futureSubscriber);
 
-					final long start = - System.nanoTime();
+					long start = - System.nanoTime();
 					
 					final Result[] r;
 					if (uri.getPath() == null) {
@@ -893,8 +894,9 @@ public class SearchEngine implements AutoCloseable {
 						System.err.println(t);
 						System.err.println("\t" + t.getStackTrace()[0]);
 					}
-					System.err.printf("\n%d results \nTotal time: %.3fs Resolve time: %.3fs Merge time: %.3fs Visit time %.3fs Visited arcs %d Arcs/s %.3fs\n", r.length, 
-							(start + System.nanoTime()) * 1E-9, searchEngine.resolveTime.get() * 1E-9, searchEngine.mergeTime.get() * 1E-9, searchEngine.visitTime.get() * 1E-9, searchEngine.visitedArcs.get(), (double)searchEngine.visitedArcs.get()/searchEngine.visitTime.get() );
+					start += System.nanoTime();
+					System.err.printf("\n%d results \nTotal time: %.3fs Resolve time: %.3fs Merge time: %.3fs Visit time %.3fs Visited arcs %d Visit arcs/s %.3fs Overall arcs/s %.3fs\n", r.length, 
+							start * 1E-9, searchEngine.resolveTime.get() * 1E-9, searchEngine.mergeTime.get() * 1E-9, searchEngine.visitTime.get() * 1E-9, searchEngine.visitedArcs.get(), (double)searchEngine.visitedArcs.get()/searchEngine.visitTime.get(), (double)searchEngine.visitedArcs.get()/start );
 				} catch (final Exception e) {
 					e.printStackTrace();
 				}
