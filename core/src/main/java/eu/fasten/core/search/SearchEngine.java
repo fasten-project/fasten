@@ -269,6 +269,7 @@ public class SearchEngine implements AutoCloseable {
 
 	private int nextFutureId;
 	private final Int2ObjectOpenHashMap<Future<Void>> id2Future = new Int2ObjectOpenHashMap<>();
+	private final Int2ObjectOpenHashMap<String> id2Query = new Int2ObjectOpenHashMap<>();
 	private final Int2ObjectOpenHashMap<WaitOnTerminateFutureSubscriber<Update>> id2Subscriber = new Int2ObjectOpenHashMap<>();
 
 	/**
@@ -302,7 +303,7 @@ public class SearchEngine implements AutoCloseable {
 				break;
 
 			case "show":
-				System.out.println(id2Future.keySet());
+				System.out.println(id2Query);
 				break;
 
 			case "wait":
@@ -318,6 +319,7 @@ public class SearchEngine implements AutoCloseable {
 
 					id2Future.remove(id);
 					id2Subscriber.remove(id);
+					id2Query.remove(id);
 				}
 				break;
 
@@ -919,8 +921,7 @@ public class SearchEngine implements AutoCloseable {
 						if (dir != '#') System.err.println("First character must be '+', '-', or '#'");
 						continue;
 					}
-					line = line.substring(1);
-					final FastenJavaURI uri = FastenJavaURI.create(line);
+					final FastenJavaURI uri = FastenJavaURI.create(line.substring(1));
 
 					searchEngine.resetCounters();
 
@@ -945,6 +946,7 @@ public class SearchEngine implements AutoCloseable {
 							final int id = searchEngine.nextFutureId++;
 							searchEngine.id2Future.put(id, searchEngine.toRevision(uri, searchEngine.limit, publisher));
 							searchEngine.id2Subscriber.put(id, futureSubscriber);
+							searchEngine.id2Query.put(id, line);
 							System.err.println("Id: " + id);
 						}
 					} else {
@@ -962,6 +964,7 @@ public class SearchEngine implements AutoCloseable {
 							final int id = searchEngine.nextFutureId++;
 							searchEngine.id2Future.put(id, searchEngine.toCallable(gid, searchEngine.limit, publisher));
 							searchEngine.id2Subscriber.put(id, futureSubscriber);
+							searchEngine.id2Query.put(id, line);
 							System.err.println("Id: " + id);
 						}
 					}
