@@ -67,7 +67,7 @@ import eu.fasten.core.dbconnectors.PostgresConnector;
 import eu.fasten.core.maven.GraphMavenResolver;
 import eu.fasten.core.maven.data.Revision;
 import eu.fasten.core.merge.CGMerger;
-import eu.fasten.core.search.SearchEngineTopKProcessor.Update;
+import eu.fasten.core.search.TopKProcessor.Update;
 import eu.fasten.core.search.predicate.CachingPredicateFactory;
 import eu.fasten.core.search.predicate.PredicateFactory;
 import eu.fasten.core.search.predicate.PredicateFactory.MetadataSource;
@@ -916,7 +916,7 @@ public class SearchEngine implements AutoCloseable {
 					searchEngine.resetCounters();
 
 					SubmissionPublisher<SortedSet<Result>> publisher = new SubmissionPublisher<>();
-			    	SearchEngineTopKProcessor topKProcessor = new SearchEngineTopKProcessor(searchEngine.limit);
+			    	TopKProcessor topKProcessor = new TopKProcessor(searchEngine.limit);
 			    	publisher.subscribe(topKProcessor);
 			    	
 			    	final WaitOnTerminateFutureSubscriber<Update> futureSubscriber = new WaitOnTerminateFutureSubscriber<>();

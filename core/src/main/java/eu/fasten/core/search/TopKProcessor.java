@@ -16,7 +16,7 @@ import it.unimi.dsi.fastutil.objects.ObjectRBTreeSet;
  *  added) the changes and the overall new set are published in the form of an {@link Update} (that contains sorted array representation of
  *  the current set, of the additions and of the deletions).
  */
-public class SearchEngineTopKProcessor extends SubmissionPublisher<SearchEngineTopKProcessor.Update> implements Processor<SortedSet<Result>, SearchEngineTopKProcessor.Update> {
+public class TopKProcessor extends SubmissionPublisher<TopKProcessor.Update> implements Processor<SortedSet<Result>, TopKProcessor.Update> {
 
 	private static final Result[] EMPTY_RESULT_ARRAY = new Result[0];
 
@@ -49,7 +49,7 @@ public class SearchEngineTopKProcessor extends SubmissionPublisher<SearchEngineT
 	 * 
 	 * @param maxResults maximum number of topmost results to be kept track of.
 	 */
-    public SearchEngineTopKProcessor(final int maxResults) {
+    public TopKProcessor(final int maxResults) {
     	super();
     	this.maxResults = maxResults;
     	results = new ObjectOpenHashSet<>(maxResults, 0.5f);
@@ -62,7 +62,7 @@ public class SearchEngineTopKProcessor extends SubmissionPublisher<SearchEngineT
 	 * @param executor the custom executor to be used for this processor.
 	 * @param maxBufferCapacity the maximum buffer capacity for the publication queue.
 	 */
-    public SearchEngineTopKProcessor(final int maxResults, final Executor executor, final int maxBufferCapacity) {
+    public TopKProcessor(final int maxResults, final Executor executor, final int maxBufferCapacity) {
     	super(executor, maxBufferCapacity);
     	this.maxResults = maxResults;
     	results = new ObjectOpenHashSet<>(maxResults, 0.5f);

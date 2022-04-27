@@ -3,11 +3,11 @@ package eu.fasten.core.search;
 import java.util.concurrent.Flow;
 import java.util.concurrent.ThreadPoolExecutor;
 
-public class SearchEnginePrintSubscriber<T> implements Flow.Subscriber<T> {
+public class PrintSubscriber<T> implements Flow.Subscriber<T> {
 	
 	private ThreadPoolExecutor executor;
 	
-	public SearchEnginePrintSubscriber(final ThreadPoolExecutor executor) {
+	public PrintSubscriber(final ThreadPoolExecutor executor) {
 		this.executor = executor;
 	}
 	

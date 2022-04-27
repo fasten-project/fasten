@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test;
 
 import eu.fasten.core.data.ArrayImmutableDirectedGraph;
 import eu.fasten.core.search.SearchEngine.Result;
-import eu.fasten.core.search.SearchEngineTopKProcessor.Update;
+import eu.fasten.core.search.TopKProcessor.Update;
 import it.unimi.dsi.bits.Fast;
 import it.unimi.dsi.fastutil.longs.Long2DoubleOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongList;
@@ -68,7 +68,7 @@ public class SearchEngineTest {
 
     	for (int i = 0; i < n; i++) all.add(new Result(random.nextInt(100), random.nextInt(100)));
     	
-    	SearchEngineTopKProcessor processor = new SearchEngineTopKProcessor(maxResults);
+    	TopKProcessor processor = new TopKProcessor(maxResults);
     	final WaitOnTerminateFutureSubscriber<Update> futureSubscriber = new WaitOnTerminateFutureSubscriber<>();
     	processor.subscribe(futureSubscriber);
     	
