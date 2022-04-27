@@ -116,14 +116,14 @@ public class PersistentCache implements AutoCloseable {
 	 * {@link #NO_GRAPH} and the persistent cache will store a zero-length byte array.
 	 */
 	public synchronized void putMerged(final long key, ArrayImmutableDirectedGraph graph) throws RocksDBException {
-		if (graph == null) {
+/*		if (graph == null) {
 			mergedCache.put(key, NO_GRAPH);
 			cache.put(mergedHandle, Longs.toByteArray(key), new byte[0]);
 		} else {
 			mergedCache.put(key, graph);
 			cache.put(mergedHandle, Longs.toByteArray(key), SerializationUtils.serialize(graph));
 		}
-	}
+*/	}
 	
 	/** Puts a resolved dependency set in the cache.
 	 * 
@@ -131,9 +131,9 @@ public class PersistentCache implements AutoCloseable {
 	 * @param deps the resolved dependency set.
 	 */
 	public synchronized void putDeps(final long key, LongLinkedOpenHashSet deps) throws RocksDBException {
-		depsCache.put(key, deps);
+/*		depsCache.put(key, deps);
 		cache.put(dependenciesHandle, Longs.toByteArray(key), SerializationUtils.serialize(deps));				
-	}
+*/	}
 
 	/** Attempts to retrieve a merged graph from the cache.
 	 * 
@@ -165,7 +165,7 @@ public class PersistentCache implements AutoCloseable {
 			else {
 				LOGGER.warn("Cached graph for GID " + key + " is of type " + temp.getClass().getSimpleName() + " (fixing now)");
 				merged = ArrayImmutableDirectedGraph.copyOf(temp, false);
-				cache.put(mergedHandle, Longs.toByteArray(key), SerializationUtils.serialize(merged));
+/*				cache.put(mergedHandle, Longs.toByteArray(key), SerializationUtils.serialize(merged));*/
 			}
 		}
 		// System.err.println(Thread.currentThread() + ": Found in persistent cache");

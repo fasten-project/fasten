@@ -312,14 +312,12 @@ public class SearchEngine implements AutoCloseable {
 				if (future == null) System.err.println("No such search ID");
 				else {
 					if ("wait".equals(verb)) {
-						future.get();
 						final var r = id2Subscriber.get(id).get().current;
 						for (int i = 0; i < Math.min(limit, r.length); i++) System.out.println(r[i].gid + "\t" + Util.getCallableName(r[i].gid, context) + "\t" + r[i].score);
-					} else {
-						future.cancel(true);
-						id2Future.remove(id);
-						id2Subscriber.remove(id);
-					}
+					} else future.cancel(true);
+
+					id2Future.remove(id);
+					id2Subscriber.remove(id);
 				}
 				break;
 
