@@ -448,7 +448,7 @@ public class GraphMavenResolver implements Runnable {
 				if (!dependentGraph.containsVertex(rev)) continue; // Ignore missing revisions
 				try {
 					pipeline.put(rev);
-					if (countDown-- == 0) return;
+					if (countDown-- == 0) break;
 				} catch (InterruptedException cancelled) {
 					try {
 						for (int i = 0; i < numberOfThreads; i++) pipeline.add(END);
@@ -459,8 +459,8 @@ public class GraphMavenResolver implements Runnable {
 				filterDependentsByTimestamp(StreamSupport.stream(dependentGraph.iterables().outgoingEdgesOf(rev).spliterator(), false).map(edge -> dependentGraph.getEdgeTarget(edge)), timestamp).forEach(dependent -> {
 					if (seen.add(dependent.id)) workQueue.enqueue(dependent);
 				});
-				if (!transitive) return;
-			} 
+				if (!transitive) break;
+			}
 			for (int i = 0; i < numberOfThreads; i++) try {
 				pipeline.put(END);
 			} catch (InterruptedException cancelled) {}
