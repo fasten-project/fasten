@@ -92,4 +92,12 @@ final class WaitOnTerminateFutureSubscriber<T> implements Flow.Subscriber<T>, Fu
 	public synchronized boolean isDone() {
 		return done;
 	}
+	
+	/** Returns the last item passed to {@link #onNext(Object)}.
+	 * 
+	 * @return the last item passed to {@link #onNext(Object)}.
+	 */
+	public T last() {
+		return last;
+	}
 }
