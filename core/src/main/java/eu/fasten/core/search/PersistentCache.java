@@ -149,16 +149,18 @@ public class PersistentCache implements AutoCloseable {
 		//System.err.println(Thread.currentThread() + ": Looking for " + key);
 		ArrayImmutableDirectedGraph merged = mergedCache.get(key);
 		if (merged == NULL_GRAPH) return null;
-		//if (merged != null) System.err.println(Thread.currentThread() + ": Found in memory cache");
+		//if (merged != null) System.err.println(Thread.currentThread() + ": " + key + " Found in memory cache");
 		if (merged != null) return merged;
 		final byte[] array = cache.get(mergedHandle, Longs.toByteArray(key));
-		//System.err.println(Thread.currentThread() + ": Accessing persistent cache");
+		//System.err.println(Thread.currentThread() + ": Accessing persistent cache for " + key);
 		if (array == null) {
+			//System.err.println(Thread.currentThread() + ": " + key + " Not found");
 			mergedCache.put(key, NULL_GRAPH);
 			return null;
 		}
 		if (array.length == 0) merged = NO_GRAPH;
 		else {
+			//System.err.println(Thread.currentThread() + ": " + key + " Found");
 			DirectedGraph temp = SerializationUtils.deserialize(array);
 			// Temporary kluge to work around a few cached graph of the wrong type
 			if (temp instanceof ArrayImmutableDirectedGraph) merged = (ArrayImmutableDirectedGraph)temp;
