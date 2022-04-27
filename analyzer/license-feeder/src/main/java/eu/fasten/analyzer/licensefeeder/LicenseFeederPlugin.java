@@ -150,6 +150,29 @@ public class LicenseFeederPlugin extends Plugin {
                         (file.has("path") ? "" : "no ") + "path and " +
                         (file.has("licenses") ? file.getJSONArray("licenses").length() : "no") + " licenses.");
                 if (file.has("path") && file.has("licenses")) {
+                    String path = file.getString("path");
+                    path = path.replace(sourcePath+"/","");
+                    //logger.info("path before to insertFileLicenses:");
+                    //logger.info(path);
+                    JSONArray FileLicenses = file.getJSONArray("licenses");
+                    JSONArray FileLicensesParsed = new JSONArray();
+                    JSONObject packageLicenseInfo = new JSONObject();
+                    for (int i = 0; i < FileLicenses.length(); i++) {
+                        JSONObject jsonObj = FileLicenses.getJSONObject(i);
+                        if (jsonObj.has("spdx_license_key")){
+                            String spdx_id = jsonObj.getString("spdx_license_key");
+                            packageLicenseInfo.put("spdx_license_key", spdx_id);
+                            FileLicensesParsed.put(packageLicenseInfo);
+                        }
+                        if (jsonObj.has("key")){
+                            String license_key = jsonObj.getString("key");
+                            //System.out.println("license_key");
+                            //System.out.println(license_key);
+                            packageLicenseInfo.put("key", license_key);
+                            FileLicensesParsed.put(packageLicenseInfo);
+                        }
+                    }
+                    String fileMetadata = new JSONObject().put("licenses", FileLicensesParsed).toString();
                     metadataDao.insertFileLicenses(
                             coordinates,
                             file.getString("path"),
