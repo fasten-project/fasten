@@ -11,13 +11,23 @@ import eu.fasten.core.search.SearchEngine.Result;
 import it.unimi.dsi.fastutil.objects.ObjectOpenHashSet;
 import it.unimi.dsi.fastutil.objects.ObjectRBTreeSet;
 
+/** A processor that receive updates in the form of batches of sorted sets of {@linkplain Result search results} (sorted by score, with
+ *  no gid repeated) and keeps track of the topmost gids with largest score. Every time this set changes (some elements are deleted and/or
+ *  added) the changes and the overall new set are published in the form of an {@link Update} (that contains sorted array representation of
+ *  the current set, of the additions and of the deletions).
+ */
 public class SearchEngineTopKProcessor extends SubmissionPublisher<SearchEngineTopKProcessor.Update> implements Processor<SortedSet<Result>, SearchEngineTopKProcessor.Update> {
 
 	private static final Result[] EMPTY_RESULT_ARRAY = new Result[0];
 
+	/** Contains information about a single update: it contains a sorted array representation of the current set, of the additions and of the deletions.
+	 */
 	public static final class Update {
+		/** Current sorted array of the topmost results. */
 		public Result[] current;
+		/** Array of the new topmost results. */
 		public Result[] additions;
+		/** Array of the results that should be removed from the previous update. */
 		public Result[] deletions;
 
 		public Update(Result[] current, Result[] additions, Result[] deletions) {
@@ -27,11 +37,18 @@ public class SearchEngineTopKProcessor extends SubmissionPublisher<SearchEngineT
 		}
 	}
 	
+	
+	/** The current set of results, with identity determined by gid only. */
 	private final ObjectOpenHashSet<Result> results;
+	/** The current sorted set of results (gids are not repeated here). */
 	private final ObjectRBTreeSet<Result> sortedResults;
 
 	private int maxResults;
 
+	/** Creates a new processor, with default executor.
+	 * 
+	 * @param maxResults maximum number of topmost results to be kept track of.
+	 */
     public SearchEngineTopKProcessor(final int maxResults) {
     	super();
     	this.maxResults = maxResults;
@@ -39,6 +56,12 @@ public class SearchEngineTopKProcessor extends SubmissionPublisher<SearchEngineT
     	sortedResults = new ObjectRBTreeSet<>();
     }
 
+	/** Creates a new processor, with custom executor. 
+	 * 
+	 * @param maxResults  maximum number of topmost results to be kept track of.
+	 * @param executor the custom executor to be used for this processor.
+	 * @param maxBufferCapacity the maximum buffer capacity for the publication queue.
+	 */
     public SearchEngineTopKProcessor(final int maxResults, final Executor executor, final int maxBufferCapacity) {
     	super(executor, maxBufferCapacity);
     	this.maxResults = maxResults;
@@ -51,14 +74,6 @@ public class SearchEngineTopKProcessor extends SubmissionPublisher<SearchEngineT
         subscription.request(Long.MAX_VALUE);
     }
 
-	/** Merges into the global results tree a new local (from BFS) results tree.
-	 * 
-	 * @param results the global results set.
-	 * @param sortedResults the global results tree.
-	 * @param bfsResults the local (from BFS) results tree.
-	 * @param maxResults the maximum number of desired results.
-	 * @return true of {@code results} has been modified.
-	 */
     @Override
     public synchronized void onNext(SortedSet<Result> bfsResults) {
     	final ObjectRBTreeSet<Result> additions = new ObjectRBTreeSet<>();
@@ -71,19 +86,19 @@ public class SearchEngineTopKProcessor extends SubmissionPublisher<SearchEngineT
 
     		final Result oldResult = results.get(result);
 
-    		if (oldResult != null) {
-    			if (oldResult.score < result.score) {
+    		if (oldResult != null) {     // GID was already there
+    			if (oldResult.score < result.score) {   // ...but with smallest score: substitute it!
     				results.add(result);
     				sortedResults.remove(oldResult);
     				sortedResults.add(result);
     				deletions.add(oldResult);
     				additions.add(result);
     			}
-    		} else if (sortedResults.size() < maxResults) {
+    		} else if (sortedResults.size() < maxResults) { // New GID, not enough results: add in all cases
     			results.add(result);
     			sortedResults.add(result);
 				additions.add(result);
-    		} else if (result.score > sortedResults.last().score) {
+    		} else if (result.score > sortedResults.last().score) { // New GID, already have results: substitute to bottommost, if better
     			final Result last = sortedResults.last();
     			results.remove(last);
     			sortedResults.remove(last);
@@ -106,7 +121,6 @@ public class SearchEngineTopKProcessor extends SubmissionPublisher<SearchEngineT
 
     @Override
     public void onComplete() {
-        submit(new Update(sortedResults.toArray(EMPTY_RESULT_ARRAY), EMPTY_RESULT_ARRAY, EMPTY_RESULT_ARRAY));
         close();
     }
 }
