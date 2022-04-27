@@ -642,9 +642,10 @@ public class SearchEngine implements AutoCloseable {
 	 * @param gid the global ID of a callable.
 	 * @param maxResults the maximum number of results returned.
 	 * @param publisher a publisher for the intermediate result updates.
+	 * @return a future controlling the completion of the search.
 	 */
-	private void toCallable(final long gid, final int maxResults, final SubmissionPublisher<SortedSet<Result>> publisher) throws RocksDBException {
-		toCallable(gid, predicateFilters.stream().reduce(x -> true, LongPredicate::and), maxResults, publisher);
+	private Future<Void> toCallable(final long gid, final int maxResults, final SubmissionPublisher<SortedSet<Result>> publisher) throws RocksDBException {
+		return toCallable(gid, predicateFilters.stream().reduce(x -> true, LongPredicate::and), maxResults, publisher);
 	}
 
 	/**
@@ -655,9 +656,10 @@ public class SearchEngine implements AutoCloseable {
 	 * @param gid the global ID of a callable.
 	 * @param maxResults the maximum number of results returned.
 	 * @param publisher a publisher for the intermediate result updates.
+	 * @return a future controlling the completion of the search.
 	 */
-	public void toCallable(final long gid, final LongPredicate filter, final int maxResults, final SubmissionPublisher<SortedSet<Result>> publisher) throws RocksDBException {
-		to(Util.getRevision(gid, context), LongSets.singleton(gid), filter, maxResults, publisher);
+	public Future<Void> toCallable(final long gid, final LongPredicate filter, final int maxResults, final SubmissionPublisher<SortedSet<Result>> publisher) throws RocksDBException {
+		return to(Util.getRevision(gid, context), LongSets.singleton(gid), filter, maxResults, publisher);
 	}
 
 	/**
@@ -667,9 +669,10 @@ public class SearchEngine implements AutoCloseable {
 	 * @param revisionUri a FASTEN URI specifying a revision.
 	 * @param maxResults the maximum number of results returned.
 	 * @param publisher a publisher for the intermediate result updates.
+	 * @return a future controlling the completion of the search.
 	 */
-	private void toRevision(final FastenURI revisionUri, final int maxResults, final SubmissionPublisher<SortedSet<Result>> publisher) throws RocksDBException {
-		toRevision(revisionUri, predicateFilters.stream().reduce(x -> true, LongPredicate::and), maxResults, publisher);
+	private Future<Void> toRevision(final FastenURI revisionUri, final int maxResults, final SubmissionPublisher<SortedSet<Result>> publisher) throws RocksDBException {
+		return toRevision(revisionUri, predicateFilters.stream().reduce(x -> true, LongPredicate::and), maxResults, publisher);
 	}
 
 	/**
@@ -680,12 +683,13 @@ public class SearchEngine implements AutoCloseable {
 	 * @param filter a {@link LongPredicate} that will be used to filter callables.
 	 * @param maxResults the maximum number of results returned.
 	 * @param publisher a publisher for the intermediate result updates.
+	 * @return a future controlling the completion of the search.
 	 */
-	public void toRevision(final FastenURI revisionUri, final LongPredicate filter, final int maxResults, final SubmissionPublisher<SortedSet<Result>> publisher) throws RocksDBException {
+	public Future<Void> toRevision(final FastenURI revisionUri, final LongPredicate filter, final int maxResults, final SubmissionPublisher<SortedSet<Result>> publisher) throws RocksDBException {
 		// Fetch revision id
 		final long rev = Util.getRevisionId(revisionUri, context);
 		if (rev == -1) throw new IllegalArgumentException("Unknown revision " + revisionUri);
-		to(rev, null, filter, maxResults, publisher);
+		return to(rev, null, filter, maxResults, publisher);
 	}
 
 	/**
@@ -697,8 +701,9 @@ public class SearchEngine implements AutoCloseable {
 	 *            entire set of GIDs of the specified revision will be used as a seed.
 	 * @param filter a {@link LongPredicate} that will be used to filter callables.
 	 * @param maxResults the maximum number of results returned.
+	 * @return a future controlling the completion of the search.
 	 */
-	public void to(final long revId, LongCollection providedSeed, final LongPredicate filter, final int maxResults, final SubmissionPublisher<SortedSet<Result>> publisher) throws RocksDBException {
+	public Future<Void> to(final long revId, LongCollection providedSeed, final LongPredicate filter, final int maxResults, final SubmissionPublisher<SortedSet<Result>> publisher) throws RocksDBException {
 		throwables.clear();
 		if (blacklist.contains(revId)) throw new NoSuchElementException("Revision " + revId + " is blacklisted");
 		final var graph = rocksDao.getGraphData(revId);
@@ -788,21 +793,29 @@ public class SearchEngine implements AutoCloseable {
 			}
 		});
 
-		try {
-			pipeline.get();			
-			for(int i = 0; i < numberOfThreads; i++) executorCompletionService.take().get();
-		} catch (final InterruptedException e) {
-			throw new RuntimeException(e);
-		} catch (final ExecutionException e) {
-			final Throwable cause = e.getCause();
-			throw new RuntimeException(cause);
-		} finally {
-			executorService.shutdown();
-		}
-
+		final ExecutorService singleThreadExecutor = Executors.newSingleThreadExecutor();
 		
-		LOGGER.debug("Found " + trueDependents + " true dependents");
-		publisher.close();
+		final Future<Void> result = singleThreadExecutor.submit(() -> {
+			try {
+				pipeline.get();			
+				for(int i = 0; i < numberOfThreads; i++) executorCompletionService.take().get();
+			} catch (final InterruptedException e) {
+				throw new RuntimeException(e);
+			} catch (final ExecutionException e) {
+				final Throwable cause = e.getCause();
+				throw new RuntimeException(cause);
+			} finally {
+				executorService.shutdown();
+				LOGGER.debug("Found " + trueDependents + " true dependents");
+				publisher.close();
+			}
+			
+			return null;
+		});
+		
+		singleThreadExecutor.shutdown();
+
+		return result;
 	}
 
 
