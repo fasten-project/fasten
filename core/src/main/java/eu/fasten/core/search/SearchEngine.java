@@ -72,6 +72,7 @@ import eu.fasten.core.search.predicate.CachingPredicateFactory;
 import eu.fasten.core.search.predicate.PredicateFactory;
 import eu.fasten.core.search.predicate.PredicateFactory.MetadataSource;
 import it.unimi.dsi.fastutil.HashCommon;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.io.TextIO;
 import it.unimi.dsi.fastutil.longs.LongArrayFIFOQueue;
 import it.unimi.dsi.fastutil.longs.LongCollection;
@@ -265,12 +266,17 @@ public class SearchEngine implements AutoCloseable {
 		visitedArcs.set(0);
 	}
 
+
+	private int nextFutureId;
+	private final Int2ObjectOpenHashMap<Future<Void>> id2Future = new Int2ObjectOpenHashMap<>();
+	private final Int2ObjectOpenHashMap<WaitOnTerminateFutureSubscriber<Update>> id2Subscriber = new Int2ObjectOpenHashMap<>();
+
 	/**
 	 * Executes a given command.
 	 *
 	 * @param command the command.
 	 */
-	private void executeCommand(final String command) {
+	private void executeCommand(final String command) throws InterruptedException, ExecutionException {
 		final String[] commandAndArgs = command.split("\\s"); // Split command on whitespace
 		final String help = "\t$help                           Help on commands\n" + "\t$clear                          Clear filters\n" + "\t$f ?                            Print the current filter\n" + "\t$f pmatches <REGEXP>            Add filter: package (a.k.a. product) matches <REGEXP>\n" + "\t$f vmatches <REGEXP>            Add filter: version matches <REGEXP>\n" + "\t$f xmatches <REGEXP>            Add filter: path (namespace + entity) matches <REGEXP>\n" + "\t$f cmd <KEY> [<REGEXP>]         Add filter: callable metadata contains key <KEY> (satisfying <REGEXP>)\n" + "\t$f mmd <KEY> [<REGEXP>]         Add filter: module metadata contains key <KEY> (satisfying <REGEXP>)\n" + "\t$f pmd <KEY> [<REGEXP>]         Add filter: package+version metadata contains key <KEY> (satisfying <REGEXP>)\n" + "\t$f cmdjp <JP> <REGEXP>          Add filter: callable metadata queried with the JSONPointer <JP> has a value satisfying <REGEXP>\n" + "\t$f mmdjp <JP> <REGEXP>          Add filter: module metadata queried with the JSONPointer <JP> has a value satisfying <REGEXP>\n" + "\t$f pmdjp <JP> <REGEXP>          Add filter: package+version metadata queried with the JSONPointer <JP> has a value satisfying <REGEXP>\n" + "\t$or                             The last two filters are substituted by their disjunction (or)\n" + "\t$and                            The last two filters are substituted by their conjunction (and)\n" + "\t$not                            The last filter is substituted by its negation (not)\n" + "\t$limit <LIMIT>                  Print at most <LIMIT> results (-1 for infinity)\n" + "\t$maxDependents <LIMIT>          Maximum number of dependents considered in coreachable query resolution (-1 for infinity)" + "\t±<URI>                          Find reachable (+) or coreachable (-) callables from the given callable <URI> satisfying all filters\n" + "";
 		try {
@@ -292,6 +298,23 @@ public class SearchEngine implements AutoCloseable {
 			case "clear":
 				predicateFilters.clear();
 				predicateFiltersSpec.clear();
+				break;
+
+			case "show":
+				System.out.println(id2Future.keySet());
+				break;
+
+			case "wait":
+				final int id = Integer.parseInt(commandAndArgs[1]);
+				Future<Void> future = id2Future.get(id);
+				if (future == null) System.err.println("No such search ID");
+				else {
+					future.get();
+					final var r = id2Subscriber.get(id).get().current;
+					for (int i = 0; i < Math.min(limit, r.length); i++) System.out.println(r[i].gid + "\t" + Util.getCallableName(r[i].gid, context) + "\t" + r[i].score);
+					id2Future.remove(id);
+					id2Subscriber.remove(id);
+				}
 				break;
 
 			case "f":
@@ -794,6 +817,8 @@ public class SearchEngine implements AutoCloseable {
 			}
 		}));
 
+		executorService.shutdown();
+
 		final ExecutorService singleThreadExecutor = Executors.newSingleThreadExecutor();
 		
 		final Future<Void> result = singleThreadExecutor.submit(() -> {
@@ -810,7 +835,6 @@ public class SearchEngine implements AutoCloseable {
 				final Throwable cause = e.getCause();
 				throw new RuntimeException(cause);
 			} finally {
-				executorService.shutdown();
 				LOGGER.debug("Found " + trueDependents + " true dependents");
 				publisher.close();
 			}
@@ -852,7 +876,7 @@ public class SearchEngine implements AutoCloseable {
 		if (jsapResult.userSpecified("blacklist")) TextIO.asLongIterator(new BufferedReader(new InputStreamReader(new FileInputStream(jsapResult.getString("blacklist")), StandardCharsets.US_ASCII))).forEachRemaining(x -> blacklist.add(x));
 		
 		try (SearchEngine searchEngine = new SearchEngine(jdbcURI, database, rocksDb, cacheDir, resolverGraph, null, blacklist)) {
-
+			
 			final DSLContext context = searchEngine.context;
 			context.settings().withParseUnknownFunctions(ParseUnknownFunctions.IGNORE);
 
@@ -892,20 +916,32 @@ public class SearchEngine implements AutoCloseable {
 					
 					final Result[] r;
 					if (uri.getPath() == null) {
-						if (dir == '+') searchEngine.fromRevision(uri, searchEngine.limit, publisher);
-						else searchEngine.toRevision(uri, searchEngine.limit, publisher);
-						r = futureSubscriber.get().current;
-						for (int i = 0; i < Math.min(searchEngine.limit, r.length); i++) System.out.println(r[i].gid + "\t" + Util.getCallableName(r[i].gid, context) + "\t" + r[i].score);
+						if (dir == '+') {
+							searchEngine.fromRevision(uri, searchEngine.limit, publisher);
+							r = futureSubscriber.get().current;
+							for (int i = 0; i < Math.min(searchEngine.limit, r.length); i++) System.out.println(r[i].gid + "\t" + Util.getCallableName(r[i].gid, context) + "\t" + r[i].score);
+						}
+						else {
+							final int id = searchEngine.nextFutureId++;
+							searchEngine.id2Future.put(searchEngine.nextFutureId++, searchEngine.toRevision(uri, searchEngine.limit, publisher));
+							searchEngine.id2Subscriber.put(id, futureSubscriber);
+						}
 					} else {
 						final long gid = Util.getCallableGID(uri, context);
 						if (gid == -1) {
 							System.err.println("Unknown URI " + uri);
 							continue;
 						}
-						if (dir == '+') searchEngine.fromCallable(gid, searchEngine.limit, publisher);
-						else searchEngine.toCallable(gid, searchEngine.limit, publisher);
-						r = futureSubscriber.get().current;
-						for (int i = 0; i < Math.min(searchEngine.limit, r.length); i++) System.out.println(r[i].gid + "\t" + Util.getCallableName(r[i].gid, context) + "\t" + r[i].score);
+						if (dir == '+') {
+							searchEngine.fromCallable(gid, searchEngine.limit, publisher);
+							r = futureSubscriber.get().current;
+							for (int i = 0; i < Math.min(searchEngine.limit, r.length); i++) System.out.println(r[i].gid + "\t" + Util.getCallableName(r[i].gid, context) + "\t" + r[i].score);
+						}
+						else {
+							final int id = searchEngine.nextFutureId++;
+							searchEngine.id2Future.put(id, searchEngine.toCallable(gid, searchEngine.limit, publisher));
+							searchEngine.id2Subscriber.put(id, futureSubscriber);
+						}
 					}
 
 					for (final var t : searchEngine.throwables) {
