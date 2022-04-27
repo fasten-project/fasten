@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package eu.fasten.core.search;
+package eu.fasten.core.search.tool;
 
 import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -43,6 +43,8 @@ import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
 import eu.fasten.core.dbconnectors.PostgresConnector;
 import eu.fasten.core.maven.GraphMavenResolver;
 import eu.fasten.core.maven.data.Revision;
+import eu.fasten.core.search.Scorer;
+import eu.fasten.core.search.TrivialScorer;
 import eu.fasten.core.search.predicate.CachingPredicateFactory;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.lang.ObjectParser;

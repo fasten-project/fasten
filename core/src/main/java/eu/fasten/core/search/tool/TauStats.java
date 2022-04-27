@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package eu.fasten.core.search;
+package eu.fasten.core.search.tool;
 
 import java.io.FileOutputStream;
 import java.io.PrintStream;
@@ -48,6 +48,7 @@ import eu.fasten.core.dbconnectors.PostgresConnector;
 import eu.fasten.core.maven.GraphMavenResolver;
 import eu.fasten.core.maven.data.Revision;
 import eu.fasten.core.merge.CGMerger;
+import eu.fasten.core.search.PersistentCache;
 import eu.fasten.core.search.PersistentCache.RocksDBData;
 import eu.fasten.core.search.predicate.CachingPredicateFactory;
 import it.unimi.dsi.fastutil.doubles.DoubleArrayList;

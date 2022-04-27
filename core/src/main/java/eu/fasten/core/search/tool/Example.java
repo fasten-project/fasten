@@ -1,4 +1,4 @@
-package eu.fasten.core.search;
+package eu.fasten.core.search.tool;
 
 import java.util.Set;
 
