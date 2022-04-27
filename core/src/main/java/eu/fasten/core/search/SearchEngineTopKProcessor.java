@@ -73,6 +73,7 @@ public class SearchEngineTopKProcessor extends SubmissionPublisher<SearchEngineT
 
     		if (oldResult != null) {
     			if (oldResult.score < result.score) {
+    				results.remove(oldResult);
     				results.add(result);
     				sortedResults.remove(oldResult);
     				sortedResults.add(result);
