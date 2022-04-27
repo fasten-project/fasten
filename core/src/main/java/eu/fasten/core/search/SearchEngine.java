@@ -626,7 +626,7 @@ public class SearchEngine implements AutoCloseable {
 
 		LOGGER.debug("Stiched graph has " + stitchedGraph.numNodes() + " nodes");
 
-		final ObjectRBTreeSet<Result> results = bfs(stitchedGraph, true, seed, filter, scorer, maxResults);
+		final ObjectRBTreeSet<Result> results = bfs(stitchedGraph, true, seed, filter, scorer, maxResults, visitTime, visitedArcs);
 		
 		LOGGER.debug("Found " + results.size() + " reachable nodes");
 
@@ -783,7 +783,7 @@ public class SearchEngine implements AutoCloseable {
 
 				LOGGER.debug("Stiched graph has " + stitchedGraph.numNodes() + " nodes");
 
-				publisher.submit(bfs(stitchedGraph, false, seed, filter, scorer, maxResults));
+				publisher.submit(bfs(stitchedGraph, false, seed, filter, scorer, maxResults, visitTime, visitedArcs));
 			}
 		});
 
