@@ -3,6 +3,8 @@ package eu.fasten.core.search;
 import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.util.concurrent.atomic.AtomicLong;
+
 import org.junit.jupiter.api.Test;
 
 import eu.fasten.core.data.ArrayImmutableDirectedGraph;
@@ -26,7 +28,9 @@ public class SearchEngineTest {
 		builder.addArc(3, 4);
 		builder.addArc(4, 1);
 		final ArrayImmutableDirectedGraph graph = builder.build();
-    	final ObjectRBTreeSet<Result> results = SearchEngine.bfs(graph, true, LongList.of(1), x -> true, TrivialScorer.getInstance(), 100);
+		final AtomicLong visitTime = new AtomicLong();
+		final AtomicLong visitedArcs = new AtomicLong();
+    	final ObjectRBTreeSet<Result> results = SearchEngine.bfs(graph, true, LongList.of(1), x -> true, TrivialScorer.getInstance(), 100, visitTime, visitedArcs);
 		// #node #indegree #outdegree #distance (from 1)
 		// 1 2 2 0
 		// 2 1 1 1
