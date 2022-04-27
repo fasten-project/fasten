@@ -78,13 +78,13 @@ final class WaitOnTerminateFutureSubscriber<T> implements Flow.Subscriber<T>, Fu
 
 	@Override
 	public synchronized T get() throws InterruptedException, ExecutionException {
-		while( ! done) wait();
+		while (!done) wait();
 		return last;
 	}
 
 	@Override
 	public synchronized T get(long timeout, TimeUnit unit) throws InterruptedException, ExecutionException, TimeoutException {
-		if ( ! done) wait(unit.toMillis(timeout));
+		if (!done) wait(unit.toMillis(timeout));
 		return last;
 	}
 

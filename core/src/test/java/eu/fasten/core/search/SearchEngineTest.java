@@ -3,15 +3,22 @@ package eu.fasten.core.search;
 import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.util.Arrays;
+import java.util.Random;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.jupiter.api.Test;
 
 import eu.fasten.core.data.ArrayImmutableDirectedGraph;
 import eu.fasten.core.search.SearchEngine.Result;
+import eu.fasten.core.search.SearchEngineTopKProcessor.Update;
 import it.unimi.dsi.bits.Fast;
 import it.unimi.dsi.fastutil.longs.Long2DoubleOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongList;
+import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
+import it.unimi.dsi.fastutil.longs.LongSet;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectRBTreeSet;
 
 public class SearchEngineTest {
@@ -49,6 +56,42 @@ public class SearchEngineTest {
 			assertTrue(node2score.containsKey(r.gid));
 			assertEquals(node2score.get(r.gid), r.score);
 		}
+    }
+    
+    @Test
+    void testSearchEngineTopKProcessor() throws InterruptedException, ExecutionException {
+    	final ObjectArrayList<Result> all = new ObjectArrayList<>();
+    	final Random random = new Random(0);
+    	final int n = 100;
+    	final int maxResults = 10;
+    	LongSet gids = new LongOpenHashSet();
+
+    	for (int i = 0; i < n; i++) all.add(new Result(random.nextInt(100), random.nextInt(100)));
+    	
+    	SearchEngineTopKProcessor processor = new SearchEngineTopKProcessor(maxResults);
+    	final WaitOnTerminateFutureSubscriber<Update> futureSubscriber = new WaitOnTerminateFutureSubscriber<>();
+    	processor.subscribe(futureSubscriber);
+    	
+    	for (int first = 0; first < n; ) {
+    		int k = first + 1 + random.nextInt(n - first);
+    		while (all.subList(first, k).stream().map(x->x.gid).distinct().count() < k - first) k--;
+    		processor.onNext(new ObjectRBTreeSet<>(all.subList(first, k)));
+    		first = k;
+    	}
+    	processor.close();
+    	
+    	Result[] allArray = all.toArray(new Result[0]);
+    	Arrays.sort(allArray);
+    	Result[] actual = futureSubscriber.get().current;
+    	
+    	int i, j;
+    	for (i = j = 0; i < allArray.length && j < maxResults; i++) {
+    		if (gids.contains(allArray[i].gid)) continue;
+    		assertEquals(allArray[i].gid, actual[j].gid);
+    		assertEquals(allArray[i].score, actual[j].score);
+    		j++;
+    	}
+    	assertEquals(actual.length, j);	
     }
 
 
