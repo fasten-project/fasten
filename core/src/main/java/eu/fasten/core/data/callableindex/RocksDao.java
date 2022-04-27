@@ -136,7 +136,7 @@ public class RocksDao implements Closeable, Iterable<byte[]> {
 			@Override
 			public byte[] next() {
 				if (! hasNext()) throw new NoSuchElementException();
-				byte[] result = i.key();
+				byte[] result = i.key().clone();
 				i.next();
 				return result;
 			}
