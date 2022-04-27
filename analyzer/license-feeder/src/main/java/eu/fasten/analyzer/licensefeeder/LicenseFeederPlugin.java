@@ -151,7 +151,7 @@ public class LicenseFeederPlugin extends Plugin {
                         (file.has("licenses") ? file.getJSONArray("licenses").length() : "no") + " licenses.");
                 if (file.has("path") && file.has("licenses")) {
                     String path = file.getString("path");
-                    path = path.replace(sourcePath+"/","");
+                    //path = path.replace(sourcePath+"/","");
                     //logger.info("path before to insertFileLicenses:");
                     //logger.info(path);
                     JSONArray FileLicenses = file.getJSONArray("licenses");
