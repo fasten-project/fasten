@@ -407,9 +407,9 @@ public class GraphMavenResolver implements Runnable {
      * provided timestamp determines which nodes will be ignored when traversing dependent nodes. Effectively, the
      * returned dependent set only includes nodes that where released AFTER the provided timestamp.
      */
-    public Future<?> resolveDependentsPipeline(String groupId, String artifactId, String version, final BlockingQueue<Revision> result, long timestamp,
+    public Future<?> resolveDependentsPipeline(String groupId, String artifactId, String version, final BlockingQueue<Revision> pipeline, long timestamp,
                                                                boolean transitive, long maxDeps, int numberOfThreads) {
-        return dependentBFSPipeline(groupId, artifactId, version, result, timestamp, transitive, maxDeps, numberOfThreads);
+        return dependentBFSPipeline(groupId, artifactId, version, pipeline, timestamp, transitive, maxDeps, numberOfThreads);
     }
 
     /**
@@ -417,8 +417,8 @@ public class GraphMavenResolver implements Runnable {
      * used to determine which nodes will be ignored when traversing dependent nodes. Effectively, the returned
      * dependent set only includes nodes that where released AFTER the provided revision.
      */
-    public Future<?> resolveDependentsPipeline(Revision r, final BlockingQueue<Revision> result, boolean transitive, long maxDeps, int numberOfThreads) {
-        return dependentBFSPipeline(r.groupId, r.artifactId, r.version.toString(), result, r.createdAt.getTime(), transitive, maxDeps, numberOfThreads);
+    public Future<?> resolveDependentsPipeline(Revision r, final BlockingQueue<Revision> pipeline, boolean transitive, long maxDeps, int numberOfThreads) {
+        return dependentBFSPipeline(r.groupId, r.artifactId, r.version.toString(), pipeline, r.createdAt.getTime(), transitive, maxDeps, numberOfThreads);
     }
 
     /**
@@ -429,7 +429,7 @@ public class GraphMavenResolver implements Runnable {
      * @param transitive - Whether the BFS should recurse into the graph
      * @param numberOfThreads 
      */
-    public Future<?> dependentBFSPipeline(String groupId, String artifactId, String version, final BlockingQueue<Revision> result, long timestamp,
+    public Future<?> dependentBFSPipeline(String groupId, String artifactId, String version, final BlockingQueue<Revision> pipeline, long timestamp,
                                                           boolean transitive, final long maxDeps, int numberOfThreads) {
         var artifact = new Revision(groupId, artifactId, version, new Timestamp(timestamp));
 
@@ -448,7 +448,7 @@ public class GraphMavenResolver implements Runnable {
 					var rev = workQueue.dequeue();
 					if (!dependentGraph.containsVertex(rev)) continue; // Ignore missing revisions
 					try {
-						result.put(rev);
+						pipeline.put(rev);
 						if (countDown-- == 0) return;
 					} catch (InterruptedException cancelled) {
 						return;
@@ -461,10 +461,8 @@ public class GraphMavenResolver implements Runnable {
 				} 
 			} finally {
 				try {
-					for (int i = 0; i < numberOfThreads; i++) result.put(END);
-				} catch (InterruptedException cancelled) {
-					return;
-				}
+					for (int i = 0; i < numberOfThreads; i++) pipeline.add(END);
+				} catch (IllegalStateException pipelineIsFull) {}
 			}
 		});
         singleThreadExecutor.shutdown();
