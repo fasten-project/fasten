@@ -449,18 +449,22 @@ public class GraphMavenResolver implements Runnable {
 					if (!dependentGraph.containsVertex(rev)) continue; // Ignore missing revisions
 					try {
 						result.put(rev);
-						if (countDown-- == 0) break;
-					} catch (InterruptedException cantHappen) {}
+						if (countDown-- == 0) return;
+					} catch (InterruptedException cancelled) {
+						return;
+					}
 
 					filterDependentsByTimestamp(StreamSupport.stream(dependentGraph.iterables().outgoingEdgesOf(rev).spliterator(), false).map(edge -> dependentGraph.getEdgeTarget(edge)), timestamp).forEach(dependent -> {
 						if (seen.add(dependent.id)) workQueue.enqueue(dependent);
 					});
-					if (!transitive) break;
+					if (!transitive) return;
 				} 
 			} finally {
 				try {
 					for (int i = 0; i < numberOfThreads; i++) result.put(END);
-				} catch (InterruptedException cantHappen) {}
+				} catch (InterruptedException cancelled) {
+					return;
+				}
 			}
 		});
         singleThreadExecutor.shutdown();
