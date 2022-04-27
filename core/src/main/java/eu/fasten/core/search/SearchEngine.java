@@ -721,7 +721,7 @@ public class SearchEngine implements AutoCloseable {
 
 		final ExecutorService executorService = Executors.newFixedThreadPool(numberOfThreads);
 		final ExecutorCompletionService<Void> executorCompletionService = new ExecutorCompletionService<>(executorService);
-		final ArrayList<Future> futures = new ArrayList<>();
+		final ArrayList<Future<Void>> futures = new ArrayList<>();
 		AtomicLong trueDependents = new AtomicLong(0);
 
 		for(int i = 0; i < numberOfThreads; i++) futures.add(executorCompletionService.submit(() -> {
@@ -799,12 +799,12 @@ public class SearchEngine implements AutoCloseable {
 		final Future<Void> result = singleThreadExecutor.submit(() -> {
 			int i = 0;
 			try {
-				pipeline.get();			
+				pipeline.get();
 				for(; i < numberOfThreads; i++) executorCompletionService.take();
 			} catch (final InterruptedException canceled) {
 				pipeline.cancel(true);
-				pipeline.get();
 				for(var future: futures) future.cancel(true);
+				pipeline.get();
 				for(; i < numberOfThreads; i++) executorCompletionService.take();
 			} catch (final ExecutionException e) {
 				final Throwable cause = e.getCause();
