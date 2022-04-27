@@ -95,7 +95,7 @@ public class SearchEngineTopKProcessor extends SubmissionPublisher<SearchEngineT
     		}
     	}
     	
-    	submit(new Update(results.toArray(EMPTY_RESULT_ARRAY), additions.toArray(EMPTY_RESULT_ARRAY), deletions.toArray(EMPTY_RESULT_ARRAY)));
+    	submit(new Update(sortedResults.toArray(EMPTY_RESULT_ARRAY), additions.toArray(EMPTY_RESULT_ARRAY), deletions.toArray(EMPTY_RESULT_ARRAY)));
     }
 
 
@@ -106,7 +106,7 @@ public class SearchEngineTopKProcessor extends SubmissionPublisher<SearchEngineT
 
     @Override
     public void onComplete() {
-        submit(new Update(results.toArray(EMPTY_RESULT_ARRAY), EMPTY_RESULT_ARRAY, EMPTY_RESULT_ARRAY));
+        submit(new Update(sortedResults.toArray(EMPTY_RESULT_ARRAY), EMPTY_RESULT_ARRAY, EMPTY_RESULT_ARRAY));
         close();
     }
 }
