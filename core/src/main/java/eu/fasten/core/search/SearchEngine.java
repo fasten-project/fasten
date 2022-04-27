@@ -24,6 +24,7 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
@@ -194,14 +195,18 @@ public class SearchEngine implements AutoCloseable {
 	 */
 	private final ObjectArrayList<String> predicateFiltersSpec = new ObjectArrayList<>();
 
+	// Note that these will not work in case of concurrent access.
+	
 	/** Time spent during resolution (dependency and dependents). */
-	private long resolveTime;
+	public final AtomicLong resolveTime = new AtomicLong();
 	/** Time spent stitching graphs (mergeWithCHA()). */
-	private long stitchingTime;
+	public final AtomicLong mergeTime = new AtomicLong();
 	/** Time spent during {@linkplain #bfs visits}. */
-	private long visitTime;
+	public final AtomicLong visitTime = new AtomicLong();
+	/** The number of overall visited arcs. */
+	public final AtomicLong visitedArcs = new AtomicLong();
 	/** Throwables thrown by mergeWithCHA(). */
-	private final List<Throwable> throwables = new ArrayList<>();
+	private final List<Throwable> throwables = Collections.synchronizedList(new ArrayList<>());
 
 	/**
 	 * Creates a new search engine using a given JDBC URI, database name and path to RocksDB.
@@ -248,6 +253,16 @@ public class SearchEngine implements AutoCloseable {
 		resolver.setIgnoreMissing(true);
 		this.predicateFactory = new CachingPredicateFactory(context);
 		this.revisionCache = new RevisionCache(rocksDao);
+	}
+
+	/**
+	 * Resets counters and timers that measure visit speed.
+	 */
+	public void resetCounters() {
+		mergeTime.set(0);
+		visitTime.set(0);
+		resolveTime.set(0);
+		visitedArcs.set(0);
 	}
 
 	/**
@@ -397,15 +412,15 @@ public class SearchEngine implements AutoCloseable {
 	}
 
 	/**
-	 * Use the given {@link CGMerger} to get the stitched graph for the given revision.
+	 * Use the given {@link CGMerger} to get the merged graph for the given revision.
 	 *
 	 * @param dm the {@link CGMerger} to be used.
 	 * @param id the database identifier of a revision.
-	 * @return the stitched graph for the revision with database identifier {@code id}, or {@code null}
+	 * @return the merged graph for the revision with database identifier {@code id}, or {@code null}
 	 *         if {@link CGMerger#mergeWithCHA(long)} returns {@code null} (usually because the provided
 	 *         artifact is not present in the graph database).
 	 */
-	private DirectedGraph getStitchedGraph(final CGMerger dm, final long id) {
+	private DirectedGraph getMergedGraph(final CGMerger dm, final long id) {
 		final DirectedGraph result = dm.mergeAllDeps();
 		if (result != null) {
 			LOGGER.info("Graph id: " + id + " stitched graph nodes: " + result.numNodes() + " stitched graph arcs: " + result.numArcs());
@@ -430,7 +445,7 @@ public class SearchEngine implements AutoCloseable {
 	 * will replace results with a lower score if the {@code maxResults} threshold is exceeded.
 	 * @return 
 	 */
-	protected static ObjectRBTreeSet<Result> bfs(final DirectedGraph graph, final boolean forward, final LongCollection seed, final LongPredicate filter, final Scorer scorer, final int maxResults) {
+	protected ObjectRBTreeSet<Result> bfs(final DirectedGraph graph, final boolean forward, final LongCollection seed, final LongPredicate filter, final Scorer scorer, final int maxResults) {
 		final LongSet nodes = graph.nodes();
 		final LongArrayFIFOQueue visitQueue = new LongArrayFIFOQueue(seed.size());
 		final LongOpenHashSet seen = new LongOpenHashSet(graph.numNodes(), 0.5f);
@@ -444,8 +459,10 @@ public class SearchEngine implements AutoCloseable {
 
 		if (visitQueue.isEmpty()) return results;
 		
+		final long start = -System.nanoTime();
+		
 		int d = -1;
-		long sentinel = visitQueue.firstLong();
+		long sentinel = visitQueue.firstLong(), visitedArcs = 0;
 
 		while (!visitQueue.isEmpty()) {
 			final long gid = visitQueue.dequeueLong();
@@ -466,13 +483,16 @@ public class SearchEngine implements AutoCloseable {
 
 			while (iterator.hasNext()) {
 				final long x = iterator.nextLong();
+				visitedArcs++;
 				if (seen.add(x)) {
 					if (sentinel == -1) sentinel = x;
 					visitQueue.enqueue(x);
 				}
 			}
 		}
-		
+	
+		visitTime.addAndGet(start + System.nanoTime());
+		this.visitedArcs.addAndGet(visitedArcs);
 		return results;
 	}
 
@@ -546,6 +566,7 @@ public class SearchEngine implements AutoCloseable {
 	 * @return a list of {@linkplain Result results}.
 	 */
 	public void from(final long rev, LongCollection seed, final LongPredicate filter, final int maxResults, final SubmissionPublisher<SortedSet<Result>> publisher) throws RocksDBException {
+		throwables.clear();
 		if (blacklist.contains(rev)) throw new NoSuchElementException("Revision " + rev + " is blacklisted");
 		final var graph = rocksDao.getGraphData(rev);
 		if (graph == null) throw new NoSuchElementException("Revision associated with callable missing from the graph database");
@@ -566,11 +587,11 @@ public class SearchEngine implements AutoCloseable {
 
 			final LongLinkedOpenHashSet dependencyIds; 
 			if (depFromCache == null) {
-				resolveTime -= System.nanoTime();
+				final long start = -System.nanoTime();
 				final Set<Revision> dependencySet = resolver.resolveDependencies(groupId, artifactId, version, -1, context, true);
 				dependencyIds = LongLinkedOpenHashSet.toSet(dependencySet.stream().mapToLong(x -> x.id));
 				dependencyIds.addAndMoveToFirst(rev);
-				resolveTime += System.nanoTime();
+				resolveTime.addAndGet(start + System.nanoTime());
 				cache.putDeps(rev, dependencyIds);
 			}
 			else dependencyIds = depFromCache;
@@ -580,10 +601,16 @@ public class SearchEngine implements AutoCloseable {
 			for(LongIterator iterator =  dependencyIds.iterator(); iterator.hasNext();) 
 				if (!revisionCache.contains(iterator.nextLong())) iterator.remove();
 			
-			stitchingTime -= System.nanoTime();
+			final long start = -System.nanoTime();
 			final var dm = new CGMerger(dependencyIds, context, rocksDao);
-			stitchedGraph = getStitchedGraph(dm, rev);
-			stitchingTime += System.nanoTime();
+
+			try {
+				stitchedGraph = getMergedGraph(dm, rev);
+			} catch (final Throwable t) {
+				throwables.add(t);
+				LOGGER.error("mergeWithCHA threw an exception", t);
+			}
+			mergeTime.addAndGet(start + System.nanoTime());
 
 			if (stitchedGraph == null) {
 				cache.putMerged(rev, null);
@@ -597,10 +624,8 @@ public class SearchEngine implements AutoCloseable {
 
 		LOGGER.debug("Stiched graph has " + stitchedGraph.numNodes() + " nodes");
 
-		visitTime -= System.nanoTime();
 		final ObjectRBTreeSet<Result> results = bfs(stitchedGraph, true, seed, filter, scorer, maxResults);
-		visitTime += System.nanoTime();
-
+		
 		LOGGER.debug("Found " + results.size() + " reachable nodes");
 
 		publisher.submit(results);
@@ -712,11 +737,11 @@ public class SearchEngine implements AutoCloseable {
 
 					final LongLinkedOpenHashSet dependencyIds;
 					if (depFromCache == null) {
-						resolveTime -= System.nanoTime();
+						final long start = -System.nanoTime();
 						final Set<Revision> dependencySet = resolver.resolveDependencies(dependent.groupId, dependent.artifactId, dependent.version.toString(), -1, context, true);
 						dependencyIds = LongLinkedOpenHashSet.toSet(dependencySet.stream().mapToLong(x -> x.id));
 						dependencyIds.addAndMoveToFirst(dependentId);
-						resolveTime += System.nanoTime();
+						resolveTime.addAndGet(start + System.nanoTime());
 						cache.putDeps(dependentId, dependencyIds);
 					} else dependencyIds = depFromCache;
 
@@ -733,16 +758,16 @@ public class SearchEngine implements AutoCloseable {
 					for(LongIterator iterator =  dependencyIds.iterator(); iterator.hasNext();) 
 						if (!revisionCache.contains(iterator.nextLong())) iterator.remove();
 
-					stitchingTime -= System.nanoTime();
+					final long start = -System.nanoTime();
 					final var dm = new CGMerger(dependencyIds, context, rocksDao);
 
 					try {
-						stitchedGraph = getStitchedGraph(dm, dependentId);
+						stitchedGraph = getMergedGraph(dm, dependentId);
 					} catch (final Throwable t) {
 						throwables.add(t);
 						LOGGER.error("mergeWithCHA threw an exception", t);
 					}
-					stitchingTime += System.nanoTime();
+					mergeTime.addAndGet(start + System.nanoTime());
 
 					if (stitchedGraph == null) {
 						cache.putMerged(dependentId, null);
@@ -756,9 +781,7 @@ public class SearchEngine implements AutoCloseable {
 
 				LOGGER.debug("Stiched graph has " + stitchedGraph.numNodes() + " nodes");
 
-				visitTime -= System.nanoTime();				
 				publisher.submit(bfs(stitchedGraph, false, seed, filter, scorer, maxResults));
-				visitTime += System.nanoTime();
 			}
 		});
 
@@ -834,8 +857,7 @@ public class SearchEngine implements AutoCloseable {
 					line = line.substring(1);
 					final FastenJavaURI uri = FastenJavaURI.create(line);
 
-					final long start = -System.nanoTime();
-					searchEngine.stitchingTime = searchEngine.resolveTime = searchEngine.visitTime = 0;
+					searchEngine.resetCounters();
 
 					SubmissionPublisher<SortedSet<Result>> publisher = new SubmissionPublisher<>();
 			    	SearchEngineTopKProcessor topKProcessor = new SearchEngineTopKProcessor(searchEngine.limit);
@@ -844,7 +866,9 @@ public class SearchEngine implements AutoCloseable {
 			    	final WaitOnTerminateFutureSubscriber<Update> futureSubscriber = new WaitOnTerminateFutureSubscriber<>();
 					
 					topKProcessor.subscribe(futureSubscriber);
-			    	
+
+					final long start = - System.nanoTime();
+					
 					final Result[] r;
 					if (uri.getPath() == null) {
 						if (dir == '+') searchEngine.fromRevision(uri, searchEngine.limit, publisher);
@@ -867,11 +891,13 @@ public class SearchEngine implements AutoCloseable {
 						System.err.println(t);
 						System.err.println("\t" + t.getStackTrace()[0]);
 					}
-					System.err.printf("\n%d results \nTotal time: %.3fs Resolve time: %.3fs Stitching time: %.3fs Visit time %.3fs\n", r.length, (System.nanoTime() + start) * 1E-9, searchEngine.resolveTime * 1E-9, searchEngine.stitchingTime * 1E-9, searchEngine.visitTime * 1E-9);
+					System.err.printf("\n%d results \nTotal time: %.3fs Resolve time: %.3fs Merge time: %.3fs Visit time %.3fs Visited arcs %d Arcs/s %.3fs\n", r.length, 
+							(start + System.nanoTime()) * 1E-9, searchEngine.resolveTime.get() * 1E-9, searchEngine.mergeTime.get() * 1E-9, searchEngine.visitTime.get() * 1E-9, searchEngine.visitedArcs.get(), (double)searchEngine.visitedArcs.get()/searchEngine.visitTime.get() );
 				} catch (final Exception e) {
 					e.printStackTrace();
 				}
 			}
 		}
 	}
+
 }

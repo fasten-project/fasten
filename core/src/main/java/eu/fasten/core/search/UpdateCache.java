@@ -112,14 +112,15 @@ public class UpdateCache {
 		ProgressLogger pl = new ProgressLogger(LOGGER);
 		pl.displayLocalSpeed = true;
 		pl.start();
-		boolean foundLast = false;
+		
 		for(byte[] key: update.rocksDao) {
 			final long gid = Longs.fromByteArray(key);
 			all++;
 			pl.update();
 			// We try to speed up the scan assuming enumeration happens always in the same order
-			if (gid == last[0]) foundLast = true;
-			//if (!foundLast) continue;
+			if (gid == last[0])
+			 {
+			}
 
 			if (blackList.contains(gid)) {
 				LOGGER.info("Skipping potential OOM caused by graph with gid " + gid);
