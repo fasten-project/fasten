@@ -449,7 +449,7 @@ public class SearchEngine implements AutoCloseable {
 	 */
 	protected static ObjectRBTreeSet<Result> bfs(final DirectedGraph graph, final boolean forward, final LongCollection seed, final LongPredicate filter, final Scorer scorer, final int maxResults, final AtomicLong globalVisitTime, final AtomicLong globalVisitedArcs) {
 		final LongSet nodes = graph.nodes();
-		final LongArrayFIFOQueue visitQueue = new LongArrayFIFOQueue(seed.size());
+		final LongArrayFIFOQueue visitQueue = new LongArrayFIFOQueue(graph.numNodes());
 		final LongOpenHashSet seen = new LongOpenHashSet(graph.numNodes(), 0.5f);
 		final ObjectRBTreeSet<Result> results = new ObjectRBTreeSet<>();
 		
