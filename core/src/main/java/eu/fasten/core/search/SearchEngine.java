@@ -280,7 +280,8 @@ public class SearchEngine implements AutoCloseable {
 		final String[] commandAndArgs = command.split("\\s"); // Split command on whitespace
 		final String help = "\t$help                           Help on commands\n" + "\t$clear                          Clear filters\n" + "\t$f ?                            Print the current filter\n" + "\t$f pmatches <REGEXP>            Add filter: package (a.k.a. product) matches <REGEXP>\n" + "\t$f vmatches <REGEXP>            Add filter: version matches <REGEXP>\n" + "\t$f xmatches <REGEXP>            Add filter: path (namespace + entity) matches <REGEXP>\n" + "\t$f cmd <KEY> [<REGEXP>]         Add filter: callable metadata contains key <KEY> (satisfying <REGEXP>)\n" + "\t$f mmd <KEY> [<REGEXP>]         Add filter: module metadata contains key <KEY> (satisfying <REGEXP>)\n" + "\t$f pmd <KEY> [<REGEXP>]         Add filter: package+version metadata contains key <KEY> (satisfying <REGEXP>)\n" + "\t$f cmdjp <JP> <REGEXP>          Add filter: callable metadata queried with the JSONPointer <JP> has a value satisfying <REGEXP>\n" + "\t$f mmdjp <JP> <REGEXP>          Add filter: module metadata queried with the JSONPointer <JP> has a value satisfying <REGEXP>\n" + "\t$f pmdjp <JP> <REGEXP>          Add filter: package+version metadata queried with the JSONPointer <JP> has a value satisfying <REGEXP>\n" + "\t$or                             The last two filters are substituted by their disjunction (or)\n" + "\t$and                            The last two filters are substituted by their conjunction (and)\n" + "\t$not                            The last filter is substituted by its negation (not)\n" + "\t$limit <LIMIT>                  Print at most <LIMIT> results (-1 for infinity)\n" + "\t$maxDependents <LIMIT>          Maximum number of dependents considered in coreachable query resolution (-1 for infinity)" + "\t±<URI>                          Find reachable (+) or coreachable (-) callables from the given callable <URI> satisfying all filters\n" + "";
 		try {
-			switch (commandAndArgs[0].toLowerCase()) {
+			final String verb = commandAndArgs[0].toLowerCase();
+			switch (command) {
 
 			case "help":
 				System.err.println(help);
@@ -305,15 +306,18 @@ public class SearchEngine implements AutoCloseable {
 				break;
 
 			case "wait":
+			case "cancel":
 				final int id = Integer.parseInt(commandAndArgs[1]);
 				Future<Void> future = id2Future.get(id);
 				if (future == null) System.err.println("No such search ID");
 				else {
-					future.get();
-					final var r = id2Subscriber.get(id).get().current;
-					for (int i = 0; i < Math.min(limit, r.length); i++) System.out.println(r[i].gid + "\t" + Util.getCallableName(r[i].gid, context) + "\t" + r[i].score);
-					id2Future.remove(id);
-					id2Subscriber.remove(id);
+					if ("wait".equals(verb)) {
+						future.get();
+						final var r = id2Subscriber.get(id).get().current;
+						for (int i = 0; i < Math.min(limit, r.length); i++) System.out.println(r[i].gid + "\t" + Util.getCallableName(r[i].gid, context) + "\t" + r[i].score);
+						id2Future.remove(id);
+						id2Subscriber.remove(id);
+					} else future.cancel(true);
 				}
 				break;
 
