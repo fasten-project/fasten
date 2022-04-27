@@ -443,9 +443,11 @@ public class SearchEngine implements AutoCloseable {
 	 * @param results a list of {@linkplain Result results} that will be filled during the visit.
 	 * @param maxResults the maximum number of results deposited in {@code results}; results with a higher score
 	 * will replace results with a lower score if the {@code maxResults} threshold is exceeded.
-	 * @return 
+	 * @param globalVisitTime an {@link AtomicLong} where the visit time in nanoseconds will be added.
+	 * @param globalVisitedArcs an {@link AtomicLong} where the number of visited arcs will be added.
+	 * @return an ordered set of scored results.
 	 */
-	protected ObjectRBTreeSet<Result> bfs(final DirectedGraph graph, final boolean forward, final LongCollection seed, final LongPredicate filter, final Scorer scorer, final int maxResults) {
+	protected static ObjectRBTreeSet<Result> bfs(final DirectedGraph graph, final boolean forward, final LongCollection seed, final LongPredicate filter, final Scorer scorer, final int maxResults, final AtomicLong globalVisitTime, final AtomicLong globalVisitedArcs) {
 		final LongSet nodes = graph.nodes();
 		final LongArrayFIFOQueue visitQueue = new LongArrayFIFOQueue(seed.size());
 		final LongOpenHashSet seen = new LongOpenHashSet(graph.numNodes(), 0.5f);
@@ -491,8 +493,8 @@ public class SearchEngine implements AutoCloseable {
 			}
 		}
 	
-		visitTime.addAndGet(start + System.nanoTime());
-		this.visitedArcs.addAndGet(visitedArcs);
+		globalVisitTime.addAndGet(start + System.nanoTime());
+		globalVisitedArcs.addAndGet(visitedArcs);
 		return results;
 	}
 
