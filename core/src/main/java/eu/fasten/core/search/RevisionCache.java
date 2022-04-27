@@ -62,7 +62,7 @@ public class RevisionCache {
 		synchronized (cache) {
 			if (cache.containsKey(gid)) return cache.get(gid);
 		}
-		final boolean result = rocksDao.contains(gid);
+		final boolean result = rocksDao.mayContain(gid);
 		synchronized (cache) {
 			cache.put(gid, result);
 		}

@@ -71,6 +71,15 @@ public class SizeBoundCache<T>  {
 		return cache.get(key);
 	}
 
+	/** Removes a key from the cache.
+	 * 
+	 * @param key a key.
+	 * @return the associated value, or {@code null} if no such value is present.
+	 */
+	public T remove(final long key) {
+		return cache.remove(key);
+	}
+
 	/** Returns the number of elements in the cache.
 	  *
 	  * @return the number of elements in the cache.

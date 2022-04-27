@@ -65,6 +65,7 @@ import eu.fasten.core.index.BVGraphSerializer;
 import eu.fasten.core.index.LayeredLabelPropagation;
 import eu.fasten.core.legacy.KnowledgeBase;
 import it.unimi.dsi.Util;
+import it.unimi.dsi.fastutil.bytes.ByteArrays;
 import it.unimi.dsi.fastutil.io.FastByteArrayInputStream;
 import it.unimi.dsi.fastutil.io.FastByteArrayOutputStream;
 import it.unimi.dsi.fastutil.longs.Long2IntOpenHashMap;
@@ -522,9 +523,14 @@ public class RocksDao implements Closeable, Iterable<byte[]> {
         }
     }
 
-    public boolean contains(final long index) {
+    public boolean mayContain(final long index) {
     	final byte[] key = Longs.toByteArray(index);
     	return rocksDb.keyMayExist(key, null) && rocksDb.keyMayExist(metadataHandle, key, null);
+    }
+
+    public boolean contains(final long index) throws IllegalArgumentException, RocksDBException {
+    	final byte[] key = Longs.toByteArray(index);
+    	return rocksDb.get(key, ByteArrays.EMPTY_ARRAY) != RocksDB.NOT_FOUND && rocksDb.get(metadataHandle, key, ByteArrays.EMPTY_ARRAY) != RocksDB.NOT_FOUND;
     }
 
     /**

@@ -193,6 +193,19 @@ public class PersistentCache implements AutoCloseable {
 		return deps;
 	}
 	
+	/** Deletes all information associated with a key.
+	 * 
+	 * @param key a revision GID.
+	 * @return the resolved dependency set for the given GID, if present; {@code null}, otherwise. 
+	 */
+	public synchronized void remove(final long key) throws RocksDBException {
+		depsCache.remove(key);
+		mergedCache.remove(key);
+		final byte[] k = Longs.toByteArray(key);
+		cache.delete(dependenciesHandle, k);
+		cache.delete(mergedHandle, k);
+	}
+	
 	@Override
 	public synchronized void close() throws Exception {
 		cache.close();
