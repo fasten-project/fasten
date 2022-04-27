@@ -870,7 +870,7 @@ public class SearchEngine implements AutoCloseable {
 					
 					topKProcessor.subscribe(futureSubscriber);
 
-					long start = - System.nanoTime();
+					long time = - System.nanoTime();
 					
 					final Result[] r;
 					if (uri.getPath() == null) {
@@ -894,9 +894,9 @@ public class SearchEngine implements AutoCloseable {
 						System.err.println(t);
 						System.err.println("\t" + t.getStackTrace()[0]);
 					}
-					start += System.nanoTime();
-					System.err.printf("\n%,d results \nTotal time: %,.3fs Resolve time: %,.3fs Merge time: %,.3fs Visit time %,.3fs Visited arcs %,d Visit arcs/s %,.3fs Overall arcs/s %,.3fs\n", r.length, 
-							start * 1E-9, searchEngine.resolveTime.get() * 1E-9, searchEngine.mergeTime.get() * 1E-9, searchEngine.visitTime.get() * 1E-9, searchEngine.visitedArcs.get(), 1E9 * searchEngine.visitedArcs.get()/searchEngine.visitTime.get(), 1E9 * searchEngine.visitedArcs.get()/start );
+					time += System.nanoTime();
+					System.err.printf("\n%,d results \nTotal time: %,.3fs  Resolve time: %,.3fs  Merge time: %,.3fs  Visit time %,.3fs  Calls: %,d  Calls/s %,.3fs\n", r.length, 
+							time * 1E-9, searchEngine.resolveTime.get() * 1E-9, searchEngine.mergeTime.get() * 1E-9, searchEngine.visitTime.get() * 1E-9, searchEngine.visitedArcs.get(), 1E9 * searchEngine.visitedArcs.get() / time);
 				} catch (final Exception e) {
 					e.printStackTrace();
 				}
