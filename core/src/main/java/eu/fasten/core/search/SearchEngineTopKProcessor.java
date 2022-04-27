@@ -86,8 +86,9 @@ public class SearchEngineTopKProcessor extends SubmissionPublisher<SearchEngineT
 
     		final Result oldResult = results.get(result);
 
-    		if (oldResult != null) {     // GID was already there
+    		if (oldResult != null) {    // GID was already there
     			if (oldResult.score < result.score) {   // ...but with smallest score: substitute it!
+    				results.remove(oldResult);
     				results.add(result);
     				sortedResults.remove(oldResult);
     				sortedResults.add(result);
