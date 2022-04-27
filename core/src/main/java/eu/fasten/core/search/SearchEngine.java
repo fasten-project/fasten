@@ -929,6 +929,7 @@ public class SearchEngine implements AutoCloseable {
 							final int id = searchEngine.nextFutureId++;
 							searchEngine.id2Future.put(searchEngine.nextFutureId++, searchEngine.toRevision(uri, searchEngine.limit, publisher));
 							searchEngine.id2Subscriber.put(id, futureSubscriber);
+							System.err.println("Id: " + id);
 						}
 					} else {
 						final long gid = Util.getCallableGID(uri, context);
@@ -945,6 +946,7 @@ public class SearchEngine implements AutoCloseable {
 							final int id = searchEngine.nextFutureId++;
 							searchEngine.id2Future.put(id, searchEngine.toCallable(gid, searchEngine.limit, publisher));
 							searchEngine.id2Subscriber.put(id, futureSubscriber);
+							System.err.println("Id: " + id);
 						}
 					}
 
