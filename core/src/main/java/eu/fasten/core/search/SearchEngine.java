@@ -640,7 +640,7 @@ public class SearchEngine implements AutoCloseable {
 			LOGGER.debug("Found " + dependencyIds.size() + " dependencies");
 
 			for(LongIterator iterator =  dependencyIds.iterator(); iterator.hasNext();) 
-				if (!revisionCache.contains(iterator.nextLong())) iterator.remove();
+				if (!revisionCache.mayContain(iterator.nextLong())) iterator.remove();
 			
 			final long start = -System.nanoTime();
 			final var dm = new CGMerger(dependencyIds, context, rocksDao);
@@ -811,7 +811,7 @@ public class SearchEngine implements AutoCloseable {
 					}
 
 					for(LongIterator iterator =  dependencyIds.iterator(); iterator.hasNext();) 
-						if (!revisionCache.contains(iterator.nextLong())) iterator.remove();
+						if (!revisionCache.mayContain(iterator.nextLong())) iterator.remove();
 
 					final long start = -System.nanoTime();
 					final var dm = new CGMerger(dependencyIds, context, rocksDao);

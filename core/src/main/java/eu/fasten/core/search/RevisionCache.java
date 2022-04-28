@@ -18,12 +18,15 @@
 
 package eu.fasten.core.search;
 
+import org.rocksdb.RocksDB;
+import org.rocksdb.RocksDBException;
+
 import eu.fasten.core.data.callableindex.RocksDao;
 import it.unimi.dsi.fastutil.Hash;
 import it.unimi.dsi.fastutil.longs.Long2BooleanOpenHashMap;
 
 /**
- * A class keeping track in a cache of which revisions are available in a callable index.
+ * A class keeping track in a cache of which revisions are available (both graph and metadata) in a callable index.
  * 
  * <p>
  * This class is thread safe.
@@ -31,7 +34,7 @@ import it.unimi.dsi.fastutil.longs.Long2BooleanOpenHashMap;
 
 public class RevisionCache {
 	/**
-	 * A map from GIDs to booleans. Returns true upon a revision that is present in the callable index.
+	 * A map from GIDs to booleans. Returns true upon a revision that is present in the callable index (both graph and metadata).
 	 * false upon a revision that is missing. A missing GID means we have to inquire the callable index
 	 * directly.
 	 */
@@ -53,16 +56,45 @@ public class RevisionCache {
 	}
 
 	/**
-	 * Puts a key/value pair in the cache.
+	 * Returns whether the underlying index might contain a GID.
+	 * 
+	 * <p>This method is based on {@link RocksDao#mayContain(long)}, which in turn is based
+	 * on {@link RocksDB#keyMayExist(byte[], org.rocksdb.Holder)},
+	 * and shares its limitations. Note that because of the behavior of the latter,
+	 * only negative results a stored in the cache.
+	 * 
+	 * <p>For an exact answer, call {@link #contains(long)}
 	 * 
 	 * @param gid the GID of a revision.
-	 * @param o an associated value.
+	 * @return false if the GID does not belong to the callable index; true may be
+	 * returned even if the GID does not belong to the callable index.
+	 * @see #contains(long) 
 	 */
-	public boolean contains(final long gid) {
+	public boolean mayContain(final long gid) {
 		synchronized (cache) {
 			if (cache.containsKey(gid)) return cache.get(gid);
 		}
 		final boolean result = rocksDao.mayContain(gid);
+		if (! result) synchronized (cache) {
+			cache.put(gid, result);
+		}
+		return result;
+	}
+
+	/**
+	 * Returns whether the underlying index contains a GID.
+	 * 
+	 * <p>For a faster, approximate answer use {@link #mayContain(long)}.
+	 * 
+	 * @param gid the GID of a revision.
+	 * @return whether the GID belongs to the callable index.
+	 * @see #mayContain(long) 
+	 */
+	public boolean contains(final long gid) throws RocksDBException {
+		synchronized (cache) {
+			if (cache.containsKey(gid)) return cache.get(gid);
+		}
+		final boolean result = rocksDao.contains(gid);
 		synchronized (cache) {
 			cache.put(gid, result);
 		}
