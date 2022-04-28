@@ -314,6 +314,7 @@ public class SearchEngine implements AutoCloseable {
 				if (future == null) System.err.println("No such search ID");
 				else {
 					if ("wait".equals(verb)) {
+						future.get(); // This will throw if something went wrong during the search
 						final var r = id2Subscriber.get(id).get().current;
 						for (int i = 0; i < Math.min(limit, r.length); i++) System.out.println(r[i].gid + "\t" + Util.getCallableName(r[i].gid, context) + "\t" + r[i].score);
 					} else future.cancel(true);
