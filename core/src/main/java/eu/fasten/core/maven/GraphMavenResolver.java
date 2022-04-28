@@ -32,8 +32,7 @@ import java.util.Objects;
 import java.util.Scanner;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.Future;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -406,10 +405,11 @@ public class GraphMavenResolver implements Runnable {
      * Resolves the dependents of the provided {@link Revision}, as specified by the provided revision details. The
      * provided timestamp determines which nodes will be ignored when traversing dependent nodes. Effectively, the
      * returned dependent set only includes nodes that where released AFTER the provided timestamp.
+     * @param executorCompletionService 
      */
-    public Future<?> resolveDependentsPipeline(String groupId, String artifactId, String version, final BlockingQueue<Revision> pipeline, long timestamp,
-                                                               boolean transitive, long maxDeps, int numberOfThreads) {
-        return dependentBFSPipeline(groupId, artifactId, version, pipeline, timestamp, transitive, maxDeps, numberOfThreads);
+    public Future<Void> resolveDependentsPipeline(String groupId, String artifactId, String version, final BlockingQueue<Revision> pipeline, long timestamp,
+                                                               boolean transitive, long maxDeps, int numberOfThreads, ExecutorCompletionService<Void> executorCompletionService) {
+        return dependentBFSPipeline(groupId, artifactId, version, pipeline, timestamp, transitive, maxDeps, numberOfThreads, executorCompletionService);
     }
 
     /**
@@ -417,8 +417,8 @@ public class GraphMavenResolver implements Runnable {
      * used to determine which nodes will be ignored when traversing dependent nodes. Effectively, the returned
      * dependent set only includes nodes that where released AFTER the provided revision.
      */
-    public Future<?> resolveDependentsPipeline(Revision r, final BlockingQueue<Revision> pipeline, boolean transitive, long maxDeps, int numberOfThreads) {
-        return dependentBFSPipeline(r.groupId, r.artifactId, r.version.toString(), pipeline, r.createdAt.getTime(), transitive, maxDeps, numberOfThreads);
+    public Future<Void> resolveDependentsPipeline(Revision r, final BlockingQueue<Revision> pipeline, boolean transitive, long maxDeps, int numberOfThreads, ExecutorCompletionService<Void> executorCompletionService) {
+        return dependentBFSPipeline(r.groupId, r.artifactId, r.version.toString(), pipeline, r.createdAt.getTime(), transitive, maxDeps, numberOfThreads, executorCompletionService);
     }
 
     /**
@@ -428,9 +428,10 @@ public class GraphMavenResolver implements Runnable {
      * @param timestamp  - The cut-off timestamp. The returned dependents have been released after the provided timestamp
      * @param transitive - Whether the BFS should recurse into the graph
      * @param numberOfThreads 
+     * @param executorCompletionService 
      */
-    public Future<?> dependentBFSPipeline(String groupId, String artifactId, String version, final BlockingQueue<Revision> pipeline, long timestamp,
-                                                          boolean transitive, final long maxDeps, int numberOfThreads) {
+    public Future<Void> dependentBFSPipeline(String groupId, String artifactId, String version, final BlockingQueue<Revision> pipeline, long timestamp,
+                                                          boolean transitive, final long maxDeps, int numberOfThreads, ExecutorCompletionService<Void> executorCompletionService) {
         var artifact = new Revision(groupId, artifactId, version, new Timestamp(timestamp));
 
         if (!dependentGraph.containsVertex(artifact)) return null;
@@ -440,8 +441,7 @@ public class GraphMavenResolver implements Runnable {
         workQueue.enqueue(artifact);
         // seen.add(artifact.id); No, fake GID
 
-        ExecutorService singleThreadExecutor = Executors.newSingleThreadExecutor();
-        Future<?> future = singleThreadExecutor.submit(() -> {
+        Future<Void> future = executorCompletionService.submit(() -> {
 			var countDown = maxDeps;
 			while (!workQueue.isEmpty()) {
 				var rev = workQueue.dequeue();
@@ -453,7 +453,7 @@ public class GraphMavenResolver implements Runnable {
 					try {
 						for (int i = 0; i < numberOfThreads; i++) pipeline.add(END);
 					} catch (IllegalStateException pipelineIsFull) {}
-					return;
+					return null;
 				}
 
 				filterDependentsByTimestamp(StreamSupport.stream(dependentGraph.iterables().outgoingEdgesOf(rev).spliterator(), false).map(edge -> dependentGraph.getEdgeTarget(edge)), timestamp).forEach(dependent -> {
@@ -464,8 +464,9 @@ public class GraphMavenResolver implements Runnable {
 			for (int i = 0; i < numberOfThreads; i++) try {
 				pipeline.put(END);
 			} catch (InterruptedException cancelled) {}
+			return null;
 		});
-        singleThreadExecutor.shutdown();
+
         return future;
     }
 

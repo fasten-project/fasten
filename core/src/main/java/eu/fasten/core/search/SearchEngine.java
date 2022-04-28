@@ -35,6 +35,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Future;
 import java.util.concurrent.SubmissionPublisher;
 import java.util.concurrent.atomic.AtomicLong;
@@ -753,14 +754,14 @@ public class SearchEngine implements AutoCloseable {
 
 		final int numberOfThreads = Runtime.getRuntime().availableProcessors();
 		final ArrayBlockingQueue<Revision> s = new ArrayBlockingQueue<>(numberOfThreads * 10);
-		Future<?> pipeline = resolver.resolveDependentsPipeline(groupId, artifactId, version, s, -1, true, maxDependents, numberOfThreads);
 
-		final ExecutorService executorService = Executors.newFixedThreadPool(numberOfThreads);
-		final ExecutorCompletionService<Void> executorCompletionService = new ExecutorCompletionService<>(executorService);
+		final ExecutorCompletionService<Void> executorCompletionService = new ExecutorCompletionService<>(ForkJoinPool.commonPool());
+
 		final ArrayList<Future<Void>> futures = new ArrayList<>();
-		AtomicLong trueDependents = new AtomicLong(0);
+		// First future is the pipeline future
+		futures.add(resolver.resolveDependentsPipeline(groupId, artifactId, version, s, -1, true, maxDependents, numberOfThreads, executorCompletionService));
 
-		for(int i = 0; i < numberOfThreads; i++) futures.add(executorCompletionService.submit(() -> {
+		for(int i = 0; i < numberOfThreads - 1; i++) futures.add(executorCompletionService.submit(() -> {
 			for(;;) {
 				final Revision dependent;
 				try {
@@ -807,8 +808,6 @@ public class SearchEngine implements AutoCloseable {
 						continue; // We cannot possibly reach the callable
 					}
 
-					trueDependents.incrementAndGet();
-
 					for(LongIterator iterator =  dependencyIds.iterator(); iterator.hasNext();) 
 						if (!revisionCache.contains(iterator.nextLong())) iterator.remove();
 
@@ -839,25 +838,17 @@ public class SearchEngine implements AutoCloseable {
 			}
 		}));
 
-		executorService.shutdown();
-
 		final ExecutorService singleThreadExecutor = Executors.newSingleThreadExecutor();
 		
 		final Future<Void> result = singleThreadExecutor.submit(() -> {
 			int i = 0;
 			try {
-				pipeline.get();
 				for(; i < numberOfThreads; i++) executorCompletionService.take();
 			} catch (final InterruptedException cancelled) {
-				pipeline.cancel(true);
 				for(var future: futures) future.cancel(true);
-				pipeline.get();
 				for(; i < numberOfThreads; i++) executorCompletionService.take();
-			} catch (final ExecutionException e) {
-				final Throwable cause = e.getCause();
-				throw new RuntimeException(cause);
+				for(var future: futures) future.get();
 			} finally {
-				LOGGER.debug("Found " + trueDependents + " true dependents");
 				publisher.close();
 			}
 			
