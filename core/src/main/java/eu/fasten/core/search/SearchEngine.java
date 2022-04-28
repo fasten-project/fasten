@@ -208,7 +208,7 @@ public class SearchEngine implements AutoCloseable {
 	/** The number of overall visited arcs. */
 	public final AtomicLong visitedArcs = new AtomicLong();
 	/** Throwables thrown by mergeWithCHA(). */
-	private final List<Throwable> throwables = Collections.synchronizedList(new ArrayList<>());
+	public final List<Throwable> throwables = Collections.synchronizedList(new ArrayList<>());
 
 	/**
 	 * Creates a new search engine using a given JDBC URI, database name and path to RocksDB.
@@ -545,7 +545,7 @@ public class SearchEngine implements AutoCloseable {
 	 * @param publisher a publisher for the intermediate result updates.
 	 * @return a list of {@linkplain Result results}.
 	 */
-	private void fromCallable(final long gid, final int maxResults, final SubmissionPublisher<SortedSet<Result>> publisher) throws RocksDBException {
+	public void fromCallable(final long gid, final int maxResults, final SubmissionPublisher<SortedSet<Result>> publisher) throws RocksDBException {
 		fromCallable(gid, predicateFilters.stream().reduce(x -> true, LongPredicate::and), maxResults, publisher);
 	}
 
@@ -572,7 +572,7 @@ public class SearchEngine implements AutoCloseable {
 	 * @param publisher a publisher for the intermediate result updates.
 	 * @return a list of {@linkplain Result results}.
 	 */
-	private void fromRevision(final FastenURI revisionUri, final int maxResults, final SubmissionPublisher<SortedSet<Result>> publisher) throws RocksDBException {
+	public void fromRevision(final FastenURI revisionUri, final int maxResults, final SubmissionPublisher<SortedSet<Result>> publisher) throws RocksDBException {
 		fromRevision(revisionUri, predicateFilters.stream().reduce(x -> true, LongPredicate::and), maxResults, publisher);
 	}
 
@@ -681,7 +681,7 @@ public class SearchEngine implements AutoCloseable {
 	 * @param publisher a publisher for the intermediate result updates.
 	 * @return a future controlling the completion of the search.
 	 */
-	private Future<Void> toCallable(final long gid, final int maxResults, final SubmissionPublisher<SortedSet<Result>> publisher) throws RocksDBException {
+	public Future<Void> toCallable(final long gid, final int maxResults, final SubmissionPublisher<SortedSet<Result>> publisher) throws RocksDBException {
 		return toCallable(gid, predicateFilters.stream().reduce(x -> true, LongPredicate::and), maxResults, publisher);
 	}
 
@@ -708,7 +708,7 @@ public class SearchEngine implements AutoCloseable {
 	 * @param publisher a publisher for the intermediate result updates.
 	 * @return a future controlling the completion of the search.
 	 */
-	private Future<Void> toRevision(final FastenURI revisionUri, final int maxResults, final SubmissionPublisher<SortedSet<Result>> publisher) throws RocksDBException {
+	public Future<Void> toRevision(final FastenURI revisionUri, final int maxResults, final SubmissionPublisher<SortedSet<Result>> publisher) throws RocksDBException {
 		return toRevision(revisionUri, predicateFilters.stream().reduce(x -> true, LongPredicate::and), maxResults, publisher);
 	}
 
@@ -975,6 +975,22 @@ public class SearchEngine implements AutoCloseable {
 				}
 			}
 		}
+	}
+
+	/** Returns the context (i.e., Postgres metadata database) used by this search engine.
+	 * 
+	 * @return the context.
+	 */
+	public DSLContext context() {
+		return context;
+	}
+
+	/** Returns the predicate factory used to create predicates for this search engine.
+	 * 
+	 * @return the predicate factory.
+	 */
+	public PredicateFactory predicateFactory() {
+		return predicateFactory;
 	}
 
 }
