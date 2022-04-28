@@ -18,7 +18,6 @@
 package eu.fasten.analyzer.qualityanalyzer;
 
 import eu.fasten.analyzer.qualityanalyzer.data.CallableHolder;
-import eu.fasten.core.data.metadatadb.MetadataDao;
 import eu.fasten.core.data.metadatadb.codegen.tables.Callables;
 import eu.fasten.core.data.metadatadb.codegen.tables.Files;
 import eu.fasten.core.data.metadatadb.codegen.tables.ModuleContents;
@@ -30,6 +29,7 @@ import eu.fasten.core.data.metadatadb.codegen.tables.records.ModuleContentsRecor
 import eu.fasten.core.data.metadatadb.codegen.tables.records.PackageVersionsRecord;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.PackagesRecord;
 import org.jooq.DSLContext;
+import org.jooq.JSONB;
 import org.jooq.Result;
 import org.jooq.impl.DSL;
 import org.json.JSONObject;
@@ -57,26 +57,27 @@ public class MetadataUtils {
      * @return              id of the callable record
      */
     public Long updateMetadataInDB(String forge, JSONObject jsonRecord) throws RuntimeException {
-
         selectedContext = dslContexts.get(forge);
-
-        //could return an empty List
-        List<CallableHolder> callableHolderList = getCallables(forge, jsonRecord);
-
-        if(callableHolderList.isEmpty() ) {
-            throw new IllegalStateException("Empty list of callables");
-        }
-
-        var metadataDao = new MetadataDao(selectedContext);
         selectedContext.transaction(transaction -> {
-            // Start transaction
-            metadataDao.setContext(DSL.using(transaction));
-            for (CallableHolder callable : callableHolderList) {
-                recordId = metadataDao.updateCallableMetadata(callable.getModuleId(), callable.getFastenUri(), callable.isInternal(), callable.getCallableMetadata());
+            List<CallableHolder> callableHolderList = getCallables(forge, jsonRecord);
+            if(callableHolderList.isEmpty() ) {
+                throw new IllegalStateException("Empty list of callables");
+            }
+            else {
+                for (CallableHolder callable : callableHolderList) {
+                    recordId = callable.getCallableId();
+                    updateCallableMetadata(callable, DSL.using(transaction));
+                }
             }
         });
-
         return recordId;
+    }
+
+    private void updateCallableMetadata(CallableHolder callableInfo, DSLContext context) {
+        context.update(Callables.CALLABLES)
+                .set(Callables.CALLABLES.METADATA, JSONB.valueOf(callableInfo.getCallableMetadata().toString()))
+                .where(Callables.CALLABLES.ID.equal(callableInfo.getCallableId()))
+                .execute();
     }
 
     private List<CallableHolder> getCallables(String forge, JSONObject jsonRecord) throws IllegalStateException {
@@ -129,7 +130,7 @@ public class MetadataUtils {
             throw new IllegalStateException("Could not find file id");
         }
 
-        JSONObject tailored = new JSONObject(payload, new String[] {
+        JSONObject qualityMetadata = new JSONObject(payload, new String[] {
                 "quality_analyzer_name",
                 "quality_analyzer_version",
                 "quality_analysis_timestamp",
@@ -137,10 +138,7 @@ public class MetadataUtils {
                 "callable_long_name",
                 "callable_parameters",
                 "metrics"});
-        tailored.put("rapid_plugin_version", rapid_version);
-
-        JSONObject metadata = new JSONObject();
-        metadata.put("quality", tailored);
+        qualityMetadata.put("rapid_plugin_version", rapid_version);
 
         List<Long> modulesId = getModuleIds(fileId);
         logger.info("Found " + modulesId.size() + " modules");
@@ -272,7 +270,7 @@ public class MetadataUtils {
      * @param qaName - String that represents callable name from Lizard tool.
      * @param lineStart - int value that indicates start callable line in source file from Lizard tool.
      * @param lineEnd - int value that indicates the last callable line in source file from Lizard tool.
-     * @param metadata - JSON object that contains callable metadata, to be stored in Metadata DB.
+     * @param qualityMetadata - JSON object that contains callable quality metadata, to be added to Metadata DB.
      *
      * @return List of CallableHolder (empty List if no callable could be found)
      */
@@ -295,8 +293,8 @@ public class MetadataUtils {
         logger.info("Fetched " + crs.size() + " entries from callables table");
 
         for (CallablesRecord cr : crs) {
+            var callableMetadata = new JSONObject(cr.getMetadata().data());
             String fastenUri = cr.getFastenUri();
-
             String separator = ":";
             int position = qaName.lastIndexOf(separator);
             String methodName = qaName.substring(position+separator.length());
@@ -305,10 +303,9 @@ public class MetadataUtils {
             logger.info("Lizard callable name is " + qaName + " parsed methodName is " + methodName);
 
             if(fastenUri.contains(methodName)) {
-                // Create callable object
                 CallableHolder ch = new CallableHolder(cr);
-                ch.setCallableMetadata(metadata);
-                //filter and store callable only if start and end line overlap with input
+                callableMetadata.put("quality", qualityMetadata);
+                ch.setCallableMetadata(callableMetadata);
                 calls.add(ch);
             }
         }
