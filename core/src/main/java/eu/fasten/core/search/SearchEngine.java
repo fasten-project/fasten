@@ -485,7 +485,7 @@ public class SearchEngine implements AutoCloseable {
 	 */
 	protected static ObjectRBTreeSet<Result> bfs(final DirectedGraph graph, final boolean forward, final LongCollection seed, final LongPredicate filter, final Scorer scorer, final int maxResults, final AtomicLong globalVisitTime, final AtomicLong globalVisitedArcs) {
 		final LongSet nodes = graph.nodes();
-		final LongArrayFIFOQueue visitQueue = new LongArrayFIFOQueue(graph.numNodes());
+		final LongArrayFIFOQueue visitQueue = new LongArrayFIFOQueue(graph.numNodes() + 1); // The +1 can be removed in fastutil > 8.5.9
 		final LongOpenHashSet seen = new LongOpenHashSet(graph.numNodes(), 0.5f);
 		final ObjectRBTreeSet<Result> results = new ObjectRBTreeSet<>();
 		
@@ -777,7 +777,7 @@ public class SearchEngine implements AutoCloseable {
 					// Temporary
 					if (cache.getMerged(dependentId) != null) {
 						LOGGER.error("Missing graph appears in cache (removing)");
-						//cache.remove(dependentId);
+						cache.remove(dependentId);
 					}
 					continue;
 				}
@@ -848,7 +848,7 @@ public class SearchEngine implements AutoCloseable {
 			try {
 				pipeline.get();
 				for(; i < numberOfThreads; i++) executorCompletionService.take();
-			} catch (final InterruptedException canceled) {
+			} catch (final InterruptedException cancelled) {
 				pipeline.cancel(true);
 				for(var future: futures) future.cancel(true);
 				pipeline.get();
