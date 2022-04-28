@@ -63,7 +63,7 @@ public class RevisionCache {
 	 * and shares its limitations. Note that because of the behavior of the latter,
 	 * only negative results a stored in the cache.
 	 * 
-	 * <p>For an exact answer, call {@link #contains(long)}
+	 * <p>For an exact answer, use {@link #contains(long)} (which is more disk intensive).
 	 * 
 	 * @param gid the GID of a revision.
 	 * @return false if the GID does not belong to the callable index; true may be
@@ -84,7 +84,7 @@ public class RevisionCache {
 	/**
 	 * Returns whether the underlying index contains a GID.
 	 * 
-	 * <p>For a faster, approximate answer use {@link #mayContain(long)}.
+	 * <p>For a faster, approximate answer, use {@link #mayContain(long)} (which is less disk intensive).
 	 * 
 	 * @param gid the GID of a revision.
 	 * @return whether the GID belongs to the callable index.
