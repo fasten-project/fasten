@@ -775,8 +775,7 @@ public class SearchEngine implements AutoCloseable {
 
 				var dependentId = dependent.id;
 				if (blacklist.contains(dependentId)) continue;
-				if (!revisionCache.contains(dependentId)) continue;
-				if (!rocksDao.contains(dependentId)) {
+				if (!revisionCache.contains(dependentId)) {
 					// Temporary
 					if (cache.getMerged(dependentId) != null) {
 						LOGGER.error("Missing graph appears in cache (removing)");
