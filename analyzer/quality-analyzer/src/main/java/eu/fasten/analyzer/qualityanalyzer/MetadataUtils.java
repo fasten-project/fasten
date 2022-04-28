@@ -148,10 +148,8 @@ public class MetadataUtils {
         String qaCallableName = payload.getString("callable_name");
 
         if(!modulesId.isEmpty()) {
-            for(Long moduleId : modulesId) {
-                logger.info("Found module with moduleId: " + moduleId);
-                callables.addAll(getCallablesInformation(moduleId, qaCallableName, lineStart, lineEnd, metadata));
-            }
+            logger.info("Found modules with Ids: " + modulesId);
+            callables.addAll(getCallablesInformation(modulesId, qaCallableName, lineStart, lineEnd, qualityMetadata));
             logger.info("Found " + callables.size() + " methods for which startLine and endline are in [" + lineStart + ", " + lineEnd + "]");
             logger.info("Callables details ###");
             for(CallableHolder callable : callables ){
@@ -266,7 +264,7 @@ public class MetadataUtils {
     /**
      * Retrieves the callables information from the DB with a given values for the start and end line.
      *
-     * @param moduleId - Long ID of the file where the callable belongs.
+     * @param modulesId - Long ID of the file where the callable belongs.
      * @param qaName - String that represents callable name from Lizard tool.
      * @param lineStart - int value that indicates start callable line in source file from Lizard tool.
      * @param lineEnd - int value that indicates the last callable line in source file from Lizard tool.
@@ -274,7 +272,7 @@ public class MetadataUtils {
      *
      * @return List of CallableHolder (empty List if no callable could be found)
      */
-    private List<CallableHolder> getCallablesInformation(Long moduleId, String qaName, int lineStart, int lineEnd, JSONObject metadata)  {
+    private List<CallableHolder> getCallablesInformation(List<Long> modulesId, String qaName, int lineStart, int lineEnd, JSONObject qualityMetadata)  {
 
         List<CallableHolder> calls = new ArrayList<>();
 
@@ -285,9 +283,9 @@ public class MetadataUtils {
         */
 
         Result<CallablesRecord> crs = selectedContext.selectFrom(Callables.CALLABLES)
-                .where(Callables.CALLABLES.MODULE_ID.equal(moduleId))
-                .andNot(Callables.CALLABLES.LINE_START.gt(lineEnd))
-                .andNot(Callables.CALLABLES.LINE_END.lt(lineStart))
+                .where(Callables.CALLABLES.MODULE_ID.in(modulesId))
+                .and(Callables.CALLABLES.LINE_START.lessOrEqual(lineEnd))
+                .and(Callables.CALLABLES.LINE_END.greaterOrEqual(lineStart))
                 .fetch();
 
         logger.info("Fetched " + crs.size() + " entries from callables table");
