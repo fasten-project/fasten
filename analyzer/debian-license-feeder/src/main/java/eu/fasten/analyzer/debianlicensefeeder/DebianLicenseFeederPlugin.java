@@ -211,15 +211,25 @@ public class DebianLicenseFeederPlugin extends Plugin {
             fileLicenses.forEach(f -> {
                 logger.debug("(cycling files) Object f: " + f);
                 JSONObject file = (JSONObject) f;
+                //this debug message is not correct for the Debian use case TODO modify it accordingly
                 logger.debug("(cycling files) JSONObject f: " + file + " has " +
                         (file.has("path") ? "" : "no ") + "path and " +
                         (file.has("licenses") ? file.getJSONArray("licenses").length() : "no") + " licenses.");
                 if (file.has("path") && file.has("license")) {
+                    JSONObject licenseObject = new JSONObject();
+                    System.out.println("After licenseObject-Created");
+                    licenseObject.put("name", file.getString("license"));
+                    System.out.println("After licenseObject-put file.getString(license)");
+                    JSONArray ja = new JSONArray();
+                    System.out.println("After ja creating");
+                    ja.put(licenseObject);
+                    System.out.println("After ja.put(licenseObject)");
                     metadataDao.insertFileLicenses(
                             packageName,
                             packageVersion,
                             file.getString("path"),
-                            new JSONObject().put("license", file.getString("license")).toString()
+                            new JSONObject().put("licenses", ja).toString()
+                            //new JSONObject().put("license", file.getString("license")).toString()
                     );
                 }
             });
