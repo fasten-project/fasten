@@ -755,7 +755,8 @@ public class SearchEngine implements AutoCloseable {
 		final int numberOfThreads = Runtime.getRuntime().availableProcessors();
 		final ArrayBlockingQueue<Revision> s = new ArrayBlockingQueue<>(numberOfThreads * 10);
 
-		final ExecutorCompletionService<Void> executorCompletionService = new ExecutorCompletionService<>(ForkJoinPool.commonPool());
+		final ExecutorService executorService = Executors.newFixedThreadPool(numberOfThreads);
+		final ExecutorCompletionService<Void> executorCompletionService = new ExecutorCompletionService<>(executorService);
 
 		final ArrayList<Future<Void>> futures = new ArrayList<>();
 		// First future is the pipeline future
@@ -837,6 +838,8 @@ public class SearchEngine implements AutoCloseable {
 				publisher.submit(bfs(stitchedGraph, false, seed, filter, scorer, maxResults, visitTime, visitedArcs));
 			}
 		}));
+
+		executorService.shutdown();
 
 		final ExecutorService singleThreadExecutor = Executors.newSingleThreadExecutor();
 		
