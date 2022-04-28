@@ -118,7 +118,7 @@ public class SearchEngineClient {
 				"\n\tGENERAL COMMANDS\n" +
 				"\t$help                           Help on commands\n" + 
 				"\t$limit <LIMIT>                  Print at most <LIMIT> results (-1 for infinity)\n" + 
-				"\t$maxDependents <LIMIT>          Maximum number of dependents considered in coreachable query resolution (-1 for infinity)" + 
+				"\t$maxDependents <LIMIT>          Maximum number of dependents considered in coreachable query resolution (-1 for infinity)\n" + 
 				"\t$time                           Time statistics about the queries issued so far\n" +
 				"\n\tFILTER-RELATED COMMANDS\n" +
 				"\t$f ?                            Print the current filter\n" + 
@@ -135,12 +135,12 @@ public class SearchEngineClient {
 				"\t$and                            The last two filters are substituted by their conjunction (and)\n" + 
 				"\t$not                            The last filter is substituted by its negation (not)\n" + 
 				"\t$clear                          Clear filters\n" + 
-				"\n\tQUERY-RELATED COMMANDS" +
+				"\n\tQUERY-RELATED COMMANDS\n" +
 				"\t±<URI>                          Issue a new query to find reachable (+) or coreachable (-) callables from the given callable <URI> satisfying all filters\n" + 
-				"\tshow                            Lists the running queries with their IDs\n" +
-				"\tinspect <ID>                    Show the current results of the query with given ID (without stopping it)\n" +
-				"\twait <ID>                       Wait until the query with given ID is completed and show its results\n" +
-				"\tcancel <ID>                     Cancels the query with given ID and stops all the related threads (this may take some time)\n" +
+				"\t$show                            Lists the running queries with their IDs\n" +
+				"\t$inspect <ID>                    Show the current results of the query with given ID (without stopping it)\n" +
+				"\t$wait <ID>                       Wait until the query with given ID is completed and show its results\n" +
+				"\t$cancel <ID>                     Cancels the query with given ID and stops all the related threads (this may take some time)\n" +
 				"";
 		try {
 			final String verb = commandAndArgs[0].toLowerCase();
@@ -191,7 +191,7 @@ public class SearchEngineClient {
 			case "inspect":
 				final var subscriber = id2Subscriber.get(Integer.parseInt(commandAndArgs[1]));
 				if (subscriber == null) System.err.println("No such search ID");
-				final var r = subscriber.last().current;
+				final var r = subscriber.last() == null? new Result[0] : subscriber.last().current;
 				for (int i = 0; i < Math.min(limit, r.length); i++) System.out.println(r[i].gid + "\t" + Util.getCallableName(r[i].gid, se.context()) + "\t" + r[i].score);
 				break;
 
