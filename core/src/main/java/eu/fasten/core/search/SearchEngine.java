@@ -35,7 +35,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Future;
 import java.util.concurrent.SubmissionPublisher;
 import java.util.concurrent.atomic.AtomicLong;
@@ -756,14 +755,14 @@ public class SearchEngine implements AutoCloseable {
 		final int numberOfThreads = Runtime.getRuntime().availableProcessors();
 		final ArrayBlockingQueue<Revision> s = new ArrayBlockingQueue<>(numberOfThreads * 10);
 
-		final ExecutorService executorService = Executors.newFixedThreadPool(numberOfThreads);
+		final ExecutorService executorService = Executors.newFixedThreadPool(numberOfThreads + 1); // +1 for the pipeline
 		final ExecutorCompletionService<Void> executorCompletionService = new ExecutorCompletionService<>(executorService);
 
 		final ArrayList<Future<Void>> futures = new ArrayList<>();
 		// First future is the pipeline future
 		futures.add(resolver.resolveDependentsPipeline(groupId, artifactId, version, s, -1, true, maxDependents, numberOfThreads, executorCompletionService));
 
-		for(int i = 0; i < numberOfThreads - 1; i++) futures.add(executorCompletionService.submit(() -> {
+		for(int i = 0; i < numberOfThreads; i++) futures.add(executorCompletionService.submit(() -> {
 			for(;;) {
 				final Revision dependent;
 				try {
@@ -846,10 +845,10 @@ public class SearchEngine implements AutoCloseable {
 		final Future<Void> result = singleThreadExecutor.submit(() -> {
 			int i = 0;
 			try {
-				for(; i < numberOfThreads; i++) executorCompletionService.take();
+				for(; i < numberOfThreads + 1; i++) executorCompletionService.take();
 			} catch (final InterruptedException cancelled) {
 				for(var future: futures) future.cancel(true);
-				for(; i < numberOfThreads; i++) executorCompletionService.take();
+				for(; i < numberOfThreads + 1; i++) executorCompletionService.take();
 				for(var future: futures) future.get();
 			} finally {
 				publisher.close();
@@ -870,7 +869,6 @@ public class SearchEngine implements AutoCloseable {
 		rocksDao.close();
 	}
 
-	@SuppressWarnings("boxing")
 	public static void main(final String args[]) throws Exception {
 		final SimpleJSAP jsap = new SimpleJSAP(SearchEngine.class.getName(), "Creates an instance of SearchEngine and answers queries from the command line (rlwrap recommended).", new Parameter[] {
 				new FlaggedOption("blacklist", JSAP.STRING_PARSER, null, JSAP.NOT_REQUIRED, 'b', "blacklist", "A blacklist of GIDs of revision call graphs that should be considered as missing."),
@@ -927,8 +925,6 @@ public class SearchEngine implements AutoCloseable {
 					
 					topKProcessor.subscribe(futureSubscriber);
 
-					long time = - System.nanoTime();
-					
 					final Result[] r;
 					if (uri.getPath() == null) {
 						if (dir == '+') {
@@ -967,9 +963,6 @@ public class SearchEngine implements AutoCloseable {
 						System.err.println(t);
 						System.err.println("\t" + t.getStackTrace()[0]);
 					}
-					time += System.nanoTime();
-//					System.err.printf("\n%,d results \nTotal time: %,.3fs  Resolve time: %,.3fs  Merge time: %,.3fs  Visit time %,.3fs  Calls: %,d  Calls/s: %,.3f\n", r.length, 
-//							time * 1E-9, searchEngine.resolveTime.get() * 1E-9, searchEngine.mergeTime.get() * 1E-9, searchEngine.visitTime.get() * 1E-9, searchEngine.visitedArcs.get(), 1E9 * searchEngine.visitedArcs.get() / time);
 				} catch (final Exception e) {
 					e.printStackTrace();
 				}
