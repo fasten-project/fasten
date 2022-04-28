@@ -21,7 +21,10 @@ package eu.fasten.core.search.tool;
 import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorCompletionService;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.Future;
 
@@ -117,7 +120,7 @@ public class GraphDepStats {
 			final String version = record.component2();
 			final Set<Revision> dependencySet = graphDepStats.resolver.resolveDependencies(groupId, artifactId, version, -1, context, true);
 			final BlockingQueue<Revision> dependentsQueue = new ArrayBlockingQueue<>(100);
-			Future<?> pipeline = graphDepStats.resolver.resolveDependentsPipeline(groupId, artifactId, version, dependentsQueue, -1,  true, Long.MAX_VALUE, 1, new ExecutorCompletionService<>(ForkJoinPool.commonPool()));
+			Future<?> pipeline = graphDepStats.resolver.resolveDependentsPipeline(groupId, artifactId, version, dependentsQueue, -1,  true, Long.MAX_VALUE, 1, new ExecutorCompletionService<>(Executors.newSingleThreadExecutor()));
 
 			if (pipeline == null) continue;
 
