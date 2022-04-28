@@ -198,7 +198,7 @@ public class SearchEngineClient {
 				
 			case "time":
 				System.err.printf("\n%,d arcs \nResolve time: %,.3fs  Merge time: %,.3fs  Visit time %,.3fs\n",
-						se.visitedArcs,
+						se.visitedArcs.get(),
 						se.resolveTime.get() * 1E-9,
 						se.mergeTime.get() * 1E-9,
 						se.visitTime.get() * 1E-9);
