@@ -50,16 +50,4 @@ public class QualityAnalyzerPluginTest {
         qualityAnalyzer.setTopics(differentTopic);
         assertEquals(Optional.of(differentTopic), qualityAnalyzer.consumeTopic());
     }
-
-    @Test
-    public void nameTest() {
-        var name = "Quality Analyzer Plugin";
-        assertEquals(name, qualityAnalyzer.name());
-    }
-
-    @Test
-    public void versionTest() {
-        var version = "1.2.0";
-        assertEquals(version, qualityAnalyzer.version());
-    }
 }
