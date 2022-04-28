@@ -322,7 +322,6 @@ public class SearchEngineClient {
 	}
 
 
-	@SuppressWarnings("boxing")
 	public static void main(final String args[]) throws Exception {
 		final SimpleJSAP jsap = new SimpleJSAP(SearchEngineClient.class.getName(), "Creates an instance of SearchEngine and answers queries from the command line (rlwrap recommended).", new Parameter[] {
 				new FlaggedOption("blacklist", JSAP.STRING_PARSER, null, JSAP.NOT_REQUIRED, 'b', "blacklist", "A blacklist of GIDs of revision call graphs that should be considered as missing."),
@@ -333,7 +332,8 @@ public class SearchEngineClient {
 				new UnflaggedOption("resolverGraph", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.REQUIRED, JSAP.NOT_GREEDY, "The path to a resolver graph (will be created if it does not exist)."), });
 
 		System.getProperties().setProperty("org.jooq.no-logo", "true");
-		
+		System.getProperties().setProperty("org.jooq.no-tips", "true");
+
 		final JSAPResult jsapResult = jsap.parse(args);
 		if (jsap.messagePrinted()) System.exit(1);
 
