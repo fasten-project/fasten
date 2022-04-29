@@ -22,7 +22,7 @@ public class TopKProcessor extends SubmissionPublisher<TopKProcessor.Update> imp
 
 	/** Contains information about a single update: it contains a sorted array representation of the current set, of the additions and of the deletions.
 	 */
-	public static final class Update {
+	public final class Update {
 		/** Current sorted array of the topmost results. */
 		public Result[] current;
 		/** Array of the new topmost results. */
@@ -35,6 +35,15 @@ public class TopKProcessor extends SubmissionPublisher<TopKProcessor.Update> imp
 			this.additions = additions;
 			this.deletions = deletions;
 		}
+		
+		@Override
+		public String toString() {
+			StringBuilder sb = new StringBuilder(); 
+			Result[] r = current;
+			for (int i = 0; i < Math.min(maxResults, r.length); i++) 
+				sb.append(r[i].gid + "\t" + Util.getCallableName(r[i].gid, searchEngine.context()) + "\t" + r[i].score + "\n");
+			return sb.toString();
+		}
 	}
 	
 	
@@ -42,31 +51,36 @@ public class TopKProcessor extends SubmissionPublisher<TopKProcessor.Update> imp
 	private final ObjectOpenHashSet<Result> results;
 	/** The current sorted set of results (gids are not repeated here). */
 	private final ObjectRBTreeSet<Result> sortedResults;
-
+	/** The maximum number of results. */
 	private int maxResults;
+	/** The search engine using this processor. */
+	private final SearchEngine searchEngine;
 
 	/** Creates a new processor, with default executor.
 	 * 
 	 * @param maxResults maximum number of topmost results to be kept track of.
 	 */
-    public TopKProcessor(final int maxResults) {
+    public TopKProcessor(final int maxResults, final SearchEngine se) {
     	super();
     	this.maxResults = maxResults;
     	results = new ObjectOpenHashSet<>(maxResults, 0.5f);
     	sortedResults = new ObjectRBTreeSet<>();
+    	this.searchEngine = se;
     }
 
 	/** Creates a new processor, with custom executor. 
 	 * 
 	 * @param maxResults  maximum number of topmost results to be kept track of.
+	 * @param se the search engine using this processor.
 	 * @param executor the custom executor to be used for this processor.
 	 * @param maxBufferCapacity the maximum buffer capacity for the publication queue.
 	 */
-    public TopKProcessor(final int maxResults, final Executor executor, final int maxBufferCapacity) {
+    public TopKProcessor(final int maxResults, final SearchEngine se, final Executor executor, final int maxBufferCapacity) {
     	super(executor, maxBufferCapacity);
     	this.maxResults = maxResults;
     	results = new ObjectOpenHashSet<>(maxResults, 0.5f);
     	sortedResults = new ObjectRBTreeSet<>();
+    	this.searchEngine = se;
     }
 
     @Override

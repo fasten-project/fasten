@@ -46,6 +46,7 @@ import com.martiansoftware.jsap.SimpleJSAP;
 import com.martiansoftware.jsap.UnflaggedOption;
 
 import eu.fasten.core.data.FastenJavaURI;
+import eu.fasten.core.search.SearchEngine.PathResult;
 import eu.fasten.core.search.SearchEngine.Result;
 import eu.fasten.core.search.TopKProcessor.Update;
 import eu.fasten.core.search.predicate.PredicateFactory.MetadataSource;
@@ -99,7 +100,7 @@ public class SearchEngineClient {
 	private final Int2ObjectOpenHashMap<String> id2Query = new Int2ObjectOpenHashMap<>();
 
 	/** A map from ids to subscriber. */
-	private final Int2ObjectOpenHashMap<WaitOnTerminateFutureSubscriber<Update>> id2Subscriber = new Int2ObjectOpenHashMap<>();
+	private final Int2ObjectOpenHashMap<WaitOnTerminateFutureSubscriber<?>> id2Subscriber = new Int2ObjectOpenHashMap<>();
 	
 	/** Creates a client for a given search engine.
 	 * 
@@ -143,6 +144,12 @@ public class SearchEngineClient {
 	/** Delegate to {@link SearchEngine}: {@see SearchEngine#fromRevision(long, LongPredicate, int, SubmissionPublisher)}. */
 	private Future<Void> fromRevision(FastenJavaURI uri, int limit, SubmissionPublisher<SortedSet<Result>> publisher) throws RocksDBException {
 		return se.fromRevision(uri, limit, publisher);
+	}
+
+	/** Delegate to {@link SearchEngine}: {@see SearchEngine#between(long, long, int, SubmissionPublisher)}. */
+	private Future<Void> between(long gidFrom, long gidTo, int limit,
+			SubmissionPublisher<PathResult> publisher) throws RocksDBException {
+		return se.between(gidFrom, gidTo, limit, publisher);
 	}
 
 	/** Delegate to {@link SearchEngine}: {@see SearchEngine#resetCounters()}. */
@@ -191,6 +198,7 @@ public class SearchEngineClient {
 				"\t$clear                          Clear filters\n" + 
 				"\n\tQUERY-RELATED COMMANDS\n" +
 				"\t±<URI>                          Issue a new query to find reachable (+) or coreachable (-) callables from the given callable <URI> satisfying all filters\n" + 
+				"\t*<URI> <URI>                    Issue a new query to find a path connecting two callables\n" + 
 				"\t$show                           Lists the running queries with their IDs\n" +
 				"\t$inspect [<ID>]                 Show the current results of the last query (or query with given ID), without stopping it\n" +
 				"\t$wait [<ID>]                    Wait until the last query (or query with given ID) is completed and show its results\n" +
@@ -245,8 +253,8 @@ public class SearchEngineClient {
 				if (future == null) System.err.println("No such search ID");
 				else {
 					if ("wait".equals(verb)) {
-						final var r = id2Subscriber.get(wcid).get().current;
-						for (int i = 0; i < Math.min(limit, r.length); i++) System.out.println(r[i].gid + "\t" + Util.getCallableName(r[i].gid, se.context()) + "\t" + r[i].score);
+						final var r = id2Subscriber.get(wcid).get();
+						System.out.println(r);
 					} else future.cancel(true);
 
 					id2Future.remove(wcid);
@@ -261,8 +269,8 @@ public class SearchEngineClient {
 				final var subscriber = id2Subscriber.get(insid);
 				if (subscriber == null) System.err.println("No such search ID");
 				else {
-					final var r = subscriber.last() == null? new Result[0] : subscriber.last().current;
-					for (int i = 0; i < Math.min(limit, r.length); i++) System.out.println(r[i].gid + "\t" + Util.getCallableName(r[i].gid, se.context()) + "\t" + r[i].score);
+					final var r = subscriber.last() == null? new Result[0] : subscriber.last();
+					System.out.print(r);
 				}
 				break;
 
@@ -420,8 +428,8 @@ public class SearchEngineClient {
 		final LongOpenHashSet blacklist = new LongOpenHashSet();
 		if (jsapResult.userSpecified("blacklist")) TextIO.asLongIterator(new BufferedReader(new InputStreamReader(new FileInputStream(jsapResult.getString("blacklist")), StandardCharsets.US_ASCII))).forEachRemaining(x -> blacklist.add(x));
 
-
-		final SearchEngineClient client = new SearchEngineClient(new SearchEngine(jdbcURI, database, rocksDb, cacheDir, resolverGraph, null, blacklist));
+		final SearchEngine searchEngine = new SearchEngine(jdbcURI, database, rocksDb, cacheDir, resolverGraph, null, blacklist);
+		final SearchEngineClient client = new SearchEngineClient(searchEngine);
 
 		@SuppressWarnings("resource")
 		final Scanner scanner = new Scanner(System.in);
@@ -438,43 +446,77 @@ public class SearchEngineClient {
 			}
 			try {
 				final char dir = line.charAt(0);
-				if (dir != '+' && dir != '-') {
-					if (dir != '#') System.err.println("First character must be '+', '-', or '#'");
+				if (dir != '+' && dir != '-' && dir != '*') {
+					if (dir != '#') System.err.println("First character must be '+', '-', '*' or '#'");
 					continue;
 				}
-				final FastenJavaURI uri = FastenJavaURI.create(line.substring(1));
+				if (dir == '+' || dir == '-') {
+					final FastenJavaURI uri = FastenJavaURI.create(line.substring(1));
 
-				client.resetCounters();
+					client.resetCounters();
 
-				SubmissionPublisher<SortedSet<Result>> publisher = new SubmissionPublisher<>();
-				TopKProcessor topKProcessor = new TopKProcessor(client.limit);
-				publisher.subscribe(topKProcessor);
+					SubmissionPublisher<SortedSet<Result>> publisher = new SubmissionPublisher<>();
+					TopKProcessor topKProcessor = new TopKProcessor(client.limit, searchEngine);
+					publisher.subscribe(topKProcessor);
 
-				final WaitOnTerminateFutureSubscriber<Update> futureSubscriber = new WaitOnTerminateFutureSubscriber<>();
+					final WaitOnTerminateFutureSubscriber<Update> futureSubscriber = new WaitOnTerminateFutureSubscriber<>();
 
-				topKProcessor.subscribe(futureSubscriber);
+					topKProcessor.subscribe(futureSubscriber);
 
-				if (uri.getPath() == null) {
-					final int id = client.nextFutureId;
-					if (uri.getPath() == null) 
-						client.id2Future.put(id, dir == '+'?
-								client.fromRevision(uri, client.limit, publisher) :
-								client.toRevision(uri, client.limit, publisher));
-					else {
-						final long gid = client.getCallableGID(uri);
-						if (gid == -1) {
-							System.err.println("Unknown URI " + uri);
-							continue;
+					if (uri.getPath() == null) {
+						final int id = client.nextFutureId;
+						if (uri.getPath() == null) 
+							client.id2Future.put(id, dir == '+'?
+									client.fromRevision(uri, client.limit, publisher) :
+									client.toRevision(uri, client.limit, publisher));
+						else {
+							final long gid = client.getCallableGID(uri);
+							if (gid == -1) {
+								System.err.println("Unknown URI " + uri);
+								continue;
+							}
+							client.id2Future.put(id, dir == '+'? 
+									client.fromCallable(gid, client.limit, publisher) :
+									client.toCallable(gid, client.limit, publisher));						
 						}
-						client.id2Future.put(id, dir == '+'? 
-								client.fromCallable(gid, client.limit, publisher) :
-								client.toCallable(gid, client.limit, publisher));						
+						client.id2Subscriber.put(id, futureSubscriber);
+						client.id2Query.put(id, line);
+						System.err.println("Id: " + id);
+						client.nextFutureId++;
+					} 
+				} else {  // dir == '*'
+					String[] uris = line.substring(1).split("\\s");
+					if (uris.length != 2) {
+						System.err.println("Exactly two callable URIs must be provided!");
+						continue;
 					}
+					final FastenJavaURI uriFrom = FastenJavaURI.create(uris[0]);
+					final long gidFrom = client.getCallableGID(uriFrom);
+					if (uriFrom.getPath() == null || gidFrom == -1) {
+						System.err.println("Invalid URI (or not a callable URI): " + uriFrom);
+						continue;
+					}
+					final FastenJavaURI uriTo = FastenJavaURI.create(uris[1]);
+					final long gidTo = client.getCallableGID(uriTo);
+					if (uriTo.getPath() == null || gidTo == -1) {
+						System.err.println("Invalid URI (or not a callable URI): " + uriTo);
+						continue;
+					}
+					
+					client.resetCounters();
+
+					SubmissionPublisher<PathResult> publisher = new SubmissionPublisher<>();
+					final WaitOnTerminateFutureSubscriber<PathResult> futureSubscriber = new WaitOnTerminateFutureSubscriber<>();
+
+					publisher.subscribe(futureSubscriber);
+
+					final int id = client.nextFutureId;
+					client.id2Future.put(id, client.between(gidFrom, gidTo, client.limit, publisher));
 					client.id2Subscriber.put(id, futureSubscriber);
 					client.id2Query.put(id, line);
 					System.err.println("Id: " + id);
 					client.nextFutureId++;
-				} 
+				}
 
 				for (final var t : client.throwables()) {
 					System.err.println(t);
@@ -485,6 +527,7 @@ public class SearchEngineClient {
 			} finally {}
 		}
 	}
+
 
 
 

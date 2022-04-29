@@ -74,7 +74,9 @@ import eu.fasten.core.search.predicate.PredicateFactory.MetadataSource;
 import it.unimi.dsi.fastutil.HashCommon;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.io.TextIO;
+import it.unimi.dsi.fastutil.longs.Long2LongOpenHashMap;
 import it.unimi.dsi.fastutil.longs.LongArrayFIFOQueue;
+import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.longs.LongCollection;
 import it.unimi.dsi.fastutil.longs.LongIterator;
 import it.unimi.dsi.fastutil.longs.LongLinkedOpenHashSet;
@@ -162,6 +164,17 @@ public class SearchEngine implements AutoCloseable {
 			if (t != 0) return t;
 			return Long.compare(gid, o.gid);
 		}
+	}
+	
+	public final class PathResult extends LongArrayList {
+		private static final long serialVersionUID = 1L;
+		@Override
+		public String toString() {
+			StringBuilder sb = new StringBuilder(); 
+			for (long gid: this) sb.append(gid + "\t" + Util.getCallableName(gid, context) + " ->\n");
+			return sb.toString();
+
+		}	
 	}
 
 	/** The handle to the Postgres metadata database. */
@@ -536,6 +549,59 @@ public class SearchEngine implements AutoCloseable {
 		return results;
 	}
 
+
+	
+	protected PathResult bfsBetween(final DirectedGraph graph, final long gidFrom, final long gidTo,final int maxResults, final AtomicLong globalVisitTime, final AtomicLong globalVisitedArcs) {
+		final LongSet nodes = graph.nodes();
+		final LongArrayFIFOQueue visitQueue = new LongArrayFIFOQueue(graph.numNodes() + 1); // The +1 can be removed in fastutil > 8.5.9
+		final LongOpenHashSet seen = new LongOpenHashSet(graph.numNodes(), 0.5f);
+		final Long2LongOpenHashMap parent = new Long2LongOpenHashMap();
+		final PathResult results = new PathResult();
+		
+		if (nodes.contains(gidFrom)) {
+			visitQueue.enqueue(gidFrom);
+			seen.add(gidFrom);
+			parent.put(gidFrom, -1);
+		}
+
+		if (visitQueue.isEmpty()) return results;
+		
+		final long start = -System.nanoTime();
+		
+		long visitedArcs = 0;
+		boolean found = false;
+		
+		while (!visitQueue.isEmpty() && !found) {
+			final long gid = visitQueue.dequeueLong();
+			final LongIterator iterator = graph.successorsIterator(gid);
+
+			while (iterator.hasNext()) {
+				final long x = iterator.nextLong();
+				visitedArcs++;
+				if (seen.add(x)) {
+					visitQueue.enqueue(x);
+					parent.put(x, gid);
+					found = x == gidTo; 
+				}
+			}
+		}
+		
+		if (found) {
+			LongArrayFIFOQueue path = new LongArrayFIFOQueue();
+			long current = gidTo;
+			path.enqueue(current);
+			while (current != gidFrom) {
+				current = parent.get(current);
+				path.enqueue(current);
+			}
+			while (!path.isEmpty()) results.add(path.dequeueLong());
+		} 
+	
+		globalVisitTime.addAndGet(start + System.nanoTime());
+		globalVisitedArcs.addAndGet(visitedArcs);
+		return results;
+	}
+
 	/**
 	 * Computes the callables satisfying the conjunction of {@link #predicateFilters} and reachable from
 	 * the provided callable, and returns them in a ranked list.
@@ -687,6 +753,88 @@ public class SearchEngine implements AutoCloseable {
 		
 		return future;
 	}
+
+	public Future<Void> between(long gidFrom, long gidTo, int maxResults, SubmissionPublisher<PathResult> publisher) throws RocksDBException {
+		throwables.clear();
+		long rev = Util.getRevision(gidFrom, context);
+		final var graph = rocksDao.getGraphData(rev);
+		if (graph == null) throw new NoSuchElementException("Revision associated with callable missing from the graph database");
+		LOGGER.debug("Revision call graph has " + graph.numNodes() + " nodes");
+
+		final ExecutorService executorService = Executors.newSingleThreadExecutor(); // use just a single executor to solve this
+		final ExecutorCompletionService<Void> executorCompletionService = new ExecutorCompletionService<>(executorService);
+
+		final Future<Void> future = executorCompletionService.submit(() -> {
+			DirectedGraph stitchedGraph = cache.getMerged(rev);
+			if (stitchedGraph == NO_GRAPH) throw new NullPointerException("mergeWithCHA() returned null on gid " + rev);
+			if (stitchedGraph == null) {
+				final Record2<String, String> record = context.select(Packages.PACKAGES.PACKAGE_NAME, PackageVersions.PACKAGE_VERSIONS.VERSION).from(PackageVersions.PACKAGE_VERSIONS).join(Packages.PACKAGES).on(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.eq(Packages.PACKAGES.ID)).where(PackageVersions.PACKAGE_VERSIONS.ID.eq(Long.valueOf(rev))).fetchOne();
+				final String[] a = record.component1().split(":");
+				final String groupId = a[0];
+				final String artifactId = a[1];
+				final String version = record.component2();
+
+				final LongLinkedOpenHashSet depFromCache = cache.getDeps(rev);
+
+				final LongLinkedOpenHashSet dependencyIds; 
+				if (depFromCache == null) {
+					final long start = -System.nanoTime();
+					final Set<Revision> dependencySet = resolver.resolveDependencies(groupId, artifactId, version, -1, context, true);
+					dependencyIds = LongLinkedOpenHashSet.toSet(dependencySet.stream().mapToLong(x -> x.id));
+					dependencyIds.addAndMoveToFirst(rev);
+					resolveTime.addAndGet(start + System.nanoTime());
+					cache.putDeps(rev, dependencyIds);
+				}
+				else dependencyIds = depFromCache;
+
+				LOGGER.debug("Found " + dependencyIds.size() + " dependencies");
+
+				for(LongIterator iterator =  dependencyIds.iterator(); iterator.hasNext();) 
+					if (!revisionCache.mayContain(iterator.nextLong())) iterator.remove();
+
+				final long start = -System.nanoTime();
+				final var dm = new CGMerger(dependencyIds, context, rocksDao);
+
+				try {
+					stitchedGraph = getMergedGraph(dm, rev);
+				} catch (final Throwable t) {
+					throwables.add(t);
+					LOGGER.error("mergeWithCHA threw an exception", t);
+				}
+				mergeTime.addAndGet(start + System.nanoTime());
+
+				if (stitchedGraph == null) {
+					cache.putMerged(rev, null);
+					throw new NullPointerException("mergeWithCHA() returned null on gid " + rev);
+				}
+				else {
+					stitchedGraph = ArrayImmutableDirectedGraph.copyOf(stitchedGraph, false);
+					cache.putMerged(rev, (ArrayImmutableDirectedGraph)stitchedGraph);
+				}
+			}
+
+			LOGGER.debug("Stiched graph has " + stitchedGraph.numNodes() + " nodes");
+
+			publisher.submit(bfsBetween(stitchedGraph, gidFrom, gidTo, maxResults, visitTime, visitedArcs));
+			return null; // Why is this needed?
+		});
+		
+		executorService.shutdown();
+		try {
+			executorCompletionService.take();
+		} catch (final InterruptedException cancelled) {
+			future.cancel(true);
+			try {
+				executorCompletionService.take();
+				future.get();
+			} catch (final InterruptedException | ExecutionException e) {}
+		} finally {
+			publisher.close();
+		}
+		
+		return future;
+	}
+
 
 	/**
 	 * Computes the callables satisfying the conjunction of {@link #predicateFilters} and coreachable
@@ -934,7 +1082,7 @@ public class SearchEngine implements AutoCloseable {
 					searchEngine.resetCounters();
 
 					SubmissionPublisher<SortedSet<Result>> publisher = new SubmissionPublisher<>();
-			    	TopKProcessor topKProcessor = new TopKProcessor(searchEngine.limit);
+			    	TopKProcessor topKProcessor = new TopKProcessor(searchEngine.limit, searchEngine);
 			    	publisher.subscribe(topKProcessor);
 			    	
 			    	final WaitOnTerminateFutureSubscriber<Update> futureSubscriber = new WaitOnTerminateFutureSubscriber<>();

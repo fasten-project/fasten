@@ -68,7 +68,7 @@ public class SearchEngineTest {
 
     	for (int i = 0; i < n; i++) all.add(new Result(random.nextInt(100), random.nextInt(100)));
     	
-    	TopKProcessor processor = new TopKProcessor(maxResults);
+    	TopKProcessor processor = new TopKProcessor(maxResults, null);
     	final WaitOnTerminateFutureSubscriber<Update> futureSubscriber = new WaitOnTerminateFutureSubscriber<>();
     	processor.subscribe(futureSubscriber);
     	
