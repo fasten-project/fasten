@@ -22,7 +22,9 @@ import java.io.BufferedReader;
 import java.io.FileInputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.sql.SQLException;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Scanner;
 import java.util.SortedSet;
 import java.util.concurrent.ExecutionException;
@@ -32,6 +34,7 @@ import java.util.function.LongPredicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.rocksdb.RocksDBException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,6 +47,7 @@ import com.martiansoftware.jsap.UnflaggedOption;
 
 import eu.fasten.core.data.ArrayImmutableDirectedGraph;
 import eu.fasten.core.data.FastenJavaURI;
+import eu.fasten.core.data.FastenURI;
 import eu.fasten.core.search.SearchEngine.Result;
 import eu.fasten.core.search.TopKProcessor.Update;
 import eu.fasten.core.search.predicate.PredicateFactory.MetadataSource;
@@ -107,6 +111,58 @@ public class SearchEngineClient {
 	public SearchEngineClient(final SearchEngine se) {
 		this.se = se;
 	}
+	
+	/** Delegate to {@link SearchEngine}: {@see SearchEngine#throwables}. */
+	private List<Throwable> throwables() {
+		return se.throwables;
+	}
+	
+	/** Returns the GID corresponding to the given URI, in the context of the {@link SearchEngine} we are using.
+	 * 
+	 * @param uri the URI.
+	 * @return the GID.
+	 * @throws SQLException
+	 */
+	private long getCallableGID(FastenJavaURI uri) throws SQLException {
+		return Util.getCallableGID(uri, se.context());
+	}
+
+	/** Returns the URI corresponding to the given GID, in the context of the {@link SearchEngine} we are using.
+	 * 
+	 * @param gid the GID.
+	 * @return the URI.
+	 */
+	private FastenURI getCallableName(long gid) {
+		return Util.getCallableName(gid, se.context());
+	}
+
+
+	/** Delegate to {@link SearchEngine}: {@see SearchEngine#fromCallable(long, LongPredicate, int, SubmissionPublisher)}. */
+	private void fromCallable(final long gid, final int limit, final SubmissionPublisher<SortedSet<Result>> publisher) throws RocksDBException {
+		se.fromCallable(gid, limit, publisher);	
+	}
+
+	/** Delegate to {@link SearchEngine}: {@see SearchEngine#toCallable(long, LongPredicate, int, SubmissionPublisher)}. */
+	private Future<Void> toCallable(long gid, int limit, SubmissionPublisher<SortedSet<Result>> publisher) throws RocksDBException {
+		return se.toCallable(gid, limit, publisher);
+	}
+
+
+	/** Delegate to {@link SearchEngine}: {@see SearchEngine#toCallable(long, LongPredicate, int, SubmissionPublisher)}. */
+	private Future<Void> toRevision(FastenJavaURI uri, int limit, SubmissionPublisher<SortedSet<Result>> publisher) throws RocksDBException {
+		return se.toRevision(uri, limit, publisher);
+	}
+
+	/** Delegate to {@link SearchEngine}: {@see SearchEngine#fromRevision(long, LongPredicate, int, SubmissionPublisher)}. */
+	private void fromRevision(FastenJavaURI uri, int limit, SubmissionPublisher<SortedSet<Result>> publisher) throws RocksDBException {
+		se.fromRevision(uri, limit, publisher);
+	}
+
+	/** Delegate to {@link SearchEngine}: {@see SearchEngine#resetCounters()}. */
+	private void resetCounters() {
+		se.resetCounters();
+	}
+
 	
 	/** Checks that <code>min<=n<=max</code>; if not true, raises an IllegalArgumentException.
 	 * 
@@ -378,8 +434,7 @@ public class SearchEngineClient {
 		if (jsapResult.userSpecified("blacklist")) TextIO.asLongIterator(new BufferedReader(new InputStreamReader(new FileInputStream(jsapResult.getString("blacklist")), StandardCharsets.US_ASCII))).forEachRemaining(x -> blacklist.add(x));
 
 
-		final SearchEngine se = new SearchEngine(jdbcURI, database, rocksDb, cacheDir, resolverGraph, null, blacklist);
-		final SearchEngineClient sec = new SearchEngineClient(se);
+		final SearchEngineClient client = new SearchEngineClient(new SearchEngine(jdbcURI, database, rocksDb, cacheDir, resolverGraph, null, blacklist));
 
 		@SuppressWarnings("resource")
 		final Scanner scanner = new Scanner(System.in);
@@ -391,7 +446,7 @@ public class SearchEngineClient {
 			if (line.length() == 0) continue;
 			final Matcher matcher = COMMAND_REGEXP.matcher(line);
 			if (matcher.matches()) {
-				sec.executeCommand(matcher.group(1));
+				client.executeCommand(matcher.group(1));
 				continue;
 			}
 			try {
@@ -402,10 +457,10 @@ public class SearchEngineClient {
 				}
 				final FastenJavaURI uri = FastenJavaURI.create(line.substring(1));
 
-				se.resetCounters();
+				client.resetCounters();
 
 				SubmissionPublisher<SortedSet<Result>> publisher = new SubmissionPublisher<>();
-				TopKProcessor topKProcessor = new TopKProcessor(sec.limit);
+				TopKProcessor topKProcessor = new TopKProcessor(client.limit);
 				publisher.subscribe(topKProcessor);
 
 				final WaitOnTerminateFutureSubscriber<Update> futureSubscriber = new WaitOnTerminateFutureSubscriber<>();
@@ -415,38 +470,38 @@ public class SearchEngineClient {
 				final Result[] r;
 				if (uri.getPath() == null) {
 					if (dir == '+') {
-						se.fromRevision(uri, sec.limit, publisher);
+						client.fromRevision(uri, client.limit, publisher);
 						r = futureSubscriber.get().current;
-						for (int i = 0; i < Math.min(sec.limit, r.length); i++) System.out.println(r[i].gid + "\t" + Util.getCallableName(r[i].gid, se.context()) + "\t" + r[i].score);
+						for (int i = 0; i < Math.min(client.limit, r.length); i++) System.out.println(r[i].gid + "\t" + client.getCallableName(r[i].gid) + "\t" + r[i].score);
 					}
 					else {
-						final int id = sec.nextFutureId++;
-						sec.id2Future.put(id, se.toRevision(uri, sec.limit, publisher));
-						sec.id2Subscriber.put(id, futureSubscriber);
-						sec.id2Query.put(id, line);
+						final int id = client.nextFutureId++;
+						client.id2Future.put(id, client.toRevision(uri, client.limit, publisher));
+						client.id2Subscriber.put(id, futureSubscriber);
+						client.id2Query.put(id, line);
 						System.err.println("Id: " + id);
 					}
 				} else {
-					final long gid = Util.getCallableGID(uri, se.context());
+					final long gid = client.getCallableGID(uri);
 					if (gid == -1) {
 						System.err.println("Unknown URI " + uri);
 						continue;
 					}
 					if (dir == '+') {
-						se.fromCallable(gid, sec.limit, publisher);
+						client.fromCallable(gid, client.limit, publisher);
 						r = futureSubscriber.get().current;
-						for (int i = 0; i < Math.min(sec.limit, r.length); i++) System.out.println(r[i].gid + "\t" + Util.getCallableName(r[i].gid, se.context()) + "\t" + r[i].score);
+						for (int i = 0; i < Math.min(client.limit, r.length); i++) System.out.println(r[i].gid + "\t" + client.getCallableName(r[i].gid) + "\t" + r[i].score);
 					}
 					else {
-						final int id = sec.nextFutureId++;
-						sec.id2Future.put(id, se.toCallable(gid, sec.limit, publisher));
-						sec.id2Subscriber.put(id, futureSubscriber);
-						sec.id2Query.put(id, line);
+						final int id = client.nextFutureId++;
+						client.id2Future.put(id, client.toCallable(gid, client.limit, publisher));
+						client.id2Subscriber.put(id, futureSubscriber);
+						client.id2Query.put(id, line);
 						System.err.println("Id: " + id);
 					}
 				}
 
-				for (final var t : se.throwables) {
+				for (final var t : client.throwables()) {
 					System.err.println(t);
 					System.err.println("\t" + t.getStackTrace()[0]);
 				}
@@ -455,4 +510,7 @@ public class SearchEngineClient {
 			} finally {}
 		}
 	}
+
+
+
 }
