@@ -491,15 +491,23 @@ public class SearchEngineClient {
 						continue;
 					}
 					final FastenJavaURI uriFrom = FastenJavaURI.create(uris[0]);
-					final long gidFrom = client.getCallableGID(uriFrom);
-					if (uriFrom.getPath() == null || gidFrom == -1) {
+					if (uriFrom == null || uriFrom.getPath() == null) {
 						System.err.println("Invalid URI (or not a callable URI): " + uriFrom);
 						continue;
 					}
+					final long gidFrom = client.getCallableGID(uriFrom);
+					if (gidFrom == -1) {
+						System.err.println("Unknown URI: " + uriFrom);
+						continue;
+					}
 					final FastenJavaURI uriTo = FastenJavaURI.create(uris[1]);
-					final long gidTo = client.getCallableGID(uriTo);
-					if (uriTo.getPath() == null || gidTo == -1) {
+					if (uriTo == null || uriTo.getPath() == null) {
 						System.err.println("Invalid URI (or not a callable URI): " + uriTo);
+						continue;
+					}
+					final long gidTo = client.getCallableGID(uriTo);
+					if (gidTo == -1) {
+						System.err.println("Unknown URI: " + uriTo);
 						continue;
 					}
 					
