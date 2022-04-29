@@ -15,6 +15,8 @@
  */
 package eu.fasten.core.maven.resolution;
 
+import static eu.fasten.core.maven.data.Scope.COMPILE;
+
 import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -71,8 +73,7 @@ public class MavenDependentsResolverVersionRangeTest extends AbstractMavenDepend
         pom.version = parts[1];
 
         for (var to : tos) {
-            var d = new Dependency(to.coord, to.coord, "0");
-            d.setVersionConstraints(to.vcs);
+            var d = new Dependency(to.coord, to.coord, to.vcs, Set.of(), COMPILE, false, "jar", "");
             pom.dependencies.add(d);
         }
 

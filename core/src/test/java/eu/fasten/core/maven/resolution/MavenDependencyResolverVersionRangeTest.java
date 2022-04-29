@@ -15,9 +15,12 @@
  */
 package eu.fasten.core.maven.resolution;
 
+import static eu.fasten.core.maven.data.Scope.COMPILE;
+import static eu.fasten.core.maven.data.VersionConstraint.parseVersionSpec;
 import static java.lang.String.format;
 
 import java.util.Arrays;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
@@ -115,16 +118,19 @@ public class MavenDependencyResolverVersionRangeTest extends AbstractMavenDepend
 
         for (var to : tos) {
             var partsTo = to.split(":");
-            var d = new Dependency(partsTo[0], partsTo[0], partsTo[1]);
 
+            Set<VersionConstraint> vcs;
             boolean isConstraint = partsTo[1].contains("[") || partsTo[1].contains("(");
             if (isConstraint) {
-                var vcs = Arrays.stream(partsTo[1].split(",")) //
+                vcs = Arrays.stream(partsTo[1].split(",")) //
                         .map(vc -> vc.replace('-', ',')) //
                         .map(VersionConstraint::new) //
                         .collect(Collectors.toSet());
-                d.setVersionConstraints(vcs);
+            } else {
+                vcs = parseVersionSpec(partsTo[1]);
             }
+
+            var d = new Dependency(partsTo[0], partsTo[0], vcs, Set.of(), COMPILE, false, "jar", "");
             pom.dependencies.add(d);
         }
 

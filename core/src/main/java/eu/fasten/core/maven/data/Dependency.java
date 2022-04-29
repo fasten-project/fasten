@@ -15,9 +15,8 @@
  */
 package eu.fasten.core.maven.data;
 
-import static eu.fasten.core.utils.Asserts.assertNotNullOrEmpty;
+import static eu.fasten.core.maven.data.Scope.COMPILE;
 
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -29,90 +28,106 @@ import org.json.JSONObject;
 
 import eu.fasten.core.data.Constants;
 
-public class Dependency extends MavenProduct {
+public class Dependency {
 
-    private int hashCode;
+    private static final String JAR = "jar";
+    private static final Set<Exclusion> NO_EXCLS = Set.of();
+    private static final String EMPTY_STR = "";
 
-    private final Set<VersionConstraint> versionConstraints = new HashSet<>();
-    private final Set<Exclusion> exclusions = new HashSet<>();
-    private Scope scope = Scope.COMPILE;
-    private boolean optional;
-    private String type = "jar";
-    private String classifier;
+    public final String groupId;
+    public final String artifactId;
+    public final boolean optional;
 
-    public Dependency() {
-        this("", "", "");
+    private final String classifier;
+    private final Scope scope;
+    private final String type;
+
+    private final VersionConstraint versionConstraint;
+    private final Set<VersionConstraint> versionConstraints;
+    private final Set<Exclusion> exclusions;
+
+    private final int hashCode;
+
+    public Dependency(String groupId, String artifactId, String version) {
+        this(groupId, artifactId, VersionConstraint.parseVersionSpec(version), Set.of(), Scope.COMPILE, false, JAR, "");
     }
 
-    public Dependency(final String groupId, final String artifactId, final String version) {
-        this(groupId, artifactId, version, new HashSet<>(), Scope.COMPILE, false, "jar", "");
-    }
-
-    public Dependency(final String groupId, final String artifactId, final String version,
-            final Set<Exclusion> exclusions, final Scope scope, final boolean optional, final String type,
-            final String classifier) {
-        this(groupId, artifactId, VersionConstraint.parseVersionSpec(version), exclusions, scope, optional, type,
-                classifier);
-    }
-
-    public Dependency(final String groupId, final String artifactId, final Set<VersionConstraint> versionConstraints,
-            final Set<Exclusion> exclusions, final Scope scope, final boolean optional, final String type,
-            final String classifier) {
+    public Dependency(String groupId, String artifactId, Set<VersionConstraint> versionConstraints,
+            Set<Exclusion> exclusions, Scope scope, boolean optional, String type, String classifier) {
 
         this.groupId = groupId;
         this.artifactId = artifactId;
-
-        this.versionConstraints.addAll(versionConstraints);
-        this.exclusions.addAll(exclusions);
-        this.scope = scope;
         this.optional = optional;
-        assertNotNullOrEmpty(type);
-        this.type = type.toLowerCase();
-        this.classifier = classifier.toLowerCase();
-        refreshHashCode();
+
+        if (classifier != null && !classifier.isEmpty()) {
+            this.classifier = classifier.toLowerCase();
+        } else {
+            this.classifier = null;
+        }
+        if (scope != COMPILE) {
+            this.scope = scope;
+        } else {
+            this.scope = null;
+        }
+        if (type != null && !type.isEmpty() && !JAR.equals(type)) {
+            this.type = type.toLowerCase();
+        } else {
+            this.type = null;
+        }
+
+        if (versionConstraints.size() == 1) {
+            this.versionConstraint = versionConstraints.iterator().next();
+            this.versionConstraints = null;
+        } else {
+            this.versionConstraint = null;
+            this.versionConstraints = Set.copyOf(versionConstraints);
+        }
+
+        if (exclusions.isEmpty()) {
+            this.exclusions = NO_EXCLS;
+        } else {
+            this.exclusions = Set.copyOf(exclusions);
+        }
+
+        hashCode = calcHashCode();
     }
 
-    public MavenProduct product() {
-        return new MavenProduct(groupId, artifactId);
+    private int calcHashCode() {
+        final var prime = 31;
+        var hashCode = 0;
+        hashCode = prime * hashCode + ((groupId == null) ? 0 : groupId.hashCode());
+        hashCode = prime * hashCode + ((artifactId == null) ? 0 : artifactId.hashCode());
+        hashCode = prime * hashCode + (optional ? 1231 : 1237);
+
+        hashCode = prime * hashCode + ((classifier == null) ? 0 : classifier.hashCode());
+        hashCode = prime * hashCode + ((scope == null) ? 0 : scope.hashCode());
+        hashCode = prime * hashCode + ((type == null) ? 0 : type.hashCode());
+
+        hashCode = prime * hashCode + ((versionConstraint == null) ? 0 : versionConstraint.hashCode());
+        hashCode = prime * hashCode + ((versionConstraints == null) ? 0 : versionConstraints.hashCode());
+        hashCode = prime * hashCode + ((exclusions == null) ? 0 : exclusions.hashCode());
+        return hashCode;
     }
 
     public String toGA() {
         return new StringBuilder().append(groupId).append(':').append(artifactId).toString();
     }
 
-    @Override
-    public void setGroupId(String groupId) {
-        super.setGroupId(groupId);
-        refreshHashCode();
-    }
-
-    @Override
-    public void setArtifactId(String artifactId) {
-        super.setArtifactId(artifactId);
-        refreshHashCode();
-    }
-
     public Set<VersionConstraint> getVersionConstraints() {
-        // keep immutability or hashCode will break
-        return Collections.unmodifiableSet(versionConstraints);
+        if (versionConstraints == null) {
+            return Set.of(versionConstraint);
+        }
+        return versionConstraints;
     }
 
     public Set<Exclusion> getExclusions() {
-        // keep immutability or hashCode will break
-        return Collections.unmodifiableSet(exclusions);
-    }
-
-    public void addExclusion(Exclusion e) {
-        exclusions.add(e);
-        refreshHashCode();
-    }
-
-    public void setOptional(boolean isOptional) {
-        this.optional = isOptional;
-        refreshHashCode();
+        return exclusions;
     }
 
     public Scope getScope() {
+        if (scope == null) {
+            return COMPILE;
+        }
         return scope;
     }
 
@@ -121,44 +136,24 @@ public class Dependency extends MavenProduct {
     }
 
     public String getPackagingType() {
+        if (type == null) {
+            return JAR;
+        }
         return type;
     }
 
     public String getClassifier() {
+        if (classifier == null) {
+            return EMPTY_STR;
+        }
         return classifier;
-    }
-
-    public void setScope(Scope scope) {
-        this.scope = scope;
-        refreshHashCode();
-    }
-
-    public void setVersionConstraints(Set<VersionConstraint> vcs) {
-        this.versionConstraints.clear();
-        this.versionConstraints.addAll(vcs);
-        refreshHashCode();
-    }
-
-    public void addVersionConstraint(VersionConstraint vc) {
-        this.versionConstraints.add(vc);
-        refreshHashCode();
-    }
-
-    public void setPackagingType(String type) {
-        this.type = type;
-        refreshHashCode();
-    }
-
-    public void setClassifier(String classifier) {
-        this.classifier = classifier;
-        refreshHashCode();
     }
 
     @Deprecated
     public String[] getVersionConstraintsArr() {
-        var constraints = new String[this.versionConstraints.size()];
+        var constraints = new String[getVersionConstraints().size()];
         var i = new int[] { 0 };
-        versionConstraints.forEach(vc -> {
+        getVersionConstraints().forEach(vc -> {
             constraints[i[0]++] = vc.getSpec();
         });
         return constraints;
@@ -177,21 +172,6 @@ public class Dependency extends MavenProduct {
     @Override
     public int hashCode() {
         return hashCode;
-    }
-
-    private void refreshHashCode() {
-        final var prime = 31;
-        hashCode = 0;
-        // MavenProduct
-        hashCode = prime * hashCode + ((groupId == null) ? 0 : groupId.hashCode());
-        hashCode = prime * hashCode + ((artifactId == null) ? 0 : artifactId.hashCode());
-        // Dependency
-        hashCode = prime * hashCode + ((versionConstraints == null) ? 0 : versionConstraints.hashCode());
-        hashCode = prime * hashCode + ((exclusions == null) ? 0 : exclusions.hashCode());
-        hashCode = prime * hashCode + ((scope == null) ? 0 : scope.hashCode());
-        hashCode = prime * hashCode + (optional ? 1231 : 1237);
-        hashCode = prime * hashCode + ((type == null) ? 0 : type.hashCode());
-        hashCode = prime * hashCode + ((classifier == null) ? 0 : classifier.hashCode());
     }
 
     @Override
@@ -255,12 +235,12 @@ public class Dependency extends MavenProduct {
         json.put("artifactId", this.artifactId);
         json.put("groupId", this.groupId);
         final var constraintsJson = new JSONArray();
-        for (var constraint : this.versionConstraints) {
+        for (var constraint : this.getVersionConstraints()) {
             constraintsJson.put(constraint.getSpec());
         }
         json.put("versionConstraints", constraintsJson);
         final var exclusionsJson = new JSONArray();
-        for (var exclusion : this.exclusions) {
+        for (var exclusion : this.getExclusions()) {
             exclusionsJson.put(exclusion.toJSON());
         }
         json.put("exclusions", exclusionsJson);

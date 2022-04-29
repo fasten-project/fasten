@@ -156,9 +156,8 @@ public class MavenResolverIO {
     }
 
     private static Dependency simplify(Dependency d) {
-        d.setPackagingType(null);
-        d.setClassifier(null);
-        return d;
+        return new Dependency(d.groupId, d.artifactId, d.getVersionConstraints(), d.getExclusions(), d.getScope(),
+                d.optional, null, null);
     }
 
     private static IMavenResolver init(Set<Pom> poms) {
@@ -175,7 +174,7 @@ public class MavenResolverIO {
             dpdData.add(pom);
             depData.add(pom);
         }
-        
+
         LOG.info("Initialization done");
         return new MavenResolver(dpdRes, depRes);
     }

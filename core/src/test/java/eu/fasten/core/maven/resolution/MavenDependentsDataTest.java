@@ -15,7 +15,6 @@
  */
 package eu.fasten.core.maven.resolution;
 
-import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertSame;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -55,14 +54,24 @@ public class MavenDependentsDataTest {
     }
 
     @Test
-    public void pomCanBeReplaced() {
+    public void pomAreNotAutomaticallyReplaced() {
         var a = add(SOME_TIME, "g:a:1", "a:b:1");
         var b = add(SOME_TIME + 1, "g:a:1", "a:b:1");
-        var c = sut.findPom("g:a:1", SOME_TIME + 1);
-        assertNotSame(a, c);
-        assertSame(b, c);
-        var dpds = sut.findPotentialDependents("a:b", SOME_TIME + 1);
-        assertEquals(1, dpds.size());
+        var actual = sut.findPom("g:a:1", SOME_TIME + 1);
+        assertSame(b, actual);
+        var actuals = sut.findPotentialDependents("a:b", SOME_TIME + 1);
+        assertEquals(Set.of(a, b), actuals);
+    }
+
+    @Test
+    public void pomsCanBeCleanedUp() {
+        add(SOME_TIME, "g:a:1", "a:b:1");
+        var b = add(SOME_TIME + 1, "g:a:1", "a:b:1");
+        sut.removeOutdatedPomRegistrations();
+        var actual = sut.findPom("g:a:1", SOME_TIME + 1);
+        assertSame(b, actual);
+        var actuals = sut.findPotentialDependents("a:b", SOME_TIME + 1);
+        assertEquals(Set.of(b), actuals);
     }
 
     @Test

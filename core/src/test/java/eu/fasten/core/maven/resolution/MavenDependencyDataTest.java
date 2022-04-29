@@ -33,11 +33,11 @@ import eu.fasten.core.maven.data.VersionConstraint;
 public class MavenDependencyDataTest {
 
     private static final long SOME_TIME = 123L;
-    private MavenDependencyData sut;
+    private TestMavenDependencyData sut;
 
     @BeforeEach
     public void setup() {
-        sut = new MavenDependencyData();
+        sut = new TestMavenDependencyData();
     }
 
     @Test
@@ -153,6 +153,23 @@ public class MavenDependencyDataTest {
         assertEquals(expected, actual);
     }
 
+    @Test
+    public void pomsAreNotAutomaticallyReplaced() {
+        var a = addPom("a", "b", "1", SOME_TIME - 1);
+        var b = addPom("a", "b", "1", SOME_TIME);
+        var actuals = sut.findGA("a:b");
+        assertEquals(Set.of(a, b), actuals);
+    }
+
+    @Test
+    public void duplicatePomsCanBeCleanedUp() {
+        addPom("a", "b", "1", SOME_TIME - 1);
+        var b = addPom("a", "b", "1", SOME_TIME);
+        sut.removeOutdatedPomRegistrations();
+        var actuals = sut.findGA("a:b");
+        assertEquals(Set.of(b), actuals);
+    }
+
     private Pom find(long resolveAt, String ga, String... specs) {
         var vcs = Arrays.stream(specs) //
                 .map(VersionConstraint::new) //
@@ -169,5 +186,12 @@ public class MavenDependencyDataTest {
 
         sut.add(pom);
         return pom;
+    }
+
+    private static class TestMavenDependencyData extends MavenDependencyData {
+        @Override
+        public synchronized Set<Pom> findGA(String ga) {
+            return super.findGA(ga);
+        }
     }
 }

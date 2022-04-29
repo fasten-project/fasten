@@ -15,17 +15,20 @@
  */
 package eu.fasten.core.maven.resolution;
 
+import static eu.fasten.core.maven.data.VersionConstraint.parseVersionSpec;
 import static org.apache.commons.lang3.builder.ToStringBuilder.reflectionToString;
 import static org.apache.commons.lang3.builder.ToStringStyle.MULTI_LINE_STYLE;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 
 import eu.fasten.core.maven.data.Dependency;
 import eu.fasten.core.maven.data.Exclusion;
 import eu.fasten.core.maven.data.Pom;
+import eu.fasten.core.maven.data.Scope;
 
 public class MavenDependencyResolverExclusionTest extends AbstractMavenDependencyResolverTest {
 
@@ -114,10 +117,11 @@ public class MavenDependencyResolverExclusionTest extends AbstractMavenDependenc
         for (var to : tos) {
             danglingGAVs.add(to.coord);
             var partsTo = to.coord.split(":");
-            var d = new Dependency(partsTo[0], partsTo[0], partsTo[1]);
-            for (var excl : to.excls) {
-                d.addExclusion(new Exclusion(excl, excl));
-            }
+
+            var excls = to.excls.stream().map(excl -> new Exclusion(excl, excl)).collect(Collectors.toSet());
+
+            var d = new Dependency(partsTo[0], partsTo[0], parseVersionSpec(partsTo[1]), excls, Scope.COMPILE, false,
+                    "jar", "");
             pom.dependencies.add(d);
         }
 

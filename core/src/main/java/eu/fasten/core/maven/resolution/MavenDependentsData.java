@@ -43,13 +43,13 @@ public class MavenDependentsData {
             dependentsForGA.put(depGA, poms);
         } else {
             poms = dependentsForGA.get(depGA);
-            var it = poms.iterator();
-            while (it.hasNext()) {
-                var pom2 = it.next();
-                if (hasEqualGAV(pom, pom2)) {
-                    it.remove();
-                }
-            }
+//            var it = poms.iterator();
+//            while (it.hasNext()) {
+//                var pom2 = it.next();
+//                if (hasEqualGAV(pom, pom2)) {
+//                    it.remove();
+//                }
+//            }
         }
         poms.add(pom);
     }
@@ -78,5 +78,19 @@ public class MavenDependentsData {
         return dpds.stream() //
                 .filter(d -> d.releaseDate <= resolveAt) //
                 .collect(Collectors.toSet());
+    }
+
+    public synchronized void removeOutdatedPomRegistrations() {
+        var registered = new HashSet<>(pomForGAV.values());
+        for (var poms : dependentsForGA.values()) {
+            var it = poms.iterator();
+            while (it.hasNext()) {
+                var pom = it.next();
+                if (!registered.contains(pom)) {
+                    it.remove();
+                }
+            }
+        }
+
     }
 }

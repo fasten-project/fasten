@@ -21,9 +21,12 @@ import static eu.fasten.core.maven.data.Scope.PROVIDED;
 import static eu.fasten.core.maven.data.Scope.RUNTIME;
 import static eu.fasten.core.maven.data.Scope.SYSTEM;
 import static eu.fasten.core.maven.data.Scope.TEST;
+import static eu.fasten.core.maven.data.VersionConstraint.parseVersionSpec;
 import static eu.fasten.core.maven.resolution.ResolverConfig.resolve;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+
+import java.util.Set;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -126,8 +129,8 @@ public class MavenDependentsResolverScopesTest extends AbstractMavenDependentsRe
 
         for (var to : tos) {
             var partsTo = to.coord.split(":");
-            var d = new Dependency(partsTo[0], partsTo[0], partsTo[1]);
-            d.setScope(to.scope);
+            var d = new Dependency(partsTo[0], partsTo[0], parseVersionSpec(partsTo[1]), Set.of(), to.scope, false,
+                    "jar", "");
             pom.dependencies.add(d);
         }
 
