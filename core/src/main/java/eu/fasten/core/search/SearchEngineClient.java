@@ -45,9 +45,7 @@ import com.martiansoftware.jsap.Parameter;
 import com.martiansoftware.jsap.SimpleJSAP;
 import com.martiansoftware.jsap.UnflaggedOption;
 
-import eu.fasten.core.data.ArrayImmutableDirectedGraph;
 import eu.fasten.core.data.FastenJavaURI;
-import eu.fasten.core.data.FastenURI;
 import eu.fasten.core.search.SearchEngine.Result;
 import eu.fasten.core.search.TopKProcessor.Update;
 import eu.fasten.core.search.predicate.PredicateFactory.MetadataSource;
@@ -64,7 +62,6 @@ import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 
 public class SearchEngineClient {
 	private static final Logger LOGGER = LoggerFactory.getLogger(SearchEngineClient.class);
-	private static final ArrayImmutableDirectedGraph NO_GRAPH = new ArrayImmutableDirectedGraph.Builder().build();
 	private static final int DEFAULT_LIMIT = 10;
 
 	/** The regular expression for commands. */
@@ -127,19 +124,9 @@ public class SearchEngineClient {
 		return Util.getCallableGID(uri, se.context());
 	}
 
-	/** Returns the URI corresponding to the given GID, in the context of the {@link SearchEngine} we are using.
-	 * 
-	 * @param gid the GID.
-	 * @return the URI.
-	 */
-	private FastenURI getCallableName(long gid) {
-		return Util.getCallableName(gid, se.context());
-	}
-
-
 	/** Delegate to {@link SearchEngine}: {@see SearchEngine#fromCallable(long, LongPredicate, int, SubmissionPublisher)}. */
-	private void fromCallable(final long gid, final int limit, final SubmissionPublisher<SortedSet<Result>> publisher) throws RocksDBException {
-		se.fromCallable(gid, limit, publisher);	
+	private Future<Void> fromCallable(final long gid, final int limit, final SubmissionPublisher<SortedSet<Result>> publisher) throws RocksDBException {
+		return se.fromCallable(gid, limit, publisher);	
 	}
 
 	/** Delegate to {@link SearchEngine}: {@see SearchEngine#toCallable(long, LongPredicate, int, SubmissionPublisher)}. */
@@ -154,8 +141,8 @@ public class SearchEngineClient {
 	}
 
 	/** Delegate to {@link SearchEngine}: {@see SearchEngine#fromRevision(long, LongPredicate, int, SubmissionPublisher)}. */
-	private void fromRevision(FastenJavaURI uri, int limit, SubmissionPublisher<SortedSet<Result>> publisher) throws RocksDBException {
-		se.fromRevision(uri, limit, publisher);
+	private Future<Void> fromRevision(FastenJavaURI uri, int limit, SubmissionPublisher<SortedSet<Result>> publisher) throws RocksDBException {
+		return se.fromRevision(uri, limit, publisher);
 	}
 
 	/** Delegate to {@link SearchEngine}: {@see SearchEngine#resetCounters()}. */
@@ -467,39 +454,27 @@ public class SearchEngineClient {
 
 				topKProcessor.subscribe(futureSubscriber);
 
-				final Result[] r;
 				if (uri.getPath() == null) {
-					if (dir == '+') {
-						client.fromRevision(uri, client.limit, publisher);
-						r = futureSubscriber.get().current;
-						for (int i = 0; i < Math.min(client.limit, r.length); i++) System.out.println(r[i].gid + "\t" + client.getCallableName(r[i].gid) + "\t" + r[i].score);
-					}
+					final int id = client.nextFutureId;
+					if (uri.getPath() == null) 
+						client.id2Future.put(id, dir == '+'?
+								client.fromRevision(uri, client.limit, publisher) :
+								client.toRevision(uri, client.limit, publisher));
 					else {
-						final int id = client.nextFutureId++;
-						client.id2Future.put(id, client.toRevision(uri, client.limit, publisher));
-						client.id2Subscriber.put(id, futureSubscriber);
-						client.id2Query.put(id, line);
-						System.err.println("Id: " + id);
+						final long gid = client.getCallableGID(uri);
+						if (gid == -1) {
+							System.err.println("Unknown URI " + uri);
+							continue;
+						}
+						client.id2Future.put(id, dir == '+'? 
+								client.fromCallable(gid, client.limit, publisher) :
+								client.toCallable(gid, client.limit, publisher));						
 					}
-				} else {
-					final long gid = client.getCallableGID(uri);
-					if (gid == -1) {
-						System.err.println("Unknown URI " + uri);
-						continue;
-					}
-					if (dir == '+') {
-						client.fromCallable(gid, client.limit, publisher);
-						r = futureSubscriber.get().current;
-						for (int i = 0; i < Math.min(client.limit, r.length); i++) System.out.println(r[i].gid + "\t" + client.getCallableName(r[i].gid) + "\t" + r[i].score);
-					}
-					else {
-						final int id = client.nextFutureId++;
-						client.id2Future.put(id, client.toCallable(gid, client.limit, publisher));
-						client.id2Subscriber.put(id, futureSubscriber);
-						client.id2Query.put(id, line);
-						System.err.println("Id: " + id);
-					}
-				}
+					client.id2Subscriber.put(id, futureSubscriber);
+					client.id2Query.put(id, line);
+					System.err.println("Id: " + id);
+					client.nextFutureId++;
+				} 
 
 				for (final var t : client.throwables()) {
 					System.err.println(t);

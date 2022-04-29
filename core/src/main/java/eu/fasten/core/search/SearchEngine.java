@@ -545,8 +545,8 @@ public class SearchEngine implements AutoCloseable {
 	 * @param publisher a publisher for the intermediate result updates.
 	 * @return a list of {@linkplain Result results}.
 	 */
-	public void fromCallable(final long gid, final int maxResults, final SubmissionPublisher<SortedSet<Result>> publisher) throws RocksDBException {
-		fromCallable(gid, predicateFilters.stream().reduce(x -> true, LongPredicate::and), maxResults, publisher);
+	public Future<Void> fromCallable(final long gid, final int maxResults, final SubmissionPublisher<SortedSet<Result>> publisher) throws RocksDBException {
+		return fromCallable(gid, predicateFilters.stream().reduce(x -> true, LongPredicate::and), maxResults, publisher);
 	}
 
 	/**
@@ -559,8 +559,8 @@ public class SearchEngine implements AutoCloseable {
 	 * @param publisher a publisher for the intermediate result updates.
 	 * @return a list of {@linkplain Result results}.
 	 */
-	public void fromCallable(final long gid, final LongPredicate filter, final int maxResults, final SubmissionPublisher<SortedSet<Result>> publisher) throws RocksDBException {
-		from(Util.getRevision(gid, context), LongSets.singleton(gid), filter, maxResults, publisher);
+	public Future<Void> fromCallable(final long gid, final LongPredicate filter, final int maxResults, final SubmissionPublisher<SortedSet<Result>> publisher) throws RocksDBException {
+		return from(Util.getRevision(gid, context), LongSets.singleton(gid), filter, maxResults, publisher);
 	}
 
 	/**
@@ -572,8 +572,8 @@ public class SearchEngine implements AutoCloseable {
 	 * @param publisher a publisher for the intermediate result updates.
 	 * @return a list of {@linkplain Result results}.
 	 */
-	public void fromRevision(final FastenURI revisionUri, final int maxResults, final SubmissionPublisher<SortedSet<Result>> publisher) throws RocksDBException {
-		fromRevision(revisionUri, predicateFilters.stream().reduce(x -> true, LongPredicate::and), maxResults, publisher);
+	public Future<Void> fromRevision(final FastenURI revisionUri, final int maxResults, final SubmissionPublisher<SortedSet<Result>> publisher) throws RocksDBException {
+		return fromRevision(revisionUri, predicateFilters.stream().reduce(x -> true, LongPredicate::and), maxResults, publisher);
 	}
 
 	/**
@@ -586,11 +586,11 @@ public class SearchEngine implements AutoCloseable {
 	 * @param publisher a publisher for the intermediate result updates.
 	 * @return a list of {@linkplain Result results}.
 	 */
-	public void fromRevision(final FastenURI revisionUri, final LongPredicate filter, final int maxResults, final SubmissionPublisher<SortedSet<Result>> publisher) throws RocksDBException {
+	public Future<Void> fromRevision(final FastenURI revisionUri, final LongPredicate filter, final int maxResults, final SubmissionPublisher<SortedSet<Result>> publisher) throws RocksDBException {
 		// Fetch revision id
 		final long rev = Util.getRevisionId(revisionUri, context);
 		if (rev == -1) throw new IllegalArgumentException("Unknown revision " + revisionUri);
-		from(rev, null, filter, maxResults, publisher);
+		return from(rev, null, filter, maxResults, publisher);
 	}
 
 	/**
@@ -605,71 +605,87 @@ public class SearchEngine implements AutoCloseable {
 	 * @param publisher a publisher for the intermediate result updates.
 	 * @return a list of {@linkplain Result results}.
 	 */
-	public void from(final long rev, LongCollection seed, final LongPredicate filter, final int maxResults, final SubmissionPublisher<SortedSet<Result>> publisher) throws RocksDBException {
+	public Future<Void> from(final long rev, final LongCollection providedSeed, final LongPredicate filter, final int maxResults, final SubmissionPublisher<SortedSet<Result>> publisher) throws RocksDBException {
 		throwables.clear();
 		if (blacklist.contains(rev)) throw new NoSuchElementException("Revision " + rev + " is blacklisted");
 		final var graph = rocksDao.getGraphData(rev);
 		if (graph == null) throw new NoSuchElementException("Revision associated with callable missing from the graph database");
-		if (seed == null) seed = graph.nodes();
+		final LongCollection seed = providedSeed == null? graph.nodes() : providedSeed;
 
 		LOGGER.debug("Revision call graph has " + graph.numNodes() + " nodes");
 
-		DirectedGraph stitchedGraph = cache.getMerged(rev);
-		if (stitchedGraph == NO_GRAPH) throw new NullPointerException("mergeWithCHA() returned null on gid " + rev);
-		if (stitchedGraph == null) {
-			final Record2<String, String> record = context.select(Packages.PACKAGES.PACKAGE_NAME, PackageVersions.PACKAGE_VERSIONS.VERSION).from(PackageVersions.PACKAGE_VERSIONS).join(Packages.PACKAGES).on(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.eq(Packages.PACKAGES.ID)).where(PackageVersions.PACKAGE_VERSIONS.ID.eq(Long.valueOf(rev))).fetchOne();
-			final String[] a = record.component1().split(":");
-			final String groupId = a[0];
-			final String artifactId = a[1];
-			final String version = record.component2();
+		final ExecutorService executorService = Executors.newSingleThreadExecutor(); // use just a single executor to solve this
+		final ExecutorCompletionService<Void> executorCompletionService = new ExecutorCompletionService<>(executorService);
 
-			final LongLinkedOpenHashSet depFromCache = cache.getDeps(rev);
-
-			final LongLinkedOpenHashSet dependencyIds; 
-			if (depFromCache == null) {
-				final long start = -System.nanoTime();
-				final Set<Revision> dependencySet = resolver.resolveDependencies(groupId, artifactId, version, -1, context, true);
-				dependencyIds = LongLinkedOpenHashSet.toSet(dependencySet.stream().mapToLong(x -> x.id));
-				dependencyIds.addAndMoveToFirst(rev);
-				resolveTime.addAndGet(start + System.nanoTime());
-				cache.putDeps(rev, dependencyIds);
-			}
-			else dependencyIds = depFromCache;
-
-			LOGGER.debug("Found " + dependencyIds.size() + " dependencies");
-
-			for(LongIterator iterator =  dependencyIds.iterator(); iterator.hasNext();) 
-				if (!revisionCache.mayContain(iterator.nextLong())) iterator.remove();
-			
-			final long start = -System.nanoTime();
-			final var dm = new CGMerger(dependencyIds, context, rocksDao);
-
-			try {
-				stitchedGraph = getMergedGraph(dm, rev);
-			} catch (final Throwable t) {
-				throwables.add(t);
-				LOGGER.error("mergeWithCHA threw an exception", t);
-			}
-			mergeTime.addAndGet(start + System.nanoTime());
-
+		final Future<Void> future = executorCompletionService.submit(() -> {
+			DirectedGraph stitchedGraph = cache.getMerged(rev);
+			if (stitchedGraph == NO_GRAPH) throw new NullPointerException("mergeWithCHA() returned null on gid " + rev);
 			if (stitchedGraph == null) {
-				cache.putMerged(rev, null);
-				throw new NullPointerException("mergeWithCHA() returned null on gid " + rev);
-			}
-			else {
-				stitchedGraph = ArrayImmutableDirectedGraph.copyOf(stitchedGraph, false);
-				cache.putMerged(rev, (ArrayImmutableDirectedGraph)stitchedGraph);
-			}
-		}
+				final Record2<String, String> record = context.select(Packages.PACKAGES.PACKAGE_NAME, PackageVersions.PACKAGE_VERSIONS.VERSION).from(PackageVersions.PACKAGE_VERSIONS).join(Packages.PACKAGES).on(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.eq(Packages.PACKAGES.ID)).where(PackageVersions.PACKAGE_VERSIONS.ID.eq(Long.valueOf(rev))).fetchOne();
+				final String[] a = record.component1().split(":");
+				final String groupId = a[0];
+				final String artifactId = a[1];
+				final String version = record.component2();
 
-		LOGGER.debug("Stiched graph has " + stitchedGraph.numNodes() + " nodes");
+				final LongLinkedOpenHashSet depFromCache = cache.getDeps(rev);
 
-		final ObjectRBTreeSet<Result> results = bfs(stitchedGraph, true, seed, filter, scorer, maxResults, visitTime, visitedArcs);
+				final LongLinkedOpenHashSet dependencyIds; 
+				if (depFromCache == null) {
+					final long start = -System.nanoTime();
+					final Set<Revision> dependencySet = resolver.resolveDependencies(groupId, artifactId, version, -1, context, true);
+					dependencyIds = LongLinkedOpenHashSet.toSet(dependencySet.stream().mapToLong(x -> x.id));
+					dependencyIds.addAndMoveToFirst(rev);
+					resolveTime.addAndGet(start + System.nanoTime());
+					cache.putDeps(rev, dependencyIds);
+				}
+				else dependencyIds = depFromCache;
+
+				LOGGER.debug("Found " + dependencyIds.size() + " dependencies");
+
+				for(LongIterator iterator =  dependencyIds.iterator(); iterator.hasNext();) 
+					if (!revisionCache.mayContain(iterator.nextLong())) iterator.remove();
+
+				final long start = -System.nanoTime();
+				final var dm = new CGMerger(dependencyIds, context, rocksDao);
+
+				try {
+					stitchedGraph = getMergedGraph(dm, rev);
+				} catch (final Throwable t) {
+					throwables.add(t);
+					LOGGER.error("mergeWithCHA threw an exception", t);
+				}
+				mergeTime.addAndGet(start + System.nanoTime());
+
+				if (stitchedGraph == null) {
+					cache.putMerged(rev, null);
+					throw new NullPointerException("mergeWithCHA() returned null on gid " + rev);
+				}
+				else {
+					stitchedGraph = ArrayImmutableDirectedGraph.copyOf(stitchedGraph, false);
+					cache.putMerged(rev, (ArrayImmutableDirectedGraph)stitchedGraph);
+				}
+			}
+
+			LOGGER.debug("Stiched graph has " + stitchedGraph.numNodes() + " nodes");
+
+			publisher.submit(bfs(stitchedGraph, true, seed, filter, scorer, maxResults, visitTime, visitedArcs));
+			return null; // Why is this needed?
+		});
 		
-		LOGGER.debug("Found " + results.size() + " reachable nodes");
-
-		publisher.submit(results);
-		publisher.close();
+		executorService.shutdown();
+		try {
+			executorCompletionService.take();
+		} catch (final InterruptedException cancelled) {
+			future.cancel(true);
+			try {
+				executorCompletionService.take();
+				future.get();
+			} catch (final InterruptedException | ExecutionException e) {}
+		} finally {
+			publisher.close();
+		}
+		
+		return future;
 	}
 
 	/**
