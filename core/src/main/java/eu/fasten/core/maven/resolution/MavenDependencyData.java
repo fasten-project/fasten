@@ -32,37 +32,8 @@ public class MavenDependencyData {
 
     public synchronized void add(Pom pom) {
         var gav = pom.toGAV();
-        if (hasGAV(gav)) {
-            remove(pom, gav);
-        }
         pomForGav.put(gav, pom);
         put(pomsForGa, pom.toGA(), pom);
-    }
-
-    private void remove(Pom pom, String gav) {
-        pomForGav.remove(gav);
-        var it = pomsForGa.get(pom.toGA()).iterator();
-        while (it.hasNext()) {
-            var pom2 = it.next();
-            if (hasEqualGAV(pom, pom2)) {
-                it.remove();
-            }
-        }
-    }
-
-    private static boolean hasEqualGAV(Pom a, Pom b) {
-        if (a.artifactId.equals(b.artifactId)) {
-            if (a.groupId.equals(b.groupId)) {
-                if (a.version.equals(b.version)) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-
-    private boolean hasGAV(String gav) {
-        return pomForGav.containsKey(gav);
     }
 
     private static <K, V> void put(Map<K, Set<V>> map, K key, V value) {
@@ -103,7 +74,20 @@ public class MavenDependencyData {
         return highestPom;
     }
 
-    private synchronized Set<Pom> findGA(String ga) {
+    protected synchronized Set<Pom> findGA(String ga) {
         return pomsForGa.getOrDefault(ga, Set.of());
+    }
+
+    public synchronized void removeOutdatedPomRegistrations() {
+        var registered = new HashSet<>(pomForGav.values());
+        for (var poms : pomsForGa.values()) {
+            var it = poms.iterator();
+            while (it.hasNext()) {
+                var pom = it.next();
+                if (!registered.contains(pom)) {
+                    it.remove();
+                }
+            }
+        }
     }
 }

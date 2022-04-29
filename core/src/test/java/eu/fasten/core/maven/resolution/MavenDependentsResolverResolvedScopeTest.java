@@ -20,6 +20,7 @@ import static eu.fasten.core.maven.data.Scope.PROVIDED;
 import static eu.fasten.core.maven.data.Scope.RUNTIME;
 import static eu.fasten.core.maven.data.Scope.SYSTEM;
 import static eu.fasten.core.maven.data.Scope.TEST;
+import static eu.fasten.core.maven.data.VersionConstraint.parseVersionSpec;
 import static org.junit.Assert.fail;
 
 import java.util.Arrays;
@@ -398,8 +399,8 @@ public class MavenDependentsResolverResolvedScopeTest extends AbstractMavenDepen
         for (var to : tos) {
             danglingGAVs.add(to.coord);
             var partsTo = to.coord.split(":");
-            var d = new Dependency(partsTo[0], partsTo[0], partsTo[1]);
-            d.setScope(to.scope);
+            var d = new Dependency(partsTo[0], partsTo[0], parseVersionSpec(partsTo[1]), Set.of(), to.scope, false,
+                    "jar", "");
             pom.dependencies.add(d);
         }
 

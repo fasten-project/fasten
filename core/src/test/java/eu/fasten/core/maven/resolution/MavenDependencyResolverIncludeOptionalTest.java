@@ -15,14 +15,17 @@
  */
 package eu.fasten.core.maven.resolution;
 
+import static eu.fasten.core.maven.data.VersionConstraint.parseVersionSpec;
 import static org.junit.Assert.assertFalse;
 
 import java.util.HashSet;
+import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
 import eu.fasten.core.maven.data.Dependency;
 import eu.fasten.core.maven.data.Pom;
+import eu.fasten.core.maven.data.Scope;
 
 public class MavenDependencyResolverIncludeOptionalTest extends AbstractMavenDependencyResolverTest {
 
@@ -70,8 +73,8 @@ public class MavenDependencyResolverIncludeOptionalTest extends AbstractMavenDep
         for (Dep to : tos) {
             danglingGAVs.add(to.coord);
             var partsTo = to.coord.split(":");
-            var d = new Dependency(partsTo[0], partsTo[0], partsTo[1]);
-            d.setOptional(to.isOptional);
+            var d = new Dependency(partsTo[0], partsTo[0], parseVersionSpec(partsTo[1]), Set.of(), Scope.COMPILE,
+                    to.isOptional, "jar", "");
             pom.dependencies.add(d);
         }
 

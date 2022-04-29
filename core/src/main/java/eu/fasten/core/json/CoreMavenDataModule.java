@@ -16,8 +16,8 @@
 package eu.fasten.core.json;
 
 import java.io.IOException;
-import java.util.LinkedHashSet;
-import java.util.function.Consumer;
+import java.util.HashSet;
+import java.util.Set;
 
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 
@@ -30,6 +30,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.JsonSerializer;
 import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import eu.fasten.core.maven.data.Dependency;
 import eu.fasten.core.maven.data.Exclusion;
@@ -37,6 +38,9 @@ import eu.fasten.core.maven.data.Scope;
 import eu.fasten.core.maven.data.VersionConstraint;
 
 public class CoreMavenDataModule extends SimpleModule {
+
+    private static final String EMPTY_STR = "";
+    private static final String JAR = "jar";
 
     // TODO remove old handling once pipeline has been restarted
     private static final String OLD_VERSION_CONSTRAINTS = "versionConstraints";
@@ -46,13 +50,11 @@ public class CoreMavenDataModule extends SimpleModule {
     private static final String GROUP_ID = "g";
     private static final String ARTIFACT_ID = "a";
 
-    private static final String JAR = "jar";
-
     private static final long serialVersionUID = 8302574258846915634L;
 
     public CoreMavenDataModule() {
 
-        // PomAnalysisResult.class works out of the box
+        // Pom.class works out of the box
 
         addSerializer(Dependency.class, new JsonSerializer<Dependency>() {
             @Override
@@ -60,21 +62,21 @@ public class CoreMavenDataModule extends SimpleModule {
                     throws IOException {
                 gen.writeStartObject();
 
-                gen.writeStringField(ARTIFACT_ID, value.getArtifactId());
+                gen.writeStringField(ARTIFACT_ID, value.artifactId);
                 if (value.getClassifier() != null && !value.getClassifier().isEmpty()) {
                     gen.writeStringField("classifier", value.getClassifier());
                 }
                 if (value.getExclusions() != null && !value.getExclusions().isEmpty()) {
                     gen.writeObjectField("exclusions", value.getExclusions());
                 }
-                gen.writeStringField(GROUP_ID, value.getGroupId());
+                gen.writeStringField(GROUP_ID, value.groupId);
                 if (value.isOptional()) {
                     gen.writeBooleanField("optional", value.isOptional());
                 }
                 if (value.getScope() != Scope.COMPILE) {
                     gen.writeStringField("scope", value.getScope().toString().toLowerCase());
                 }
-                if (value.getPackagingType() != null && !"jar".equals(value.getPackagingType())) {
+                if (value.getPackagingType() != null && !JAR.equals(value.getPackagingType())) {
                     gen.writeStringField("type", value.getPackagingType());
                 }
                 gen.writeObjectField(VERSION_CONSTRAINTS, value.getVersionConstraints());
@@ -82,56 +84,7 @@ public class CoreMavenDataModule extends SimpleModule {
                 gen.writeEndObject();
             }
         });
-        addDeserializer(Dependency.class, new JsonDeserializer<Dependency>() {
-            @Override
-            public Dependency deserialize(JsonParser p, DeserializationContext ctxt)
-                    throws IOException, JacksonException {
-
-                var oc = p.getCodec();
-                var node = (JsonNode) oc.readTree(p);
-
-                var a = getText(node, ARTIFACT_ID, OLD_ARTIFACT_ID);
-
-                var c = node.has("classifier") ? node.get("classifier").asText() : "";
-
-                var es = new LinkedHashSet<Exclusion>();
-                if (node.has("exclusions")) {
-                    node.get("exclusions").forEach(exclusion -> {
-                        try {
-                            es.add(ctxt.readTreeAsValue(exclusion, Exclusion.class));
-                        } catch (IOException exception) {
-                            throw new RuntimeException(exception);
-                        }
-                    });
-                }
-
-                var g = getText(node, GROUP_ID, OLD_GROUP_ID);
-                var o = node.has("optional") ? node.get("optional").asBoolean() : false;
-                var s = node.has("scope") ? Scope.valueOf(node.get("scope").asText().toUpperCase()) : Scope.COMPILE;
-                var t = node.has("type") ? node.get("type").asText() : JAR;
-
-                var vs = new LinkedHashSet<VersionConstraint>();
-                Consumer<JsonNode> vcConsumer = vcjson -> {
-                    try {
-                        var vc = ctxt.readTreeAsValue(vcjson, VersionConstraint.class);
-                        // TODO this check/fix will become irrelevant after the next pipeline reset
-                        if (!vc.getSpec().isEmpty()) {
-                            vs.add(vc);
-                        }
-                    } catch (IOException exception) {
-                        throw new RuntimeException(exception);
-                    }
-                };
-                if (node.has(VERSION_CONSTRAINTS)) {
-                    node.get(VERSION_CONSTRAINTS).forEach(vcConsumer);
-                } else if (node.has(OLD_VERSION_CONSTRAINTS)) {
-                    node.get(OLD_VERSION_CONSTRAINTS).forEach(vcConsumer);
-                }
-
-                return new Dependency(g, a, vs, es, s, o, t, c);
-
-            }
-        });
+        addDeserializer(Dependency.class, new DependencyDeserializer());
 
         addSerializer(VersionConstraint.class, new JsonSerializer<VersionConstraint>() {
             @Override
@@ -180,12 +133,78 @@ public class CoreMavenDataModule extends SimpleModule {
         });
     }
 
-    private static String getText(JsonNode node, String... keys) {
-        for (var key : keys) {
-            if (node.has(key)) {
-                return node.get(key).textValue();
-            }
+    private static class DependencyDeserializer extends JsonDeserializer<Dependency> {
+
+        @Override
+        public Dependency deserialize(JsonParser p, DeserializationContext ctxt) throws IOException, JacksonException {
+            var node = readNode(p);
+
+            var isShortFormat = node.has(ARTIFACT_ID);
+            var a = getText(node, isShortFormat ? ARTIFACT_ID : OLD_ARTIFACT_ID, EMPTY_STR);
+            var g = getText(node, isShortFormat ? GROUP_ID : OLD_GROUP_ID, EMPTY_STR);
+
+            var c = getText(node, "classifier", EMPTY_STR);
+
+            var es = readExclusions(ctxt, node);
+
+            var o = getBool(node, "optional", false);
+            var s = getScope(node, "scope", Scope.COMPILE);
+
+            var t = getText(node, "type", JAR);
+
+            var vs = readVersionConstraints(isShortFormat, ctxt, node);
+
+            return new Dependency(g, a, vs, es, s, o, t, c);
         }
-        return null;
+    }
+
+    private static Set<VersionConstraint> readVersionConstraints(boolean isShortFormat, DeserializationContext ctxt,
+            JsonNode node) {
+        var vcs = isShortFormat ? node.get(VERSION_CONSTRAINTS) : node.get(OLD_VERSION_CONSTRAINTS);
+        if (vcs != null) {
+            // TODO check internal set size
+            var res = new HashSet<VersionConstraint>(vcs.size() + 1, 1);
+            for (var vc : vcs) {
+                var v = new VersionConstraint(vc.textValue());
+                if (!v.getSpec().isEmpty()) {
+                    res.add(v);
+                }
+            }
+            return res;
+        }
+        return Set.of();
+    }
+
+    private static Set<Exclusion> readExclusions(DeserializationContext ctxt, JsonNode node) {
+        var exclusions = node.get("exclusions");
+        if (exclusions != null) {
+            // TODO check internal set size
+            var es = new HashSet<Exclusion>(exclusions.size() + 1, 1);
+            for (var exclusion : exclusions) {
+                var parts = exclusion.textValue().split(":");
+                es.add(new Exclusion(parts[0], parts[1]));
+            }
+            return es;
+        }
+        return Set.of();
+    }
+
+    private static String getText(JsonNode node, String key, String defaultVal) {
+        var val = node.get(key);
+        return val != null ? val.textValue() : defaultVal;
+    }
+
+    private static Scope getScope(JsonNode node, String key, Scope defaultVal) {
+        var val = node.get(key);
+        return val != null ? Scope.valueOf(val.textValue().toUpperCase()) : defaultVal;
+    }
+
+    private static boolean getBool(JsonNode node, String key, boolean defaultVal) {
+        var val = node.get(key);
+        return val != null ? val.booleanValue() : defaultVal;
+    }
+
+    private static ObjectNode readNode(JsonParser p) throws IOException {
+        return (ObjectNode) p.getCodec().readTree(p);
     }
 }

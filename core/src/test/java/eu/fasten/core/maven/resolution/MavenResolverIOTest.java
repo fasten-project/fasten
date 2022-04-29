@@ -97,14 +97,10 @@ public class MavenResolverIOTest {
         expected.version = "v";
         expected.forge = null;
         var d1 = new Dependency("dg", "da", Set.of(new VersionConstraint("dv")), Set.of(new Exclusion("eg", "ea")),
-                Scope.TEST, true, "jar", "cla");
-        d1.setClassifier(null);
-        d1.setPackagingType(null);
+                Scope.TEST, true, null, null);
         expected.dependencies.add(d1);
         var dm1 = new Dependency("dmg", "dma", Set.of(new VersionConstraint("dmv")),
-                Set.of(new Exclusion("emg", "ema")), Scope.IMPORT, true, "pom", "foo");
-        dm1.setClassifier(null);
-        dm1.setPackagingType(null);
+                Set.of(new Exclusion("emg", "ema")), Scope.IMPORT, true, null, null);
         expected.dependencyManagement.add(dm1);
         expected.releaseDate = 1234L;
         expected.id = 123L;

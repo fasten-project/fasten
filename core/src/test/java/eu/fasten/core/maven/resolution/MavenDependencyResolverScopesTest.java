@@ -18,6 +18,7 @@ package eu.fasten.core.maven.resolution;
 import static eu.fasten.core.maven.data.Scope.IMPORT;
 import static eu.fasten.core.maven.data.Scope.PROVIDED;
 import static eu.fasten.core.maven.data.Scope.SYSTEM;
+import static eu.fasten.core.maven.data.VersionConstraint.parseVersionSpec;
 import static eu.fasten.core.maven.resolution.ResolverConfig.resolve;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -236,8 +237,8 @@ public class MavenDependencyResolverScopesTest extends AbstractMavenDependencyRe
         for (var to : tos) {
             danglingGAVs.add(to.coord);
             var partsTo = to.coord.split(":");
-            var d = new Dependency(partsTo[0], partsTo[0], partsTo[1]);
-            d.setScope(to.scope);
+            var d = new Dependency(partsTo[0], partsTo[0], parseVersionSpec(partsTo[1]), Set.of(), to.scope, false,
+                    "jar", "");
             pom.dependencies.add(d);
         }
 

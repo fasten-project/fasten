@@ -15,9 +15,11 @@
  */
 package eu.fasten.core.maven.resolution;
 
+import static eu.fasten.core.maven.data.VersionConstraint.parseVersionSpec;
 import static org.junit.Assert.assertFalse;
 
 import java.util.HashSet;
+import java.util.Set;
 
 import org.junit.jupiter.api.Test;
 
@@ -100,10 +102,8 @@ public class MavenDependencyResolverIncludeProvidedTest extends AbstractMavenDep
         for (Dep to : tos) {
             danglingGAVs.add(to.coord);
             var partsTo = to.coord.split(":");
-            var d = new Dependency(partsTo[0], partsTo[0], partsTo[1]);
-            if (to.isProvided) {
-                d.setScope(Scope.PROVIDED);
-            }
+            var s = to.isProvided ? Scope.PROVIDED : Scope.COMPILE;
+            var d = new Dependency(partsTo[0], partsTo[0], parseVersionSpec(partsTo[1]), Set.of(), s, false, "jar", "");
             pom.dependencies.add(d);
         }
 

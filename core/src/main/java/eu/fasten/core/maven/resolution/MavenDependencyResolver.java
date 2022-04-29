@@ -205,7 +205,7 @@ public class MavenDependencyResolver {
     private static Set<Dependency> toDeps(Collection<String> gavs) {
         return gavs.stream() //
                 .map(gav -> gav.split(":")) //
-                .map(parts -> new Dependency(parts[0], parts[1], parts[2])) //
+                .map(parts -> new Dependency(parts[0], parts[1], Set.of(new VersionConstraint(parts[2])), Set.of(), Scope.COMPILE, false, "jar", "")) //
                 .collect(Collectors.toSet());
     }
 
