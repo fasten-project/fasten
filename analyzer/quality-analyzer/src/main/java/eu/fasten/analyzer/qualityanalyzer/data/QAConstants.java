@@ -19,15 +19,6 @@
 package eu.fasten.analyzer.qualityanalyzer.data;
 
 public class QAConstants {
-
     public static final String QA_VERSION_NUMBER = "1.2.1";
     public static final String QA_PLUGIN_NAME = "Quality Analyzer Plugin";
-
-    //field names in JSON Object sent by Rapid
-    public static final String LINE_START = "line_start";
-    public static final String LINE_END = "line_end";
-    public static final String RETURN_TYPE = "return_type";
-    public static final String FASTEN_URI = "fasten_uri";
-    public static final String MODULE_ID = "module_id";
-
 }
