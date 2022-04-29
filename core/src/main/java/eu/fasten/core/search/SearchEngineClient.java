@@ -47,6 +47,7 @@ import eu.fasten.core.data.FastenJavaURI;
 import eu.fasten.core.search.SearchEngine.Result;
 import eu.fasten.core.search.TopKProcessor.Update;
 import eu.fasten.core.search.predicate.PredicateFactory.MetadataSource;
+import it.unimi.dsi.fastutil.ints.Int2LongArrayMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.io.TextIO;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
@@ -107,6 +108,16 @@ public class SearchEngineClient {
 		this.se = se;
 	}
 	
+	/** Checks that <code>min<=n<=max</code>; if not true, raises an IllegalArgumentException.
+	 * 
+	 * @param n the value to check.
+	 * @param min the minimum allowed threshold.
+	 * @param max the maximum allowed threshold.
+	 */
+	private static void assertNargs(final int n, final int min, final int max) {
+		if (n < min || max < n) throw new IllegalArgumentException("Wrong number of arguments to command");
+	}
+	
 	/**
 	 * Executes a given command.
 	 *
@@ -137,35 +148,47 @@ public class SearchEngineClient {
 				"\t$clear                          Clear filters\n" + 
 				"\n\tQUERY-RELATED COMMANDS\n" +
 				"\t±<URI>                          Issue a new query to find reachable (+) or coreachable (-) callables from the given callable <URI> satisfying all filters\n" + 
-				"\t$show                            Lists the running queries with their IDs\n" +
-				"\t$inspect <ID>                    Show the current results of the query with given ID (without stopping it)\n" +
-				"\t$wait <ID>                       Wait until the query with given ID is completed and show its results\n" +
-				"\t$cancel <ID>                     Cancels the query with given ID and stops all the related threads (this may take some time)\n" +
+				"\t$show                           Lists the running queries with their IDs\n" +
+				"\t$inspect [<ID>]                 Show the current results of the last query (or query with given ID), without stopping it\n" +
+				"\t$wait [<ID>]                    Wait until the last query (or query with given ID) is completed and show its results\n" +
+				"\t$cancel [<ID>]                  Cancels the last query (or query with given ID) and stops all the related threads (this may take some time)\n" +
 				"";
 		try {
 			final String verb = commandAndArgs[0].toLowerCase();
+			final int nArgs = commandAndArgs.length - 1;
+			final Int2LongArrayMap index2arg = new Int2LongArrayMap();
+			for (int i = 0; i < nArgs; i++) 
+				try {
+					index2arg.put(i, Long.parseLong(commandAndArgs[i + 1]));
+				} catch (NumberFormatException e) {}
+			
 			switch (verb) {
 
 			case "help":
+				assertNargs(nArgs, 0, 0);
 				System.err.println(help);
 				break;
 
 			case "limit":
-				limit = Integer.parseInt(commandAndArgs[1]);
+				assertNargs(nArgs, 1, 1);
+				limit = (int) index2arg.get(0);
 				if (limit < 0) limit = Integer.MAX_VALUE;
 				break;
 
 			case "maxdependents":
-				maxDependents = Long.parseLong(commandAndArgs[1]);
+				assertNargs(nArgs, 1, 1);
+				maxDependents = index2arg.get(0);
 				if (maxDependents < 0) maxDependents = Long.MAX_VALUE;
 				break;
 
 			case "clear":
+				assertNargs(nArgs, 0, 0);
 				predicateFilters.clear();
 				predicateFiltersSpec.clear();
 				break;
 
 			case "show":
+				assertNargs(nArgs, 0, 0);
 				for (int i = 0; i < nextFutureId; i++)
 					if (id2Query.containsKey(i))
 						System.out.printf("%3d\t%s\n", i, id2Query.get(i));
@@ -173,23 +196,26 @@ public class SearchEngineClient {
 
 			case "wait":
 			case "cancel":
-				final int id = Integer.parseInt(commandAndArgs[1]);
-				Future<Void> future = id2Future.get(id);
+				assertNargs(nArgs, 0, 1);
+				final int wcid = nArgs == 1? (int)index2arg.get(0) : nextFutureId - 1;
+				Future<Void> future = id2Future.get(wcid);
 				if (future == null) System.err.println("No such search ID");
 				else {
 					if ("wait".equals(verb)) {
-						final var r = id2Subscriber.get(id).get().current;
+						final var r = id2Subscriber.get(wcid).get().current;
 						for (int i = 0; i < Math.min(limit, r.length); i++) System.out.println(r[i].gid + "\t" + Util.getCallableName(r[i].gid, se.context()) + "\t" + r[i].score);
 					} else future.cancel(true);
 
-					id2Future.remove(id);
-					id2Subscriber.remove(id);
-					id2Query.remove(id);
+					id2Future.remove(wcid);
+					id2Subscriber.remove(wcid);
+					id2Query.remove(wcid);
 				}
 				break;
 
 			case "inspect":
-				final var subscriber = id2Subscriber.get(Integer.parseInt(commandAndArgs[1]));
+				assertNargs(nArgs, 0, 1);
+				final int insid = nArgs == 1? (int)index2arg.get(0) : nextFutureId - 1;
+				final var subscriber = id2Subscriber.get(insid);
 				if (subscriber == null) System.err.println("No such search ID");
 				else {
 					final var r = subscriber.last() == null? new Result[0] : subscriber.last().current;
@@ -199,6 +225,7 @@ public class SearchEngineClient {
 
 				
 			case "time":
+				assertNargs(nArgs, 0, 0);
 				System.err.printf("\n%,d arcs \nResolve time: %,.3fs  Merge time: %,.3fs  Visit time %,.3fs\n",
 						se.visitedArcs.get(),
 						se.resolveTime.get() * 1E-9,
@@ -207,6 +234,7 @@ public class SearchEngineClient {
 				break;
 				
 			case "f":
+				assertNargs(nArgs, 1, 3);
 				LongPredicate predicate = null;
 				Pattern regExp;
 				MetadataSource mds;
@@ -282,8 +310,9 @@ public class SearchEngineClient {
 
 			case "and":
 			case "or":
+				assertNargs(nArgs, 0, 0);
 				if (predicateFilters.size() < 2) throw new RuntimeException("At least two predicates must be present");
-				if ("and".equals(commandAndArgs[0].toLowerCase())) {
+				if ("and".equals(verb.toLowerCase())) {
 					predicateFilters.push(predicateFilters.pop().and(predicateFilters.pop()));
 					predicateFiltersSpec.push("(" + predicateFiltersSpec.pop() + " && " + predicateFiltersSpec.pop() + ")");
 				} else {
@@ -293,6 +322,7 @@ public class SearchEngineClient {
 				break;
 
 			case "not":
+				assertNargs(nArgs, 0, 0);
 				if (predicateFilters.size() < 1) throw new RuntimeException("At least one predicates must be present");
 				predicateFilters.push(predicateFilters.pop().negate());
 				predicateFiltersSpec.push("!(" + predicateFiltersSpec.pop() + ")");
