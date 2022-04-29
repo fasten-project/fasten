@@ -191,8 +191,10 @@ public class SearchEngineClient {
 			case "inspect":
 				final var subscriber = id2Subscriber.get(Integer.parseInt(commandAndArgs[1]));
 				if (subscriber == null) System.err.println("No such search ID");
-				final var r = subscriber.last() == null? new Result[0] : subscriber.last().current;
-				for (int i = 0; i < Math.min(limit, r.length); i++) System.out.println(r[i].gid + "\t" + Util.getCallableName(r[i].gid, se.context()) + "\t" + r[i].score);
+				else {
+					final var r = subscriber.last() == null? new Result[0] : subscriber.last().current;
+					for (int i = 0; i < Math.min(limit, r.length); i++) System.out.println(r[i].gid + "\t" + Util.getCallableName(r[i].gid, se.context()) + "\t" + r[i].score);
+				}
 				break;
 
 				
