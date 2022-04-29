@@ -216,11 +216,6 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
      * Consumes a message from a Kafka topics and passes it to a plugin.
      */
     public void handleConsuming() {
-
-        // Refresh connection timeout of normal consumer when priority records are
-        // processed
-        sendHeartBeat(connNorm);
-
         // normally, we ONLY wait on PRIO and ONLY when there have been no messages in any lane...
         var prioTimeout = hadMessagesOnLastPollCycle ? Duration.ZERO : POLL_TIMEOUT;
         // ... unless there is no subscription for PRIO, then we wait in NORMAL instead
@@ -229,6 +224,10 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
         hadMessagesOnLastPollCycle = false;
         
         if (!prioTopics.isEmpty()) {
+            // Refresh connection timeout of normal consumer when priority records are
+            // processed
+            sendHeartBeat(connNorm);
+
             var prioRecords = connPrio.poll(prioTimeout);
             for (var r : prioRecords) {
                 hadMessagesOnLastPollCycle = true;
