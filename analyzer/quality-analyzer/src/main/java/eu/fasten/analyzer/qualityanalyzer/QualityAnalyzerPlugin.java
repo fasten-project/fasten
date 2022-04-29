@@ -97,7 +97,10 @@ public class QualityAnalyzerPlugin extends Plugin {
                 logger.info("Beginning of the transaction sequence");
                 setPluginError(null);
                 try {
-                    recordId = utils.updateMetadataInDB(forge, jsonRecord);
+                    recordId = utils.processJsonRecord(jsonRecord);
+                    if(recordId == null) {
+                        throw new IllegalStateException("No callables matched");
+                    }
                 }
                 catch(DataAccessException e) {
                     logger.info("Data access exception");
