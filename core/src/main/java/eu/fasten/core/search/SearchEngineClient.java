@@ -34,6 +34,7 @@ import java.util.function.LongPredicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.jooq.conf.ParseUnknownFunctions;
 import org.rocksdb.RocksDBException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -429,6 +430,7 @@ public class SearchEngineClient {
 		if (jsapResult.userSpecified("blacklist")) TextIO.asLongIterator(new BufferedReader(new InputStreamReader(new FileInputStream(jsapResult.getString("blacklist")), StandardCharsets.US_ASCII))).forEachRemaining(x -> blacklist.add(x));
 
 		final SearchEngine searchEngine = new SearchEngine(jdbcURI, database, rocksDb, cacheDir, resolverGraph, null, blacklist);
+		searchEngine.context().settings().withParseUnknownFunctions(ParseUnknownFunctions.IGNORE);
 		final SearchEngineClient client = new SearchEngineClient(searchEngine);
 
 		@SuppressWarnings("resource")
@@ -467,7 +469,7 @@ public class SearchEngineClient {
 					if (uri.getPath() == null) 
 						client.id2Future.put(id, dir == '+'?
 								client.fromRevision(uri, client.limit, publisher) :
-									client.toRevision(uri, client.limit, publisher));
+								client.toRevision(uri, client.limit, publisher));
 
 					else {
 						final long gid = client.getCallableGID(uri);
@@ -477,7 +479,7 @@ public class SearchEngineClient {
 						}
 						client.id2Future.put(id, dir == '+'? 
 								client.fromCallable(gid, client.limit, publisher) :
-									client.toCallable(gid, client.limit, publisher));						
+								client.toCallable(gid, client.limit, publisher));						
 					}
 					client.id2Subscriber.put(id, futureSubscriber);
 					client.id2Query.put(id, line);
