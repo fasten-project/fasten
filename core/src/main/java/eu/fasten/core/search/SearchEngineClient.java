@@ -462,28 +462,28 @@ public class SearchEngineClient {
 					final WaitOnTerminateFutureSubscriber<Update> futureSubscriber = new WaitOnTerminateFutureSubscriber<>();
 
 					topKProcessor.subscribe(futureSubscriber);
+					final int id = client.nextFutureId;
 
-					if (uri.getPath() == null) {
-						final int id = client.nextFutureId;
-						if (uri.getPath() == null) 
-							client.id2Future.put(id, dir == '+'?
-									client.fromRevision(uri, client.limit, publisher) :
+					if (uri.getPath() == null) 
+						client.id2Future.put(id, dir == '+'?
+								client.fromRevision(uri, client.limit, publisher) :
 									client.toRevision(uri, client.limit, publisher));
-						else {
-							final long gid = client.getCallableGID(uri);
-							if (gid == -1) {
-								System.err.println("Unknown URI " + uri);
-								continue;
-							}
-							client.id2Future.put(id, dir == '+'? 
-									client.fromCallable(gid, client.limit, publisher) :
-									client.toCallable(gid, client.limit, publisher));						
+
+					else {
+						final long gid = client.getCallableGID(uri);
+						if (gid == -1) {
+							System.err.println("Unknown URI " + uri);
+							continue;
 						}
-						client.id2Subscriber.put(id, futureSubscriber);
-						client.id2Query.put(id, line);
-						System.err.println("Id: " + id);
-						client.nextFutureId++;
-					} 
+						client.id2Future.put(id, dir == '+'? 
+								client.fromCallable(gid, client.limit, publisher) :
+									client.toCallable(gid, client.limit, publisher));						
+					}
+					client.id2Subscriber.put(id, futureSubscriber);
+					client.id2Query.put(id, line);
+					System.err.println("Id: " + id);
+					client.nextFutureId++;
+
 				} else {  // dir == '*'
 					String[] uris = line.substring(1).split("\\s");
 					if (uris.length != 2) {
