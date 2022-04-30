@@ -18,8 +18,9 @@
 
 package eu.fasten.core.data;
 
-import it.unimi.dsi.fastutil.chars.CharOpenHashSet;
 import java.net.URI;
+
+import it.unimi.dsi.fastutil.chars.CharOpenHashSet;
 
 /**
  * A class representing a Fasten URI for the Java language; it has to be considered experimental
@@ -345,7 +346,8 @@ public class FastenJavaURI extends FastenURI {
         return FastenJavaURI.create(u.toString());
     }
 
-    public FastenJavaURI decanonicalize() {
+    @Override
+	public FastenJavaURI decanonicalize() {
         final FastenJavaURI[] derelativizedArgs = new FastenJavaURI[args.length];
 
         for (int i = 0; i < args.length; i++) derelativizedArgs[i] = derelativize(args[i]);
@@ -366,4 +368,26 @@ public class FastenJavaURI extends FastenURI {
         final FastenJavaURI relativizedReturnType = relativize(returnType);
         return FastenJavaURI.create(rawForge, rawProduct, rawVersion, rawNamespace, className, functionOrAttributeName, relativizedArgs, relativizedReturnType);
     }
+
+	
+	/**
+	 * Returns a simplified string representation that is more palatable to humans.
+	 * 
+	 * <p>The returned representation is ambiguous (e.g., it does not report the packages of the arguments).
+	 * 
+	 * @return a simplified string representation that is more palatable to humans.
+	 */
+	public String toSimpleString() {
+		StringBuilder b = new StringBuilder();
+		b.append(rawProduct).append(':').append(rawVersion).append('.').append(className).append('.').append(functionOrAttributeName);
+		if (args != null) {
+			b.append('(');
+			for (int i = 0; i < args.length; i++) {
+				if (i > 0) b.append(',');
+				b.append(args[i].className);
+			}
+			b.append(')');
+		}
+		return b.toString();
+	}
 }

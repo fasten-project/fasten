@@ -71,6 +71,7 @@ import eu.fasten.core.search.TopKProcessor.Update;
 import eu.fasten.core.search.predicate.CachingPredicateFactory;
 import eu.fasten.core.search.predicate.PredicateFactory;
 import eu.fasten.core.search.predicate.PredicateFactory.MetadataSource;
+import it.unimi.dsi.fastutil.Hash;
 import it.unimi.dsi.fastutil.HashCommon;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.io.TextIO;
@@ -551,11 +552,11 @@ public class SearchEngine implements AutoCloseable {
 
 
 	
-	protected PathResult bfsBetween(final DirectedGraph graph, final long gidFrom, final long gidTo,final int maxResults, final AtomicLong globalVisitTime, final AtomicLong globalVisitedArcs) {
+	protected PathResult bfsBetween(final DirectedGraph graph, final long gidFrom, final long gidTo, final AtomicLong globalVisitTime, final AtomicLong globalVisitedArcs) {
 		final LongSet nodes = graph.nodes();
 		final LongArrayFIFOQueue visitQueue = new LongArrayFIFOQueue(graph.numNodes() + 1); // The +1 can be removed in fastutil > 8.5.9
-		final LongOpenHashSet seen = new LongOpenHashSet(graph.numNodes(), 0.5f);
-		final Long2LongOpenHashMap parent = new Long2LongOpenHashMap();
+		final LongOpenHashSet seen = new LongOpenHashSet(graph.numNodes(), Hash.FAST_LOAD_FACTOR);
+		final Long2LongOpenHashMap parent = new Long2LongOpenHashMap(graph.numNodes(), Hash.FAST_LOAD_FACTOR);
 		final PathResult results = new PathResult();
 		
 		if (nodes.contains(gidFrom)) {
@@ -815,7 +816,7 @@ public class SearchEngine implements AutoCloseable {
 
 			LOGGER.debug("Stiched graph has " + stitchedGraph.numNodes() + " nodes");
 
-			publisher.submit(bfsBetween(stitchedGraph, gidFrom, gidTo, maxResults, visitTime, visitedArcs));
+			publisher.submit(bfsBetween(stitchedGraph, gidFrom, gidTo, visitTime, visitedArcs));
 			return null; // Why is this needed?
 		});
 		
@@ -1094,7 +1095,7 @@ public class SearchEngine implements AutoCloseable {
 						if (dir == '+') {
 							searchEngine.fromRevision(uri, searchEngine.limit, publisher);
 							r = futureSubscriber.get().current;
-							for (int i = 0; i < Math.min(searchEngine.limit, r.length); i++) System.out.println(r[i].gid + "\t" + Util.getCallableName(r[i].gid, context) + "\t" + r[i].score);
+							for (int i = 0; i < Math.min(searchEngine.limit, r.length); i++) System.out.println(r[i].gid + "\t" + FastenJavaURI.create(Util.getCallableName(r[i].gid, context).toString()).toSimpleString() + "\t" + r[i].score);
 						}
 						else {
 							final int id = searchEngine.nextFutureId++;
@@ -1112,7 +1113,7 @@ public class SearchEngine implements AutoCloseable {
 						if (dir == '+') {
 							searchEngine.fromCallable(gid, searchEngine.limit, publisher);
 							r = futureSubscriber.get().current;
-							for (int i = 0; i < Math.min(searchEngine.limit, r.length); i++) System.out.println(r[i].gid + "\t" + Util.getCallableName(r[i].gid, context) + "\t" + r[i].score);
+							for (int i = 0; i < Math.min(searchEngine.limit, r.length); i++) System.out.println(r[i].gid + "\t" + FastenJavaURI.create(Util.getCallableName(r[i].gid, context).toString()).toSimpleString() + "\t" + r[i].score);
 						}
 						else {
 							final int id = searchEngine.nextFutureId++;
