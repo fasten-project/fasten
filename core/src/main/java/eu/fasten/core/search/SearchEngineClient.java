@@ -74,6 +74,9 @@ public class SearchEngineClient {
 
 	/** Maximum number of dependents used by {@link #to}. */
 	private long maxDependents = Long.MAX_VALUE;
+	
+	/** Whether to use {@link FastenJavaURI#toSimpleString()} or not when displaying results. */
+	private boolean prettyPrint = true;
 		
 	/**
 	 * The filters whose conjunction will be applied by default when executing a query, unless otherwise
@@ -182,6 +185,7 @@ public class SearchEngineClient {
 				"\t$limit <LIMIT>                  Print at most <LIMIT> results (-1 for infinity)\n" + 
 				"\t$maxDependents <LIMIT>          Maximum number of dependents considered in coreachable query resolution (-1 for infinity)\n" + 
 				"\t$time                           Time statistics about the queries issued so far\n" +
+				"\t$pretty                         Toggles pretty printing\n" +
 				"\n\tFILTER-RELATED COMMANDS\n" +
 				"\t$f ?                            Print the current filter\n" + 
 				"\t$f pmatches <REGEXP>            Add filter: package (a.k.a. product) matches <REGEXP>\n" + 
@@ -246,6 +250,10 @@ public class SearchEngineClient {
 						System.out.printf("%3d\t%s\n", i, id2Query.get(i));
 				break;
 
+			case "pretty":
+				System.out.println("Pretty printing is " + ((prettyPrint ^= true) ? "on" : "off"));
+				break;
+
 			case "wait":
 			case "cancel":
 				assertNargs(nArgs, 0, 1);
@@ -254,8 +262,12 @@ public class SearchEngineClient {
 				if (future == null) System.err.println("No such search ID");
 				else {
 					if ("wait".equals(verb)) {
-						final var r = id2Subscriber.get(wcid).get();
-						System.out.println(r);
+						final var o = id2Subscriber.get(wcid).get();
+						if (prettyPrint && (o instanceof Update)) {
+							final var u = ((Update)o).current;
+							for(var r : u) System.out.println(FastenJavaURI.create(Util.getCallableName(r.gid, se.context()).toString()).toSimpleString());
+						}
+						else System.out.println(o);
 					} else future.cancel(true);
 
 					id2Future.remove(wcid);
