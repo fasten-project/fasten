@@ -264,4 +264,26 @@ public class FastenJavaURITest {
             final FastenJavaURI uri2 = FastenJavaURI.create("fasten://mvn$a/foo/Ba)r");
         });
     }
+
+
+    @Test
+    public void testToSimpleString() {
+		final String[] uri = {
+				"fasten://mvn!org.apache.felix:org.osgi.foundation$1.2.0/java.lang/RuntimeException.%3Cinit%3E(String)VoidType",
+				"fasten://mvn!com.lihaoyi:sourcecode_2.12$0.2.1/sourcecode/Macros$.enclosing(%2Fscala.reflect.macros.blackbox%2FContext,%2Fscala%2FFunction1)%2Fscala.reflect.api%2FExprs$Expr",
+				"fasten://mvn!org.scala-lang:scala-library$2.11.12/scala.runtime/AbstractFunction1.%3Cinit%3E()%2Fjava.lang%2FVoidType",
+				"fasten://mvn!org.apache.felix:org.osgi.foundation$1.2.0/java.lang/StringBuffer.%3Cinit%3E()VoidType",
+				"fasten:/java.util/Iterator.next()%2Fjava.lang%2FObject",
+				"fasten:/java.lang/CharSequence.charAt(IntegerType)CharType",
+				"fasten:/java.lang/Object.toString()String", "fasten:/java.lang/Object.equals(Object)BooleanType",
+				"fasten://mvn!commons-io:commons-io$2.4/org.apache.commons.io.output/LockableFileWriter.write(%2Fjava.lang%2FString)%2Fjava.lang%2FVoidType",
+				"fasten://mvn!commons-io:commons-io$2.4/org.apache.commons.io.output/FileWriterWithEncoding.write(%2Fjava.lang%2FString)%2Fjava.lang%2FVoidType",
+				"fasten:/java.lang/Iterable.iterator()%2Fjava.util%2FIterator",
+				"fasten://mvn!org.hamcrest:hamcrest-core$1.3/org.hamcrest/Description.appendText(%2Fjava.lang%2FString)Description",
+				"fasten:/org.hamcrest/Description.appendText(%2Fjava.lang%2FString)Description",
+				"fasten:/java.util/Map$Entry.getKey()%2Fjava.lang%2FObject", };
+		for(var u: uri) {
+			System.out.println(FastenJavaURI.create(u).toSimpleString());
+		}
+    }
 }

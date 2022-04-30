@@ -21,6 +21,7 @@ package eu.fasten.core.data;
 import java.net.URI;
 
 import it.unimi.dsi.fastutil.chars.CharOpenHashSet;
+import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 
 /**
  * A class representing a Fasten URI for the Java language; it has to be considered experimental
@@ -369,6 +370,15 @@ public class FastenJavaURI extends FastenURI {
         return FastenJavaURI.create(rawForge, rawProduct, rawVersion, rawNamespace, className, functionOrAttributeName, relativizedArgs, relativizedReturnType);
     }
 
+    private static Object2ObjectOpenHashMap<String, String> toPrimitiveType = new Object2ObjectOpenHashMap<>(
+    		new String[] {"VoidType", "ByteType", "CharType", "ShortType", "IntegerType", "FloatType", "LongType", "DoubleType"},
+    		new String[] {"void", "byte", "char", "short", "int", "float", "long", "double"}
+    	);
+    
+    private static String fixClassName(final String className) {
+    	String s= toPrimitiveType.get(className);
+    	return s != null ? s: className;
+    }
 	
 	/**
 	 * Returns a simplified string representation that is more palatable to humans.
@@ -381,15 +391,16 @@ public class FastenJavaURI extends FastenURI {
 		StringBuilder b = new StringBuilder();
 		// No product/version for JDK classes
 		if (rawProduct != null)	b.append('[').append(rawProduct).append(' ').append(rawVersion).append("] ");
-		b.append(returnType.className).append(' ').append(rawNamespace).append('.').append(className).append('.');
+		else b.append("[Java] ");
+		b.append(fixClassName(returnType.className)).append(' ').append(rawNamespace).append('.').append(fixClassName(className)).append('.');
 		// Restore standard constructor name
-		if (functionOrAttributeName.equals("<init>") b.append(className);
+		if (functionOrAttributeName.equals("<init>")) b.append(className);
 		else b.append(functionOrAttributeName);
 		if (args != null) {
 			b.append('(');
 			for (int i = 0; i < args.length; i++) {
 				if (i > 0) b.append(',');
-				b.append(args[i].className);
+				b.append(fixClassName(args[i].className));
 			}
 			b.append(')');
 		}
