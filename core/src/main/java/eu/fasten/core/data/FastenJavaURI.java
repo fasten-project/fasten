@@ -379,7 +379,12 @@ public class FastenJavaURI extends FastenURI {
 	 */
 	public String toSimpleString() {
 		StringBuilder b = new StringBuilder();
-		b.append(rawProduct).append(':').append(rawVersion).append('.').append(className).append('.').append(functionOrAttributeName);
+		// No product/version for JDK classes
+		if (rawProduct != null)	b.append('[').append(rawProduct).append(' ').append(rawVersion).append("] ");
+		b.append(returnType.className).append(' ').append(rawNamespace).append('.').append(className).append('.');
+		// Restore standard constructor name
+		if (functionOrAttributeName.equals("<init>") b.append(className);
+		else b.append(functionOrAttributeName);
 		if (args != null) {
 			b.append('(');
 			for (int i = 0; i < args.length; i++) {
