@@ -217,14 +217,10 @@ public class DebianLicenseFeederPlugin extends Plugin {
                         (file.has("licenses") ? file.getJSONArray("licenses").length() : "no") + " licenses.");
                 if (file.has("path") && file.has("license")) {
                     JSONObject licenseObject = new JSONObject();
-                    System.out.println("After licenseObject-Created");
                     licenseObject.put("name", file.getString("license"));
                     licenseObject.put("source", "DEBIAN_PACKAGES");
-                    System.out.println("After licenseObject-put file.getString(license)");
                     JSONArray ja = new JSONArray();
-                    System.out.println("After ja creating");
                     ja.put(licenseObject);
-                    System.out.println("After ja.put(licenseObject)");
                     metadataDao.insertFileLicenses(
                             packageName,
                             packageVersion,
