@@ -16,6 +16,7 @@
 package eu.fasten.core.maven.data;
 
 import static java.util.stream.IntStream.range;
+import static org.junit.Assert.assertSame;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -264,15 +265,29 @@ public class PomTest {
     @Test
     public void toGAV() {
         var actual = somePomAnalysisResult().toGAV();
-        var expected = "g:a:n";
+        var expected = new GAV("g", "a", "n");
         assertEquals(expected, actual);
+    }
+
+    @Test
+    public void toGAVIsStable() {
+        var a = somePomAnalysisResult().toGAV();
+        var b = somePomAnalysisResult().toGAV();
+        assertSame(a, b);
     }
 
     @Test
     public void toGA() {
         var actual = somePomAnalysisResult().toGA();
-        var expected = "g:a";
+        var expected = new GA("g", "a");
         assertEquals(expected, actual);
+    }
+
+    @Test
+    public void toGAIsStable() {
+        var a = somePomAnalysisResult().toGA();
+        var b = somePomAnalysisResult().toGA();
+        assertSame(a, b);
     }
 
     @Test

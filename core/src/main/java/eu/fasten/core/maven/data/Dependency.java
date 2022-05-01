@@ -20,7 +20,6 @@ import static eu.fasten.core.maven.data.Scope.COMPILE;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 import org.apache.commons.lang3.builder.ToStringStyle;
 import org.json.JSONArray;
@@ -33,6 +32,8 @@ public class Dependency {
     private static final String JAR = "jar";
     private static final Set<Exclusion> NO_EXCLS = Set.of();
     private static final String EMPTY_STR = "";
+    private static final String[] PREFIXES = new String[] { "org.apache", "org.eclipse", "org.junit", "junit",
+            "com.google", "org.springframework" };
 
     public final String groupId;
     public final String artifactId;
@@ -45,6 +46,8 @@ public class Dependency {
     private final VersionConstraint versionConstraint;
     private final Set<VersionConstraint> versionConstraints;
     private final Set<Exclusion> exclusions;
+
+    private final GA ga;
 
     private final int hashCode;
 
@@ -89,28 +92,13 @@ public class Dependency {
             this.exclusions = Set.copyOf(exclusions);
         }
 
+        this.ga = Ids.ga(new GA(groupId, artifactId));
+
         hashCode = calcHashCode();
     }
 
-    private int calcHashCode() {
-        final var prime = 31;
-        var hashCode = 0;
-        hashCode = prime * hashCode + ((groupId == null) ? 0 : groupId.hashCode());
-        hashCode = prime * hashCode + ((artifactId == null) ? 0 : artifactId.hashCode());
-        hashCode = prime * hashCode + (optional ? 1231 : 1237);
-
-        hashCode = prime * hashCode + ((classifier == null) ? 0 : classifier.hashCode());
-        hashCode = prime * hashCode + ((scope == null) ? 0 : scope.hashCode());
-        hashCode = prime * hashCode + ((type == null) ? 0 : type.hashCode());
-
-        hashCode = prime * hashCode + ((versionConstraint == null) ? 0 : versionConstraint.hashCode());
-        hashCode = prime * hashCode + ((versionConstraints == null) ? 0 : versionConstraints.hashCode());
-        hashCode = prime * hashCode + ((exclusions == null) ? 0 : exclusions.hashCode());
-        return hashCode;
-    }
-
-    public String toGA() {
-        return new StringBuilder().append(groupId).append(':').append(artifactId).toString();
+    public GA toGA() {
+        return ga;
     }
 
     public Set<VersionConstraint> getVersionConstraints() {
@@ -165,13 +153,37 @@ public class Dependency {
     }
 
     @Override
-    public boolean equals(Object obj) {
-        return EqualsBuilder.reflectionEquals(this, obj);
+    public int hashCode() {
+        return hashCode;
+    }
+
+    private int calcHashCode() {
+        final var prime = 31;
+        var hashCode = 0;
+        hashCode = prime * hashCode + ((groupId == null) ? 0 : groupId.hashCode());
+        hashCode = prime * hashCode + ((artifactId == null) ? 0 : artifactId.hashCode());
+        hashCode = prime * hashCode + (optional ? 1231 : 1237);
+
+        hashCode = prime * hashCode + ((classifier == null) ? 0 : classifier.hashCode());
+        hashCode = prime * hashCode + ((scope == null) ? 0 : scope.hashCode());
+        hashCode = prime * hashCode + ((type == null) ? 0 : type.hashCode());
+
+        hashCode = prime * hashCode + ((versionConstraint == null) ? 0 : versionConstraint.hashCode());
+        hashCode = prime * hashCode + ((versionConstraints == null) ? 0 : versionConstraints.hashCode());
+        hashCode = prime * hashCode + ((exclusions == null) ? 0 : exclusions.hashCode());
+        return hashCode;
     }
 
     @Override
-    public int hashCode() {
-        return hashCode;
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        Dependency other = (Dependency) obj;
+        return hashCode == other.hashCode;
     }
 
     @Override

@@ -30,6 +30,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import eu.fasten.core.maven.data.Dependency;
+import eu.fasten.core.maven.data.GA;
 import eu.fasten.core.maven.data.MavenProduct;
 import eu.fasten.core.maven.data.Pom;
 import eu.fasten.core.maven.data.ResolvedRevision;
@@ -50,7 +51,7 @@ public class MavenDependencyResolver {
 
         if (gavs.size() == 1) {
             var parts = gavs.iterator().next().split(":");
-            var ga = String.format("%s:%s", parts[0], parts[1]);
+            var ga = new GA(parts[0], parts[1]);
 
             var pom = this.graph.find(ga, Set.of(new VersionConstraint(parts[2])), config.resolveAt);
             if (pom == null) {
@@ -146,8 +147,7 @@ public class MavenDependencyResolver {
                 }
 
                 for (var excl : dep.getExclusions()) {
-                    var exclGA = new StringBuilder().append(excl.groupId).append(':').append(excl.artifactId)
-                            .toString();
+                    var exclGA = new GA(excl.groupId, excl.artifactId);
                     depData.exclusions.add(exclGA);
                 }
 
@@ -205,7 +205,8 @@ public class MavenDependencyResolver {
     private static Set<Dependency> toDeps(Collection<String> gavs) {
         return gavs.stream() //
                 .map(gav -> gav.split(":")) //
-                .map(parts -> new Dependency(parts[0], parts[1], Set.of(new VersionConstraint(parts[2])), Set.of(), Scope.COMPILE, false, "jar", "")) //
+                .map(parts -> new Dependency(parts[0], parts[1], Set.of(new VersionConstraint(parts[2])), Set.of(),
+                        Scope.COMPILE, false, "jar", "")) //
                 .collect(Collectors.toSet());
     }
 
@@ -215,8 +216,8 @@ public class MavenDependencyResolver {
 
         public Pom pom;
         public Scope scope = COMPILE;
-        public final Set<String> exclusions = new HashSet<>();
-        public final Map<String, Set<VersionConstraint>> depMgmt = new HashMap<>();
+        public final Set<GA> exclusions = new HashSet<>();
+        public final Map<GA, Set<VersionConstraint>> depMgmt = new HashMap<>();
 
         public boolean isTransitiveDep() {
             // 0 = source, 1 = direct, 2 = transitive

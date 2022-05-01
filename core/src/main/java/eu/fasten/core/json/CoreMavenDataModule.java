@@ -16,14 +16,18 @@
 package eu.fasten.core.json;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.Set;
+import java.util.function.Supplier;
 
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 
 import com.fasterxml.jackson.core.JacksonException;
 import com.fasterxml.jackson.core.JsonGenerator;
 import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -34,11 +38,15 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import eu.fasten.core.maven.data.Dependency;
 import eu.fasten.core.maven.data.Exclusion;
+import eu.fasten.core.maven.data.Ids;
+import eu.fasten.core.maven.data.Pom;
 import eu.fasten.core.maven.data.Scope;
 import eu.fasten.core.maven.data.VersionConstraint;
 
 public class CoreMavenDataModule extends SimpleModule {
 
+    private static final Set<Exclusion> NO_EXCLS = Set.of();
+    private static final Set<VersionConstraint> NO_VCS = Set.of();
     private static final String EMPTY_STR = "";
     private static final String JAR = "jar";
 
@@ -54,7 +62,7 @@ public class CoreMavenDataModule extends SimpleModule {
 
     public CoreMavenDataModule() {
 
-        // Pom.class works out of the box
+        addDeserializer(Pom.class, new PomDeserializer());
 
         addSerializer(Dependency.class, new JsonSerializer<Dependency>() {
             @Override
@@ -97,7 +105,8 @@ public class CoreMavenDataModule extends SimpleModule {
             @Override
             public VersionConstraint deserialize(JsonParser p, DeserializationContext ctxt)
                     throws IOException, JacksonException {
-                return new VersionConstraint(p.getValueAsString());
+                var version = Ids.version(p.getValueAsString());
+                return new VersionConstraint(version);
             }
         });
 
@@ -113,7 +122,9 @@ public class CoreMavenDataModule extends SimpleModule {
             public Exclusion deserialize(JsonParser p, DeserializationContext ctxt)
                     throws IOException, JacksonException {
                 String[] parts = p.getValueAsString().split(":");
-                return new Exclusion(parts[0], parts[1]);
+                var gid = Ids.gid(parts[0]);
+                var aid = Ids.aid(parts[1]);
+                return new Exclusion(gid, aid);
             }
         });
 
@@ -128,9 +139,54 @@ public class CoreMavenDataModule extends SimpleModule {
             @Override
             public DefaultArtifactVersion deserialize(JsonParser p, DeserializationContext ctxt)
                     throws IOException, JacksonException {
-                return new DefaultArtifactVersion(p.getValueAsString());
+                var version = Ids.version(p.getValueAsString());
+                return new DefaultArtifactVersion(version);
             }
         });
+    }
+
+    private static class PomDeserializer extends JsonDeserializer<Pom> {
+
+        private static final LinkedHashSet<Dependency> NO_DEPS = new LinkedHashSet<>() {
+            private static final long serialVersionUID = -7233644259488131119L;
+
+            public boolean add(Dependency e) {
+                throw new UnsupportedOperationException();
+            };
+
+            public boolean addAll(Collection<? extends Dependency> c) {
+                throw new UnsupportedOperationException();
+            };
+        };
+        private static final Set<Dependency> NO_DEP_MGMT = Set.of();
+
+        @Override
+        public Pom deserialize(JsonParser p, DeserializationContext ctxt) throws IOException, JacksonException {
+            var node = readNode(p);
+            var pom = new Pom();
+
+            pom.groupId = Ids.gid(getText(node, "groupId", null));
+            pom.artifactId = Ids.aid(getText(node, "artifactId", null));
+            pom.packagingType = getText(node, "packagingType", null);
+            pom.version = Ids.version(getText(node, "version", null));
+
+            pom.parentCoordinate = getText(node, "parentCoordinate", null);
+
+            pom.releaseDate = getLong(node, "releaseDate", -1L);
+            pom.projectName = getText(node, "projectName", null);
+
+            pom.dependencies = addChildren(node, p, "dependencies", Dependency.class,
+                    () -> new LinkedHashSet<Dependency>(), NO_DEPS);
+            pom.dependencyManagement = addChildren(node, p, "dependencyManagement", Dependency.class,
+                    () -> new HashSet<Dependency>(), NO_DEP_MGMT);
+
+            pom.repoUrl = getText(node, "repoUrl", null);
+            pom.commitTag = getText(node, "commitTag", null);
+            pom.sourcesUrl = getText(node, "sourcesUrl", null);
+            pom.artifactRepository = getText(node, "artifactRepository", null);
+
+            return pom;
+        }
     }
 
     private static class DependencyDeserializer extends JsonDeserializer<Dependency> {
@@ -154,7 +210,7 @@ public class CoreMavenDataModule extends SimpleModule {
 
             var vs = readVersionConstraints(isShortFormat, ctxt, node);
 
-            return new Dependency(g, a, vs, es, s, o, t, c);
+            return Ids.dep(new Dependency(g, a, vs, es, s, o, t, c));
         }
     }
 
@@ -162,31 +218,36 @@ public class CoreMavenDataModule extends SimpleModule {
             JsonNode node) {
         var vcs = isShortFormat ? node.get(VERSION_CONSTRAINTS) : node.get(OLD_VERSION_CONSTRAINTS);
         if (vcs != null) {
-            // TODO check internal set size
             var res = new HashSet<VersionConstraint>(vcs.size() + 1, 1);
             for (var vc : vcs) {
-                var v = new VersionConstraint(vc.textValue());
+                var val = vc.textValue();
+                if (val == null || val.isEmpty()) {
+                    // TODO handling unnecessary after next pipeline restart
+                    continue;
+                }
+                var v = new VersionConstraint(Ids.version(val));
                 if (!v.getSpec().isEmpty()) {
                     res.add(v);
                 }
             }
             return res;
         }
-        return Set.of();
+        return NO_VCS;
     }
 
     private static Set<Exclusion> readExclusions(DeserializationContext ctxt, JsonNode node) {
         var exclusions = node.get("exclusions");
         if (exclusions != null) {
-            // TODO check internal set size
             var es = new HashSet<Exclusion>(exclusions.size() + 1, 1);
             for (var exclusion : exclusions) {
                 var parts = exclusion.textValue().split(":");
-                es.add(new Exclusion(parts[0], parts[1]));
+                var gid = Ids.gid(parts[0]);
+                var aid = Ids.aid(parts[1]);
+                es.add(new Exclusion(gid, aid));
             }
             return es;
         }
-        return Set.of();
+        return NO_EXCLS;
     }
 
     private static String getText(JsonNode node, String key, String defaultVal) {
@@ -204,7 +265,27 @@ public class CoreMavenDataModule extends SimpleModule {
         return val != null ? val.booleanValue() : defaultVal;
     }
 
+    private static long getLong(JsonNode node, String key, long defaultVal) {
+        var val = node.get(key);
+        return val != null ? val.longValue() : defaultVal;
+    }
+
     private static ObjectNode readNode(JsonParser p) throws IOException {
         return (ObjectNode) p.getCodec().readTree(p);
+    }
+
+    private static <CollectionT extends Collection<T>, T> CollectionT addChildren(JsonNode node, JsonParser p,
+            String key, Class<T> type, Supplier<CollectionT> prod, CollectionT defaultVal)
+            throws JsonProcessingException {
+        var vals = node.get(key);
+        if (vals != null && !vals.isEmpty()) {
+            var ts = prod.get();
+            for (var val : vals) {
+                var t = p.getCodec().treeToValue(val, type);
+                ts.add(t);
+            }
+            return ts;
+        }
+        return defaultVal;
     }
 }

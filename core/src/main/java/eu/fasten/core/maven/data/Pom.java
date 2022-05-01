@@ -45,8 +45,8 @@ public class Pom implements Cloneable {
     public String projectName = null;
 
     // used LinkedHashSet, because order is relevant for resolution
-    public final LinkedHashSet<Dependency> dependencies = new LinkedHashSet<>();
-    public final Set<Dependency> dependencyManagement = new HashSet<>();
+    public LinkedHashSet<Dependency> dependencies = new LinkedHashSet<>();
+    public Set<Dependency> dependencyManagement = new HashSet<>();
 
     public String repoUrl = null;
     public String commitTag = null;
@@ -59,13 +59,12 @@ public class Pom implements Cloneable {
                 .append(':').append(version).toString();
     }
 
-    public String toGAV() {
-        return new StringBuilder().append(groupId).append(':').append(artifactId).append(':').append(version)
-                .toString();
+    public GAV toGAV() {
+        return Ids.gav(new GAV(groupId, artifactId, version));
     }
 
-    public String toGA() {
-        return new StringBuilder().append(groupId).append(':').append(artifactId).toString();
+    public GA toGA() {
+        return Ids.ga(new GA(groupId, artifactId));
     }
 
     public MavenProduct toProduct() {

@@ -21,12 +21,14 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import eu.fasten.core.maven.data.GA;
+import eu.fasten.core.maven.data.GAV;
 import eu.fasten.core.maven.data.Pom;
 
 public class MavenDependentsData {
 
-    private final Map<String, Pom> pomForGAV = new HashMap<>();
-    private final Map<String, Set<Pom>> dependentsForGA = new HashMap<>();
+    private final Map<GAV, Pom> pomForGAV = new HashMap<>();
+    private final Map<GA, Set<Pom>> dependentsForGA = new HashMap<>();
 
     public synchronized void add(Pom pom) {
         var gav = pom.toGAV();
@@ -36,20 +38,13 @@ public class MavenDependentsData {
         }
     }
 
-    private void addDependent(String depGA, Pom pom) {
+    private void addDependent(GA depGA, Pom pom) {
         Set<Pom> poms;
         if (!dependentsForGA.containsKey(depGA)) {
             poms = new HashSet<Pom>();
             dependentsForGA.put(depGA, poms);
         } else {
             poms = dependentsForGA.get(depGA);
-//            var it = poms.iterator();
-//            while (it.hasNext()) {
-//                var pom2 = it.next();
-//                if (hasEqualGAV(pom, pom2)) {
-//                    it.remove();
-//                }
-//            }
         }
         poms.add(pom);
     }
@@ -65,7 +60,7 @@ public class MavenDependentsData {
         return false;
     }
 
-    public synchronized Pom findPom(String gav, long resolveAt) {
+    public synchronized Pom findPom(GAV gav, long resolveAt) {
         var pom = pomForGAV.get(gav);
         if (pom != null && pom.releaseDate <= resolveAt) {
             return pom;
@@ -73,7 +68,7 @@ public class MavenDependentsData {
         return null;
     }
 
-    public synchronized Set<Pom> findPotentialDependents(String ga, long resolveAt) {
+    public synchronized Set<Pom> findPotentialDependents(GA ga, long resolveAt) {
         var dpds = dependentsForGA.getOrDefault(ga, Set.of());
         return dpds.stream() //
                 .filter(d -> d.releaseDate <= resolveAt) //
@@ -91,6 +86,5 @@ public class MavenDependentsData {
                 }
             }
         }
-
     }
 }

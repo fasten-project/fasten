@@ -21,17 +21,31 @@ import static eu.fasten.core.utils.Asserts.assertTrue;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 
 public class VersionConstraint {
 
     private final String spec;
+
+    private final boolean isRange;
+    private final boolean isHard;
+    private final boolean isLowerBoundInclusive;
+    private final boolean isUpperBoundInclusive;
+
     private final int hashCode;
 
     public VersionConstraint(String spec) {
         this.spec = spec;
-        this.hashCode = spec == null ? 31 : spec.hashCode() + 1;
+        if (spec == null || spec.isEmpty()) {
+            throw new IllegalArgumentException("Spec of VersionConstraint cannot be null or empty");
+        }
+
+        this.isRange = spec.contains(",");
+        this.isHard = spec.startsWith("[") || spec.startsWith("(");
+        this.isLowerBoundInclusive = !isHard || spec.startsWith("[");
+        this.isUpperBoundInclusive = !isHard || spec.endsWith("]");
+
+        this.hashCode = spec.hashCode() + 1;
     }
 
     public String getSpec() {
@@ -39,43 +53,42 @@ public class VersionConstraint {
     }
 
     public boolean isRange() {
-        return spec.contains(",");
+        return isRange;
     }
 
     public boolean isHard() {
-        return spec.startsWith("[") || spec.startsWith("(");
+        return isHard;
     }
 
     public String getLowerBound() {
-        if (isRange()) {
-            String asd = spec.substring(1, spec.length() - 1);
-            var parts = asd.split(",", -1);
+        if (isRange) {
+            var parts = spec.substring(1, spec.length() - 1).split(",", -1);
             return parts[0].isEmpty() ? "0" : parts[0];
         }
-        if (isHard()) {
+        if (isHard) {
             return spec.substring(1, spec.length() - 1);
         }
         return spec;
     }
 
     public boolean isLowerBoundInclusive() {
-        return !isHard() || spec.startsWith("[");
+        return isLowerBoundInclusive;
     }
 
     public String getUpperBound() {
-        if (isRange()) {
+        if (isRange) {
             var parts = spec.substring(1, spec.length() - 1).split(",", -1);
             return parts[1].isEmpty() ? "999" : parts[1];
 
         }
-        if (isHard()) {
+        if (isHard) {
             return spec.substring(1, spec.length() - 1);
         }
         return spec;
     }
 
     public boolean isUpperBoundInclusive() {
-        return !isHard() || spec.endsWith("]");
+        return isUpperBoundInclusive;
     }
 
     public boolean matches(String version) {
@@ -83,15 +96,18 @@ public class VersionConstraint {
         var v = new DefaultArtifactVersion(version);
 
         var lower = new DefaultArtifactVersion(getLowerBound());
-        var upper = new DefaultArtifactVersion(getUpperBound());
+        int compLow = v.compareTo(lower);
+        if (compLow == 0 && isLowerBoundInclusive) {
+            return true;
+        }
 
-        if (v.equals(lower) && isLowerBoundInclusive()) {
+        var upper = new DefaultArtifactVersion(getUpperBound());
+        int compHigh = v.compareTo(upper);
+        if (compHigh == 0 && isUpperBoundInclusive) {
             return true;
         }
-        if (v.equals(upper) && isUpperBoundInclusive()) {
-            return true;
-        }
-        if (v.compareTo(lower) > 0 && v.compareTo(upper) < 0) {
+
+        if (compLow > 0 && compHigh < 0) {
             return true;
         }
 
@@ -105,7 +121,14 @@ public class VersionConstraint {
 
     @Override
     public boolean equals(Object obj) {
-        return EqualsBuilder.reflectionEquals(this, obj);
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        VersionConstraint other = (VersionConstraint) obj;
+        return hashCode == other.hashCode;
     }
 
     @Override
