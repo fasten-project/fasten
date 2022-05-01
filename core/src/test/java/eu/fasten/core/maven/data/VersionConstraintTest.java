@@ -20,6 +20,7 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -33,25 +34,24 @@ import org.junit.jupiter.api.Test;
 public class VersionConstraintTest {
 
     @Test
-    public void defaults() {
-        var sut = new VersionConstraint(null);
-        assertEquals(null, sut.getSpec());
-        assertEquals(31, sut.hashCode());
-    }
-
-    @Test
-    public void nonDefaults() {
+    public void init() {
         var sut = new VersionConstraint("1.2.3");
         assertEquals("1.2.3", sut.getSpec());
         assertEquals("1.2.3".hashCode() + 1, sut.hashCode());
     }
 
     @Test
-    public void equalityDefaults() {
-        var a = new VersionConstraint(null);
-        var b = new VersionConstraint(null);
-        assertEquals(a, b);
-        assertEquals(a.hashCode(), b.hashCode());
+    public void initFailsForNull() {
+        assertThrows(IllegalArgumentException.class, () -> {
+            new VersionConstraint(null);
+        });
+    }
+
+    @Test
+    public void initFailsForEmpty() {
+        assertThrows(IllegalArgumentException.class, () -> {
+            new VersionConstraint("");
+        });
     }
 
     @Test

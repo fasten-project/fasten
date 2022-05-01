@@ -25,9 +25,15 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import eu.fasten.core.maven.data.Dependency;
+import eu.fasten.core.maven.data.GA;
+import eu.fasten.core.maven.data.GAV;
 import eu.fasten.core.maven.data.Pom;
 
 public class MavenDependentsDataTest {
+
+    private static final GAV GA1 = new GAV("g", "a", "1");
+
+    private static final GA AB = new GA("a", "b");
 
     private static final long SOME_TIME = 1234;
 
@@ -40,16 +46,16 @@ public class MavenDependentsDataTest {
 
     @Test
     public void nonExistingPomIsNull() {
-        var actual = sut.findPom("g:a:1", SOME_TIME);
+        var actual = sut.findPom(GA1, SOME_TIME);
         assertNull(actual);
     }
 
     @Test
     public void pomCanBeAdded() {
         var a = add(SOME_TIME, "g:a:1", "a:b:1");
-        var b = sut.findPom("g:a:1", SOME_TIME);
+        var b = sut.findPom(GA1, SOME_TIME);
         assertSame(a, b);
-        var dpds = sut.findPotentialDependents("a:b", SOME_TIME);
+        var dpds = sut.findPotentialDependents(AB, SOME_TIME);
         assertEquals(1, dpds.size());
     }
 
@@ -57,9 +63,9 @@ public class MavenDependentsDataTest {
     public void pomAreNotAutomaticallyReplaced() {
         var a = add(SOME_TIME, "g:a:1", "a:b:1");
         var b = add(SOME_TIME + 1, "g:a:1", "a:b:1");
-        var actual = sut.findPom("g:a:1", SOME_TIME + 1);
+        var actual = sut.findPom(GA1, SOME_TIME + 1);
         assertSame(b, actual);
-        var actuals = sut.findPotentialDependents("a:b", SOME_TIME + 1);
+        var actuals = sut.findPotentialDependents(AB, SOME_TIME + 1);
         assertEquals(Set.of(a, b), actuals);
     }
 
@@ -68,23 +74,23 @@ public class MavenDependentsDataTest {
         add(SOME_TIME, "g:a:1", "a:b:1");
         var b = add(SOME_TIME + 1, "g:a:1", "a:b:1");
         sut.removeOutdatedPomRegistrations();
-        var actual = sut.findPom("g:a:1", SOME_TIME + 1);
+        var actual = sut.findPom(GA1, SOME_TIME + 1);
         assertSame(b, actual);
-        var actuals = sut.findPotentialDependents("a:b", SOME_TIME + 1);
+        var actuals = sut.findPotentialDependents(AB, SOME_TIME + 1);
         assertEquals(Set.of(b), actuals);
     }
 
     @Test
     public void pomIsNotFoundWhenTooRecent() {
         add(SOME_TIME + 1, "g:a:1", "a:b:1");
-        var actual = sut.findPom("g:a:1", SOME_TIME);
+        var actual = sut.findPom(GA1, SOME_TIME);
         assertNull(actual);
     }
 
     @Test
     public void findDependents() {
         var expected = add(SOME_TIME, "g:a:1", "a:b:1");
-        var actuals = sut.findPotentialDependents("a:b", SOME_TIME);
+        var actuals = sut.findPotentialDependents(AB, SOME_TIME);
         assertEquals(Set.of(expected), actuals);
     }
 
@@ -92,7 +98,7 @@ public class MavenDependentsDataTest {
     public void findDependentsMultiple() {
         var e1 = add(SOME_TIME, "a:a:1", "t:t:1");
         var e2 = add(SOME_TIME, "b:b:1", "t:t:1");
-        var actuals = sut.findPotentialDependents("t:t", SOME_TIME);
+        var actuals = sut.findPotentialDependents(new GA("t", "t"), SOME_TIME);
         assertEquals(Set.of(e1, e2), actuals);
     }
 
@@ -100,14 +106,14 @@ public class MavenDependentsDataTest {
     public void noInterferenceOfOtherDepdencies() {
         var e1 = add(SOME_TIME, "a:a:1", "t:t:1");
         add(SOME_TIME, "b:b:1", "u:u:1");
-        var actuals = sut.findPotentialDependents("t:t", SOME_TIME);
+        var actuals = sut.findPotentialDependents(new GA("t", "t"), SOME_TIME);
         assertEquals(Set.of(e1), actuals);
     }
 
     @Test
     public void dependentsNotFoundWhenTooRecent() {
         add(SOME_TIME + 1, "a:a:1", "t:t:1");
-        var actuals = sut.findPotentialDependents("t:t", SOME_TIME);
+        var actuals = sut.findPotentialDependents(new GA("t", "t"), SOME_TIME);
         assertEquals(Set.of(), actuals);
     }
 

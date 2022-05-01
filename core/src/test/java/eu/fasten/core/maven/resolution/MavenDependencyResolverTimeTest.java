@@ -28,6 +28,7 @@ import java.util.Set;
 import org.junit.jupiter.api.Test;
 
 import eu.fasten.core.maven.data.Dependency;
+import eu.fasten.core.maven.data.GA;
 import eu.fasten.core.maven.data.Pom;
 import eu.fasten.core.maven.data.VersionConstraint;
 
@@ -50,7 +51,7 @@ public class MavenDependencyResolverTimeTest extends AbstractMavenDependencyReso
         addMockData("a", "b", "1", resolveAt, getPom("a", "b", "1", 0));
 
         resolve(resolveAt, "a:b:1");
-        verify(data).find("a:b", Set.of(new VersionConstraint("1")), resolveAt);
+        verify(data).find(new GA("a", "b"), Set.of(new VersionConstraint("1")), resolveAt);
     }
 
     @Test
@@ -64,8 +65,8 @@ public class MavenDependencyResolverTimeTest extends AbstractMavenDependencyReso
         var resolveAt = 10L;
         mockDepGraph();
         resolve(resolveAt, "a:b:1", "b:c:2");
-        verify(data).find(eq("a:b"), anySet(), eq(resolveAt));
-        verify(data).find(eq("b:c"), anySet(), eq(resolveAt));
+        verify(data).find(eq(new GA("a", "b")), anySet(), eq(resolveAt));
+        verify(data).find(eq(new GA("b", "c")), anySet(), eq(resolveAt));
     }
 
     @Test
@@ -141,7 +142,7 @@ public class MavenDependencyResolverTimeTest extends AbstractMavenDependencyReso
     }
 
     private void addMockData(String g, String a, String v, long resolveAt, Pom pom) {
-        var ga = String.format("%s:%s", g, a);
+        var ga = new GA(g, a);
         when(data.find(ga, Set.of(new VersionConstraint(v)), resolveAt)).thenReturn(pom);
     }
 

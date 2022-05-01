@@ -27,6 +27,7 @@ import java.util.stream.Collectors;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import eu.fasten.core.maven.data.GA;
 import eu.fasten.core.maven.data.Pom;
 import eu.fasten.core.maven.data.VersionConstraint;
 
@@ -100,7 +101,7 @@ public class MavenDependencyDataTest {
     public void canReplaceRegisteredPom() {
         var a = addPom("a", "b", "1", SOME_TIME);
         var b = addPom("a", "b", "1", SOME_TIME + 1);
-        var c = sut.find("a:b", Set.of(new VersionConstraint("1")), SOME_TIME + 1);
+        var c = sut.find(ga("a", "b"), Set.of(new VersionConstraint("1")), SOME_TIME + 1);
         assertNotSame(a, c);
         assertSame(b, c);
     }
@@ -157,7 +158,7 @@ public class MavenDependencyDataTest {
     public void pomsAreNotAutomaticallyReplaced() {
         var a = addPom("a", "b", "1", SOME_TIME - 1);
         var b = addPom("a", "b", "1", SOME_TIME);
-        var actuals = sut.findGA("a:b");
+        var actuals = sut.findGA(new GA("a", "b"));
         assertEquals(Set.of(a, b), actuals);
     }
 
@@ -166,11 +167,18 @@ public class MavenDependencyDataTest {
         addPom("a", "b", "1", SOME_TIME - 1);
         var b = addPom("a", "b", "1", SOME_TIME);
         sut.removeOutdatedPomRegistrations();
-        var actuals = sut.findGA("a:b");
+        var actuals = sut.findGA(new GA("a", "b"));
         assertEquals(Set.of(b), actuals);
     }
 
-    private Pom find(long resolveAt, String ga, String... specs) {
+    private static GA ga(String g, String a) {
+        return new GA(g, a);
+    }
+
+    private Pom find(long resolveAt, String gaStr, String... specs) {
+        var parts = gaStr.split(":");
+        var ga = new GA(parts[0], parts[1]);
+
         var vcs = Arrays.stream(specs) //
                 .map(VersionConstraint::new) //
                 .collect(Collectors.toSet());
@@ -190,7 +198,7 @@ public class MavenDependencyDataTest {
 
     private static class TestMavenDependencyData extends MavenDependencyData {
         @Override
-        public synchronized Set<Pom> findGA(String ga) {
+        public synchronized Set<Pom> findGA(GA ga) {
             return super.findGA(ga);
         }
     }

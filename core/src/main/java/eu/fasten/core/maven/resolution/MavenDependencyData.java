@@ -22,13 +22,15 @@ import java.util.Set;
 
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 
+import eu.fasten.core.maven.data.GA;
+import eu.fasten.core.maven.data.GAV;
 import eu.fasten.core.maven.data.Pom;
 import eu.fasten.core.maven.data.VersionConstraint;
 
 public class MavenDependencyData {
 
-    private Map<String, Set<Pom>> pomsForGa = new HashMap<>();
-    private Map<String, Pom> pomForGav = new HashMap<>();
+    private Map<GA, Set<Pom>> pomsForGa = new HashMap<>();
+    private Map<GAV, Pom> pomForGav = new HashMap<>();
 
     public synchronized void add(Pom pom) {
         var gav = pom.toGAV();
@@ -47,7 +49,7 @@ public class MavenDependencyData {
     }
 
     // no need for `synchronized`, the problematic part has been moved to `findGA`
-    public Pom find(String ga, Set<VersionConstraint> vcs, long resolveAt) {
+    public Pom find(GA ga, Set<VersionConstraint> vcs, long resolveAt) {
 
         DefaultArtifactVersion highest = null;
         Pom highestPom = null;
@@ -74,7 +76,7 @@ public class MavenDependencyData {
         return highestPom;
     }
 
-    protected synchronized Set<Pom> findGA(String ga) {
+    protected synchronized Set<Pom> findGA(GA ga) {
         return pomsForGa.getOrDefault(ga, Set.of());
     }
 
@@ -85,6 +87,7 @@ public class MavenDependencyData {
             while (it.hasNext()) {
                 var pom = it.next();
                 if (!registered.contains(pom)) {
+                    System.out.printf("Cleaning-up %s ...\n", pom.toCoordinate());
                     it.remove();
                 }
             }

@@ -26,6 +26,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import eu.fasten.core.maven.data.Dependency;
+import eu.fasten.core.maven.data.GAV;
 import eu.fasten.core.maven.data.Pom;
 import eu.fasten.core.maven.data.ResolvedRevision;
 import eu.fasten.core.maven.data.Scope;
@@ -41,7 +42,8 @@ public class MavenDependentsResolver {
     public Set<ResolvedRevision> resolve(String gav, ResolverConfig config) {
         failForInvalidScopes(config);
 
-        var pom = data.findPom(gav, config.resolveAt);
+        var parts = gav.split(":");
+        var pom = data.findPom(new GAV(parts[0], parts[1], parts[2]), config.resolveAt);
         if (pom == null) {
             throw new MavenResolutionException(String.format("Cannot find coordinate %s", gav));
         }
@@ -63,14 +65,13 @@ public class MavenDependentsResolver {
 
         visited.add(pom);
 
-        var ga = pom.toGA();
-        for (var dpd : data.findPotentialDependents(ga, config.resolveAt)) {
+        for (var dpd : data.findPotentialDependents(pom.toGA(), config.resolveAt)) {
 
             if (visited.contains(dpd)) {
                 continue;
             }
 
-            var decl = findCorrectDependencyDecl(ga, dpd.dependencies);
+            var decl = findCorrectDependencyDecl(pom, dpd.dependencies);
 
             if (!matchesScope(decl.getScope(), config.scope, config.alwaysIncludeProvided)) {
                 continue;
@@ -138,10 +139,12 @@ public class MavenDependentsResolver {
         return false;
     }
 
-    private static Dependency findCorrectDependencyDecl(String ga, Set<Dependency> dependencies) {
+    private static Dependency findCorrectDependencyDecl(Pom pom, Set<Dependency> dependencies) {
         for (var dep : dependencies) {
-            if (ga.equals(dep.toGA())) {
-                return dep;
+            if (pom.groupId.equals(dep.groupId)) {
+                if (pom.artifactId.equals(dep.artifactId)) {
+                    return dep;
+                }
             }
         }
         throw new IllegalStateException("Cannot find reported dependency");

@@ -22,7 +22,7 @@ import static eu.fasten.core.maven.data.VersionConstraint.parseVersionSpec;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -109,8 +109,15 @@ public class DependencyTest {
     @Test
     public void toGA() {
         var actual = new Dependency("g", "a", "1.2.3").toGA();
-        var expected = "g:a";
+        var expected = new GA("g", "a");
         assertEquals(expected, actual);
+    }
+
+    @Test
+    public void toGAIsStable() {
+        var a = new Dependency("g", "a", "1.2.3").toGA();
+        var b = new Dependency("g", "a", "1.2.3").toGA();
+        assertSame(a, b);
     }
 
     @Test
