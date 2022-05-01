@@ -162,17 +162,15 @@ public class MavenResolverIO {
 
     private static IMavenResolver init(Set<Pom> poms) {
         LOG.info("Initializing underlying data structures for MavenResolver with {} poms ...", poms.size());
-        var dpdRes = new MavenDependentsResolver();
-        var dpdData = new MavenDependentsData();
-        dpdRes.setData(dpdData);
+        var data = new MavenResolverData();
 
+        var dpdRes = new MavenDependentsResolver();
+        dpdRes.setData(data);
         var depRes = new MavenDependencyResolver();
-        var depData = new MavenDependencyData();
-        depRes.setData(depData);
+        depRes.setData(data);
 
         for (var pom : poms) {
-            dpdData.add(pom);
-            depData.add(pom);
+            data.add(pom);
         }
 
         LOG.info("Initialization done");

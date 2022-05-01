@@ -36,7 +36,7 @@ public class MavenDependencyResolverTimeTest extends AbstractMavenDependencyReso
 
     @Test
     public void failsWhenSinglePomCannotBeFound() {
-        sut.setData(mock(MavenDependencyData.class));
+        sut.setData(mock(MavenResolverData.class));
         var e = assertThrows(MavenResolutionException.class, () -> {
             sut.resolve(Set.of("a:a:1"), config);
         });
@@ -137,7 +137,7 @@ public class MavenDependencyResolverTimeTest extends AbstractMavenDependencyReso
     }
 
     private void mockDepGraph() {
-        data = mock(MavenDependencyData.class);
+        data = mock(MavenResolverData.class);
         sut.setData(data);
     }
 

@@ -30,14 +30,14 @@ public class AbstractMavenDependentsResolverTest {
 
     protected static final String DEST = "dest:1";
 
-    protected MavenDependentsData data;
+    protected MavenResolverData data;
     protected MavenDependentsResolver sut;
 
     protected ResolverConfig config;
 
     @BeforeEach
     public void setupAbstract() {
-        data = new MavenDependentsData();
+        data = new MavenResolverData();
         sut = new MavenDependentsResolver();
         sut.setData(data);
         config = new ResolverConfig();

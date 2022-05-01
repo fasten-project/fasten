@@ -31,7 +31,7 @@ import eu.fasten.core.maven.data.GA;
 import eu.fasten.core.maven.data.Pom;
 import eu.fasten.core.maven.data.VersionConstraint;
 
-public class MavenDependencyDataTest {
+public class MavenResolverDataDependencyTest {
 
     private static final long SOME_TIME = 123L;
     private TestMavenDependencyData sut;
@@ -196,7 +196,7 @@ public class MavenDependencyDataTest {
         return pom;
     }
 
-    private static class TestMavenDependencyData extends MavenDependencyData {
+    private static class TestMavenDependencyData extends MavenResolverData {
         @Override
         public synchronized Set<Pom> findGA(GA ga) {
             return super.findGA(ga);
