@@ -219,6 +219,7 @@ public class DebianLicenseFeederPlugin extends Plugin {
                     JSONObject licenseObject = new JSONObject();
                     System.out.println("After licenseObject-Created");
                     licenseObject.put("name", file.getString("license"));
+                    licenseObject.put("source", "DEBIAN_API");
                     System.out.println("After licenseObject-put file.getString(license)");
                     JSONArray ja = new JSONArray();
                     System.out.println("After ja creating");
