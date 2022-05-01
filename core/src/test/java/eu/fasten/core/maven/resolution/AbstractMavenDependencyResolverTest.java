@@ -36,14 +36,14 @@ public class AbstractMavenDependencyResolverTest {
     protected Set<String> danglingGAVs;
     protected Set<String> addedAV;
 
-    protected MavenDependencyData data;
+    protected MavenResolverData data;
     protected MavenDependencyResolver sut;
     protected ResolverConfig config;
 
     @BeforeEach
     public void setupAbstract() {
         addedAV = new HashSet<>();
-        data = new MavenDependencyData();
+        data = new MavenResolverData();
         sut = new MavenDependencyResolver();
         sut.setData(data);
         config = new ResolverConfig();

@@ -29,7 +29,7 @@ import eu.fasten.core.maven.data.GA;
 import eu.fasten.core.maven.data.GAV;
 import eu.fasten.core.maven.data.Pom;
 
-public class MavenDependentsDataTest {
+public class MavenResolverDataDependentsTest {
 
     private static final GAV GA1 = new GAV("g", "a", "1");
 
@@ -37,11 +37,11 @@ public class MavenDependentsDataTest {
 
     private static final long SOME_TIME = 1234;
 
-    private MavenDependentsData sut;
+    private MavenResolverData sut;
 
     @BeforeEach
     public void setup() {
-        sut = new MavenDependentsData();
+        sut = new MavenResolverData();
     }
 
     @Test

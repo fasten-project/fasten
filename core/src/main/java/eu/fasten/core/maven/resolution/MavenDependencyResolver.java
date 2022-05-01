@@ -39,9 +39,9 @@ import eu.fasten.core.maven.data.VersionConstraint;
 
 public class MavenDependencyResolver {
 
-    private MavenDependencyData graph = new MavenDependencyData();
+    private MavenResolverData graph = new MavenResolverData();
 
-    public void setData(MavenDependencyData graph) {
+    public void setData(MavenResolverData graph) {
         this.graph = graph;
     }
 

@@ -33,9 +33,9 @@ import eu.fasten.core.maven.data.Scope;
 
 public class MavenDependentsResolver {
 
-    private MavenDependentsData data;
+    private MavenResolverData data;
 
-    public void setData(MavenDependentsData data) {
+    public void setData(MavenResolverData data) {
         this.data = data;
     }
 
