@@ -25,19 +25,21 @@ public class LocalStorageTest {
     @AfterEach
     public void clearStorage() {
         localStorage = null;
-        File toRemove = new File("src/test/resources/test_pod/");
+        File toRemove = new File("src/test/resources/test_pod/dummy_topic");
 
         String[] entries = toRemove.list();
 
-        for(String s: entries){
-            File currentFile = new File(toRemove.getPath(), s);
-            if (currentFile.isDirectory()) {
-                for (String child : currentFile.list()) {
-                    new File(currentFile.getPath(), child).delete();
+        if (entries != null) {
+            for (String s : entries) {
+                File currentFile = new File(toRemove.getPath(), s);
+                if (currentFile.isDirectory()) {
+                    for (String child : currentFile.list()) {
+                        new File(currentFile.getPath(), child).delete();
+                    }
                 }
-            }
 
-            currentFile.delete();
+                currentFile.delete();
+            }
         }
 
         toRemove.delete();
@@ -45,63 +47,63 @@ public class LocalStorageTest {
 
     @Test
     public void testCreatePositive() throws IOException {
-        Assertions.assertTrue(localStorage.store("A very nice message!", 1));
-        Assertions.assertTrue(localStorage.store("Second message!", 1));
+        Assertions.assertTrue(localStorage.store("A very nice message!", 1, "dummy_topic"));
+        Assertions.assertTrue(localStorage.store("Second message!", 1, "dummy_topic"));
     }
 
     @Test
     public void testExists() throws IOException {
-        Assertions.assertTrue(localStorage.store("A very nice message!", 1));
-        Assertions.assertTrue(localStorage.store("Extra message", 1));
-        Assertions.assertTrue(localStorage.exists("A very nice message!", 1));
-        Assertions.assertFalse(localStorage.exists("Doesn't exist", 1));
+        Assertions.assertTrue(localStorage.store("A very nice message!", 1, "dummy_topic"));
+        Assertions.assertTrue(localStorage.store("Extra message", 1, "dummy_topic"));
+        Assertions.assertTrue(localStorage.exists("A very nice message!", 1, "dummy_topic"));
+        Assertions.assertFalse(localStorage.exists("Doesn't exist", 1, "dummy_topic"));
     }
 
     @Test
     public void testCreateNegative() throws IOException {
-        Assertions.assertTrue(localStorage.store("A very nice message!", 1));
-        Assertions.assertFalse(localStorage.store("A very nice message!", 1));
-        Assertions.assertTrue(localStorage.store("Second message!", 1));
-        Assertions.assertFalse(localStorage.store("Second message!", 1));
+        Assertions.assertTrue(localStorage.store("A very nice message!", 1, "dummy_topic"));
+        Assertions.assertFalse(localStorage.store("A very nice message!", 1, "dummy_topic"));
+        Assertions.assertTrue(localStorage.store("Second message!", 1, "dummy_topic"));
+        Assertions.assertFalse(localStorage.store("Second message!", 1, "dummy_topic"));
     }
 
     @Test
     public void testAcrossPartitions() throws IOException {
-        Assertions.assertTrue(localStorage.store("A very nice message!", 1));
-        Assertions.assertTrue(localStorage.store("A very nice message!", 2));
-        Assertions.assertFalse(localStorage.store("A very nice message!", 1));
-        Assertions.assertFalse(localStorage.store("A very nice message!", 2));
-        Assertions.assertTrue(localStorage.store("Second message!", 1));
-        Assertions.assertTrue(localStorage.store("Second message!", 2));
+        Assertions.assertTrue(localStorage.store("A very nice message!", 1, "dummy_topic"));
+        Assertions.assertTrue(localStorage.store("A very nice message!", 2, "dummy_topic"));
+        Assertions.assertFalse(localStorage.store("A very nice message!", 1, "dummy_topic"));
+        Assertions.assertFalse(localStorage.store("A very nice message!", 2, "dummy_topic"));
+        Assertions.assertTrue(localStorage.store("Second message!", 1, "dummy_topic"));
+        Assertions.assertTrue(localStorage.store("Second message!", 2, "dummy_topic"));
     }
 
     @Test
     public void testClearPartitions() throws IOException {
-        Assertions.assertTrue(localStorage.store("A very nice message!", 1));
-        Assertions.assertTrue(localStorage.store("A very nice message!", 2));
-        Assertions.assertTrue(localStorage.store("A very nice message!", 3));
-        Assertions.assertTrue(localStorage.store("A very nice message!", 4));
+        Assertions.assertTrue(localStorage.store("A very nice message!", 1, "dummy_topic"));
+        Assertions.assertTrue(localStorage.store("A very nice message!", 2, "dummy_topic"));
+        Assertions.assertTrue(localStorage.store("A very nice message!", 3, "dummy_topic"));
+        Assertions.assertTrue(localStorage.store("A very nice message!", 4, "dummy_topic"));
 
-        localStorage.clear(List.of(1, 2, 3));
+        localStorage.clear(List.of(1, 2, 3), "dummy_topic");
 
-        Assertions.assertFalse(localStorage.exists("A very nice message!", 1));
-        Assertions.assertFalse(localStorage.exists("A very nice message!", 2));
-        Assertions.assertFalse(localStorage.exists("A very nice message!", 3));
-        Assertions.assertTrue(localStorage.exists("A very nice message!", 4));
+        Assertions.assertFalse(localStorage.exists("A very nice message!", 1, "dummy_topic"));
+        Assertions.assertFalse(localStorage.exists("A very nice message!", 2, "dummy_topic"));
+        Assertions.assertFalse(localStorage.exists("A very nice message!", 3, "dummy_topic"));
+        Assertions.assertTrue(localStorage.exists("A very nice message!", 4, "dummy_topic"));
     }
 
 
     @Test
     public void testRemove() throws IOException {
-        Assertions.assertTrue(localStorage.store("A very nice message!", 1));
-        Assertions.assertTrue(localStorage.exists("A very nice message!", 1));
-        Assertions.assertTrue(localStorage.delete("A very nice message!", 1));
-        Assertions.assertFalse(localStorage.exists("A very nice message!", 1));
+        Assertions.assertTrue(localStorage.store("A very nice message!", 1, "dummy_topic"));
+        Assertions.assertTrue(localStorage.exists("A very nice message!", 1, "dummy_topic"));
+        Assertions.assertTrue(localStorage.delete("A very nice message!", 1, "dummy_topic"));
+        Assertions.assertFalse(localStorage.exists("A very nice message!", 1, "dummy_topic"));
     }
 
     @Test
     public void testRemoveNegative() throws IOException {
-        Assertions.assertFalse(localStorage.delete("Non existent message", 1));
+        Assertions.assertFalse(localStorage.delete("Non existent message", 1, "dummy_topic"));
     }
 
     @Test
@@ -112,13 +114,13 @@ public class LocalStorageTest {
 
     @Test
     public void testClear() throws IOException {
-        localStorage.store("Number 1", 1);
-        localStorage.store("Number 2", 1);
-        Assertions.assertTrue(localStorage.exists("Number 1", 1));
-        Assertions.assertTrue(localStorage.exists("Number 2", 1));
-        localStorage.clear(List.of(1));
-        Assertions.assertFalse(localStorage.exists("Number 1", 1));
-        Assertions.assertFalse(localStorage.exists("Number 2", 1));
+        localStorage.store("Number 1", 1, "dummy_topic");
+        localStorage.store("Number 2", 1, "dummy_topic");
+        Assertions.assertTrue(localStorage.exists("Number 1", 1, "dummy_topic"));
+        Assertions.assertTrue(localStorage.exists("Number 2", 1, "dummy_topic"));
+        localStorage.clear(List.of(1), "dummy_topic");
+        Assertions.assertFalse(localStorage.exists("Number 1", 1, "dummy_topic"));
+        Assertions.assertFalse(localStorage.exists("Number 2", 1, "dummy_topic"));
     }
 
 
