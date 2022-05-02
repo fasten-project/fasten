@@ -1,25 +1,9 @@
 package eu.fasten.server.plugins.kafka;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertSame;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Properties;
-
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import eu.fasten.core.plugins.KafkaPlugin;
+import eu.fasten.core.plugins.KafkaPlugin.ProcessingLane;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang3.reflect.FieldUtils;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
@@ -34,11 +18,25 @@ import org.junit.jupiter.api.io.TempDir;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
 
-import eu.fasten.core.plugins.KafkaPlugin;
-import eu.fasten.core.plugins.KafkaPlugin.ProcessingLane;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class KafkaPluginConsumeBehaviourTest {
 
@@ -79,6 +77,7 @@ public class KafkaPluginConsumeBehaviourTest {
         when(mockConsumer.poll(any())).thenReturn(records);
         when(records.iterator()).thenReturn(listOfRecords.iterator());
         when(record.value()).thenReturn("{key: 'Im a record!'}");
+        when(record.topic()).thenReturn("dummy_topic");
     }
 
     @Test
@@ -106,8 +105,8 @@ public class KafkaPluginConsumeBehaviourTest {
         setEnv("POD_INSTANCE_ID", "test_pod");
 
         LocalStorage localStorage = new LocalStorage(tempDir.getAbsolutePath());
-        localStorage.clear(List.of(1));
-        localStorage.store("{key: 'Im a record!'}", 0);
+        localStorage.clear(List.of(1), "dummy_topic");
+        localStorage.store("{key: 'Im a record!'}", 0, "dummy_topic");
 
         FastenKafkaPlugin kafkaPlugin = spy(new FastenKafkaPlugin(false, new Properties(), new Properties(), new Properties(), dummyPlugin, 0, null, null, "", true, 5, false, true, tempDir.getAbsolutePath()));
         setupMocks(kafkaPlugin);
@@ -124,7 +123,7 @@ public class KafkaPluginConsumeBehaviourTest {
         setEnv("POD_INSTANCE_ID", "test_pod");
 
         LocalStorage localStorage = new LocalStorage(tempDir.getAbsolutePath());
-        localStorage.clear(List.of(0));
+        localStorage.clear(List.of(0), "dummy_topic");
 
         FastenKafkaPlugin kafkaPlugin = spy(new FastenKafkaPlugin(false, new Properties(), new Properties(), new Properties(), dummyPlugin, 0, null, null, "", false, 5, false, true, tempDir.getAbsolutePath()));
         setupMocks(kafkaPlugin);
@@ -138,7 +137,7 @@ public class KafkaPluginConsumeBehaviourTest {
         setEnv("POD_INSTANCE_ID", "test_pod");
 
         LocalStorage localStorage = new LocalStorage(tempDir.getAbsolutePath());
-        localStorage.clear(List.of(1));
+        localStorage.clear(List.of(1), "dummy_topic");
 
         FastenKafkaPlugin kafkaPlugin = spy(new FastenKafkaPlugin(false, new Properties(), new Properties(), new Properties(), dummyPlugin, 0, null, null, "", true, 5, false, true, tempDir.getAbsolutePath()));
         setupMocks(kafkaPlugin);

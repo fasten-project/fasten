@@ -230,9 +230,11 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
 
             var prioRecords = connPrio.poll(prioTimeout);
             ArrayList<ImmutablePair<Long, Integer>> priorityMessagesProcessed = new ArrayList<>();
+            String topicName = null;
 
             for (var r : prioRecords) {
                 hadMessagesOnLastPollCycle = true;
+                topicName = r.topic();
                 logger.info("Read priority message offset {} from partition {}.", r.offset(), r.partition());
                 processRecord(r, ProcessingLane.PRIORITY);
                 logger.info("Successfully processed priority message offset {} from partition {}.", r.offset(),
@@ -242,8 +244,8 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
             }
             doCommitSync(ProcessingLane.PRIORITY);
 
-            if (localStorage != null) {
-                localStorage.clear(priorityMessagesProcessed.stream().map((x) -> x.right).collect(Collectors.toList()));
+            if (localStorage != null && topicName != null) {
+                localStorage.clear(priorityMessagesProcessed.stream().map((x) -> x.right).collect(Collectors.toList()), topicName);
             }
         }
 
@@ -258,10 +260,12 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
             // Keep a list of all records and offsets we processed (by default this is only
             // 1).
             ArrayList<ImmutablePair<Long, Integer>> messagesProcessed = new ArrayList<ImmutablePair<Long, Integer>>();
+            String topicName = null;
 
             // Although we loop through all records, by default we only poll 1 record.
             for (var r : records) {
                 hadMessagesOnLastPollCycle = true;
+                topicName = r.topic();
                 logger.info("Read normal message offset {} from partition {}.", r.offset(), r.partition());
                 processRecord(r, ProcessingLane.NORMAL);
                 logger.info("Successfully processed normal message offset {} from partition {}.", r.offset(),
@@ -287,8 +291,8 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
 
             // If local storage is enabled, clear the correct partitions after offsets are
             // committed.
-            if (localStorage != null) {
-                localStorage.clear(messagesProcessed.stream().map((x) -> x.right).collect(Collectors.toList()));
+            if (localStorage != null && topicName != null) {
+                localStorage.clear(messagesProcessed.stream().map((x) -> x.right).collect(Collectors.toList()), topicName);
             }
         }
     }
@@ -312,15 +316,15 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
 
         try {
             if (localStorage != null) { // If local storage is enabled.
-                if (localStorage.exists(record.value(), record.partition())) { // This plugin already consumed this
-                                                                               // record before, we will not process it
-                                                                               // now.
+                if (localStorage.exists(record.value(), record.partition(), record.topic())) { // This plugin already consumed this
+                    // record before, we will not process it
+                    // now.
                     String hash = localStorage.getSHA1(record.value());
                     logger.info("Already processed record with hash: {}, skipping it now.", hash);
                     plugin.setPluginError(new ExistsInLocalStorageException());
                 } else {
                     try {
-                        localStorage.store(record.value(), record.partition());
+                        localStorage.store(record.value(), record.partition(), record.topic());
                     } catch (IOException e) {
                         // We couldn't store the message SHA. Will just continue processing, but log the
                         // error.

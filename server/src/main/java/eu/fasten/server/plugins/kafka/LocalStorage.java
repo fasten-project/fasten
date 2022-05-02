@@ -39,13 +39,13 @@ public class LocalStorage {
     /**
      * Verify if a message is already in the local storage.
      *
-     * @param message the message to verify.
+     * @param message   the message to verify.
      * @param partition the partition this message belongs to.
      * @return true if local storage, otherwise false.
      */
-    public boolean exists(String message, int partition) {
+    public boolean exists(String message, int partition, String topicName) {
         String hashedMessage = getSHA1(message);
-        String[] filesInFolder = getPartitionFolder(partition).list();
+        String[] filesInFolder = getPartitionFolder(partition, topicName).list();
 
         for (String hash : filesInFolder) {
             if (hash.equals(hashedMessage)) {
@@ -58,17 +58,17 @@ public class LocalStorage {
     /**
      * Remove a message from local storage.
      *
-     * @param message the message to remove.
+     * @param message   the message to remove.
      * @param partition the partition this message belongs to.
      * @return true if sucessfully deleted, otherwise false (for instance, when it doesn't exist).
      */
-    public boolean delete(String message, int partition) {
-        if (!exists(message, partition)) {
+    public boolean delete(String message, int partition, String topicName) {
+        if (!exists(message, partition, topicName)) {
             return false;
         }
 
         String hashedMessage = getSHA1(message);
-        File fileToRemove = new File(getPartitionFolder(partition).getPath() + File.separator + hashedMessage);
+        File fileToRemove = new File(getPartitionFolder(partition, topicName).getPath() + File.separator + hashedMessage);
 
         return fileToRemove.delete();
     }
@@ -76,53 +76,55 @@ public class LocalStorage {
     /**
      * Deletes a file by hash.
      *
-     * @param hash the hash to remove from local storage.
+     * @param hash      the hash to remove from local storage.
      * @param partition the partition this message belongs to.
      * @return if successfully deleted.
      */
-    private boolean deleteByHash(String hash, int partition) {
-        File fileToRemove = new File(getPartitionFolder(partition).getPath() + File.separator + hash);
+    private boolean deleteByHash(String hash, int partition, String topicName) {
+        File fileToRemove = new File(getPartitionFolder(partition, topicName).getPath() + File.separator + hash);
         return fileToRemove.delete();
     }
 
     /**
      * Stores a message in local storage.
      *
-     * @param message the raw message to store. Will be hashed into SHA-1 format.
+     * @param message   the raw message to store. Will be hashed into SHA-1 format.
      * @param partition the partition this message belongs to.
      * @return if successfully stored.
      * @throws IOException when file can't be created.
      */
-    public boolean store(String message, int partition) throws IOException {
-        if (exists(message, partition)) {
+    public boolean store(String message, int partition, String topicName) throws IOException {
+        if (exists(message, partition, topicName)) {
             return false;
         }
 
         String hashedMessage = getSHA1(message);
-        File fileToCreate = new File(getPartitionFolder(partition).getPath() + File.separator + hashedMessage);
+        File fileToCreate = new File(getPartitionFolder(partition, topicName).getPath() + File.separator + hashedMessage);
 
         return fileToCreate.createNewFile();
     }
 
     /**
      * Remove all hashes/files from local storage.
+     *
      * @param partitions the partitions folders to remove from.
      */
-    public void clear(List<Integer> partitions) {
+    public void clear(List<Integer> partitions, String topicName) {
         for (int partition : partitions) {
-            for (String hash : getPartitionFolder(partition).list()) {
-                deleteByHash(hash, partition);
+            for (String hash : getPartitionFolder(partition, topicName).list()) {
+                deleteByHash(hash, partition, topicName);
             }
         }
     }
 
     /**
      * Get the folder of a certain partition based on the parent (storage) folder.
+     *
      * @param partition the partition number.
      * @return the partition folder (in a File instance).
      */
-    public File getPartitionFolder(int partition) {
-        File partitionFolder = new File(storageFolder.getPath() + File.separator + "partition-" + partition  + File.separator);
+    public File getPartitionFolder(int partition, String topicName) {
+        File partitionFolder = new File(storageFolder.getPath() + File.separator + topicName + File.separator + "partition-" + partition + File.separator);
 
         if (!partitionFolder.exists()) {
             partitionFolder.mkdirs();
