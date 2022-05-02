@@ -229,15 +229,22 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
             sendHeartBeat(connNorm);
 
             var prioRecords = connPrio.poll(prioTimeout);
+            ArrayList<ImmutablePair<Long, Integer>> priorityMessagesProcessed = new ArrayList<>();
+
             for (var r : prioRecords) {
                 hadMessagesOnLastPollCycle = true;
                 logger.info("Read priority message offset {} from partition {}.", r.offset(), r.partition());
                 processRecord(r, ProcessingLane.PRIORITY);
                 logger.info("Successfully processed priority message offset {} from partition {}.", r.offset(),
                         r.partition());
-                // TODO: Keep a list of processed priority messages like normal ones
+
+                priorityMessagesProcessed.add(new ImmutablePair<>(r.offset(), r.partition()));
             }
             doCommitSync(ProcessingLane.PRIORITY);
+
+            if (localStorage != null) {
+                localStorage.clear(priorityMessagesProcessed.stream().map((x) -> x.right).collect(Collectors.toList()));
+            }
         }
 
         if(hadMessagesOnLastPollCycle) {
