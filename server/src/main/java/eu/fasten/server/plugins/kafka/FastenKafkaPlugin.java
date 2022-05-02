@@ -245,6 +245,7 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
         }
 
         if (!normTopics.isEmpty()) {
+            sendHeartBeat(connPrio);
             var records = connNorm.poll(normTimeout);
 
             // Keep a list of all records and offsets we processed (by default this is only
