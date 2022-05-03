@@ -21,6 +21,7 @@ package eu.fasten.analyzer.restapiplugin.api;
 import eu.fasten.analyzer.restapiplugin.KnowledgeBaseConnector;
 import eu.fasten.analyzer.restapiplugin.RestApplication;
 import eu.fasten.analyzer.restapiplugin.api.DependencyApi;
+import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.metadatadb.MetadataDao;
 import eu.fasten.core.maven.data.PackageVersionNotFoundException;
 
@@ -44,6 +45,7 @@ public class DependencyApiTest {
         service = new DependencyApi();
         kbDao = Mockito.mock(MetadataDao.class);
         KnowledgeBaseConnector.kbDao = kbDao;
+        KnowledgeBaseConnector.forge = Constants.mvnForge;
     }
 
     @Test
