@@ -43,29 +43,54 @@ public class LazyIngestionProvider {
     }
 
     public static void ingestArtifactIfNecessary(String packageName, String version, String artifactRepo, Long date) throws IllegalArgumentException, IOException {
-        var groupId = packageName.split(Constants.mvnCoordinateSeparator)[0];
-        var artifactId = packageName.split(Constants.mvnCoordinateSeparator)[1];
-        if(artifactRepo == null || artifactRepo.isEmpty()) {
-        	artifactRepo = MavenUtilities.MAVEN_CENTRAL_REPO;
-        }
-        if (!MavenUtilities.mavenArtifactExists(groupId, artifactId, version, artifactRepo)) {
-            throw new IllegalArgumentException("Maven artifact '" + packageName + ":" + version
-                    + "' could not be found in the repository of '"
-                    + (artifactRepo == null ? MavenUtilities.MAVEN_CENTRAL_REPO : artifactRepo) + "'."
-                    + " Make sure the Maven coordinate and repository are correct");
-        }
-        if (!hasArtifactBeenIngested(packageName, version)) {
-            var jsonRecord = new JSONObject();
-            jsonRecord.put("groupId", groupId);
-            jsonRecord.put("artifactId", artifactId);
-            jsonRecord.put("version", version);
-            jsonRecord.put("artifactRepository", artifactRepo);
-            if (date != null && date > 0) {
-            	// TODO why is the date necessary?
-                jsonRecord.put("date", date);
+        switch(KnowledgeBaseConnector.forge){
+            case Constants.mvnForge: {
+                var groupId = packageName.split(Constants.mvnCoordinateSeparator)[0];
+                var artifactId = packageName.split(Constants.mvnCoordinateSeparator)[1];
+                if(artifactRepo == null || artifactRepo.isEmpty()) {
+                    artifactRepo = MavenUtilities.MAVEN_CENTRAL_REPO;
+                }
+                if (!MavenUtilities.mavenArtifactExists(groupId, artifactId, version, artifactRepo)) {
+                    throw new IllegalArgumentException("Maven artifact '" + packageName + ":" + version
+                            + "' could not be found in the repository of '"
+                            + (artifactRepo == null ? MavenUtilities.MAVEN_CENTRAL_REPO : artifactRepo) + "'."
+                            + " Make sure the Maven coordinate and repository are correct");
+                }
+                if (!hasArtifactBeenIngested(packageName, version)) {
+                    var jsonRecord = new JSONObject();
+                    jsonRecord.put("groupId", groupId);
+                    jsonRecord.put("artifactId", artifactId);
+                    jsonRecord.put("version", version);
+                    jsonRecord.put("artifactRepository", artifactRepo);
+                    if (date != null && date > 0) {
+                        // TODO why is the date necessary?
+                        jsonRecord.put("date", date);
+                    }
+                    if (KnowledgeBaseConnector.kafkaProducer != null && KnowledgeBaseConnector.ingestTopic != null) {
+                        KafkaWriter.sendToKafka(KnowledgeBaseConnector.kafkaProducer, KnowledgeBaseConnector.ingestTopic, jsonRecord.toString());
+                    }
+                }
+                break;
             }
-            if (KnowledgeBaseConnector.kafkaProducer != null && KnowledgeBaseConnector.ingestTopic != null) {
-                KafkaWriter.sendToKafka(KnowledgeBaseConnector.kafkaProducer, KnowledgeBaseConnector.ingestTopic, jsonRecord.toString());
+            case Constants.pypiForge: {
+                var query = "https://pypi.org/pypi/" + packageName + "/" + version +"/json";
+                String result;
+                try {
+                    result = MavenUtilities.sendGetRequest(query);
+                } catch (IllegalStateException ex) {
+                    throw new IllegalArgumentException("PyPI package " + packageName + ":" + version
+                            + " could not be found. Make sure the PyPI coordinate is correct");
+                }
+                JSONObject json = new JSONObject(result);
+                var requiresDist = json.getJSONObject("info").get("requires_dist");
+                var createdAt = ((JSONObject) json.getJSONObject("releases").getJSONArray(version).get(1)).get("upload_time");
+                var jsonRecord = new JSONObject();
+                jsonRecord.put("product", packageName);
+                jsonRecord.put("version", version);
+                jsonRecord.put("version_timestamp", createdAt);
+                jsonRecord.put("requires_dist", requiresDist);
+                System.out.println(jsonRecord.toString());
+                break;
             }
         }
     }
