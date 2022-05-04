@@ -553,13 +553,16 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
     /**
      * This method can be used to simulate Kafka's heartbeat to avoid the eviction
      * of a consumer.
+     *
+     * See https://stackoverflow.com/a/43722731
      */
     private static void sendHeartBeat(KafkaConsumer<String, String> kafkaConn) {
-        // See https://stackoverflow.com/a/43722731
-        var currentlyAssignedPartitions = kafkaConn.assignment();
-        kafkaConn.pause(currentlyAssignedPartitions);
-        kafkaConn.poll(Duration.ZERO);
-        kafkaConn.resume(currentlyAssignedPartitions);
+        if(!kafkaConn.subscription().isEmpty()) {
+            var currentlyAssignedPartitions = kafkaConn.assignment();
+            kafkaConn.pause(currentlyAssignedPartitions);
+            kafkaConn.poll(Duration.ZERO);
+            kafkaConn.resume(currentlyAssignedPartitions);
+        }
     }
 
     /**
