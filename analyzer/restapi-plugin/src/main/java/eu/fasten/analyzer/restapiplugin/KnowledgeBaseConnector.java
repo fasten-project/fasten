@@ -210,7 +210,7 @@ public class KnowledgeBaseConnector {
 
     @PostConstruct
     public void initKafkaProducer() {
-        if (this.forge.equals(Constants.mvnForge)) {
+        if (!this.forge.equals(Constants.debianForge)) {
             ingestTopic = this.kafkaOutputTopic;
             var producerProperties = new Properties();
             producerProperties.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaAddress);
