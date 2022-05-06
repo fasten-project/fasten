@@ -176,7 +176,7 @@ public class LicenseFeederPlugin extends Plugin {
                     metadataDao.insertFileLicenses(
                             coordinates,
                             file.getString("path"),
-                            new JSONObject().put("licenses", file.getJSONArray("licenses")).toString()
+                            fileMetadata
                     );
                 }
             });
