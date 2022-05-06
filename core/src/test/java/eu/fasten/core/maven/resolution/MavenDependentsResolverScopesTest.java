@@ -32,7 +32,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import eu.fasten.core.maven.data.Dependency;
-import eu.fasten.core.maven.data.Pom;
+import eu.fasten.core.maven.data.PomBuilder;
 import eu.fasten.core.maven.data.Scope;
 
 public class MavenDependentsResolverScopesTest extends AbstractMavenDependentsResolverTest {
@@ -121,20 +121,20 @@ public class MavenDependentsResolverScopesTest extends AbstractMavenDependentsRe
     }
 
     private void add(String from, Dep... tos) {
-        var pom = new Pom();
+        var pb = new PomBuilder();
         var parts = from.split(":");
-        pom.groupId = parts[0];
-        pom.artifactId = parts[0];
-        pom.version = parts[1];
+        pb.groupId = parts[0];
+        pb.artifactId = parts[0];
+        pb.version = parts[1];
 
         for (var to : tos) {
             var partsTo = to.coord.split(":");
             var d = new Dependency(partsTo[0], partsTo[0], parseVersionSpec(partsTo[1]), Set.of(), to.scope, false,
                     "jar", "");
-            pom.dependencies.add(d);
+            pb.dependencies.add(d);
         }
 
-        data.add(pom);
+        data.add(pb.pom());
     }
 
     private void addDependentsWithAllScopes(String dest) {

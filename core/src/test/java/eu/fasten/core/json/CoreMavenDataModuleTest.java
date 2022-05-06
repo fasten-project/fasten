@@ -33,7 +33,7 @@ import com.fasterxml.jackson.databind.SerializationFeature;
 
 import eu.fasten.core.maven.data.Dependency;
 import eu.fasten.core.maven.data.Exclusion;
-import eu.fasten.core.maven.data.Pom;
+import eu.fasten.core.maven.data.PomBuilder;
 import eu.fasten.core.maven.data.Scope;
 import eu.fasten.core.maven.data.VersionConstraint;
 
@@ -148,10 +148,10 @@ public class CoreMavenDataModuleTest {
 
     @Test
     public void testHashCodePom() {
-        var in = new Pom();
-        in.artifactId = "a";
-        in.groupId = "g";
-        assertHashCodeAfterSerialization(in);
+        var pb = new PomBuilder();
+        pb.artifactId = "a";
+        pb.groupId = "g";
+        assertHashCodeAfterSerialization(pb.pom());
     }
 
     @Test

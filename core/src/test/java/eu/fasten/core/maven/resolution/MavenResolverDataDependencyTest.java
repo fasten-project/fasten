@@ -29,6 +29,7 @@ import org.junit.jupiter.api.Test;
 
 import eu.fasten.core.maven.data.GA;
 import eu.fasten.core.maven.data.Pom;
+import eu.fasten.core.maven.data.PomBuilder;
 import eu.fasten.core.maven.data.VersionConstraint;
 
 public class MavenResolverDataDependencyTest {
@@ -186,12 +187,13 @@ public class MavenResolverDataDependencyTest {
     }
 
     private Pom addPom(String g, String a, String v, long releaseDate) {
-        var pom = new Pom();
-        pom.groupId = g;
-        pom.artifactId = a;
-        pom.version = v;
-        pom.releaseDate = releaseDate;
+        var pb = new PomBuilder();
+        pb.groupId = g;
+        pb.artifactId = a;
+        pb.version = v;
+        pb.releaseDate = releaseDate;
 
+        var pom = pb.pom();
         sut.add(pom);
         return pom;
     }

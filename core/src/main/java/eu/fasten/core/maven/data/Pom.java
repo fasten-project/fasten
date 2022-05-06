@@ -18,40 +18,98 @@ package eu.fasten.core.maven.data;
 import static org.apache.commons.lang3.builder.ToStringStyle.MULTI_LINE_STYLE;
 
 import java.sql.Timestamp;
-import java.util.HashSet;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
 import eu.fasten.core.data.Constants;
 
-public class Pom implements Cloneable {
+public class Pom {
+
+    private static final LinkedHashSet<Dependency> NO_DEPS = new LinkedHashSet<>() {
+        private static final long serialVersionUID = -7233644259488131119L;
+
+        // will always be empty, so preventing "add" variants is all that is necessary
+
+        public boolean add(Dependency e) {
+            throw new UnsupportedOperationException();
+        };
+
+        public boolean addAll(Collection<? extends Dependency> c) {
+            throw new UnsupportedOperationException();
+        };
+    };
+    private static final Set<Dependency> NO_DEPMGMT = Set.of();
 
     public transient long id;
 
-    public String forge = Constants.mvnForge;
+    public final String forge = Constants.mvnForge;
 
-    public String artifactId = null;
-    public String groupId = null;
-    public String packagingType = null;
-    public String version = null;
+    public final String artifactId;
+    public final String groupId;
+    public final String packagingType;
+    public final String version;
 
     // g:a:packaging:version
-    public String parentCoordinate = null;
+    public final String parentCoordinate;
 
-    public long releaseDate = -1L;
-    public String projectName = null;
+    public final long releaseDate;
+    public final String projectName;
 
-    // used LinkedHashSet, because order is relevant for resolution
-    public LinkedHashSet<Dependency> dependencies = new LinkedHashSet<>();
-    public Set<Dependency> dependencyManagement = new HashSet<>();
+    public final Set<Dependency> dependencies;
+    public final Set<Dependency> dependencyManagement;
 
-    public String repoUrl = null;
-    public String commitTag = null;
-    public String sourcesUrl = null;
-    public String artifactRepository = null;
+    public final String repoUrl;
+    public final String commitTag;
+    public final String sourcesUrl;
+    public final String artifactRepository;
+
+    private final int hashCode;
+    private final GAV gav;
+    private final GA ga;
+
+    // use LinkedHashSet for dependencies, because order is relevant for resolution
+    public Pom(String groupId, String artifactId, String packagingType, String version, String parentCoordinate,
+            long releaseDate, String projectName, LinkedHashSet<Dependency> dependencies,
+            Set<Dependency> dependencyManagement, String repoUrl, String commitTag, String sourcesUrl,
+            String artifactRepository) {
+        this.groupId = Ids.gid(groupId);
+        this.artifactId = Ids.gid(artifactId);
+        this.packagingType = packagingType;
+        this.version = Ids.version(version);
+
+        this.parentCoordinate = parentCoordinate;
+
+        this.releaseDate = releaseDate;
+        this.projectName = projectName;
+
+        if (dependencies == null || dependencies.isEmpty()) {
+            this.dependencies = NO_DEPS;
+        } else {
+            // TODO check for "double wrapping"
+            this.dependencies = Collections.unmodifiableSet(dependencies);
+        }
+
+        if (dependencyManagement == null || dependencyManagement.isEmpty()) {
+            this.dependencyManagement = NO_DEPMGMT;
+        } else {
+            // TODO check for "double wrapping"
+            this.dependencyManagement = Collections.unmodifiableSet(dependencyManagement);
+        }
+
+        this.repoUrl = repoUrl;
+        this.commitTag = commitTag;
+        this.sourcesUrl = sourcesUrl;
+        this.artifactRepository = artifactRepository;
+
+        hashCode = getHashCode();
+
+        gav = Ids.gav(new GAV(groupId, artifactId, version));
+        ga = Ids.ga(new GA(groupId, artifactId));
+    }
 
     /** gid:aid:packaging:version */
     public String toCoordinate() {
@@ -60,11 +118,11 @@ public class Pom implements Cloneable {
     }
 
     public GAV toGAV() {
-        return Ids.gav(new GAV(groupId, artifactId, version));
+        return gav;
     }
 
     public GA toGA() {
-        return Ids.ga(new GA(groupId, artifactId));
+        return ga;
     }
 
     public MavenProduct toProduct() {
@@ -75,10 +133,8 @@ public class Pom implements Cloneable {
         return new Revision(id, groupId, artifactId, version, new Timestamp(releaseDate));
     }
 
-    @Override
-    public Pom clone() {
-        var clone = new Pom();
-        clone.forge = forge;
+    public PomBuilder clone() {
+        var clone = new PomBuilder();
 
         clone.artifactId = artifactId;
         clone.groupId = groupId;
@@ -101,13 +157,7 @@ public class Pom implements Cloneable {
         return clone;
     }
 
-    @Override
-    public boolean equals(Object obj) {
-        return EqualsBuilder.reflectionEquals(this, obj);
-    }
-
-    @Override
-    public int hashCode() {
+    public int getHashCode() {
         final int prime = 31;
         int result = 1;
         result = prime * result + ((artifactId == null) ? 0 : artifactId.hashCode());
@@ -125,6 +175,23 @@ public class Pom implements Cloneable {
         result = prime * result + ((sourcesUrl == null) ? 0 : sourcesUrl.hashCode());
         result = prime * result + ((version == null) ? 0 : version.hashCode());
         return result;
+    }
+
+    @Override
+    public int hashCode() {
+        return hashCode;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        Pom other = (Pom) obj;
+        return hashCode == other.hashCode;
     }
 
     @Override

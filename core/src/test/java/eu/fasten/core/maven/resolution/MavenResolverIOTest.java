@@ -47,6 +47,7 @@ import eu.fasten.core.json.ObjectMapperBuilder;
 import eu.fasten.core.maven.data.Dependency;
 import eu.fasten.core.maven.data.Exclusion;
 import eu.fasten.core.maven.data.Pom;
+import eu.fasten.core.maven.data.PomBuilder;
 import eu.fasten.core.maven.data.ResolvedRevision;
 import eu.fasten.core.maven.data.Scope;
 import eu.fasten.core.maven.data.VersionConstraint;
@@ -73,39 +74,41 @@ public class MavenResolverIOTest {
 
     @Test
     public void requestedPomsGetSimplified() {
-        var pom = pom("g", "a", "v");
-        pom.artifactRepository = "ar";
-        pom.commitTag = "ct";
-        pom.dependencies.add(new Dependency("dg", "da", Set.of(new VersionConstraint("dv")),
+        var pb = new PomBuilder();
+        pb.groupId = "g";
+        pb.artifactId = "a";
+        pb.version = "v";
+        pb.artifactRepository = "ar";
+        pb.commitTag = "ct";
+        pb.dependencies.add(new Dependency("dg", "da", Set.of(new VersionConstraint("dv")),
                 Set.of(new Exclusion("eg", "ea")), Scope.TEST, true, "jar", "cla"));
-        pom.dependencyManagement.add(new Dependency("dmg", "dma", Set.of(new VersionConstraint("dmv")),
+        pb.dependencyManagement.add(new Dependency("dmg", "dma", Set.of(new VersionConstraint("dmv")),
                 Set.of(new Exclusion("emg", "ema")), Scope.IMPORT, true, "pom", "foo"));
-        pom.forge = "f";
-        pom.packagingType = "pt";
-        pom.parentCoordinate = "pcoord";
-        pom.projectName = "pn";
-        pom.releaseDate = 1234L;
-        pom.repoUrl = "repo";
-        pom.sourcesUrl = "srcUrl";
-        data.poms.put(123L, pom);
+        pb.packagingType = "pt";
+        pb.parentCoordinate = "pcoord";
+        pb.projectName = "pn";
+        pb.releaseDate = 1234L;
+        pb.repoUrl = "repo";
+        pb.sourcesUrl = "srcUrl";
+        data.poms.put(123L, pb.pom());
 
         var actuals = sut.readFromDB();
 
-        var expected = new Pom();
-        expected.groupId = "g";
-        expected.artifactId = "a";
-        expected.version = "v";
-        expected.forge = null;
+        pb = new PomBuilder();
+        pb.groupId = "g";
+        pb.artifactId = "a";
+        pb.version = "v";
         var d1 = new Dependency("dg", "da", Set.of(new VersionConstraint("dv")), Set.of(new Exclusion("eg", "ea")),
                 Scope.TEST, true, null, null);
-        expected.dependencies.add(d1);
+        pb.dependencies.add(d1);
         var dm1 = new Dependency("dmg", "dma", Set.of(new VersionConstraint("dmv")),
                 Set.of(new Exclusion("emg", "ema")), Scope.IMPORT, true, null, null);
-        expected.dependencyManagement.add(dm1);
-        expected.releaseDate = 1234L;
+        pb.dependencyManagement.add(dm1);
+        pb.releaseDate = 1234L;
+        var expected = pb.pom();
         expected.id = 123L;
 
-        assertEquals(Set.of(expected), actuals);
+        assertEquals(Set.of(pb.pom()), actuals);
         assertEquals(123L, actuals.iterator().next().id);
     }
 
@@ -154,19 +157,11 @@ public class MavenResolverIOTest {
     }
 
     private Pom pom(int i) {
-        Pom pom = new Pom();
+        var pom = new PomBuilder();
         pom.groupId = "g" + i;
         pom.artifactId = "a" + i;
         pom.version = "v" + i;
-        return pom;
-    }
-
-    private Pom pom(String g, String a, String v) {
-        var pom = new Pom();
-        pom.groupId = g;
-        pom.artifactId = a;
-        pom.version = v;
-        return pom;
+        return pom.pom();
     }
 
     public class MyProvider implements MockDataProvider {
