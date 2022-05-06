@@ -18,7 +18,6 @@ package eu.fasten.core.maven.data;
 import static org.apache.commons.lang3.builder.ToStringStyle.MULTI_LINE_STYLE;
 
 import java.sql.Timestamp;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Set;
@@ -26,22 +25,11 @@ import java.util.Set;
 import org.apache.commons.lang3.builder.ToStringBuilder;
 
 import eu.fasten.core.data.Constants;
+import eu.fasten.core.data.collections.ImmutableEmptyLinkedHashSet;
 
 public class Pom {
 
-    private static final LinkedHashSet<Dependency> NO_DEPS = new LinkedHashSet<>() {
-        private static final long serialVersionUID = -7233644259488131119L;
-
-        // will always be empty, so preventing "add" variants is all that is necessary
-
-        public boolean add(Dependency e) {
-            throw new UnsupportedOperationException();
-        };
-
-        public boolean addAll(Collection<? extends Dependency> c) {
-            throw new UnsupportedOperationException();
-        };
-    };
+    private static final LinkedHashSet<Dependency> NO_DEPS = new ImmutableEmptyLinkedHashSet<>();
     private static final Set<Dependency> NO_DEPMGMT = Set.of();
 
     public transient long id;
@@ -77,7 +65,7 @@ public class Pom {
             Set<Dependency> dependencyManagement, String repoUrl, String commitTag, String sourcesUrl,
             String artifactRepository) {
         this.groupId = Ids.gid(groupId);
-        this.artifactId = Ids.gid(artifactId);
+        this.artifactId = Ids.aid(artifactId);
         this.packagingType = packagingType;
         this.version = Ids.version(version);
 
@@ -89,14 +77,14 @@ public class Pom {
         if (dependencies == null || dependencies.isEmpty()) {
             this.dependencies = NO_DEPS;
         } else {
-            // TODO check for "double wrapping"
+            // TODO check for (and prevent) "double wrapping"
             this.dependencies = Collections.unmodifiableSet(dependencies);
         }
 
         if (dependencyManagement == null || dependencyManagement.isEmpty()) {
             this.dependencyManagement = NO_DEPMGMT;
         } else {
-            // TODO check for "double wrapping"
+            // TODO check for (and prevent) "double wrapping"
             this.dependencyManagement = Collections.unmodifiableSet(dependencyManagement);
         }
 
@@ -191,7 +179,84 @@ public class Pom {
         if (getClass() != obj.getClass())
             return false;
         Pom other = (Pom) obj;
-        return hashCode == other.hashCode;
+        if (hashCode != other.hashCode) {
+            return false;
+        }
+        if (artifactId == null) {
+            if (other.artifactId != null)
+                return false;
+        } else if (!artifactId.equals(other.artifactId))
+            return false;
+        if (artifactRepository == null) {
+            if (other.artifactRepository != null)
+                return false;
+        } else if (!artifactRepository.equals(other.artifactRepository))
+            return false;
+        if (commitTag == null) {
+            if (other.commitTag != null)
+                return false;
+        } else if (!commitTag.equals(other.commitTag))
+            return false;
+        if (dependencies == null) {
+            if (other.dependencies != null)
+                return false;
+        } else if (!dependencies.equals(other.dependencies))
+            return false;
+        if (dependencyManagement == null) {
+            if (other.dependencyManagement != null)
+                return false;
+        } else if (!dependencyManagement.equals(other.dependencyManagement))
+            return false;
+        if (!forge.equals(other.forge))
+            return false;
+        if (ga == null) {
+            if (other.ga != null)
+                return false;
+        } else if (!ga.equals(other.ga))
+            return false;
+        if (gav == null) {
+            if (other.gav != null)
+                return false;
+        } else if (!gav.equals(other.gav))
+            return false;
+        if (groupId == null) {
+            if (other.groupId != null)
+                return false;
+        } else if (!groupId.equals(other.groupId))
+            return false;
+        if (packagingType == null) {
+            if (other.packagingType != null)
+                return false;
+        } else if (!packagingType.equals(other.packagingType))
+            return false;
+        if (parentCoordinate == null) {
+            if (other.parentCoordinate != null)
+                return false;
+        } else if (!parentCoordinate.equals(other.parentCoordinate))
+            return false;
+        if (projectName == null) {
+            if (other.projectName != null)
+                return false;
+        } else if (!projectName.equals(other.projectName))
+            return false;
+        if (releaseDate != other.releaseDate)
+            return false;
+        if (repoUrl == null) {
+            if (other.repoUrl != null)
+                return false;
+        } else if (!repoUrl.equals(other.repoUrl))
+            return false;
+        if (sourcesUrl == null) {
+            if (other.sourcesUrl != null)
+                return false;
+        } else if (!sourcesUrl.equals(other.sourcesUrl))
+            return false;
+        if (version == null) {
+            if (other.version != null)
+                return false;
+        } else if (!version.equals(other.version))
+            return false;
+        return true;
     }
 
     @Override

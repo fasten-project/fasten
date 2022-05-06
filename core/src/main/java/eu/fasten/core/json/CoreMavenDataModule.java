@@ -36,6 +36,7 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
+import eu.fasten.core.data.collections.ImmutableEmptyLinkedHashSet;
 import eu.fasten.core.maven.data.Dependency;
 import eu.fasten.core.maven.data.Exclusion;
 import eu.fasten.core.maven.data.Ids;
@@ -106,8 +107,7 @@ public class CoreMavenDataModule extends SimpleModule {
             @Override
             public VersionConstraint deserialize(JsonParser p, DeserializationContext ctxt)
                     throws IOException, JacksonException {
-                var version = Ids.version(p.getValueAsString());
-                return new VersionConstraint(version);
+                return new VersionConstraint(p.getValueAsString());
             }
         });
 
@@ -123,9 +123,7 @@ public class CoreMavenDataModule extends SimpleModule {
             public Exclusion deserialize(JsonParser p, DeserializationContext ctxt)
                     throws IOException, JacksonException {
                 String[] parts = p.getValueAsString().split(":");
-                var gid = Ids.gid(parts[0]);
-                var aid = Ids.aid(parts[1]);
-                return new Exclusion(gid, aid);
+                return new Exclusion(parts[0], parts[1]);
             }
         });
 
@@ -148,17 +146,7 @@ public class CoreMavenDataModule extends SimpleModule {
 
     private static class PomDeserializer extends JsonDeserializer<Pom> {
 
-        private static final LinkedHashSet<Dependency> NO_DEPS = new LinkedHashSet<>() {
-            private static final long serialVersionUID = -7233644259488131119L;
-
-            public boolean add(Dependency e) {
-                throw new UnsupportedOperationException();
-            };
-
-            public boolean addAll(Collection<? extends Dependency> c) {
-                throw new UnsupportedOperationException();
-            };
-        };
+        private static final LinkedHashSet<Dependency> NO_DEPS = new ImmutableEmptyLinkedHashSet<>();
         private static final Set<Dependency> NO_DEP_MGMT = Set.of();
 
         @Override
@@ -176,10 +164,9 @@ public class CoreMavenDataModule extends SimpleModule {
             pb.releaseDate = getLong(node, "releaseDate", -1L);
             pb.projectName = getText(node, "projectName", null);
 
-            pb.dependencies = addChildren(node, p, "dependencies", Dependency.class,
-                    () -> new LinkedHashSet<Dependency>(), NO_DEPS);
-            pb.dependencyManagement = addChildren(node, p, "dependencyManagement", Dependency.class,
-                    () -> new HashSet<Dependency>(), NO_DEP_MGMT);
+            pb.dependencies = addChildren(node, p, "dependencies", () -> new LinkedHashSet<Dependency>(), NO_DEPS);
+            pb.dependencyManagement = addChildren(node, p, "dependencyManagement", () -> new HashSet<Dependency>(),
+                    NO_DEP_MGMT);
 
             pb.repoUrl = getText(node, "repoUrl", null);
             pb.commitTag = getText(node, "commitTag", null);
@@ -246,9 +233,7 @@ public class CoreMavenDataModule extends SimpleModule {
             var es = new HashSet<Exclusion>(exclusions.size() + 1, 1);
             for (var exclusion : exclusions) {
                 var parts = exclusion.textValue().split(":");
-                var gid = Ids.gid(parts[0]);
-                var aid = Ids.aid(parts[1]);
-                es.add(new Exclusion(gid, aid));
+                es.add(new Exclusion(parts[0], parts[1]));
             }
             return es;
         }
@@ -279,15 +264,14 @@ public class CoreMavenDataModule extends SimpleModule {
         return (ObjectNode) p.getCodec().readTree(p);
     }
 
-    private static <CollectionT extends Collection<T>, T> CollectionT addChildren(JsonNode node, JsonParser p,
-            String key, Class<T> type, Supplier<CollectionT> prod, CollectionT defaultVal)
-            throws JsonProcessingException {
+    private static <CollectionT extends Collection<Dependency>> CollectionT addChildren(JsonNode node, JsonParser p,
+            String key, Supplier<CollectionT> prod, CollectionT defaultVal) throws JsonProcessingException {
         var vals = node.get(key);
         if (vals != null && !vals.isEmpty()) {
             var ts = prod.get();
             for (var val : vals) {
-                var t = p.getCodec().treeToValue(val, type);
-                ts.add(t);
+                var t = p.getCodec().treeToValue(val, Dependency.class);
+                ts.add(Ids.dep(t));
             }
             return ts;
         }
