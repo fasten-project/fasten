@@ -53,7 +53,25 @@ public class GAV {
         if (getClass() != obj.getClass())
             return false;
         GAV other = (GAV) obj;
-        return hashCode == other.hashCode;
+        if (hashCode != other.hashCode) {
+            return false;
+        }
+        if (artifactId == null) {
+            if (other.artifactId != null)
+                return false;
+        } else if (!artifactId.equals(other.artifactId))
+            return false;
+        if (groupId == null) {
+            if (other.groupId != null)
+                return false;
+        } else if (!groupId.equals(other.groupId))
+            return false;
+        if (version == null) {
+            if (other.version != null)
+                return false;
+        } else if (!version.equals(other.version))
+            return false;
+        return true;
     }
 
     @Override

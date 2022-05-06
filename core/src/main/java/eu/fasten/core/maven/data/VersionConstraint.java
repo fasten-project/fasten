@@ -35,7 +35,7 @@ public class VersionConstraint {
     private final int hashCode;
 
     public VersionConstraint(String spec) {
-        this.spec = spec;
+        this.spec = Ids.version(spec);
         if (spec == null || spec.isEmpty()) {
             throw new IllegalArgumentException("Spec of VersionConstraint cannot be null or empty");
         }
@@ -128,7 +128,15 @@ public class VersionConstraint {
         if (getClass() != obj.getClass())
             return false;
         VersionConstraint other = (VersionConstraint) obj;
-        return hashCode == other.hashCode;
+        if (hashCode != other.hashCode) {
+            return false;
+        }
+        if (spec == null) {
+            if (other.spec != null)
+                return false;
+        } else if (!spec.equals(other.spec))
+            return false;
+        return true;
     }
 
     @Override

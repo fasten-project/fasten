@@ -58,8 +58,8 @@ public class Dependency {
     public Dependency(String groupId, String artifactId, Set<VersionConstraint> versionConstraints,
             Set<Exclusion> exclusions, Scope scope, boolean optional, String type, String classifier) {
 
-        this.groupId = groupId;
-        this.artifactId = artifactId;
+        this.groupId = Ids.gid(groupId);
+        this.artifactId = Ids.aid(artifactId);
         this.optional = optional;
 
         if (classifier != null && !classifier.isEmpty()) {
@@ -183,7 +183,54 @@ public class Dependency {
         if (getClass() != obj.getClass())
             return false;
         Dependency other = (Dependency) obj;
-        return hashCode == other.hashCode;
+        if (hashCode != other.hashCode) {
+            return false;
+        }
+        if (artifactId == null) {
+            if (other.artifactId != null)
+                return false;
+        } else if (!artifactId.equals(other.artifactId))
+            return false;
+        if (classifier == null) {
+            if (other.classifier != null)
+                return false;
+        } else if (!classifier.equals(other.classifier))
+            return false;
+        if (exclusions == null) {
+            if (other.exclusions != null)
+                return false;
+        } else if (!exclusions.equals(other.exclusions))
+            return false;
+        if (ga == null) {
+            if (other.ga != null)
+                return false;
+        } else if (!ga.equals(other.ga))
+            return false;
+        if (groupId == null) {
+            if (other.groupId != null)
+                return false;
+        } else if (!groupId.equals(other.groupId))
+            return false;
+        if (optional != other.optional)
+            return false;
+        if (scope != other.scope)
+            return false;
+        if (type == null) {
+            if (other.type != null)
+                return false;
+        } else if (!type.equals(other.type))
+            return false;
+        if (versionConstraint == null) {
+            if (other.versionConstraint != null)
+                return false;
+        } else if (!versionConstraint.equals(other.versionConstraint))
+            return false;
+        if (versionConstraints == null) {
+            if (other.versionConstraints != null)
+                return false;
+        } else if (!versionConstraints.equals(other.versionConstraints))
+            return false;
+        return true;
     }
 
     @Override

@@ -17,9 +17,6 @@ package eu.fasten.core.maven.data;
 
 import java.io.Serializable;
 
-import org.apache.commons.lang3.builder.EqualsBuilder;
-import org.apache.commons.lang3.builder.HashCodeBuilder;
-
 public class Exclusion implements Serializable {
 
     private static final long serialVersionUID = -1350444195222504726L;
@@ -29,19 +26,47 @@ public class Exclusion implements Serializable {
     private final int hashCode;
 
     public Exclusion(String groupId, String artifactId) {
-        this.groupId = groupId;
-        this.artifactId = artifactId;
-        this.hashCode = HashCodeBuilder.reflectionHashCode(this, "hashCode");
+        this.groupId = Ids.gid(groupId);
+        this.artifactId = Ids.aid(artifactId);
+        this.hashCode = calcHashCode();
     }
 
-    @Override
-    public boolean equals(Object obj) {
-        return EqualsBuilder.reflectionEquals(this, obj);
+    public int calcHashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ((artifactId == null) ? 0 : artifactId.hashCode());
+        result = prime * result + ((groupId == null) ? 0 : groupId.hashCode());
+        return result;
     }
 
     @Override
     public int hashCode() {
         return hashCode;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        Exclusion other = (Exclusion) obj;
+        if (hashCode != other.hashCode) {
+            return false;
+        }
+        if (artifactId == null) {
+            if (other.artifactId != null)
+                return false;
+        } else if (!artifactId.equals(other.artifactId))
+            return false;
+        if (groupId == null) {
+            if (other.groupId != null)
+                return false;
+        } else if (!groupId.equals(other.groupId))
+            return false;
+        return true;
     }
 
     @Override

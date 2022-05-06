@@ -50,7 +50,20 @@ public class GA {
         if (getClass() != obj.getClass())
             return false;
         GA other = (GA) obj;
-        return hashCode == other.hashCode;
+        if (hashCode != other.hashCode) {
+            return false;
+        }
+        if (artifactId == null) {
+            if (other.artifactId != null)
+                return false;
+        } else if (!artifactId.equals(other.artifactId))
+            return false;
+        if (groupId == null) {
+            if (other.groupId != null)
+                return false;
+        } else if (!groupId.equals(other.groupId))
+            return false;
+        return true;
     }
 
     @Override
