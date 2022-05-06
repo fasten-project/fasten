@@ -20,6 +20,7 @@ import static eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions.PACK
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Paths;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -131,28 +132,11 @@ public class MavenResolverIO {
     }
 
     private static Pom simplify(Pom pom) {
-        pom.forge = null;
-        pom.repoUrl = null;
-        pom.sourcesUrl = null;
-        pom.artifactRepository = null;
-        pom.packagingType = null;
-        pom.parentCoordinate = null;
-        pom.projectName = null;
-        pom.commitTag = null;
-
-        for (var d : new LinkedHashSet<>(pom.dependencies)) {
-            // re-adding necessary on hash change
-            pom.dependencies.remove(d);
-            pom.dependencies.add(simplify(d));
-        }
-
-        for (var d : new LinkedHashSet<>(pom.dependencyManagement)) {
-            // re-adding necessary on hash change
-            pom.dependencyManagement.remove(d);
-            pom.dependencyManagement.add(simplify(d));
-        }
-
-        return pom;
+        var deps = pom.dependencies.stream().map(d -> simplify(d)).collect(Collectors.toCollection(LinkedHashSet::new));
+        var depMgmt = pom.dependencyManagement.stream().map(d -> simplify(d))
+                .collect(Collectors.toCollection(HashSet::new));
+        return new Pom(pom.groupId, pom.artifactId, null, pom.version, null, pom.releaseDate, null, deps, depMgmt, null,
+                null, null, null);
     }
 
     private static Dependency simplify(Dependency d) {

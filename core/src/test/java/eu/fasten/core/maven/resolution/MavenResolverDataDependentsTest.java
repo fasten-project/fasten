@@ -28,6 +28,7 @@ import eu.fasten.core.maven.data.Dependency;
 import eu.fasten.core.maven.data.GA;
 import eu.fasten.core.maven.data.GAV;
 import eu.fasten.core.maven.data.Pom;
+import eu.fasten.core.maven.data.PomBuilder;
 
 public class MavenResolverDataDependentsTest {
 
@@ -119,18 +120,19 @@ public class MavenResolverDataDependentsTest {
 
     private Pom add(long releasedAt, String gav, String... deps) {
         var parts = gav.split(":");
-        var pom = new Pom();
-        pom.groupId = parts[0];
-        pom.artifactId = parts[1];
-        pom.version = parts[2];
-        pom.releaseDate = releasedAt;
+        var pb = new PomBuilder();
+        pb.groupId = parts[0];
+        pb.artifactId = parts[1];
+        pb.version = parts[2];
+        pb.releaseDate = releasedAt;
 
         for (var depGAV : deps) {
             var depParts = depGAV.split(":");
             var dep = new Dependency(depParts[0], depParts[1], depParts[2]);
-            pom.dependencies.add(dep);
+            pb.dependencies.add(dep);
         }
 
+        var pom = pb.pom();
         sut.add(pom);
         return pom;
     }

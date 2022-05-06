@@ -24,7 +24,7 @@ import java.util.HashSet;
 import org.junit.jupiter.api.Test;
 
 import eu.fasten.core.maven.data.Dependency;
-import eu.fasten.core.maven.data.Pom;
+import eu.fasten.core.maven.data.PomBuilder;
 
 public class MavenDependencyResolverDepthTest extends AbstractMavenDependencyResolverTest {
 
@@ -63,20 +63,20 @@ public class MavenDependencyResolverDepthTest extends AbstractMavenDependencyRes
 
     private void add(String from, String... tos) {
         danglingGAVs.remove(from);
-        var pom = new Pom();
+        var pb = new PomBuilder();
         var parts = from.split(":");
-        pom.groupId = parts[0];
-        pom.artifactId = parts[0];
-        pom.version = parts[1];
+        pb.groupId = parts[0];
+        pb.artifactId = parts[0];
+        pb.version = parts[1];
 
         for (String to : tos) {
             danglingGAVs.add(to);
             var partsTo = to.split(":");
             var d = new Dependency(partsTo[0], partsTo[0], partsTo[1]);
-            pom.dependencies.add(d);
+            pb.dependencies.add(d);
         }
 
-        data.add(pom);
+        data.add(pb.pom());
     }
 
     protected void addDangling() {

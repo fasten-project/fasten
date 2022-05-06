@@ -30,6 +30,7 @@ import org.junit.jupiter.api.Test;
 import eu.fasten.core.maven.data.Dependency;
 import eu.fasten.core.maven.data.GA;
 import eu.fasten.core.maven.data.Pom;
+import eu.fasten.core.maven.data.PomBuilder;
 import eu.fasten.core.maven.data.VersionConstraint;
 
 public class MavenDependencyResolverTimeTest extends AbstractMavenDependencyResolverTest {
@@ -106,20 +107,20 @@ public class MavenDependencyResolverTimeTest extends AbstractMavenDependencyReso
     }
 
     private void add(long releaseDate, String from, String... tos) {
-        var pom = new Pom();
+        var pb = new PomBuilder();
         var parts = from.split(":");
-        pom.groupId = parts[0];
-        pom.artifactId = parts[0];
-        pom.version = parts[1];
-        pom.releaseDate = releaseDate;
+        pb.groupId = parts[0];
+        pb.artifactId = parts[0];
+        pb.version = parts[1];
+        pb.releaseDate = releaseDate;
 
         for (var to : tos) {
             var partsTo = to.split(":");
             var d = new Dependency(partsTo[0], partsTo[0], partsTo[1]);
-            pom.dependencies.add(d);
+            pb.dependencies.add(d);
         }
 
-        data.add(pom);
+        data.add(pb.pom());
     }
 
     private void assertResolutionAt(long resolveAt, String... deps) {
@@ -128,12 +129,12 @@ public class MavenDependencyResolverTimeTest extends AbstractMavenDependencyReso
     }
 
     private static Pom getPom(String g, String a, String v, long releaseDate) {
-        var pom = new Pom();
-        pom.groupId = g;
-        pom.artifactId = a;
-        pom.version = v;
-        pom.releaseDate = releaseDate;
-        return pom;
+        var pb = new PomBuilder();
+        pb.groupId = g;
+        pb.artifactId = a;
+        pb.version = v;
+        pb.releaseDate = releaseDate;
+        return pb.pom();
     }
 
     private void mockDepGraph() {

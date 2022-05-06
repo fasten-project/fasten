@@ -23,6 +23,7 @@ public class Ids {
     private static final Map<String, String> GIDS = new HashMap<>();
     private static final Map<String, String> AIDS = new HashMap<>();
     private static final Map<String, String> VERSIONS = new HashMap<>();
+    private static final Map<VersionConstraint, VersionConstraint> VCS = new HashMap<>();
     private static final Map<Dependency, Dependency> DEPS = new HashMap<>();
     private static final Map<GAV, GAV> GAVS = new HashMap<>();
     private static final Map<GA, GA> GAS = new HashMap<>();
@@ -78,6 +79,15 @@ public class Ids {
         } else {
             GAVS.put(gav, gav);
             return gav;
+        }
+    }
+
+    public static VersionConstraint versionConstraint(VersionConstraint vc) {
+        if (VCS.containsKey(vc)) {
+            return VCS.get(vc);
+        } else {
+            VCS.put(vc, vc);
+            return vc;
         }
     }
 }

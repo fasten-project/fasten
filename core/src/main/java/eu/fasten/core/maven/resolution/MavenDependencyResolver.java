@@ -33,6 +33,7 @@ import eu.fasten.core.maven.data.Dependency;
 import eu.fasten.core.maven.data.GA;
 import eu.fasten.core.maven.data.MavenProduct;
 import eu.fasten.core.maven.data.Pom;
+import eu.fasten.core.maven.data.PomBuilder;
 import eu.fasten.core.maven.data.ResolvedRevision;
 import eu.fasten.core.maven.data.Scope;
 import eu.fasten.core.maven.data.VersionConstraint;
@@ -62,12 +63,13 @@ public class MavenDependencyResolver {
             }
         }
 
-        var pom = new Pom();
-        pom.groupId = "virtual-file";
-        pom.artifactId = "pom";
-        pom.version = "0.0.1";
-        pom.releaseDate = config.resolveAt;
-        pom.dependencies.addAll(toDeps(gavs));
+        var pb = new PomBuilder();
+        pb.groupId = "virtual-file";
+        pb.artifactId = "pom";
+        pb.version = "0.0.1";
+        pb.releaseDate = config.resolveAt;
+        pb.dependencies.addAll(toDeps(gavs));
+        var pom = pb.pom();
 
         var depSet = resolve(config, new HashSet<>(), QueueData.startFrom(pom));
         depSet.remove(pom.toRevision());

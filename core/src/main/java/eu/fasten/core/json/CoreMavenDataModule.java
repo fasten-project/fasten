@@ -40,6 +40,7 @@ import eu.fasten.core.maven.data.Dependency;
 import eu.fasten.core.maven.data.Exclusion;
 import eu.fasten.core.maven.data.Ids;
 import eu.fasten.core.maven.data.Pom;
+import eu.fasten.core.maven.data.PomBuilder;
 import eu.fasten.core.maven.data.Scope;
 import eu.fasten.core.maven.data.VersionConstraint;
 
@@ -163,29 +164,29 @@ public class CoreMavenDataModule extends SimpleModule {
         @Override
         public Pom deserialize(JsonParser p, DeserializationContext ctxt) throws IOException, JacksonException {
             var node = readNode(p);
-            var pom = new Pom();
+            var pb = new PomBuilder();
 
-            pom.groupId = Ids.gid(getText(node, "groupId", null));
-            pom.artifactId = Ids.aid(getText(node, "artifactId", null));
-            pom.packagingType = getText(node, "packagingType", null);
-            pom.version = Ids.version(getText(node, "version", null));
+            pb.groupId = getText(node, "groupId", null);
+            pb.artifactId = getText(node, "artifactId", null);
+            pb.packagingType = getText(node, "packagingType", null);
+            pb.version = getText(node, "version", null);
 
-            pom.parentCoordinate = getText(node, "parentCoordinate", null);
+            pb.parentCoordinate = getText(node, "parentCoordinate", null);
 
-            pom.releaseDate = getLong(node, "releaseDate", -1L);
-            pom.projectName = getText(node, "projectName", null);
+            pb.releaseDate = getLong(node, "releaseDate", -1L);
+            pb.projectName = getText(node, "projectName", null);
 
-            pom.dependencies = addChildren(node, p, "dependencies", Dependency.class,
+            pb.dependencies = addChildren(node, p, "dependencies", Dependency.class,
                     () -> new LinkedHashSet<Dependency>(), NO_DEPS);
-            pom.dependencyManagement = addChildren(node, p, "dependencyManagement", Dependency.class,
+            pb.dependencyManagement = addChildren(node, p, "dependencyManagement", Dependency.class,
                     () -> new HashSet<Dependency>(), NO_DEP_MGMT);
 
-            pom.repoUrl = getText(node, "repoUrl", null);
-            pom.commitTag = getText(node, "commitTag", null);
-            pom.sourcesUrl = getText(node, "sourcesUrl", null);
-            pom.artifactRepository = getText(node, "artifactRepository", null);
+            pb.repoUrl = getText(node, "repoUrl", null);
+            pb.commitTag = getText(node, "commitTag", null);
+            pb.sourcesUrl = getText(node, "sourcesUrl", null);
+            pb.artifactRepository = getText(node, "artifactRepository", null);
 
-            return pom;
+            return pb.pom();
         }
     }
 
@@ -217,7 +218,7 @@ public class CoreMavenDataModule extends SimpleModule {
     private static Set<VersionConstraint> readVersionConstraints(boolean isShortFormat, DeserializationContext ctxt,
             JsonNode node) {
         var vcs = isShortFormat ? node.get(VERSION_CONSTRAINTS) : node.get(OLD_VERSION_CONSTRAINTS);
-        if (vcs != null) {
+        if (vcs != null && !vcs.isEmpty()) {
             var res = new HashSet<VersionConstraint>(vcs.size() + 1, 1);
             for (var vc : vcs) {
                 var val = vc.textValue();
@@ -225,10 +226,14 @@ public class CoreMavenDataModule extends SimpleModule {
                     // TODO handling unnecessary after next pipeline restart
                     continue;
                 }
-                var v = new VersionConstraint(Ids.version(val));
+                var v = Ids.versionConstraint(new VersionConstraint(val));
                 if (!v.getSpec().isEmpty()) {
                     res.add(v);
                 }
+            }
+            // TODO remove as well (handling necessary to capture fix)
+            if (res.isEmpty()) {
+                return NO_VCS;
             }
             return res;
         }
@@ -237,7 +242,7 @@ public class CoreMavenDataModule extends SimpleModule {
 
     private static Set<Exclusion> readExclusions(DeserializationContext ctxt, JsonNode node) {
         var exclusions = node.get("exclusions");
-        if (exclusions != null) {
+        if (exclusions != null && !exclusions.isEmpty()) {
             var es = new HashSet<Exclusion>(exclusions.size() + 1, 1);
             for (var exclusion : exclusions) {
                 var parts = exclusion.textValue().split(":");

@@ -16,11 +16,11 @@
 package eu.fasten.core.maven.data;
 
 import static java.util.stream.IntStream.range;
+import static org.junit.Assert.assertNotSame;
 import static org.junit.Assert.assertSame;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNotSame;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -37,7 +37,7 @@ public class PomTest {
 
     @Test
     public void defaults() {
-        var sut = new Pom();
+        var sut = pb().pom();
         assertNull(sut.artifactId);
         assertNull(sut.artifactRepository);
         assertNull(sut.commitTag);
@@ -56,25 +56,24 @@ public class PomTest {
 
     @Test
     public void equalityDefault() {
-        var a = new Pom();
-        var b = new Pom();
+        var a = pb().pom();
+        var b = pb().pom();
         assertEquals(a, b);
         assertEquals(a.hashCode(), b.hashCode());
     }
 
     @Test
     public void equalityNonDefault() {
-        var a = somePomAnalysisResult();
-        var b = somePomAnalysisResult();
+        var a = pbX().pom();
+        var b = pbX().pom();
         assertEquals(a, b);
         assertEquals(a.hashCode(), b.hashCode());
     }
 
     @Test
     public void equalityDiffArtifact() {
-        var a = new Pom();
-        var b = new Pom();
-        b.artifactId = "a";
+        var a = pb().pom();
+        var b = pb().artifactId("a").pom();
 
         assertNotEquals(a, b);
         assertNotEquals(a.hashCode(), b.hashCode());
@@ -82,9 +81,8 @@ public class PomTest {
 
     @Test
     public void equalityDiffArtifactRepo() {
-        var a = new Pom();
-        var b = new Pom();
-        b.artifactRepository = "b";
+        var a = pb().pom();
+        var b = pb().artifactRepository("ar").pom();
 
         assertNotEquals(a, b);
         assertNotEquals(a.hashCode(), b.hashCode());
@@ -92,9 +90,8 @@ public class PomTest {
 
     @Test
     public void equalityDiffCommitTag() {
-        var a = new Pom();
-        var b = new Pom();
-        b.commitTag = "c";
+        var a = pb().pom();
+        var b = pb().commitTag("c").pom();
 
         assertNotEquals(a, b);
         assertNotEquals(a.hashCode(), b.hashCode());
@@ -102,9 +99,8 @@ public class PomTest {
 
     @Test
     public void equalityDiffDep() {
-        var a = new Pom();
-        var b = new Pom();
-        b.dependencies.add(someDependency("d"));
+        var a = pb().pom();
+        var b = pb().addDependency(someDependency("d")).pom();
 
         assertNotEquals(a, b);
         assertNotEquals(a.hashCode(), b.hashCode());
@@ -112,19 +108,8 @@ public class PomTest {
 
     @Test
     public void equalityDiffDepMgmt() {
-        var a = new Pom();
-        var b = new Pom();
-        b.dependencyManagement.add(someDependency("e"));
-
-        assertNotEquals(a, b);
-        assertNotEquals(a.hashCode(), b.hashCode());
-    }
-
-    @Test
-    public void equalityDiffForge() {
-        var a = new Pom();
-        var b = new Pom();
-        b.forge = "f";
+        var a = pb().pom();
+        var b = pb().addDependencyManagement(someDependency("e")).pom();
 
         assertNotEquals(a, b);
         assertNotEquals(a.hashCode(), b.hashCode());
@@ -132,9 +117,8 @@ public class PomTest {
 
     @Test
     public void equalityDiffGroup() {
-        var a = new Pom();
-        var b = new Pom();
-        b.groupId = "g";
+        var a = pb().pom();
+        var b = pb().groupId("g").pom();
 
         assertNotEquals(a, b);
         assertNotEquals(a.hashCode(), b.hashCode());
@@ -142,9 +126,8 @@ public class PomTest {
 
     @Test
     public void equalityDiffPackaging() {
-        var a = new Pom();
-        var b = new Pom();
-        b.packagingType = "h";
+        var a = pb().pom();
+        var b = pb().packagingType("t").pom();
 
         assertNotEquals(a, b);
         assertNotEquals(a.hashCode(), b.hashCode());
@@ -152,9 +135,8 @@ public class PomTest {
 
     @Test
     public void equalityDiffParent() {
-        var a = new Pom();
-        var b = new Pom();
-        b.parentCoordinate = "i";
+        var a = pb().pom();
+        var b = pb().parentCoordinate("p").pom();
 
         assertNotEquals(a, b);
         assertNotEquals(a.hashCode(), b.hashCode());
@@ -162,9 +144,8 @@ public class PomTest {
 
     @Test
     public void equalityDiffName() {
-        var a = new Pom();
-        var b = new Pom();
-        b.projectName = "j";
+        var a = pb().pom();
+        var b = pb().projectName("p").pom();
 
         assertNotEquals(a, b);
         assertNotEquals(a.hashCode(), b.hashCode());
@@ -172,9 +153,8 @@ public class PomTest {
 
     @Test
     public void equalityDiffReleaseDate() {
-        var a = new Pom();
-        var b = new Pom();
-        b.releaseDate = 123;
+        var a = pb().pom();
+        var b = pb().releaseDate(123).pom();
 
         assertNotEquals(a, b);
         assertNotEquals(a.hashCode(), b.hashCode());
@@ -182,9 +162,8 @@ public class PomTest {
 
     @Test
     public void equalityDiffRepoUrl() {
-        var a = new Pom();
-        var b = new Pom();
-        b.repoUrl = "k";
+        var a = pb().pom();
+        var b = pb().repoUrl("r").pom();
 
         assertNotEquals(a, b);
         assertNotEquals(a.hashCode(), b.hashCode());
@@ -192,9 +171,8 @@ public class PomTest {
 
     @Test
     public void equalityDiffSourcesUrl() {
-        var a = new Pom();
-        var b = new Pom();
-        b.sourcesUrl = "j";
+        var a = pb().pom();
+        var b = pb().sourcesUrl("s").pom();
 
         assertNotEquals(a, b);
         assertNotEquals(a.hashCode(), b.hashCode());
@@ -202,9 +180,8 @@ public class PomTest {
 
     @Test
     public void equalityDiffVersion() {
-        var a = new Pom();
-        var b = new Pom();
-        b.version = "k";
+        var a = pb().pom();
+        var b = pb().version("v").pom();
 
         assertNotEquals(a, b);
         assertNotEquals(a.hashCode(), b.hashCode());
@@ -212,8 +189,7 @@ public class PomTest {
 
     @Test
     public void hasToString() {
-        var sut = new Pom();
-        var actual = sut.toString();
+        var actual = pb().pom().toString();
 
         assertTrue(actual.contains(Pom.class.getSimpleName()));
         assertTrue(actual.contains("\n"));
@@ -223,8 +199,8 @@ public class PomTest {
 
     @Test
     public void canBeCloned() {
-        var a = somePomAnalysisResult();
-        var b = a.clone();
+        var a = pbX().pom();
+        var b = a.clone().pom();
         assertEquals(a, b);
         assertNotSame(a, b);
 
@@ -237,10 +213,11 @@ public class PomTest {
 
     @Test
     public void dependencyOrderIsPreserved() throws JsonProcessingException {
-        var sut = new Pom();
+        var pb = new PomBuilder();
         range(0, 100).forEach(num -> {
-            sut.dependencies.add(new Dependency("g", "a", String.valueOf(num)));
+            pb.dependencies.add(new Dependency("g", "a", String.valueOf(num)));
         });
+        var sut = pb.pom();
 
         var check = 0;
         for (var d : sut.dependencies) {
@@ -257,70 +234,73 @@ public class PomTest {
 
     @Test
     public void toCoordinate() {
-        var actual = somePomAnalysisResult().toCoordinate();
+        var actual = pbX().pom().toCoordinate();
         var expected = "g:a:h:n";
         assertEquals(expected, actual);
     }
 
     @Test
     public void toGAV() {
-        var actual = somePomAnalysisResult().toGAV();
+        var actual = pbX().pom().toGAV();
         var expected = new GAV("g", "a", "n");
         assertEquals(expected, actual);
     }
 
     @Test
     public void toGAVIsStable() {
-        var a = somePomAnalysisResult().toGAV();
-        var b = somePomAnalysisResult().toGAV();
+        var a = pbX().pom().toGAV();
+        var b = pbX().pom().toGAV();
         assertSame(a, b);
     }
 
     @Test
     public void toGA() {
-        var actual = somePomAnalysisResult().toGA();
+        var actual = pbX().pom().toGA();
         var expected = new GA("g", "a");
         assertEquals(expected, actual);
     }
 
     @Test
     public void toGAIsStable() {
-        var a = somePomAnalysisResult().toGA();
-        var b = somePomAnalysisResult().toGA();
+        var a = pbX().pom().toGA();
+        var b = pbX().pom().toGA();
         assertSame(a, b);
     }
 
     @Test
     public void toProduct() {
-        var actual = somePomAnalysisResult().toProduct();
+        var actual = pbX().pom().toProduct();
         var expected = new MavenProduct("g", "a");
         assertEquals(expected, actual);
     }
 
     @Test
     public void toRevision() {
-        var actual = somePomAnalysisResult().toRevision();
+        var actual = pbX().pom().toRevision();
         var expected = new Revision("g", "a", "n", new Timestamp(123));
         assertEquals(expected, actual);
     }
 
-    private static Pom somePomAnalysisResult() {
-        Pom r = new Pom();
-        r.artifactId = "a";
-        r.artifactRepository = "b";
-        r.commitTag = "c";
-        r.dependencies.add(someDependency("d"));
-        r.dependencyManagement.add(someDependency("e"));
-        r.forge = "f";
-        r.groupId = "g";
-        r.packagingType = "h";
-        r.parentCoordinate = "i";
-        r.projectName = "j";
-        r.releaseDate = 123;
-        r.repoUrl = "k";
-        r.sourcesUrl = "m";
-        r.version = "n";
-        return r;
+    private static PomBuilder pb() {
+        return new PomBuilder();
+    }
+
+    private static PomBuilder pbX() {
+        var pb = new PomBuilder();
+        pb.artifactId = "a";
+        pb.artifactRepository = "b";
+        pb.commitTag = "c";
+        pb.dependencies.add(someDependency("d"));
+        pb.dependencyManagement.add(someDependency("e"));
+        pb.groupId = "g";
+        pb.packagingType = "h";
+        pb.parentCoordinate = "i";
+        pb.projectName = "j";
+        pb.releaseDate = 123;
+        pb.repoUrl = "k";
+        pb.sourcesUrl = "m";
+        pb.version = "n";
+        return pb;
     }
 
     private static Dependency someDependency(String name) {

@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.junit.jupiter.api.Test;
 
 import eu.fasten.core.maven.data.Dependency;
-import eu.fasten.core.maven.data.Pom;
+import eu.fasten.core.maven.data.PomBuilder;
 
 public class MavenDependentsResolverDepthTest extends AbstractMavenDependentsResolverTest {
 
@@ -52,18 +52,18 @@ public class MavenDependentsResolverDepthTest extends AbstractMavenDependentsRes
     }
 
     private void add(String from, String... tos) {
-        var pom = new Pom();
+        var pb = new PomBuilder();
         var parts = from.split(":");
-        pom.groupId = parts[0];
-        pom.artifactId = parts[0];
-        pom.version = parts[1];
+        pb.groupId = parts[0];
+        pb.artifactId = parts[0];
+        pb.version = parts[1];
 
         for (String to : tos) {
             var partsTo = to.split(":");
             var d = new Dependency(partsTo[0], partsTo[0], partsTo[1]);
-            pom.dependencies.add(d);
+            pb.dependencies.add(d);
         }
 
-        data.add(pom);
+        data.add(pb.pom());
     }
 }
