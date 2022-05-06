@@ -82,14 +82,13 @@ public class LazyIngestionProvider {
                             + " could not be found. Make sure the PyPI coordinate is correct");
                 }
                 JSONObject json = new JSONObject(result);
-                var requiresDist = json.getJSONObject("info").get("requires_dist");
-                var createdAt = ((JSONObject) json.getJSONObject("releases").getJSONArray(version).get(1)).get("upload_time");
                 var jsonRecord = new JSONObject();
-                jsonRecord.put("product", packageName);
-                jsonRecord.put("version", version);
-                jsonRecord.put("version_timestamp", createdAt);
-                jsonRecord.put("requires_dist", requiresDist);
-                System.out.println(jsonRecord.toString());
+                jsonRecord.put("title", packageName + " " + version);
+                jsonRecord.put("project", json);
+                jsonRecord.put("ingested", true);
+                if (KnowledgeBaseConnector.kafkaProducer != null && KnowledgeBaseConnector.ingestTopic != null) {
+                    KafkaWriter.sendToKafka(KnowledgeBaseConnector.kafkaProducer, KnowledgeBaseConnector.ingestTopic, jsonRecord.toString());
+                }
                 break;
             }
         }
