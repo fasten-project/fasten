@@ -173,6 +173,8 @@ public class LicenseFeederPlugin extends Plugin {
                         }
                     }
                     String fileMetadata = new JSONObject().put("licenses", FileLicensesParsed).toString();
+                    System.out.println("fileMetadata:");
+                    System.out.println(fileMetadata);
                     metadataDao.insertFileLicenses(
                             coordinates,
                             file.getString("path"),
