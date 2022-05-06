@@ -24,7 +24,6 @@
     </parent>
 
     <artifactId>analyzer</artifactId>
-    <version>0.0.8-SNAPSHOT</version>
     <packaging>pom</packaging>
     <description>Collection of FASTEN-specific graph analyses.</description>
 
