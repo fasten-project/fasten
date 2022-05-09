@@ -131,7 +131,7 @@ public class MavenResolverIO {
         return poms;
     }
 
-    private static Pom simplify(Pom pom) {
+    public static Pom simplify(Pom pom) {
         var deps = pom.dependencies.stream().map(d -> simplify(d)).collect(Collectors.toCollection(LinkedHashSet::new));
         var depMgmt = pom.dependencyManagement.stream().map(d -> simplify(d))
                 .collect(Collectors.toCollection(HashSet::new));
