@@ -157,7 +157,7 @@ public class SearchEngineClient {
 	/** Delegate to {@link SearchEngine}: {@see SearchEngine#between(long, long, int, SubmissionPublisher)}. */
 	private Future<Void> between(final long gidFrom, final long gidTo, final int limit, final int maxDependents,
 			SubmissionPublisher<PathResult> publisher) throws RocksDBException {
-		return se.between(gidFrom, gidTo, limit, maxDependents, publisher);
+		return se.between(gidFrom, gidTo, maxDependents, publisher);
 	}
 
 	/** Delegate to {@link SearchEngine}: {@see SearchEngine#resetCounters()}. */
