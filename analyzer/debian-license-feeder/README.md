@@ -13,6 +13,12 @@
 </p>
 <br/>
 
-# Work in progress ...
+# Plugin description
 
-There are differences between the license feeders, it will be detailed as soon as other important ongoing activities will be finished.
+
+The license feeder consumes messages with the topic `fasten.DebianLicenseDetector.out` containing license information at the file level and the outbound license of a given package.
+
+This feeder functions slightly different than the others (Java and Python).
+The plugin uses the `product` name and `version` to augment the metadata field, while the Debian license detector uses `source` as a `packageName` and `version` as a `packageVersion` to perform the queries against the Debian APIs.
+
+There are cases where more products are included in a single source (e.g. libdga, libcfitsio). Since the Debian APIs are not aware of the `product`s, but only of the source, the license detector retrieves license information performing queries only using `source` and `version`.
