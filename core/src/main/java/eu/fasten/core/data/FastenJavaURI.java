@@ -371,8 +371,8 @@ public class FastenJavaURI extends FastenURI {
     }
 
     private static Object2ObjectOpenHashMap<String, String> toPrimitiveType = new Object2ObjectOpenHashMap<>(
-    		new String[] {"VoidType", "ByteType", "CharType", "ShortType", "IntegerType", "FloatType", "LongType", "DoubleType"},
-    		new String[] {"void", "byte", "char", "short", "int", "float", "long", "double"}
+    		new String[] {"VoidType", "BooleanType", "ByteType", "CharType", "ShortType", "IntegerType", "FloatType", "LongType", "DoubleType"},
+    		new String[] {"void", "boolean", "byte", "char", "short", "int", "float", "long", "double"}
     	);
     
     private static String fixClassName(final String className) {
