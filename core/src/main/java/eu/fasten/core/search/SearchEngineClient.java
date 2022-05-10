@@ -51,7 +51,7 @@ import eu.fasten.core.search.SearchEngine.PathResult;
 import eu.fasten.core.search.SearchEngine.Result;
 import eu.fasten.core.search.TopKProcessor.Update;
 import eu.fasten.core.search.predicate.PredicateFactory.MetadataSource;
-import it.unimi.dsi.fastutil.ints.Int2LongArrayMap;
+import it.unimi.dsi.fastutil.ints.Int2IntArrayMap;
 import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import it.unimi.dsi.fastutil.io.TextIO;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
@@ -72,8 +72,8 @@ public class SearchEngineClient {
 	/** The maximum number of results that should be printed. */
 	private int limit = DEFAULT_LIMIT;
 
-	/** Maximum number of dependents used by {@link #to}. */
-	private long maxDependents = Long.MAX_VALUE;
+	/** Maximum number of dependents. */
+	private int maxDependents = Integer.MAX_VALUE;
 	
 	/** Whether to use {@link FastenJavaURI#toSimpleString()} or not when displaying results. */
 	private boolean prettyPrint = true;
@@ -130,30 +130,30 @@ public class SearchEngineClient {
 	}
 
 	/** Delegate to {@link SearchEngine}: {@see SearchEngine#fromCallable(long, LongPredicate, int, SubmissionPublisher)}. */
-	private Future<Void> fromCallable(final long gid, final int limit, final SubmissionPublisher<SortedSet<Result>> publisher) throws RocksDBException {
-		return se.fromCallable(gid, limit, publisher);	
+	private Future<Void> fromCallable(final long gid, final int limit, final int maxDependents, final SubmissionPublisher<SortedSet<Result>> publisher) throws RocksDBException {
+		return se.fromCallable(gid, limit, maxDependents, publisher);	
 	}
 
 	/** Delegate to {@link SearchEngine}: {@see SearchEngine#toCallable(long, LongPredicate, int, SubmissionPublisher)}. */
-	private Future<Void> toCallable(long gid, int limit, SubmissionPublisher<SortedSet<Result>> publisher) throws RocksDBException {
-		return se.toCallable(gid, limit, publisher);
+	private Future<Void> toCallable(final long gid, final int limit, final int maxDependents, final SubmissionPublisher<SortedSet<Result>> publisher) throws RocksDBException {
+		return se.toCallable(gid, limit, maxDependents, publisher);
 	}
 
 
 	/** Delegate to {@link SearchEngine}: {@see SearchEngine#toCallable(long, LongPredicate, int, SubmissionPublisher)}. */
-	private Future<Void> toRevision(FastenJavaURI uri, int limit, SubmissionPublisher<SortedSet<Result>> publisher) throws RocksDBException {
-		return se.toRevision(uri, limit, publisher);
+	private Future<Void> toRevision(final FastenJavaURI uri, final int limit, final int maxDependents, final SubmissionPublisher<SortedSet<Result>> publisher) throws RocksDBException {
+		return se.toRevision(uri, limit, maxDependents, publisher);
 	}
 
 	/** Delegate to {@link SearchEngine}: {@see SearchEngine#fromRevision(long, LongPredicate, int, SubmissionPublisher)}. */
-	private Future<Void> fromRevision(FastenJavaURI uri, int limit, SubmissionPublisher<SortedSet<Result>> publisher) throws RocksDBException {
-		return se.fromRevision(uri, limit, publisher);
+	private Future<Void> fromRevision(final FastenJavaURI uri, final int limit, final int maxDependents, final SubmissionPublisher<SortedSet<Result>> publisher) throws RocksDBException {
+		return se.fromRevision(uri, limit, maxDependents, publisher);
 	}
 
 	/** Delegate to {@link SearchEngine}: {@see SearchEngine#between(long, long, int, SubmissionPublisher)}. */
-	private Future<Void> between(long gidFrom, long gidTo, int limit,
+	private Future<Void> between(final long gidFrom, final long gidTo, final int limit, final int maxDependents,
 			SubmissionPublisher<PathResult> publisher) throws RocksDBException {
-		return se.between(gidFrom, gidTo, limit, publisher);
+		return se.between(gidFrom, gidTo, limit, maxDependents, publisher);
 	}
 
 	/** Delegate to {@link SearchEngine}: {@see SearchEngine#resetCounters()}. */
@@ -212,10 +212,10 @@ public class SearchEngineClient {
 		try {
 			final String verb = commandAndArgs[0].toLowerCase();
 			final int nArgs = commandAndArgs.length - 1;
-			final Int2LongArrayMap index2arg = new Int2LongArrayMap();
+			final Int2IntArrayMap index2arg = new Int2IntArrayMap();
 			for (int i = 0; i < nArgs; i++) 
 				try {
-					index2arg.put(i, Long.parseLong(commandAndArgs[i + 1]));
+					index2arg.put(i, Integer.parseInt(commandAndArgs[i + 1]));
 				} catch (NumberFormatException e) {}
 			
 			switch (verb) {
@@ -234,7 +234,7 @@ public class SearchEngineClient {
 			case "maxdependents":
 				assertNargs(nArgs, 1, 1);
 				maxDependents = index2arg.get(0);
-				if (maxDependents < 0) maxDependents = Long.MAX_VALUE;
+				if (maxDependents < 0) maxDependents = Integer.MAX_VALUE;
 				break;
 
 			case "clear":
@@ -482,8 +482,8 @@ public class SearchEngineClient {
 
 					if (uri.getPath() == null) 
 						client.id2Future.put(id, dir == '+'?
-								client.fromRevision(uri, client.limit, publisher) :
-								client.toRevision(uri, client.limit, publisher));
+								client.fromRevision(uri, client.limit, client.maxDependents, publisher) :
+								client.toRevision(uri, client.limit, client.maxDependents, publisher));
 
 					else {
 						final long gid = client.getCallableGID(uri);
@@ -492,8 +492,8 @@ public class SearchEngineClient {
 							continue;
 						}
 						client.id2Future.put(id, dir == '+'? 
-								client.fromCallable(gid, client.limit, publisher) :
-								client.toCallable(gid, client.limit, publisher));						
+								client.fromCallable(gid, client.limit,client.maxDependents,  publisher) :
+								client.toCallable(gid, client.limit, client.maxDependents, publisher));						
 					}
 					client.id2Subscriber.put(id, futureSubscriber);
 					client.id2Query.put(id, line);
@@ -536,7 +536,7 @@ public class SearchEngineClient {
 					shortestKProcessor.subscribe(futureSubscriber);
 
 					final int id = client.nextFutureId;
-					client.id2Future.put(id, client.between(gidFrom, gidTo, client.limit, publisher));
+					client.id2Future.put(id, client.between(gidFrom, gidTo, client.limit, client.maxDependents, publisher));
 					client.id2Subscriber.put(id, futureSubscriber);
 					client.id2Query.put(id, line);
 					System.err.println("Id: " + id);
