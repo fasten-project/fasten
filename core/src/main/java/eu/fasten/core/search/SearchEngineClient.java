@@ -530,7 +530,7 @@ public class SearchEngineClient {
 					client.resetCounters();
 
 					SubmissionPublisher<PathResult> publisher = new SubmissionPublisher<>();
-					ShortestKProcessor shortestKProcessor = new ShortestKProcessor(client.limit, searchEngine);
+					ShortestKProcessor shortestKProcessor = new ShortestKProcessor(client.limit);
 					publisher.subscribe(shortestKProcessor);
 					final WaitOnTerminateFutureSubscriber<PathResult[]> futureSubscriber = new WaitOnTerminateFutureSubscriber<>();
 					shortestKProcessor.subscribe(futureSubscriber);

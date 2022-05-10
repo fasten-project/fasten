@@ -404,6 +404,7 @@ public class SearchEngine implements AutoCloseable {
 	 *
 	 * @param gid the global ID of a callable.
 	 * @param maxResults the maximum number of results returned.
+	 * @param maxDependents the maximum number of dependents.
 	 * @param publisher a publisher for the intermediate result updates.
 	 * @return a list of {@linkplain Result results}.
 	 */
@@ -418,6 +419,7 @@ public class SearchEngine implements AutoCloseable {
 	 * @param gid the global ID of a callable.
 	 * @param filter a {@link LongPredicate} that will be used to filter callables.
 	 * @param maxResults the maximum number of results returned.
+	 * @param maxDependents the maximum number of dependents.
 	 * @param publisher a publisher for the intermediate result updates.
 	 * @return a list of {@linkplain Result results}.
 	 */
@@ -431,6 +433,7 @@ public class SearchEngine implements AutoCloseable {
 	 *
 	 * @param revisionUri a FASTEN URI specifying a revision.
 	 * @param maxResults the maximum number of results returned.
+	 * @param maxDependents the maximum number of dependents.
 	 * @param publisher a publisher for the intermediate result updates.
 	 * @return a list of {@linkplain Result results}.
 	 */
@@ -445,6 +448,7 @@ public class SearchEngine implements AutoCloseable {
 	 * @param revisionUri a FASTEN URI specifying a revision.
 	 * @param filter a {@link LongPredicate} that will be used to filter callables.
 	 * @param maxResults the maximum number of results returned.
+	 * @param maxDependents the maximum number of dependents.
 	 * @param publisher a publisher for the intermediate result updates.
 	 * @return a list of {@linkplain Result results}.
 	 */
@@ -462,6 +466,7 @@ public class SearchEngine implements AutoCloseable {
 	 *
 	 * @param gid the global ID of a callable.
 	 * @param maxResults the maximum number of results returned.
+	 * @param maxDependents the maximum number of dependents.
 	 * @param publisher a publisher for the intermediate result updates.
 	 * @return a future controlling the completion of the search.
 	 */
@@ -476,6 +481,7 @@ public class SearchEngine implements AutoCloseable {
 	 *
 	 * @param gid the global ID of a callable.
 	 * @param maxResults the maximum number of results returned.
+	 * @param maxDependents the maximum number of dependents.
 	 * @param publisher a publisher for the intermediate result updates.
 	 * @return a future controlling the completion of the search.
 	 */
@@ -489,6 +495,7 @@ public class SearchEngine implements AutoCloseable {
 	 *
 	 * @param revisionUri a FASTEN URI specifying a revision.
 	 * @param maxResults the maximum number of results returned.
+	 * @param maxDependents the maximum number of dependents.
 	 * @param publisher a publisher for the intermediate result updates.
 	 * @return a future controlling the completion of the search.
 	 */
@@ -503,6 +510,7 @@ public class SearchEngine implements AutoCloseable {
 	 * @param revisionUri a FASTEN URI specifying a revision.
 	 * @param filter a {@link LongPredicate} that will be used to filter callables.
 	 * @param maxResults the maximum number of results returned.
+	 * @param maxDependents the maximum number of dependents.
 	 * @param publisher a publisher for the intermediate result updates.
 	 * @return a future controlling the completion of the search.
 	 */
@@ -522,6 +530,7 @@ public class SearchEngine implements AutoCloseable {
 	 *            entire set of GIDs of the specified revision will be used as a seed.
 	 * @param filter a {@link LongPredicate} that will be used to filter callables.
 	 * @param maxResults the maximum number of results returned.
+	 * @param maxDependents the maximum number of dependents.
 	 * @return a future controlling the completion of the search.
 	 */
 	public Future<Void> to(final long revId, final LongCollection providedSeed, final LongPredicate filter, final int maxResults,  final int maxDependents, final SubmissionPublisher<SortedSet<Result>> publisher) throws RocksDBException {
@@ -566,7 +575,7 @@ public class SearchEngine implements AutoCloseable {
 		if (graph == null) throw new NoSuchElementException("Revision associated with callable missing from the graph database");
 		LOGGER.debug("Revision call graph has " + graph.numNodes() + " nodes");
 
-		return visitUniverse(gidFrom, LongArrayList.of(gidFrom), maxDependents, new UniverseVisitor() {
+		return visitUniverse(rev, LongArrayList.of(gidFrom), maxDependents, new UniverseVisitor() {
 			
 			@Override
 			public void visit(final DirectedGraph mergedGraph, final LongCollection seed) {
@@ -595,6 +604,7 @@ public class SearchEngine implements AutoCloseable {
 	 * @param revId the database id of a revision.
 	 * @param providedSeed a collection of GIDs that will be used as a seed for the visit; if {@code null}, the
 	 *            entire set of GIDs of the specified revision will be used as a seed.
+	 * @param maxDependents the maximum number of dependents.
 	 * @param visitor the visitor
 	 * @return a future controlling the completion of the search.
 	 */

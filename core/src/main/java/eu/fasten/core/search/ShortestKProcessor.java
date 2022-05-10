@@ -19,30 +19,25 @@ public class ShortestKProcessor extends SubmissionPublisher<SearchEngine.PathRes
 	private final ObjectRBTreeSet<PathResult> results;
 	/** The maximum number of results. */
 	private int maxResults;
-	/** The search engine using this processor. */
-	private final SearchEngine searchEngine;
 
 	/** 
 	 */
-    public ShortestKProcessor(final int maxResults, final SearchEngine se) {
+    public ShortestKProcessor(final int maxResults) {
     	super();
     	this.maxResults = maxResults;
     	results = new ObjectRBTreeSet<>();
-    	this.searchEngine = se;
     }
 
 	/** Creates a new processor, with custom executor. 
 	 * 
 	 * @param maxResults  maximum number of topmost results to be kept track of.
-	 * @param se the search engine using this processor.
 	 * @param executor the custom executor to be used for this processor.
 	 * @param maxBufferCapacity the maximum buffer capacity for the publication queue.
 	 */
-    public ShortestKProcessor(final int maxResults, final SearchEngine se, final Executor executor, final int maxBufferCapacity) {
+    public ShortestKProcessor(final int maxResults, final Executor executor, final int maxBufferCapacity) {
     	super(executor, maxBufferCapacity);
     	this.maxResults = maxResults;
     	results = new ObjectRBTreeSet<>();
-    	this.searchEngine = se;
     }
 
     @Override
