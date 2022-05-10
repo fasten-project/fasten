@@ -29,3 +29,7 @@ This process mainly involves the methods: [AnalyzeDirectory](https://github.com/
 At the end of the `AnalyzeDirectory` recursion, the detector adds the license discovered to the [detectedLicenses](https://github.com/fasten-project/fasten/blob/develop/analyzer/debian-license-detector/src/main/java/eu/fasten/analyzer/debianlicensedetector/DebianLicenseDetectorPlugin.java#L174) object by running the [parseScanResult](https://github.com/fasten-project/fasten/blob/develop/analyzer/debian-license-detector/src/main/java/eu/fasten/analyzer/debianlicensedetector/DebianLicenseDetectorPlugin.java#L705-L722) method.
 
 The [produce](https://github.com/fasten-project/fasten/blob/develop/analyzer/debian-license-detector/src/main/java/eu/fasten/analyzer/debianlicensedetector/DebianLicenseDetectorPlugin.java#L220-L230) method will then include all the license findings to the Kafka message converting to string the `detectedLicenses` object.
+
+
+![PipelineIntegrations_Debian drawio](https://user-images.githubusercontent.com/10910590/167583124-81122f40-9c96-4067-9c95-92569121e23c.png)
+
