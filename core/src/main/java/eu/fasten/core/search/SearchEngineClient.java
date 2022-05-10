@@ -247,7 +247,7 @@ public class SearchEngineClient {
 				assertNargs(nArgs, 0, 0);
 				for (int i = 0; i < nextFutureId; i++)
 					if (id2Query.containsKey(i))
-						System.out.printf("%3d\t%s\t%s\n", i, id2Future.get(i).isDone()? "R" : "D", id2Query.get(i));
+						System.out.printf("%3d\t%s\t%s\n", i, id2Future.get(i).isDone()? "Completed" : "Running", id2Query.get(i));
 				break;
 
 			case "pretty":
