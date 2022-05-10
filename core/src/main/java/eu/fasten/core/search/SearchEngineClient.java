@@ -263,6 +263,20 @@ public class SearchEngineClient {
 				else {
 					if ("wait".equals(verb)) {
 						final var o = id2Subscriber.get(wcid).get();
+						if (o instanceof PathResult[]) {
+							final var a = (PathResult[])o;
+							for(var p : a) {
+								if (prettyPrint) {
+									for(int i = 0; i < p.size(); i++) {
+										if (i != 0) System.out.println(" ->");
+										System.out.print(FastenJavaURI.create(Util.getCallableName(p.getLong(i), se.context()).toString()).toSimpleString());
+									}
+									System.out.println();
+								}
+								else System.out.println(p);
+								System.out.println();
+							}
+						}
 						if (prettyPrint && (o instanceof Update)) {
 							final var u = ((Update)o).current;
 							for(var r : u) System.out.println(FastenJavaURI.create(Util.getCallableName(r.gid, se.context()).toString()).toSimpleString() + "\t" + r.score);
