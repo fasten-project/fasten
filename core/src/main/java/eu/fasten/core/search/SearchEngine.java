@@ -602,12 +602,12 @@ public class SearchEngine implements AutoCloseable {
 	}
 
 	/**
-	 * Computes the universe of a given revision <pre>revId</pre>, and visits it using a suitable visitor. 
+	 * Computes the universe of a given revision <code>revId</code>, and visits it using a suitable visitor. 
 	 * The universe is obtained by taking the set of (direct and indirect) dependents of the given revision,
 	 * obtaining for each of them the corresponding merged graph and possibly discarding it if the graph so
-	 * obtained does not contain <pre>revId</pre>. To each of them a certain visitor is applied. The visitor
-	 * receives the merged graph, and a collection of seeds (a set of callables within <pre>revId</pre>, or
-	 * the set of all callables within <pre>revId</pre> if <pre>providedSeed</pre> is <pre>null</pre>). 
+	 * obtained does not contain <code>revId</code>. To each of them a certain visitor is applied. The visitor
+	 * receives the merged graph, and a collection of seeds (a set of callables within <code>revId</code>, or
+	 * the set of all callables within <code>revId</code> if <code>providedSeed</code> is <code>null</code>). 
 	 * 
 	 * @param revId the database id of a revision.
 	 * @param providedSeed a collection of GIDs that will be used as a seed for the visit; if {@code null}, the
