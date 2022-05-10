@@ -265,7 +265,7 @@ public class SearchEngineClient {
 						final var o = id2Subscriber.get(wcid).get();
 						if (prettyPrint && (o instanceof Update)) {
 							final var u = ((Update)o).current;
-							for(var r : u) System.out.println(FastenJavaURI.create(Util.getCallableName(r.gid, se.context()).toString()).toSimpleString());
+							for(var r : u) System.out.println(FastenJavaURI.create(Util.getCallableName(r.gid, se.context()).toString()).toSimpleString() + "\t" + r.score);
 						}
 						else System.out.println(o);
 					} else future.cancel(true);
@@ -282,8 +282,10 @@ public class SearchEngineClient {
 				final var subscriber = id2Subscriber.get(insid);
 				if (subscriber == null) System.err.println("No such search ID");
 				else {
-					final var r = subscriber.last() == null? new Result[0] : subscriber.last();
-					System.out.print(r);
+					final var rr = subscriber.last() == null? new Result[0] : subscriber.last();
+					if (prettyPrint && (rr instanceof Update)) 							
+						for(var r : ((Update)rr).current) System.out.println(FastenJavaURI.create(Util.getCallableName(r.gid, se.context()).toString()).toSimpleString() + "\t" + r.score);
+					else System.out.print(rr);
 				}
 				break;
 
