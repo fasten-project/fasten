@@ -27,7 +27,7 @@
 
 # Plugin description
 
-The License detector is triggered by the [`fasten.SyncJava.out`] Kafka consumer topic, produced by `Flink's JobManager`.
+The License detector is triggered by the `fasten.SyncJava.out` Kafka consumer topic, produced by `Flink's JobManager`.
 
 The function [`extractRepoPath`](https://github.com/fasten-project/fasten/blob/endocode/compliancePlugin/analyzer/license-detector/src/main/java/eu/fasten/analyzer/licensedetector/LicenseDetectorPlugin.java#L294-L314) extracts the repository path from the `Repo cloner` Kafka message [`fasten.RepoCloner.out`](https://github.com/fasten-project/fasten/wiki/Kafka-Topics#fastenrepocloner).
 
@@ -89,7 +89,7 @@ This `JSONArray`, if not empty, will be processed by the [`detectedLicenses.addF
 1. (Optional) When using a custom Kubernetes namespace, make sure to create it first:
     ```bash
     kubectl create namespace myownnamespace
-    ``` 
+    ```
 
 1. (Optional) Install [Kafka](https://github.com/bitnami/charts/tree/master/bitnami/kafka) in your cluster:
     ```bash
@@ -117,7 +117,7 @@ This `JSONArray`, if not empty, will be processed by the [`detectedLicenses.addF
         when using a custom Kubernetes namespace.
 
 1. Start the plugin specifying the path to the cluster credentials file as an environment variable:
-    
+
    1. From the FASTEN server:
         1.  When using the Kafka instance installed in the cluster in step 1,
             first retrieve its public IP with:
@@ -133,7 +133,7 @@ This `JSONArray`, if not empty, will be processed by the [`detectedLicenses.addF
                 --plugin_list LicenseDetector \
                 --topic LicenseDetector=fasten.RepoCloner.out
             ```
-       
+
    1. As a standalone Maven plugin:
        ```bash
        # Example: from the FASTEN root folder
@@ -166,7 +166,7 @@ Here are the necessary steps needed to visualize the detected metadata stored in
 <p align="center">
     <img src="https://raw.githubusercontent.com/fullsushidev/qmstr/master/doc/static/img/qmstr-plugin.gif">
 </p>
-  
+
 1. Wait for the build and analysis phases to be over:
     ```bash
     kubectl logs --follow $(kubectl get pods --selector job-name=qmstr -o=name) qmstr-client
@@ -203,7 +203,7 @@ Here are the necessary steps needed to visualize the detected metadata stored in
             diagnosticInfo
             timestamp
         }
-    
+
         FileNodes(func: has(fileNodeType)) @recurse(loop: true, depth: 3) {
             uid
             fileNodeType
@@ -214,7 +214,7 @@ Here are the necessary steps needed to visualize the detected metadata stored in
             derivedFrom
             dependencies
         }
-    
+
         FileDataNodes(func: has(fileDataNodeType)) @recurse(loop: true, depth: 3) {
             uid
             fileDataNodeType
@@ -222,7 +222,7 @@ Here are the necessary steps needed to visualize the detected metadata stored in
             additionalInfo
             diagnosticInfo
         }
-    
+
         InfoNodes(func: has(infoNodeType)) @recurse(loop: true, depth: 3) {
             uid
             infoNodeType
@@ -232,7 +232,7 @@ Here are the necessary steps needed to visualize the detected metadata stored in
             dataNodes
             timestamp
         }
-    
+
         Analyzers(func: has(analyzerNodeType)) @recurse(loop: true, depth: 3) {
             uid
             name
@@ -242,7 +242,7 @@ Here are the necessary steps needed to visualize the detected metadata stored in
             old
             new
         }
-    
+
         DataNodes(func: has(dataNodeType)) @recurse(loop: true, depth: 3) {
             uid
             dataNodeType
