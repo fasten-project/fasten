@@ -622,7 +622,7 @@ public class SearchEngine implements AutoCloseable {
 		if (blacklist.contains(revId)) throw new NoSuchElementException("Revision " + revId + " is blacklisted");
 		final var graph = rocksDao.getGraphData(revId);
 		if (graph == null) throw new NoSuchElementException("Revision associated with callable missing from the graph database");
-		final var seed = providedSeed == null ? graph.nodes() : providedSeed;
+		final var seed = providedSeed == null ? LongOpenHashSet.toSet(graph.nodes().longStream().filter(node -> graph.isInternal(node))) : providedSeed;
 
 		String[] data = Util.getGroupArtifactVersion(revId, context);
 		String groupId = data[0];
