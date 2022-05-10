@@ -350,6 +350,7 @@ public class SearchEngine implements AutoCloseable {
 
 	
 	protected PathResult bfsBetween(final DirectedGraph graph, final long gidFrom, final long gidTo, final AtomicLong globalVisitTime, final AtomicLong globalVisitedArcs) {
+		LOGGER.debug("Starting point-to-point visit from " + gidFrom + " to " + gidTo);
 		final LongSet nodes = graph.nodes();
 		final LongArrayFIFOQueue visitQueue = new LongArrayFIFOQueue(graph.numNodes() + 1); // The +1 can be removed in fastutil > 8.5.9
 		final LongOpenHashSet seen = new LongOpenHashSet(graph.numNodes(), Hash.FAST_LOAD_FACTOR);
@@ -362,7 +363,12 @@ public class SearchEngine implements AutoCloseable {
 			parent.put(gidFrom, -1);
 		}
 
-		if (visitQueue.isEmpty()) return results;
+		if (visitQueue.isEmpty()) {
+			LOGGER.debug("Immediately exiting point-to-point visit from " + gidFrom + " to " + gidTo);
+			return results;
+		} else {
+			LOGGER.debug("Actual point-to-point visit from " + gidFrom + " to " + gidTo);
+		}
 		
 		final long start = -System.nanoTime();
 		
@@ -611,6 +617,7 @@ public class SearchEngine implements AutoCloseable {
 	 * @return a future controlling the completion of the search.
 	 */
 	public Future<Void> visitUniverse(final long revId, final LongCollection providedSeed, final int maxDependents, final UniverseVisitor visitor) throws RocksDBException {
+		LOGGER.debug("Called visitUniverse for revision " + revId + " with seed " + providedSeed);
 		throwables.clear();
 		if (blacklist.contains(revId)) throw new NoSuchElementException("Revision " + revId + " is blacklisted");
 		final var graph = rocksDao.getGraphData(revId);
@@ -621,6 +628,8 @@ public class SearchEngine implements AutoCloseable {
 		String groupId = data[0];
 		String artifactId = data[1];
 		String version = data[2];
+		LOGGER.debug("visitUniverse(" + groupId + ":" + artifactId + ":" + version.toString() + "), maxDependents=" + maxDependents);
+
 
 		final int numberOfThreads = Runtime.getRuntime().availableProcessors();
 		final ArrayBlockingQueue<Revision> s = new ArrayBlockingQueue<>(numberOfThreads * 10);
@@ -677,6 +686,7 @@ public class SearchEngine implements AutoCloseable {
 						LOGGER.debug("False dependent");
 						continue; // We cannot possibly reach the callable
 					}
+					LOGGER.debug("True dependent " + dependent.groupId + ":" + dependent.artifactId + ":" + dependent.version.toString());
 
 					for(LongIterator iterator =  dependencyIds.iterator(); iterator.hasNext();) 
 						if (!revisionCache.mayContain(iterator.nextLong())) iterator.remove();
@@ -703,6 +713,7 @@ public class SearchEngine implements AutoCloseable {
 				}
 
 				LOGGER.debug("Stiched graph has " + mergedGraph.numNodes() + " nodes");
+				LOGGER.debug("Going to visit it with seed " + seed);
 				visitor.visit(mergedGraph, seed);
 			}
 		}));
