@@ -129,25 +129,29 @@ public class SearchEngineClient {
 		return Util.getCallableGID(uri, se.context());
 	}
 
-	/** Delegate to {@link SearchEngine}: {@see SearchEngine#fromCallable(long, LongPredicate, int, SubmissionPublisher)}. */
-	private Future<Void> fromCallable(final long gid, final int limit, final int maxDependents, final SubmissionPublisher<SortedSet<Result>> publisher) throws RocksDBException {
-		return se.fromCallable(gid, limit, maxDependents, publisher);	
+	/** Delegate to {@link SearchEngine}: {@see SearchEngine#fromCallable(long, LongPredicate, int, SubmissionPublisher)}. 
+	 * @param filter */
+	private Future<Void> fromCallable(final long gid, LongPredicate filter, final int limit, final int maxDependents, final SubmissionPublisher<SortedSet<Result>> publisher) throws RocksDBException {
+		return se.fromCallable(gid, filter, limit, maxDependents, publisher);	
 	}
 
-	/** Delegate to {@link SearchEngine}: {@see SearchEngine#toCallable(long, LongPredicate, int, SubmissionPublisher)}. */
-	private Future<Void> toCallable(final long gid, final int limit, final int maxDependents, final SubmissionPublisher<SortedSet<Result>> publisher) throws RocksDBException {
-		return se.toCallable(gid, limit, maxDependents, publisher);
+	/** Delegate to {@link SearchEngine}: {@see SearchEngine#toCallable(long, LongPredicate, int, SubmissionPublisher)}. 
+	 * @param filter */
+	private Future<Void> toCallable(final long gid, LongPredicate filter, final int limit, final int maxDependents, final SubmissionPublisher<SortedSet<Result>> publisher) throws RocksDBException {
+		return se.toCallable(gid, filter, limit, maxDependents, publisher);
 	}
 
 
-	/** Delegate to {@link SearchEngine}: {@see SearchEngine#toCallable(long, LongPredicate, int, SubmissionPublisher)}. */
-	private Future<Void> toRevision(final FastenJavaURI uri, final int limit, final int maxDependents, final SubmissionPublisher<SortedSet<Result>> publisher) throws RocksDBException {
-		return se.toRevision(uri, limit, maxDependents, publisher);
+	/** Delegate to {@link SearchEngine}: {@see SearchEngine#toCallable(long, LongPredicate, int, SubmissionPublisher)}. 
+	 * @param filter */
+	private Future<Void> toRevision(final FastenJavaURI uri, LongPredicate filter, final int limit, final int maxDependents, final SubmissionPublisher<SortedSet<Result>> publisher) throws RocksDBException {
+		return se.toRevision(uri, filter, limit, maxDependents, publisher);
 	}
 
-	/** Delegate to {@link SearchEngine}: {@see SearchEngine#fromRevision(long, LongPredicate, int, SubmissionPublisher)}. */
-	private Future<Void> fromRevision(final FastenJavaURI uri, final int limit, final int maxDependents, final SubmissionPublisher<SortedSet<Result>> publisher) throws RocksDBException {
-		return se.fromRevision(uri, limit, maxDependents, publisher);
+	/** Delegate to {@link SearchEngine}: {@see SearchEngine#fromRevision(long, LongPredicate, int, SubmissionPublisher)}. 
+	 * @param filter */
+	private Future<Void> fromRevision(final FastenJavaURI uri, LongPredicate filter, final int limit, final int maxDependents, final SubmissionPublisher<SortedSet<Result>> publisher) throws RocksDBException {
+		return se.fromRevision(uri, filter, limit, maxDependents, publisher);
 	}
 
 	/** Delegate to {@link SearchEngine}: {@see SearchEngine#between(long, long, int, SubmissionPublisher)}. */
@@ -227,7 +231,7 @@ public class SearchEngineClient {
 
 			case "limit":
 				assertNargs(nArgs, 1, 1);
-				limit = (int) index2arg.get(0);
+				limit = index2arg.get(0);
 				if (limit < 0) limit = Integer.MAX_VALUE;
 				break;
 
@@ -247,7 +251,7 @@ public class SearchEngineClient {
 				assertNargs(nArgs, 0, 0);
 				for (int i = 0; i < nextFutureId; i++)
 					if (id2Query.containsKey(i))
-						System.out.printf("%3d\t%s\t%s\n", i, id2Future.get(i).isDone()? "Completed" : "Running", id2Query.get(i));
+						System.out.printf("%3d\t%s\t%s\n", Integer.valueOf(i), id2Future.get(i).isDone()? "Completed" : "Running", id2Query.get(i));
 				break;
 
 			case "pretty":
@@ -310,10 +314,10 @@ public class SearchEngineClient {
 			case "time":
 				assertNargs(nArgs, 0, 0);
 				System.err.printf("\n%,d arcs \nResolve time: %,.3fs  Merge time: %,.3fs  Visit time %,.3fs\n",
-						se.visitedArcs.get(),
-						se.resolveTime.get() * 1E-9,
-						se.mergeTime.get() * 1E-9,
-						se.visitTime.get() * 1E-9);
+						Long.valueOf(se.visitedArcs.get()),
+						Double.valueOf(se.resolveTime.get() * 1E-9),
+						Double.valueOf(se.mergeTime.get() * 1E-9),
+						Double.valueOf(se.visitTime.get() * 1E-9));
 				break;
 				
 			case "f":
@@ -497,10 +501,11 @@ public class SearchEngineClient {
 					topKProcessor.subscribe(futureSubscriber);
 					final int id = client.nextFutureId;
 
+					LongPredicate filter = client.predicateFilters.stream().reduce(x -> true, LongPredicate::and);
 					if (uri.getPath() == null) 
 						client.id2Future.put(id, dir == '+'?
-								client.fromRevision(uri, client.limit, client.maxDependents, publisher) :
-								client.toRevision(uri, client.limit, client.maxDependents, publisher));
+								client.fromRevision(uri, filter, client.limit, client.maxDependents, publisher) :
+								client.toRevision(uri, filter, client.limit, client.maxDependents, publisher));
 
 					else {
 						final long gid = client.getCallableGID(uri);
@@ -509,8 +514,8 @@ public class SearchEngineClient {
 							continue;
 						}
 						client.id2Future.put(id, dir == '+'? 
-								client.fromCallable(gid, client.limit,client.maxDependents,  publisher) :
-								client.toCallable(gid, client.limit, client.maxDependents, publisher));						
+								client.fromCallable(gid, filter, client.limit,client.maxDependents,  publisher) :
+								client.toCallable(gid, filter, client.limit, client.maxDependents, publisher));						
 					}
 					client.id2Subscriber.put(id, futureSubscriber);
 					client.id2Query.put(id, line);

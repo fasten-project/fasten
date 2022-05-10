@@ -59,7 +59,6 @@ import it.unimi.dsi.fastutil.longs.LongLinkedOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.fastutil.longs.LongSets;
-import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import it.unimi.dsi.fastutil.objects.ObjectRBTreeSet;
 import it.unimi.dsi.lang.ObjectParser;
 
@@ -180,13 +179,6 @@ public class SearchEngine implements AutoCloseable {
 	private final Scorer scorer;
 	/** A blacklist of GIDs that will be considered as missing. */
 	private final LongOpenHashSet blacklist;
-
-	/**
-	 * The filters whose conjunction will be applied by default when executing a query, unless otherwise
-	 * specified (compare, e.g., {@link #fromCallable(long)} and
-	 * {@link #fromCallable(long, LongPredicate)}).
-	 */
-	private final ObjectArrayList<LongPredicate> predicateFilters = new ObjectArrayList<>();
 
 	// Note that these will not work in case of concurrent access.
 	
@@ -382,6 +374,7 @@ public class SearchEngine implements AutoCloseable {
 			while (iterator.hasNext()) {
 				final long x = iterator.nextLong();
 				visitedArcs++;
+				// TODO: filter?
 				if (seen.add(x)) {
 					visitQueue.enqueue(x);
 					parent.put(x, gid);
@@ -407,20 +400,6 @@ public class SearchEngine implements AutoCloseable {
 	}
 
 	/**
-	 * Computes the callables satisfying the conjunction of {@link #predicateFilters} and reachable from
-	 * the provided callable, and returns them in a ranked list.
-	 *
-	 * @param gid the global ID of a callable.
-	 * @param maxResults the maximum number of results returned.
-	 * @param maxDependents the maximum number of dependents.
-	 * @param publisher a publisher for the intermediate result updates.
-	 * @return a list of {@linkplain Result results}.
-	 */
-	public Future<Void> fromCallable(final long gid, final int maxResults, final int maxDependents, final SubmissionPublisher<SortedSet<Result>> publisher) throws RocksDBException {
-		return fromCallable(gid, predicateFilters.stream().reduce(x -> true, LongPredicate::and), maxResults, maxDependents, publisher);
-	}
-
-	/**
 	 * Computes the callables satisfying the given predicate and reachable from the provided callable,
 	 * and returns them in a ranked list.
 	 *
@@ -433,20 +412,6 @@ public class SearchEngine implements AutoCloseable {
 	 */
 	public Future<Void> fromCallable(final long gid, final LongPredicate filter, final int maxResults, final int maxDependents, final SubmissionPublisher<SortedSet<Result>> publisher) throws RocksDBException {
 		return from(Util.getRevision(gid, context), LongSets.singleton(gid), filter, maxResults, maxDependents, publisher);
-	}
-
-	/**
-	 * Computes the callables satisfying satisfying the conjunction of {@link #predicateFilters} and
-	 * reachable from the provided revision, and returns them in a ranked list.
-	 *
-	 * @param revisionUri a FASTEN URI specifying a revision.
-	 * @param maxResults the maximum number of results returned.
-	 * @param maxDependents the maximum number of dependents.
-	 * @param publisher a publisher for the intermediate result updates.
-	 * @return a list of {@linkplain Result results}.
-	 */
-	public Future<Void> fromRevision(final FastenURI revisionUri, final int maxResults, final int maxDependents, final SubmissionPublisher<SortedSet<Result>> publisher) throws RocksDBException {
-		return fromRevision(revisionUri, predicateFilters.stream().reduce(x -> true, LongPredicate::and), maxResults, maxDependents, publisher);
 	}
 
 	/**
@@ -469,20 +434,6 @@ public class SearchEngine implements AutoCloseable {
 
 
 	/**
-	 * Computes the callables satisfying the conjunction of {@link #predicateFilters} and coreachable
-	 * from the provided callable, and returns them in a ranked list.
-	 *
-	 * @param gid the global ID of a callable.
-	 * @param maxResults the maximum number of results returned.
-	 * @param maxDependents the maximum number of dependents.
-	 * @param publisher a publisher for the intermediate result updates.
-	 * @return a future controlling the completion of the search.
-	 */
-	public Future<Void> toCallable(final long gid, final int maxResults, final int maxDependents, final SubmissionPublisher<SortedSet<Result>> publisher) throws RocksDBException {
-		return toCallable(gid, predicateFilters.stream().reduce(x -> true, LongPredicate::and), maxResults, maxDependents, publisher);
-	}
-
-	/**
 	 * Computes the callables satisfying the given predicate and coreachable from the provided callable,
 	 * and returns them in a ranked list. They will be filtered by the conjuction of
 	 * {@link #predicateFilters}.
@@ -495,20 +446,6 @@ public class SearchEngine implements AutoCloseable {
 	 */
 	public Future<Void> toCallable(final long gid, final LongPredicate filter, final int maxResults, final int maxDependents, final SubmissionPublisher<SortedSet<Result>> publisher) throws RocksDBException {
 		return to(Util.getRevision(gid, context), LongSets.singleton(gid), filter, maxResults, maxDependents, publisher);
-	}
-
-	/**
-	 * Computes the callables satisfying {{@link #predicateFilters} and coreachable from the provided
-	 * revision, and returns them in a ranked list.
-	 *
-	 * @param revisionUri a FASTEN URI specifying a revision.
-	 * @param maxResults the maximum number of results returned.
-	 * @param maxDependents the maximum number of dependents.
-	 * @param publisher a publisher for the intermediate result updates.
-	 * @return a future controlling the completion of the search.
-	 */
-	public Future<Void> toRevision(final FastenURI revisionUri, final int maxResults, final int maxDependents, final SubmissionPublisher<SortedSet<Result>> publisher) throws RocksDBException {
-		return toRevision(revisionUri, predicateFilters.stream().reduce(x -> true, LongPredicate::and), maxResults, maxDependents, publisher);
 	}
 
 	/**
@@ -577,7 +514,7 @@ public class SearchEngine implements AutoCloseable {
 		});
 	}
 	
-	public Future<Void> between(long gidFrom, long gidTo, int maxResults, int maxDependents, SubmissionPublisher<PathResult> publisher) throws RocksDBException {
+	public Future<Void> between(long gidFrom, long gidTo, int maxDependents, SubmissionPublisher<PathResult> publisher) throws RocksDBException {
 		long rev = Util.getRevision(gidFrom, context);
 		final var graph = rocksDao.getGraphData(rev);
 		if (graph == null) throw new NoSuchElementException("Revision associated with callable missing from the graph database");
