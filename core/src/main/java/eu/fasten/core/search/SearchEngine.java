@@ -155,10 +155,12 @@ public class SearchEngine implements AutoCloseable {
 		
 		@Override
 		public String toString() {
-			StringBuilder sb = new StringBuilder(); 
-			for (long gid: this) sb.append(gid + "\t" + Util.getCallableName(gid, context) + " ->\n");
-			return sb.toString();
-
+			StringBuilder sb = new StringBuilder();
+			sb.append("[");
+			final String sep = " -> ";
+			for (long gid: this) sb.append(gid + "\t" + Util.getCallableName(gid, context) + sep);
+			sb.setLength(sb.length() - sep.length());
+			return sb.append("]").toString();
 		}	
 	}
 

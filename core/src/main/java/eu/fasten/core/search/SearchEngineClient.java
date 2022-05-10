@@ -277,9 +277,12 @@ public class SearchEngineClient {
 								System.out.println();
 							}
 						}
-						if (prettyPrint && (o instanceof Update)) {
-							final var u = ((Update)o).current;
-							for(var r : u) System.out.println(FastenJavaURI.create(Util.getCallableName(r.gid, se.context()).toString()).toSimpleString() + "\t" + r.score);
+						else if (o instanceof Update) {
+							if (prettyPrint) {
+								final var u = ((Update)o).current;
+								for(var r : u) System.out.println(FastenJavaURI.create(Util.getCallableName(r.gid, se.context()).toString()).toSimpleString() + "\t" + r.score);
+							}
+							else System.out.println(o);
 						}
 						else System.out.println(o);
 					} else future.cancel(true);
