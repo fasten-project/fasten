@@ -158,7 +158,7 @@ public class SearchEngine implements AutoCloseable {
 			sb.append("[");
 			final String sep = " -> ";
 			for (long gid: this) sb.append(gid + "\t" + Util.getCallableName(gid, context) + sep);
-			sb.setLength(sb.length() - sep.length());
+			if (size() > 0) sb.setLength(sb.length() - sep.length());
 			return sb.append("]").toString();
 		}	
 	}
@@ -358,6 +358,9 @@ public class SearchEngine implements AutoCloseable {
 		if (visitQueue.isEmpty()) {
 			LOGGER.debug("Immediately exiting point-to-point visit from " + gidFrom + " to " + gidTo);
 			return results;
+		} else if (!nodes.contains(gidTo)) {
+			LOGGER.debug("Point-to-point visit from " + gidFrom + " to " + gidTo + " aborted because the target is missing");
+			return results;
 		} else {
 			LOGGER.debug("Actual point-to-point visit from " + gidFrom + " to " + gidTo);
 		}
@@ -369,13 +372,16 @@ public class SearchEngine implements AutoCloseable {
 		
 		while (!visitQueue.isEmpty() && !found) {
 			final long gid = visitQueue.dequeueLong();
+			LOGGER.debug("Dequeued " + gid);
 			final LongIterator iterator = graph.successorsIterator(gid);
 
 			while (iterator.hasNext()) {
 				final long x = iterator.nextLong();
+				LOGGER.debug("Among the successors of " + gid + " found " + x);
 				visitedArcs++;
 				// TODO: filter?
 				if (seen.add(x)) {
+					LOGGER.debug("New! Enqueuing " + x);
 					visitQueue.enqueue(x);
 					parent.put(x, gid);
 					found = x == gidTo; 
@@ -391,7 +397,9 @@ public class SearchEngine implements AutoCloseable {
 				current = parent.get(current);
 				path.push(current);
 			}
+			LOGGER.debug("Path at the end of the visit " + path);
 			while (!path.isEmpty()) results.add(path.popLong());
+			LOGGER.debug("Results at the end of the visit " + results);
 		} 
 	
 		globalVisitTime.addAndGet(start + System.nanoTime());
@@ -648,9 +656,11 @@ public class SearchEngine implements AutoCloseable {
 						cache.putMerged(dependentId, (ArrayImmutableDirectedGraph)mergedGraph);
 					}
 				}
-
-				LOGGER.debug("Stiched graph has " + mergedGraph.numNodes() + " nodes");
+				
+				LOGGER.debug("Stitched graph for dependent" + dependent.groupId + ":" + dependent.artifactId + ":" + dependent.version.toString() 
+						+ " has " + mergedGraph.numNodes() + " nodes");
 				LOGGER.debug("Going to visit it with seed " + seed);
+				LOGGER.debug("Does the graph contain 753250517? " + mergedGraph.nodes().contains(753250517L));
 				visitor.visit(mergedGraph, seed);
 			}
 		}));

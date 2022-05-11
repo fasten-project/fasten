@@ -5,12 +5,16 @@ import java.util.concurrent.Flow.Processor;
 import java.util.concurrent.Flow.Subscription;
 import java.util.concurrent.SubmissionPublisher;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import eu.fasten.core.search.SearchEngine.PathResult;
 import it.unimi.dsi.fastutil.objects.ObjectRBTreeSet;
 
 /** 
  */
 public class ShortestKProcessor extends SubmissionPublisher<SearchEngine.PathResult[]> implements Processor<SearchEngine.PathResult, SearchEngine.PathResult[]> {
+	private static final Logger LOGGER = LoggerFactory.getLogger(ShortestKProcessor.class);
 
 	private static final PathResult[] EMPTY_RESULT_ARRAY = new PathResult[0];
 
@@ -47,6 +51,7 @@ public class ShortestKProcessor extends SubmissionPublisher<SearchEngine.PathRes
 
     @Override
     public synchronized void onNext(final PathResult path) {
+	LOGGER.debug("Received " + path);
     	if (results.size() < maxResults) {
     		results.add(path);
     		submit(results.toArray(EMPTY_RESULT_ARRAY));
