@@ -203,8 +203,7 @@ public class SearchEngineClient {
 				for(var r : u) System.out.println(FastenJavaURI.create(Util.getCallableName(r.gid, se.context()).toString()).toSimpleString() + "\t" + r.score);
 			}
 			else System.out.println(o);
-		}
-		else System.out.println(o);
+		} System.out.println(o);
 	}
 	
 	/**
@@ -318,7 +317,7 @@ public class SearchEngineClient {
 				final var subscriber = id2Subscriber.get(insid);
 				if (subscriber == null) System.err.println("No such search ID");
 				else {
-					final var rr = subscriber.last() == null? new Result[0] : subscriber.last();
+					final var rr = subscriber.last() == null? new PathResult[0] : subscriber.last();
 					printResult(rr);
 				}
 				break;
