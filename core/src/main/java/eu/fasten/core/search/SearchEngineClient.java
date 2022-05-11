@@ -203,7 +203,7 @@ public class SearchEngineClient {
 				for(var r : u) System.out.println(FastenJavaURI.create(Util.getCallableName(r.gid, se.context()).toString()).toSimpleString() + "\t" + r.score);
 			}
 			else System.out.println(o);
-		} System.out.println(o);
+		} else System.out.println(o);
 	}
 	
 	/**
