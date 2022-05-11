@@ -31,3 +31,6 @@
 The license feeder consumes messages with the topic `fasten.PythonLicenseDetector.out` containing license information at the file level and the outbound license of a given package.
 
 This plugin has been adapted from the [Java license feeder](https://github.com/fasten-project/fasten/tree/develop/analyzer/license-feeder). The main difference is that instead of using `coordinates` (which for Maven are `groupId`, `articactId`, and package `version`), it uses `product` as a `packageName` and version as a `packageVersion`.
+
+![Copy of Python pipeline Diagram (1)](https://user-images.githubusercontent.com/10910590/167827560-5357c5ce-34a3-45bb-b9f3-eb12081ea1a0.png)
+
