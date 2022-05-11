@@ -532,7 +532,8 @@ public class SearchEngine implements AutoCloseable {
 			
 			@Override
 			public void visit(final DirectedGraph mergedGraph, final LongCollection seed) {
-				publisher.submit(bfsBetween(mergedGraph, gidFrom, gidTo, visitTime, visitedArcs));
+				PathResult path = bfsBetween(mergedGraph, gidFrom, gidTo, visitTime, visitedArcs); // May return a path of length 0 if it could not reach the target
+				if (path.size() > 0) publisher.submit(path);
 			}
 			
 			@Override
