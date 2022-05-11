@@ -13,7 +13,7 @@
 </p>
 <br/>
 
-# License feeder description
+# Debian license feeder
 
 
 The license feeder consumes messages with the topic `fasten.DebianLicenseDetector.out` containing license information at the file level and the outbound license of a given package.
