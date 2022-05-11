@@ -176,6 +176,37 @@ public class SearchEngineClient {
 		if (n < min || max < n) throw new IllegalArgumentException("Wrong number of arguments to command");
 	}
 	
+	/** Prints the intermediate or final result of a query. The actual outcome depends on whether the result is
+	 *  a {@link PathResult[]}, an {@link Update} or an instance of some other type, and whether we are pretty-printing
+	 *  or not.
+	 * 
+	 * @param o the intermediate or final result to print.
+	 */
+	private void printResult(final Object o) {
+		if (o instanceof PathResult[]) {
+			final var a = (PathResult[])o;
+			for(var p : a) {
+				if (prettyPrint) {
+					for(int i = 0; i < p.size(); i++) {
+						if (i != 0) System.out.println(" ->");
+						System.out.print(FastenJavaURI.create(Util.getCallableName(p.getLong(i), se.context()).toString()).toSimpleString());
+					}
+					System.out.println();
+				}
+				else System.out.println(p);
+				System.out.println();
+			}
+		}
+		else if (o instanceof Update) {
+			if (prettyPrint) {
+				final var u = ((Update)o).current;
+				for(var r : u) System.out.println(FastenJavaURI.create(Util.getCallableName(r.gid, se.context()).toString()).toSimpleString() + "\t" + r.score);
+			}
+			else System.out.println(o);
+		}
+		else System.out.println(o);
+	}
+	
 	/**
 	 * Executes a given command.
 	 *
@@ -266,29 +297,13 @@ public class SearchEngineClient {
 				if (future == null) System.err.println("No such search ID");
 				else {
 					if ("wait".equals(verb)) {
-						final var o = id2Subscriber.get(wcid).get();
-						if (o instanceof PathResult[]) {
-							final var a = (PathResult[])o;
-							for(var p : a) {
-								if (prettyPrint) {
-									for(int i = 0; i < p.size(); i++) {
-										if (i != 0) System.out.println(" ->");
-										System.out.print(FastenJavaURI.create(Util.getCallableName(p.getLong(i), se.context()).toString()).toSimpleString());
-									}
-									System.out.println();
-								}
-								else System.out.println(p);
-								System.out.println();
-							}
+						try {
+							final var o = id2Subscriber.get(wcid).get();
+							printResult(o);
+						} catch (InterruptedException e) {
+							System.err.println("Interrupted!");
+							break;
 						}
-						else if (o instanceof Update) {
-							if (prettyPrint) {
-								final var u = ((Update)o).current;
-								for(var r : u) System.out.println(FastenJavaURI.create(Util.getCallableName(r.gid, se.context()).toString()).toSimpleString() + "\t" + r.score);
-							}
-							else System.out.println(o);
-						}
-						else System.out.println(o);
 					} else future.cancel(true);
 
 					id2Future.remove(wcid);
@@ -304,9 +319,7 @@ public class SearchEngineClient {
 				if (subscriber == null) System.err.println("No such search ID");
 				else {
 					final var rr = subscriber.last() == null? new Result[0] : subscriber.last();
-					if (prettyPrint && (rr instanceof Update)) 							
-						for(var r : ((Update)rr).current) System.out.println(FastenJavaURI.create(Util.getCallableName(r.gid, se.context()).toString()).toSimpleString() + "\t" + r.score);
-					else System.out.print(rr);
+					printResult(rr);
 				}
 				break;
 
@@ -523,7 +536,7 @@ public class SearchEngineClient {
 					client.nextFutureId++;
 
 				} else {  // dir == '*'
-					String[] uris = line.substring(1).split("\\s");
+					String[] uris = line.substring(1).split("\\s+");
 					if (uris.length != 2) {
 						System.err.println("Exactly two callable URIs must be provided!");
 						continue;
