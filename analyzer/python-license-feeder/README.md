@@ -13,19 +13,7 @@
 </p>
 <br/>
 
-# Part of the pipeline antecedent to this plugin
-
-```
-+------------+             +-----------+                +------------------+   +----------------+   +--------------+
-|POM analyzer+------------>|Repo cloner+--------------->|Flink's JobManager+-->|License detector+-->|License feeder|
-+-----------++             +-----------+                +------------------+   +----------------+   +--------------+
-            |                                            ^
-            |    +----+   +--------------------------+   |
-            +--->|OPAL+-->|Metadata DB extension Java+---+
-                 +----+   +--------------------------+
-```
-
-# Plugin description
+# Python license feeder
 
 
 The license feeder consumes messages with the topic `fasten.PythonLicenseDetector.out` containing license information at the file level and the outbound license of a given package.
