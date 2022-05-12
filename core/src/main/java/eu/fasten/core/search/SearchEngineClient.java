@@ -211,7 +211,7 @@ public class SearchEngineClient {
 	 *
 	 * @param command the command (including its space-separated arguments, if any).
 	 */
-	private void executeCommand(final String command) throws InterruptedException, ExecutionException {
+	private void executeCommand(final String command) throws InterruptedException, ExecutionException, SQLException {
 		final String[] commandAndArgs = command.split("\\s"); // Split command on whitespace
 		final String help = 
 				"\n\tGENERAL COMMANDS\n" +
@@ -234,6 +234,7 @@ public class SearchEngineClient {
 				"\t$or                             The last two filters are substituted by their disjunction (or)\n" + 
 				"\t$and                            The last two filters are substituted by their conjunction (and)\n" + 
 				"\t$not                            The last filter is substituted by its negation (not)\n" + 
+				"\t$test <URI>                     Test the provided URI against the current filter\n" + 
 				"\t$clear                          Clear filters\n" + 
 				"\n\tQUERY-RELATED COMMANDS\n" +
 				"\t±<URI>                          Issue a new query to find reachable (+) or coreachable (-) callables from the given callable <URI> satisfying all filters\n" + 
@@ -428,6 +429,15 @@ public class SearchEngineClient {
 				if (predicateFilters.size() < 1) throw new RuntimeException("At least one predicates must be present");
 				predicateFilters.push(predicateFilters.pop().negate());
 				predicateFiltersSpec.push("!(" + predicateFiltersSpec.pop() + ")");
+				break;
+
+			case "test":
+				assertNargs(nArgs, 1, 1);
+				if (predicateFilters.size() < 1) throw new RuntimeException("At least one predicates must be present");
+				final String uri = commandAndArgs[1];
+				final long gid = getCallableGID(FastenJavaURI.create(uri));
+				if (gid == -1) System.err.println("Unknown URI " + uri);
+				else System.out.println(predicateFilters.stream().reduce(x -> true, LongPredicate::and).test(gid));
 				break;
 
 			default:
