@@ -341,7 +341,7 @@ public class SearchEngine implements AutoCloseable {
 
 
 	
-	protected PathResult bfsBetween(final DirectedGraph graph, final long gidFrom, final long gidTo, final AtomicLong globalVisitTime, final AtomicLong globalVisitedArcs) {
+	protected PathResult bfsBetween(final DirectedGraph graph, final long gidFrom, final long gidTo, final LongPredicate filter, final AtomicLong globalVisitTime, final AtomicLong globalVisitedArcs) {
 		LOGGER.debug("Starting point-to-point visit from " + gidFrom + " to " + gidTo);
 		final LongSet nodes = graph.nodes();
 		final LongArrayFIFOQueue visitQueue = new LongArrayFIFOQueue(graph.numNodes() + 1); // The +1 can be removed in fastutil > 8.5.9
@@ -379,8 +379,7 @@ public class SearchEngine implements AutoCloseable {
 				final long x = iterator.nextLong();
 				LOGGER.debug("Among the successors of " + gid + " found " + x);
 				visitedArcs++;
-				// TODO: filter?
-				if (seen.add(x)) {
+				if (seen.add(x) && filter.test(x)) {
 					LOGGER.debug("New! Enqueuing " + x);
 					visitQueue.enqueue(x);
 					parent.put(x, gid);
@@ -522,7 +521,7 @@ public class SearchEngine implements AutoCloseable {
 		});
 	}
 	
-	public Future<Void> between(long gidFrom, long gidTo, int maxDependents, SubmissionPublisher<PathResult> publisher) throws RocksDBException {
+	public Future<Void> between(long gidFrom, long gidTo, final LongPredicate filter, int maxDependents, SubmissionPublisher<PathResult> publisher) throws RocksDBException {
 		long rev = Util.getRevision(gidFrom, context);
 		final var graph = rocksDao.getGraphData(rev);
 		if (graph == null) throw new NoSuchElementException("Revision associated with callable missing from the graph database");
@@ -532,7 +531,7 @@ public class SearchEngine implements AutoCloseable {
 			
 			@Override
 			public void visit(final DirectedGraph mergedGraph, final LongCollection seed) {
-				PathResult path = bfsBetween(mergedGraph, gidFrom, gidTo, visitTime, visitedArcs); // May return a path of length 0 if it could not reach the target
+				PathResult path = bfsBetween(mergedGraph, gidFrom, gidTo, filter, visitTime, visitedArcs); // May return a path of length 0 if it could not reach the target
 				if (path.size() > 0) publisher.submit(path);
 			}
 			

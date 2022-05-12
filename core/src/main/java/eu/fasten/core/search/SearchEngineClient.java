@@ -155,9 +155,9 @@ public class SearchEngineClient {
 	}
 
 	/** Delegate to {@link SearchEngine}: {@see SearchEngine#between(long, long, int, SubmissionPublisher)}. */
-	private Future<Void> between(final long gidFrom, final long gidTo, final int limit, final int maxDependents,
+	private Future<Void> between(final long gidFrom, final long gidTo, final int limit, final LongPredicate filter, final int maxDependents,
 			SubmissionPublisher<PathResult> publisher) throws RocksDBException {
-		return se.between(gidFrom, gidTo, maxDependents, publisher);
+		return se.between(gidFrom, gidTo, filter, maxDependents, publisher);
 	}
 
 	/** Delegate to {@link SearchEngine}: {@see SearchEngine#resetCounters()}. */
@@ -572,8 +572,10 @@ public class SearchEngineClient {
 					final WaitOnTerminateFutureSubscriber<PathResult[]> futureSubscriber = new WaitOnTerminateFutureSubscriber<>();
 					shortestKProcessor.subscribe(futureSubscriber);
 
+					LongPredicate filter = client.predicateFilters.stream().reduce(x -> true, LongPredicate::and);
+
 					final int id = client.nextFutureId;
-					client.id2Future.put(id, client.between(gidFrom, gidTo, client.limit, client.maxDependents, publisher));
+					client.id2Future.put(id, client.between(gidFrom, gidTo, client.limit, filter, client.maxDependents, publisher));
 					client.id2Subscriber.put(id, futureSubscriber);
 					client.id2Query.put(id, line);
 					System.err.println("Id: " + id);
