@@ -303,11 +303,13 @@ public class SearchEngineClient {
 							System.err.println("Interrupted!");
 							break;
 						}
-					} else future.cancel(true);
+					} else {
+						future.cancel(true);
+						id2Future.remove(wcid);
+						id2Subscriber.remove(wcid);
+						id2Query.remove(wcid);
+					}
 
-					id2Future.remove(wcid);
-					id2Subscriber.remove(wcid);
-					id2Query.remove(wcid);
 				}
 				break;
 
@@ -317,6 +319,7 @@ public class SearchEngineClient {
 				final var subscriber = id2Subscriber.get(insid);
 				if (subscriber == null) System.err.println("No such search ID");
 				else {
+					System.out.printf("%3d\t%s\n", Integer.valueOf(insid), id2Future.get(insid).isDone()? "Completed" : "Running");
 					final var rr = subscriber.last() == null? new PathResult[0] : subscriber.last();
 					printResult(rr);
 				}
