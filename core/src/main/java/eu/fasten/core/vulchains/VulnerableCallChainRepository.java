@@ -18,6 +18,8 @@ package eu.fasten.core.vulchains;
 
 import com.google.common.reflect.TypeToken;
 import eu.fasten.core.data.FastenURI;
+import org.apache.commons.io.FileUtils;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -28,7 +30,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashSet;
 import java.util.Set;
-import org.apache.commons.io.FileUtils;
 
 public class VulnerableCallChainRepository {
     int MAXSETSIZE = 5;
@@ -117,9 +118,9 @@ public class VulnerableCallChainRepository {
         }
     }
 
-    private String getFilePath(String product, String version) {
+    public String getFilePath(String product, String version) {
         var illegalChars = "[^a-zA-Z0-9._\\-]";
-        var sanitizedProduct =  product.replaceAll(illegalChars, "-");
+        var sanitizedProduct = product.replaceAll(illegalChars, "-");
         var sanitizedVersion = version.replaceAll(illegalChars, "-");
         return Path.of(this.rootDir, sanitizedProduct + "-" + sanitizedVersion + ".json").toString();
     }
