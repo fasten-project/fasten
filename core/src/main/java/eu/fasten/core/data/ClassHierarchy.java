@@ -96,7 +96,6 @@ public class ClassHierarchy {
      */
     private Pair<Map<String, Set<String>>, Map<String, Set<String>>> createUniversalCHA(
         final Set<Long> dependenciesIds, final DSLContext dbContext, final RocksDao rocksDao) {
-        final long startTime = System.currentTimeMillis();
         var universalCHA = new DefaultDirectedGraph<String, DefaultEdge>(DefaultEdge.class);
 
         var callables = getCallables(dependenciesIds, rocksDao);

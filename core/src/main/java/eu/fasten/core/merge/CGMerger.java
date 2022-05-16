@@ -80,6 +80,10 @@ public class CGMerger {
         return this.allUris;
     }
 
+    public ClassHierarchy getClassHierarchy() {
+        return classHierarchy;
+    }
+
     /**
      * Creates instance of callgraph merger.
      *
