@@ -18,21 +18,6 @@
 
 package eu.fasten.analyzer.javacgopal;
 
-import static eu.fasten.analyzer.javacgopal.data.CGAlgorithm.CHA;
-import static eu.fasten.analyzer.javacgopal.data.CallPreservationStrategy.ONLY_STATIC_CALLSITES;
-import static eu.fasten.core.maven.utils.MavenUtilities.MAVEN_CENTRAL_REPO;
-import static java.lang.System.currentTimeMillis;
-
-import java.io.File;
-import java.util.Optional;
-
-import org.json.JSONObject;
-import org.pf4j.Extension;
-import org.pf4j.Plugin;
-import org.pf4j.PluginWrapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import eu.fasten.analyzer.javacgopal.data.OPALPartialCallGraphConstructor;
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.JSONUtils;
@@ -42,6 +27,23 @@ import eu.fasten.core.data.opal.exceptions.EmptyCallGraphException;
 import eu.fasten.core.data.opal.exceptions.MissingArtifactException;
 import eu.fasten.core.data.opal.exceptions.OPALException;
 import eu.fasten.core.plugins.AbstractKafkaPlugin;
+import eu.fasten.core.plugins.DataRW;
+import org.json.JSONObject;
+import org.pf4j.Extension;
+import org.pf4j.Plugin;
+import org.pf4j.PluginWrapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.nio.file.Paths;
+import java.util.Optional;
+
+import static eu.fasten.analyzer.javacgopal.data.CGAlgorithm.CHA;
+import static eu.fasten.analyzer.javacgopal.data.CallPreservationStrategy.ONLY_STATIC_CALLSITES;
+import static eu.fasten.core.maven.utils.MavenUtilities.MAVEN_CENTRAL_REPO;
+import static java.lang.System.currentTimeMillis;
 
 public class OPALPlugin extends Plugin {
 
@@ -50,12 +52,13 @@ public class OPALPlugin extends Plugin {
     }
 
     @Extension
-    public static class OPAL extends AbstractKafkaPlugin {
+    public static class OPAL extends AbstractKafkaPlugin implements DataRW {
 
         private final Logger logger = LoggerFactory.getLogger(getClass());
 
         private PartialJavaCallGraph graph;
         private String outputPath;
+        private static String baseDir;
 
         @Override
         public void consume(String kafkaRecord, ProcessingLane l) {
@@ -76,9 +79,18 @@ public class OPALPlugin extends Plugin {
                 // Generate CG and measure construction duration.
                 logger.info("[CG-GENERATION] [UNPROCESSED] [-1] [" + mavenCoordinate.getCoordinate() + "] [NONE] ");
                 long date = json.optLong("releaseDate", -1);
-				this.graph = OPALPartialCallGraphConstructor.createPartialJavaCG(mavenCoordinate,
-                        CHA, date, artifactRepository, ONLY_STATIC_CALLSITES);
-                long duration = currentTimeMillis() - startTime; 
+                try {
+                    this.graph = OPALPartialCallGraphConstructor.createPCGFromLocalJar(mavenCoordinate, date,
+                            Paths.get(baseDir, mavenCoordinate.toPath()).toString(),
+                            CHA, ONLY_STATIC_CALLSITES);
+                } catch (FileNotFoundException e) {
+                    logger.warn(e.getMessage());
+                    // Downloads the JAR file from Maven central
+                    this.graph = OPALPartialCallGraphConstructor.createPartialJavaCG(mavenCoordinate,
+                            CHA, date, artifactRepository, ONLY_STATIC_CALLSITES);
+                }
+
+                long duration = currentTimeMillis() - startTime;
 
                 if (this.graph.isCallGraphEmpty()) {
                     throw new EmptyCallGraphException();
@@ -148,6 +160,11 @@ public class OPALPlugin extends Plugin {
         @Override
         public long getSessionTimeout() {
             return 1800000; // Due to static membership we also want to tune the session timeout to 30 minutes.
+        }
+
+        @Override
+        public void setBaseDir(String baseDir) {
+            OPAL.baseDir = baseDir;
         }
     }
 }

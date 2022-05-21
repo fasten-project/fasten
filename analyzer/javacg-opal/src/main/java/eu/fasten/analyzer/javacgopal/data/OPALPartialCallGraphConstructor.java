@@ -18,18 +18,16 @@
 
 package eu.fasten.analyzer.javacgopal.data;
 
+import com.google.common.collect.Lists;
+import eu.fasten.analyzer.javacgopal.data.analysis.OPALClassHierarchy;
+import eu.fasten.analyzer.javacgopal.data.analysis.OPALMethod;
+import eu.fasten.analyzer.javacgopal.data.analysis.OPALType;
+import eu.fasten.core.data.Constants;
+import eu.fasten.core.data.JavaGraph;
 import eu.fasten.core.data.PartialJavaCallGraph;
-import java.io.File;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
-
+import eu.fasten.core.data.opal.MavenArtifactDownloader;
+import eu.fasten.core.data.opal.MavenCoordinate;
+import eu.fasten.core.data.opal.exceptions.OPALException;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.text.StringEscapeUtils;
 import org.opalj.br.Annotation;
@@ -45,19 +43,20 @@ import org.opalj.tac.TACMethodParameter;
 import org.opalj.value.ValueInformation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.google.common.collect.Lists;
-
-import eu.fasten.analyzer.javacgopal.data.analysis.OPALClassHierarchy;
-import eu.fasten.analyzer.javacgopal.data.analysis.OPALMethod;
-import eu.fasten.analyzer.javacgopal.data.analysis.OPALType;
-import eu.fasten.core.data.Constants;
-import eu.fasten.core.data.JavaGraph;
-import eu.fasten.core.data.opal.MavenArtifactDownloader;
-import eu.fasten.core.data.opal.MavenCoordinate;
-import eu.fasten.core.data.opal.exceptions.OPALException;
 import scala.Function1;
 import scala.collection.JavaConverters;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Call graphs that are not still fully resolved. i.e. isolated call graphs which within-artifact
@@ -127,10 +126,37 @@ public class OPALPartialCallGraphConstructor {
                     partialCallGraph.graph);
         } finally {
             if (file != null) {
-            	// TODO use apache commons FileUtils instead
+                // TODO use apache commons FileUtils instead
                 file.delete();
             }
         }
+    }
+
+    /**
+     * Creates RevisionCallGraph from a local JAR given a Maven coordinate.
+     *
+     * @param coordinate maven coordinate of the revision to be processed
+     * @param timestamp  timestamp of the revision release
+     * @return RevisionCallGraph of the given coordinate.
+     * @throws FileNotFoundException
+     */
+    public static PartialJavaCallGraph createPCGFromLocalJar(final MavenCoordinate coordinate,
+                                                             final long timestamp, String jarFilePath,
+                                                             CGAlgorithm algorithm, CallPreservationStrategy callSiteOnly) throws FileNotFoundException {
+
+        var file = new File(jarFilePath);
+        if (!file.exists()) {
+            throw new FileNotFoundException("Couldn't find the local JAR on filesystem for " + coordinate.toString());
+        }
+        final var opalCG = new OPALCallGraphConstructor().construct(file, algorithm);
+
+        final var partialCallGraph = new OPALPartialCallGraphConstructor().construct(opalCG, callSiteOnly);
+
+        return new PartialJavaCallGraph(Constants.mvnForge, coordinate.getProduct(),
+                coordinate.getVersionConstraint(), timestamp,
+                Constants.opalGenerator,
+                partialCallGraph.classHierarchy,
+                partialCallGraph.graph);
     }
 
     /**
