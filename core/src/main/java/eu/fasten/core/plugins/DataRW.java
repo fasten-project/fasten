@@ -19,12 +19,12 @@
 package eu.fasten.core.plugins;
 
 /**
- * A plug-in that needs to write to disk some data should implement this interface.
+ * A plug-in that needs to read/write from/to disk some data should implement this interface.
  */
-public interface DataWriter extends FastenPlugin {
+public interface DataRW extends FastenPlugin {
 
     /**
-     * Sets base directory into which the data will be written.
+     * Sets base directory into which the data will be read/written.
      *
      * @param baseDir Path to base directory
      */

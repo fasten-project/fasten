@@ -24,7 +24,7 @@ import eu.fasten.core.dbconnectors.RocksDBConnector;
 import eu.fasten.core.plugins.CallableIndexConnector;
 import eu.fasten.core.plugins.CallableIndexReader;
 import eu.fasten.core.plugins.DBConnector;
-import eu.fasten.core.plugins.DataWriter;
+import eu.fasten.core.plugins.DataRW;
 import eu.fasten.core.plugins.DependencyGraphUser;
 import eu.fasten.core.plugins.FastenPlugin;
 import eu.fasten.core.plugins.KafkaPlugin;
@@ -184,7 +184,7 @@ public class FastenServer implements Runnable {
         var dbPlugins = pluginManager.getExtensions(DBConnector.class);
         var kafkaPlugins = pluginManager.getExtensions(KafkaPlugin.class);
         var graphDbPlugins = pluginManager.getExtensions(CallableIndexConnector.class);
-        var dataWriterPlugins = pluginManager.getExtensions(DataWriter.class);
+        var dataRWPlugins = pluginManager.getExtensions(DataRW.class);
         var graphResolverUserPlugins = pluginManager.getExtensions(DependencyGraphUser.class);
         var graphDbReaderPlugins = pluginManager.getExtensions(CallableIndexReader.class);
 
@@ -193,7 +193,7 @@ public class FastenServer implements Runnable {
 
         registerDBConnections(dbPlugins);
         makeGraphDBConnection(graphDbPlugins);
-        setBaseDirectory(dataWriterPlugins);
+        setBaseDirectory(dataRWPlugins);
         loadDependencyGraphResolvers(graphResolverUserPlugins);
         makeReadOnlyGraphDBConnection(graphDbReaderPlugins);
 
@@ -390,15 +390,15 @@ public class FastenServer implements Runnable {
     /**
      * Sets base directory to Data Writer plugins
      *
-     * @param dataWriterPlugins list of Data Writer plugins
+     * @param dataRWPlugins list of Data Writer plugins
      */
-    private void setBaseDirectory(List<DataWriter> dataWriterPlugins) {
-        dataWriterPlugins.forEach((p) -> {
+    private void setBaseDirectory(List<DataRW> dataRWPlugins) {
+        dataRWPlugins.forEach((p) -> {
             if (ObjectUtils.allNotNull(baseDir)) {
                 p.setBaseDir(baseDir);
             } else {
                 logger.error("Couldn't set a base directory. Make sure that you have "
-                    + "provided a valid path to base directory.");
+                        + "provided a valid path to base directory.");
             }
         });
     }
