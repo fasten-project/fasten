@@ -4,16 +4,10 @@ on:
   push:
     branches:
       - develop
-      - endocode/compliancePlugin
-      - python-license-detector-feeder
 
     # Publish `v1.2.3` tags as releases.
     tags:
       - v*
-
-  pull_request:
-    branches:
-      - develop
 
 env:
   IMAGE_NAME: fasten.python.license.detector.plugin

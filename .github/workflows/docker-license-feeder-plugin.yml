@@ -4,15 +4,9 @@ on:
   push:
     branches:
       - develop
-      - license-feeding-cropped-output-fixing
-
     # Publish `v1.2.3` tags as releases.
     tags:
       - v*
-
-  pull_request:
-    branches:
-      - develop
 
 env:
   IMAGE_NAME: fasten.license.feeder.plugin
