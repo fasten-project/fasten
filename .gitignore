@@ -190,6 +190,17 @@ modules.xml
 
 # End of https://www.gitignore.io/api/intellij
 
+# Keep class file required for byte code processing tests
+!/analyzer/javacg-opal/src/test/resources/*.class
+
+# Eclipse
+.classpath
+.project
+.settings
+.checkstyle
+.fbprefs
+bin
+
 # Serialized Dependency Graphs
 
 *.edges
