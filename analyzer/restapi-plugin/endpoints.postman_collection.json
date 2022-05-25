@@ -1,0 +1,485 @@
+{
+	"info": {
+		"_postman_id": "5aeece20-c970-4e4f-9c47-a0292a7b7a68",
+		"name": "Fasten",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "packages",
+			"item": [
+				{
+					"name": "pkg",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:{{port}}/mvn/packages/{{pkg}}/versions",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "{{port}}",
+							"path": [
+								"mvn",
+								"packages",
+								"{{pkg}}",
+								"versions"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "versions",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:{{port}}/mvn/packages/{{pkg}}/versions",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "{{port}}",
+							"path": [
+								"mvn",
+								"packages",
+								"{{pkg}}",
+								"versions"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "pkg_ver",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:{{port}}/mvn/packages/{{pkg}}/{{pkg_ver}}",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "{{port}}",
+							"path": [
+								"mvn",
+								"packages",
+								"{{pkg}}",
+								"{{pkg_ver}}"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "metadata",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:{{port}}/mvn/packages/{{pkg}}/{{pkg_ver}}/metadata",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "{{port}}",
+							"path": [
+								"mvn",
+								"packages",
+								"{{pkg}}",
+								"{{pkg_ver}}",
+								"metadata"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "callgraph",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:{{port}}/mvn/packages/{{pkg}}/{{pkg_ver}}/callgraph",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "{{port}}",
+							"path": [
+								"mvn",
+								"packages",
+								"{{pkg}}",
+								"{{pkg_ver}}",
+								"callgraph"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"protocolProfileBehavior": {}
+		},
+		{
+			"name": "dependencies",
+			"item": [
+				{
+					"name": "deps",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:{{port}}/mvn/packages/{{pkg}}/{{pkg_ver}}/deps",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "{{port}}",
+							"path": [
+								"mvn",
+								"packages",
+								"{{pkg}}",
+								"{{pkg_ver}}",
+								"deps"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"protocolProfileBehavior": {}
+		},
+		{
+			"name": "modules",
+			"item": [
+				{
+					"name": "modules",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:{{port}}/mvn/packages/{{pkg}}/{{pkg_ver}}/modules",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "{{port}}",
+							"path": [
+								"mvn",
+								"packages",
+								"{{pkg}}",
+								"{{pkg_ver}}",
+								"modules"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "metadata",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:{{port}}/mvn/packages/{{pkg}}/{{pkg_ver}}/modules/{{namespace}}/metadata",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "{{port}}",
+							"path": [
+								"mvn",
+								"packages",
+								"{{pkg}}",
+								"{{pkg_ver}}",
+								"modules",
+								"{{namespace}}",
+								"metadata"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "files",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:{{port}}/mvn/packages/{{pkg}}/{{pkg_ver}}/modules/{{namespace}}/files",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "{{port}}",
+							"path": [
+								"mvn",
+								"packages",
+								"{{pkg}}",
+								"{{pkg_ver}}",
+								"modules",
+								"{{namespace}}",
+								"files"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"protocolProfileBehavior": {}
+		},
+		{
+			"name": "binary-modules",
+			"item": [
+				{
+					"name": "binary-modules",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:{{port}}/mvn/packages/{{pkg}}/{{pkg_ver}}/binary-modules",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "{{port}}",
+							"path": [
+								"mvn",
+								"packages",
+								"{{pkg}}",
+								"{{pkg_ver}}",
+								"binary-modules"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "metadata",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:{{port}}/mvn/packages/{{pkg}}/{{pkg_ver}}/binary-modules/{{binary}}/metadata",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "{{port}}",
+							"path": [
+								"mvn",
+								"packages",
+								"{{pkg}}",
+								"{{pkg_ver}}",
+								"binary-modules",
+								"{{binary}}",
+								"metadata"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "files",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:{{port}}/mvn/packages/{{pkg}}/{{pkg_ver}}/binary-modules/{{binary}}/files",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "{{port}}",
+							"path": [
+								"mvn",
+								"packages",
+								"{{pkg}}",
+								"{{pkg_ver}}",
+								"binary-modules",
+								"{{binary}}",
+								"files"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"protocolProfileBehavior": {}
+		},
+		{
+			"name": "callables",
+			"item": [
+				{
+					"name": "callables",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:{{port}}/mvn/packages/{{pkg}}/{{pkg_ver}}/callables",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "{{port}}",
+							"path": [
+								"mvn",
+								"packages",
+								"{{pkg}}",
+								"{{pkg_ver}}",
+								"callables"
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "metadata",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:{{port}}/mvn/packages/{{pkg}}/{{pkg_ver}}/{{fasten_uri}}/metadata",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "{{port}}",
+							"path": [
+								"mvn",
+								"packages",
+								"{{pkg}}",
+								"{{pkg_ver}}",
+								"{{fasten_uri}}",
+								"metadata"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"protocolProfileBehavior": {}
+		},
+		{
+			"name": "edges",
+			"item": [
+				{
+					"name": "edges",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:{{port}}/mvn/packages/{{pkg}}/{{pkg_ver}}/edges",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "{{port}}",
+							"path": [
+								"mvn",
+								"packages",
+								"{{pkg}}",
+								"{{pkg_ver}}",
+								"edges"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"protocolProfileBehavior": {}
+		},
+		{
+			"name": "files",
+			"item": [
+				{
+					"name": "files",
+					"request": {
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "http://localhost:{{port}}/mvn/packages/{{pkg}}/{{pkg_ver}}/files",
+							"protocol": "http",
+							"host": [
+								"localhost"
+							],
+							"port": "{{port}}",
+							"path": [
+								"mvn",
+								"packages",
+								"{{pkg}}",
+								"{{pkg_ver}}",
+								"files"
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"protocolProfileBehavior": {}
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"id": "3dc75eb2-5618-429e-a821-abaf24ee583b",
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"id": "bfee83c3-2fbf-498b-829b-ffb1350aacfc",
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"id": "7899ef94-37c1-4de3-ac7d-cf72e2eee87f",
+			"key": "port",
+			"value": "9090"
+		},
+		{
+			"id": "11e3af9f-abe5-4dbf-b0c1-be6d1c51648d",
+			"key": "offset",
+			"value": "0"
+		},
+		{
+			"id": "e4ce5b24-c9bb-4fb7-bcd8-667d71bae436",
+			"key": "limit",
+			"value": "10"
+		},
+		{
+			"id": "9b074866-57e7-48b8-b09a-05766602a9a8",
+			"key": "pkg",
+			"value": "com.lemoulinstudio.jnag:jnag-utils-jse-rds"
+		},
+		{
+			"id": "dc8661d2-8618-4f31-bffe-8123b258314d",
+			"key": "pkg_ver",
+			"value": "1.2.1"
+		},
+		{
+			"id": "3f39e974-d598-475c-8d59-42acae39dfe8",
+			"key": "namespace",
+			"value": "%2Fcom.lemoulinstudio.jnag.utils.rds.client%2FGenericClient"
+		},
+		{
+			"id": "069a66c5-f051-4238-9f2e-f5274d8e4400",
+			"key": "fasten_uri",
+			"value": "%2Fcom.lemoulinstudio.jnag.utils.rds.client%2FGenericClient.access$200%28GenericClient%29%2Fjava.lang%2FString"
+		}
+	],
+	"protocolProfileBehavior": {}
+}

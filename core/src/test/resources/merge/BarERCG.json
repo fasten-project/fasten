@@ -1,0 +1,70 @@
+{
+  "product": "Bar",
+  "nodes": 0,
+  "forge": "",
+  "generator": "",
+  "version": "",
+  "cha": {
+    "externalTypes": {
+      "/java.lang/Object": {
+        "access": "",
+        "methods": {
+          "202": {
+            "metadata": {},
+            "uri": "/java.lang/Object.%3Cinit%3E()VoidType"
+          }
+        },
+        "final": false,
+        "superInterfaces": [],
+        "sourceFile": "",
+        "superClasses": []
+      }
+    },
+    "internalTypes": {
+      "/test.group/Bar": {
+        "access": "public",
+        "methods": {
+          "200": {
+            "metadata": {
+              "access": "public",
+              "last": 6,
+              "first": 4,
+              "defined": true
+            },
+            "uri": "/test.group/Bar.%3Cinit%3E(%2Fjava.lang%2FIntegerType,%2Fjava.lang%2FIntegerType)%2Fjava.lang%2FVoidType"
+          },
+          "201": {
+            "metadata": {
+              "access": "public",
+              "last": 10,
+              "first": 10,
+              "defined": true
+            },
+            "uri": "/test.group/Bar.superMethod()%2Fjava.lang%2FVoidType"
+          }
+        },
+        "final": false,
+        "superInterfaces": [],
+        "sourceFile": "test/group/Bar.java",
+        "superClasses": [
+          "/java.lang/Object"
+        ]
+      }
+    },
+    "resolvedTypes": {}
+  },
+  "call-sites": [
+      [
+        "200",
+        "202",
+        {
+          "1": {
+            "receiver": "[/java.lang/Object]",
+            "type": "invokespecial",
+            "line": 4
+          }
+        }
+      ]
+    ],
+  "timestamp": 0
+}

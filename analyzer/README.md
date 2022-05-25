@@ -27,8 +27,15 @@ The FASTEN Metadata Plugin is used for inserting [Revision Call Graphs and their
 #### POM analyzer
 The FASTEN POM Analyzer plugin is a tool that analyzes Maven coordinate's [POM](https://maven.apache.org/ref/3.6.3/maven-model/maven.html) file and extracts relevant information from it while also inserting this information into the [metadata database](https://github.com/fasten-project/fasten/wiki/Metadata-Database-Schema).
 
+#### Quality analyzer
+The FASTEN QualityAnalyzer plugin is used to insert source code quality analysis metadata into [metadata database](https://github.com/fasten-project/fasten/wiki/Metadata-Database-Schema).
+
 #### Repo Cloner
 The FASTEN RepoCloner plugin is a tool for cloning repositories into the file system.
+
+#### Rest API
+The FASTEN Rest API Plugin is a tool to expose canned queries from the [Metadata Database](https://github.com/fasten-project/fasten/wiki/Metadata-Database-Schema).
+<!-- It can be used both as a standalone tool and as a part of FASTEN server. -->
 
 ## Join the community
 

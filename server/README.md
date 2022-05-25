@@ -15,19 +15,23 @@ The FASTEN-server is a component necessary for running [FASTEN-specific plugins]
 
 ## Arguments
 - `-b` `--base_dir` Path to base directory to which data will be written;
-- `-d` `--database` Database URL for connection;
-    - `-du` `--user` Database user name;
+- `-d` `--database` Kay-value pairs of Database URLs for connection. Valid keys are `mvn`, `pypi`, `debian` for Java, Python and C, respectively. E.g.`mvn=jdbc:postgresql://postgres@localhost/dbname`;
 - `-gd` `--graphdb_dir` Path to directory with RocksDB database;
 - `-h` `--help` Show this help message and exit;
 - `-k` `--kafka_server` Kafka server to connect to. Use multiple times for clusters;
     - `-ks` `--skip_offsets` Adds one to offset of all the partitions of the consumers;
-    - `-kt` `--topic` Kay-value pairs of Plugin and topic to consume from. Example: `OPAL=fasten.maven.pkg`;
+    - `-kt` `--topic` Kay-value pairs of Plugin and topic to consume from. Example: `OPAL=fasten.OPAL.out`;
 - `-la` `--list_all` List all values and extensions;
 - `-m` `--mode` Deployment or Development mode
 - `-p` `--plugin_dir` Directory to load plugins from.
     - `-pl` `--plugin_list` List of plugins to run. Can be used multiple times.
     - `-po` `--plugin_output` Path to directory where plugin output messages will be stored
     - `-pol` `--plugin_output_link` HTTP link to the root directory where output messages will be stored
+- `cg` `--consumer_group` Name of the consumer group. Defaults to (canonical) name of the plugin.
+- `ot` `--output_topic` Name of the output topic. Defaults to (simple) name of the plugin.
+- `ct` `--consume_timeout` Adds a timeout on the time a plugin can spend on its consumed records. Disabled by default.
+- `cte` `--consume_timeout_exit` Shutdowns the JVM if a consume timeout is reached. 
+- `ls` `--local_storage` Enables local storage which stores the record that is currently processed. This ensure that records that were processed before won't be processed again (e.g. when the pod crashes). Local storage relies on the `--local_storage_dir` flag, to store message hashes. Furthermore, the environment variable `POD_INSTANCE_ID` needs to be available with a static and unique id per pod.  
 - `-V` `--version` Print version information and exit.
 
 ## Usage 
@@ -44,7 +48,7 @@ The FASTEN-server is a component necessary for running [FASTEN-specific plugins]
 
 #### Run a specific FASTEN-plugin that requires a database connection
 ```shell script
--p path/to/plugins/dir -pl POMAnalyzer -d jdbc:postgresql:javadb -du postgres
+-p path/to/plugins/dir -pl POMAnalyzer -d mvn=jdbc:postgresql://postgres@localhost/dbname
 ```
 
 #### Run a specific FASTEN-plugin that writes output to files

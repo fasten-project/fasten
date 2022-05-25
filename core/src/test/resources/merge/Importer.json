@@ -1,0 +1,109 @@
+{
+  "product": "Importer",
+  "nodes": 5,
+  "forge": "",
+  "generator": "",
+  "version": "0",
+  "cha": {
+    "externalTypes": {
+      "/merge.simpleImport/Imported": {
+        "access": "",
+        "methods": {
+          "4": {
+            "metadata": {},
+            "uri": "/merge.simpleImport/Imported.targetMethod()%2Fjava.lang%2FVoidType"
+          },
+          "3": {
+            "metadata": {},
+            "uri": "/merge.simpleImport/Imported.%3Cinit%3E()%2Fjava.lang%2FVoidType"
+          }
+        },
+        "final": false,
+        "superInterfaces": [],
+        "sourceFile": "",
+        "superClasses": []
+      },
+      "/java.lang/Object": {
+        "access": "",
+        "methods": {
+          "2": {
+            "metadata": {},
+            "uri": "/java.lang/Object.%3Cinit%3E()VoidType"
+          }
+        },
+        "final": false,
+        "superInterfaces": [],
+        "sourceFile": "",
+        "superClasses": []
+      }
+    },
+    "internalTypes": {
+      "/merge.simpleImport/Importer": {
+        "access": "public",
+        "methods": {
+          "0": {
+            "metadata": {
+              "access": "public",
+              "last": 7,
+              "defined": true,
+              "first": 6
+            },
+            "uri": "/merge.simpleImport/Importer.%3Cinit%3E()%2Fjava.lang%2FVoidType"
+          },
+          "1": {
+            "metadata": {
+              "access": "public",
+              "last": 12,
+              "defined": true,
+              "first": 10
+            },
+            "uri": "/merge.simpleImport/Importer.sourceMethod()%2Fjava.lang%2FVoidType"
+          }
+        },
+        "final": false,
+        "superInterfaces": [],
+        "sourceFile": "merge/simpleImport/Importer.java",
+        "superClasses": [
+          "/java.lang/Object"
+        ]
+      }
+    },
+    "resolvedTypes": {}
+  },
+  "call-sites": [
+    [
+      "1",
+      "4",
+      {
+        "9": {
+          "receiver": "[/merge.simpleImport/Imported]",
+          "type": "invokevirtual",
+          "line": 11
+        }
+      }
+    ],
+    [
+      "0",
+      "2",
+      {
+        "1": {
+          "receiver": "[/java.lang/Object]",
+          "type": "invokespecial",
+          "line": 6
+        }
+      }
+    ],
+    [
+      "1",
+      "3",
+      {
+        "4": {
+          "receiver": "[/merge.simpleImport/Imported]",
+          "type": "invokespecial",
+          "line": 10
+        }
+      }
+    ]
+  ],
+  "timestamp": 0
+}

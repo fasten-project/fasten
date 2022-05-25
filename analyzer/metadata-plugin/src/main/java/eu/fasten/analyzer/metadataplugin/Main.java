@@ -18,10 +18,14 @@
 
 package eu.fasten.analyzer.metadataplugin;
 
-import eu.fasten.server.connectors.PostgresConnector;
+import eu.fasten.core.dbconnectors.PostgresConnector;
+import eu.fasten.core.data.Constants;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
 import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.Map;
+
 import org.json.JSONObject;
 import org.json.JSONTokener;
 import org.slf4j.Logger;
@@ -41,7 +45,7 @@ public class Main implements Runnable {
     @CommandLine.Option(names = {"-d", "--database"},
             paramLabel = "DB_URL",
             description = "Database URL for connection",
-            defaultValue = "jdbc:postgresql:postgres")
+            defaultValue = "jdbc:postgresql:fasten_java")
     String dbUrl;
 
     @CommandLine.Option(names = {"-u", "--user"},
@@ -50,16 +54,47 @@ public class Main implements Runnable {
             defaultValue = "postgres")
     String dbUser;
 
+    @CommandLine.Option(names = {"-l", "--language"},
+            paramLabel = "LANGUAGE",
+            description = "Language of the callgraph",
+            defaultValue = "java")
+    String language;
+
     public static void main(String[] args) {
         final int exitCode = new CommandLine(new Main()).execute(args);
         System.exit(exitCode);
     }
 
+    public MetadataDBExtension getMetadataDBExtension() {
+        switch (language) {
+            case "java":
+                return new MetadataDatabaseJavaPlugin.MetadataDBJavaExtension();
+            case "c":
+                return new MetadataDatabaseCPlugin.MetadataDBCExtension();
+            case "python":
+                return new MetadataDatabasePythonPlugin.MetadataDBPythonExtension();
+        }
+        return null;
+    }
+
+    public String getForge() {
+        switch (language) {
+            case "java":
+                return Constants.mvnForge;
+            case "c":
+                return Constants.debianForge;
+            case "python":
+                return Constants.pypiForge;
+        }
+        return null;
+    }
+
     @Override
     public void run() {
-        var metadataPlugin = new MetadataDatabasePlugin.MetadataDBExtension();
+        var metadataPlugin = getMetadataDBExtension();
         try {
-            metadataPlugin.setDBConnection(PostgresConnector.getDSLContext(dbUrl, dbUser));
+            metadataPlugin.setDBConnection(new HashMap<>(Map.of(getForge(),
+                                           PostgresConnector.getDSLContext(dbUrl, dbUser, true))));
         } catch (IllegalArgumentException | SQLException e) {
             logger.error("Could not connect to the database", e);
             return;
@@ -74,5 +109,8 @@ public class Main implements Runnable {
         final JSONObject jsonCallgraph = new JSONObject(new JSONTokener(reader));
         metadataPlugin.consume(jsonCallgraph.toString());
         metadataPlugin.produce().ifPresent(System.out::println);
+        if (metadataPlugin.getPluginError() != null) {
+            metadataPlugin.getPluginError().printStackTrace(System.err);
+        }
     }
 }

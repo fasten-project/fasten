@@ -18,20 +18,32 @@
 
 package eu.fasten.analyzer.javacgopal;
 
-import eu.fasten.analyzer.javacgopal.data.CallGraphConstructor;
-import eu.fasten.analyzer.javacgopal.data.MavenCoordinate;
-import eu.fasten.analyzer.javacgopal.data.PartialCallGraph;
-import eu.fasten.core.data.ExtendedRevisionCallGraph;
-import eu.fasten.core.merge.CallGraphMerger;
+import static eu.fasten.analyzer.javacgopal.data.CallPreservationStrategy.INCLUDING_ALL_SUBTYPES;
+
+import eu.fasten.analyzer.javacgopal.data.CGAlgorithm;
+import eu.fasten.analyzer.javacgopal.data.OPALCallGraphConstructor;
+import eu.fasten.core.data.PartialJavaCallGraph;
+import eu.fasten.core.data.opal.MavenCoordinate;
+import eu.fasten.analyzer.javacgopal.data.OPALPartialCallGraphConstructor;
+import eu.fasten.core.data.DirectedGraph;
+import eu.fasten.core.data.JSONUtils;
+import eu.fasten.core.maven.utils.MavenUtilities;
+import eu.fasten.core.merge.CGMerger;
 import eu.fasten.core.merge.CallGraphUtils;
-import java.io.File;
-import java.io.IOException;
-import java.text.DecimalFormat;
-import java.util.ArrayList;
-import java.util.List;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.util.Collection;
+import org.json.JSONObject;
+import org.json.JSONTokener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
+import java.io.File;
+import java.io.IOException;
+import java.nio.file.Paths;
+import java.text.DecimalFormat;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * Makes javacg-opal module runnable from command line.
@@ -39,306 +51,325 @@ import picocli.CommandLine;
 @CommandLine.Command(name = "JavaCGOpal", mixinStandardHelpOptions = true)
 public class Main implements Runnable {
 
-    private static final Logger logger = LoggerFactory.getLogger(Main.class);
+	private static final Logger logger = LoggerFactory.getLogger(Main.class);
 
-    @CommandLine.ArgGroup(multiplicity = "1")
-    Commands commands;
+	@CommandLine.Option(names = { "-o",
+			"--output" }, paramLabel = "OUT", description = "Output directory path", defaultValue = "")
+	String output;
 
-    @CommandLine.Option(names = {"-o", "--output"},
-            paramLabel = "OUT",
-            description = "Output directory path",
-            defaultValue = "")
-    String output;
+	@CommandLine.Option(names = { "-r" }, paramLabel = "REPOS", description = "Maven repositories", split = ",")
+	List<String> repos;
 
-    @CommandLine.Option(names = {"-r"},
-            paramLabel = "REPOS",
-            description = "Maven repositories",
-            split = ",")
-    List<String> repos;
+	@CommandLine.Option(names = { "-a",
+			"--artifact" }, paramLabel = "ARTIFACT", description = "Artifact, Maven coordinate or file path")
+	String artifact;
 
-    static class Commands {
-        @CommandLine.ArgGroup(exclusive = false)
-        Computations computations;
-    }
+	@CommandLine.Option(names = { "-an" }, paramLabel = "ARTIFACT_NAME")
+	String artifactName;
 
-    static class Computations {
-        @CommandLine.Option(names = {"-a", "--artifact"},
-                paramLabel = "ARTIFACT",
-                description = "Artifact, maven coordinate or file path")
-        String artifact;
+	@CommandLine.Option(names = { "-i",
+			"--input-type" }, paramLabel = "INPUTTYPE", description = "Input of algorithms " +
+		"are {FILE or COORD or JSON}", defaultValue = "FILE")
+	String inputType;
 
-        @CommandLine.Option(names = {"-m", "--mode"},
-                paramLabel = "MODE",
-                description = "Input of algorithms are {FILE or COORD}",
-                defaultValue = "FILE")
-        String mode;
+	@CommandLine.Option(names = { "-ga",
+			"--genAlgorithm" }, paramLabel = "GenALG", description = "gen{RTA,CHA,AllocationSiteBasedPointsTo,TypeBasedPointsTo}", defaultValue = "CHA")
+	String genAlgorithm;
 
-        @CommandLine.Option(names = {"-n", "--main"},
-                paramLabel = "MAIN",
-                description = "Main class of artifact")
-        String main;
+	@CommandLine.Option(names = { "-t",
+			"--timestamp" }, paramLabel = "TS", description = "Release TS", defaultValue = "-1")
+	String timestamp;
 
-        @CommandLine.Option(names = {"-ga", "--genAlgorithm"},
-                paramLabel = "GenALG",
-                description = "gen{RTA,CHA,AllocationSiteBasedPointsTo,TypeBasedPointsTo}",
-                defaultValue = "CHA")
-        String genAlgorithm;
+	@CommandLine.Option(names = { "-g",
+			"--generate" }, paramLabel = "GEN", description = "Generate call graph for artifact")
+	boolean doGenerate;
 
-        @CommandLine.ArgGroup()
-        Tools tools;
+	@CommandLine.Option(names = { "-m",
+			"--merge" }, paramLabel = "MERGE", description = "Merge artifact CG to dependencies", required = true)
+	boolean doMerge;
 
-        @CommandLine.Option(names = {"-t", "--timestamp"},
-                paramLabel = "TS",
-                description = "Release TS",
-                defaultValue = "0")
-        String timestamp;
-    }
+	@CommandLine.Option(names = { "-d",
+			"--dependencies" }, paramLabel = "DEPS", description = "Dependencies, coordinates or files", split = ",")
+	List<String> dependencies;
 
-    static class Tools {
-        @CommandLine.ArgGroup(exclusive = false)
-        Opal opal;
+	@CommandLine.Option(names = { "-dn",
+		"--dependencyNames" }, paramLabel = "DEPNAMES", description = "Dependency names", split = ",")
+	List<String> dependencyNames;
 
-        @CommandLine.ArgGroup(exclusive = false)
-        Merge merge;
-    }
+	/**
+	 * Generates RevisionCallGraphs using Opal for the specified artifact in the
+	 * command line parameters.
+	 */
+	public static void main(String[] args) {
+		new CommandLine(new Main()).execute(args);
+	}
 
-    static class Opal {
-        @CommandLine.Option(names = {"-g", "--generate"},
-                paramLabel = "GEN",
-                description = "Generate call graph for artifact")
-        boolean doGenerate;
-    }
+	/**
+	 * Run the generator, merge algorithm or evaluator depending on parameters
+	 * provided.
+	 */
+	public void run() {
+		if (doGenerate) runGenerate();
+		if (doMerge) runMerge();
+	}
 
-    static class Merge {
-        @CommandLine.Option(names = {"-ma", "--mergeAlgorithm"},
-                paramLabel = "MerALG",
-                description = "Algorhtm merge{RA, CHA}",
-                defaultValue = "CHA")
-        String mergeAlgorithm;
+	/**
+	 * Run call graph generator.
+	 */
+	private void runGenerate() {
+		if (inputType.equals("COORD")) {
+			final var artifact = getArtifactNameCoordinate();
+			logger.info("Generating call graph for the Maven coordinate: {}", artifact.getCoordinate());
+			generate(artifact, artifactName, getCGAlgorithm());
+		} else if (inputType.equals("FILE")) {
+			File artifactFile = getArtifactFile();
+			logger.info("Generating call graph for artifact file: {}", artifactFile);
+			generate(artifactFile, artifactName, getCGAlgorithm());
+		}
+	}
 
-        @CommandLine.Option(names = {"-s", "--stitch"},
-                paramLabel = "STITCH",
-                description = "Stitch artifact CG to dependencies")
-        boolean doMerge;
+	/**
+	 * Run merge algorithm.
+	 */
+	private void runMerge() {
+		switch (inputType){
+			case "JSON":
+				merge(deserializeArtifact(artifact), deserializeDeps(dependencies));
+				break;
+			case "COORD":
+				merge(getArtifactNameCoordinate(), getDependenciesCoordinates());
+				break;
+			case "FILE":
+				merge(getArtifactFile(), getDependenciesFiles());
+				break;
+		}
+	}
 
-        @CommandLine.Option(names = {"-d", "--dependencies"},
-                paramLabel = "DEPS",
-                description = "Dependencies, coordinates or files",
-                split = ",")
-        List<String> dependencies;
-    }
+	private List<PartialJavaCallGraph> deserializeDeps(final List<String> dependencies) {
+		final List<PartialJavaCallGraph> result = new ArrayList<>();
+		for (final var dependency : dependencies) {
+			result.add(deserializeArtifact(dependency));
+		}
+		return result;
+	}
 
-    /**
-     * Generates RevisionCallGraphs using Opal for the specified artifact in the command line
-     * parameters.
-     */
-    public static void main(String[] args) {
-        new CommandLine(new Main()).execute(args);
-    }
+	private PartialJavaCallGraph deserializeArtifact(final String artifact) {
+		try {
+			final var cg = new JSONTokener(new FileReader(new File(artifact)));
+			return new PartialJavaCallGraph(new JSONObject(cg));
+		} catch (FileNotFoundException e) {
+			throw new RuntimeException(e);
+		}
 
-    /**
-     * Run the generator, merge algorithm or evaluator depending on parameters provided.
-     */
-    public void run() {
-        if (this.commands.computations != null && this.commands.computations.tools != null) {
-            if (this.commands.computations.tools.opal != null
-                    && this.commands.computations.tools.opal.doGenerate) {
-                runGenerate();
-            }
-            if (this.commands.computations.tools.merge != null
-                    && this.commands.computations.tools.merge.doMerge) {
-                runMerge();
-            }
-        }
-    }
+	}
 
-    /**
-     * Run call graph generator.
-     */
-    private void runGenerate() {
-        if (commands.computations.mode.equals("COORD")) {
-            final var artifact = getArtifactCoordinate();
-            logger.info("Generating call graph for the Maven coordinate: {}",
-                    artifact.getCoordinate());
-            try {
-                generate(artifact, commands.computations.main, commands.computations.genAlgorithm,
-                        !this.output.isEmpty());
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+	/**
+	 * Merge an artifact with a list of it's dependencies using a specified
+	 * algorithm.
+	 *
+	 * @param artifact     artifact to merge
+	 * @param dependencies list of dependencies
+	 * @param <T>          artifact can be either a file or coordinate
+	 * @return a revision call graph with resolved class hierarchy and calls
+	 */
+	public <T> DirectedGraph merge(final T artifact, final List<T> dependencies) {
+		final DirectedGraph result;
 
-        } else if (commands.computations.mode.equals("FILE")) {
-            try {
-                generate(getArtifactFile(), commands.computations.main,
-                        commands.computations.genAlgorithm, !this.output.isEmpty());
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-    }
+		final long startTime = System.currentTimeMillis();
+		final List<PartialJavaCallGraph> deps = generatePCGIfNotPresent(artifact, dependencies);
+		final var merger = new CGMerger(deps);
+		result = merger.mergeAllDeps();
+		logger.info("Resolved {} nodes, {} calls in {} seconds", result.nodes().size(), result.edgeSet().size(),
+			new DecimalFormat("#0.000").format((System.currentTimeMillis() - startTime) / 1000d));
 
-    /**
-     * Run merge algorithm.
-     */
-    private void runMerge() {
-        if (commands.computations.mode.equals("COORD")) {
-            try {
-                merge(getArtifactCoordinate(), getDependenciesCoordinates());
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+		if (output.isEmpty()) {
+			return result;
+		}
+		try {
+			CallGraphUtils.writeToFile(
+				getPath(getArtifactNameCoordinate().getCoordinate() + "_merged"),
+				JSONUtils.toJSONString(result, getArtifactNameCoordinate()), "");
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
 
-        } else if (commands.computations.mode.equals("FILE")) {
-            try {
-                merge(getArtifactFile(), getDependenciesFiles()).toJSON();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-    }
+		return result;
+	}
 
-    /**
-     * Merge an artifact with a list of it's dependencies using a specified algorithm.
-     *
-     * @param artifact     artifact to merge
-     * @param dependencies list of dependencies
-     * @param <T>          artifact can be either a file or coordinate
-     * @return a revision call graph with resolved class hierarchy and calls
-     * @throws IOException thrown in case file related exceptions occur, e.g FileNotFoundException
-     */
-    public <T> ExtendedRevisionCallGraph merge(final T artifact,
-                                               final List<T> dependencies) throws IOException {
+	private <T> List<PartialJavaCallGraph> generatePCGIfNotPresent(final T artifact,
+																   final List<T> dependencies) {
+		final List<PartialJavaCallGraph> deps = new ArrayList<>();
+		if (artifact instanceof PartialJavaCallGraph){
+			deps.add((PartialJavaCallGraph) artifact);
+			deps.addAll((Collection<PartialJavaCallGraph>) dependencies);
+		} else {
+			deps.addAll(generatePCGs(artifact, dependencies));
+		}
+		return deps;
+	}
 
-        final ExtendedRevisionCallGraph result;
-        final var deps = new ArrayList<ExtendedRevisionCallGraph>();
-        for (final var dep : dependencies) {
-            deps.add(generate(dep, "", commands.computations.genAlgorithm, true));
-        }
-        final var art = generate(artifact, this.commands.computations.main,
-                commands.computations.genAlgorithm, true);
+	private <T> ArrayList<PartialJavaCallGraph> generatePCGs(final T artifact,
+															 final List<T> deps) {
+		final var depSet = new ArrayList<PartialJavaCallGraph>();
+		for (int i = 0; i < deps.size(); i++) {
+			final var cg = generate(deps.get(i), dependencyNames.get(i), getCGAlgorithm());
+			depSet.add(cg);
+		}
 
-        result = CallGraphMerger.mergeCallGraph(art, deps,
-                commands.computations.tools.merge.mergeAlgorithm);
+		final var art = generate(artifact, artifactName, getCGAlgorithm());
+		depSet.add(art);
 
-        if (!this.output.isEmpty() && result != null) {
-            CallGraphUtils.writeToFile(this.output, result.toJSON(),
-                    "_" + result.product + "_merged");
-        }
+		return depSet;
+	}
 
-        return result;
-    }
+	private String getPath(final String fileName) {
+		var dir = Paths.get(this.output).toString();
+		if (!dir.endsWith(File.separator)) {
+			dir = dir + File.separator;
+		}
+		return Paths.get(dir, fileName).toString();
+	}
 
-    /**
-     * Generate a revision call graph for a given coordinate using a specified algorithm. In case
-     * the artifact is an application a main class can be specified. If left empty a library entry
-     * point finder algorithm will be used.
-     *
-     * @param artifact    artifact to generate a call graph for
-     * @param mainClass   main class in case the artifact is an application
-     * @param algorithm   algorithm for generating a call graph
-     * @param writeToFile will be written to a file if true
-     * @param <T>         artifact can be either a file or a coordinate
-     * @return generated revision call graph
-     * @throws IOException file related exceptions, e.g. FileNotFoundException
-     */
-    public <T> ExtendedRevisionCallGraph generate(final T artifact,
-                                                  final String mainClass,
-                                                  final String algorithm, final boolean writeToFile)
-            throws IOException {
-        final ExtendedRevisionCallGraph revisionCallGraph;
+	private CGAlgorithm getCGAlgorithm() {
+		return CGAlgorithm.valueOf(genAlgorithm);
+	}
 
-        final long startTime = System.currentTimeMillis();
+	/**
+	 * Generate a revision call graph for a given coordinate using a specified
+	 * algorithm. In case the artifact is an application a main class can be
+	 * specified. If left empty a library entry point finder algorithm will be used.
+	 *
+	 * @param artifact    artifact to generate a call graph for
+	 * @param artifactName   main class in case the artifact is an application
+	 * @param algorithm   algorithm for generating a call graph
+	 * @param <T>         artifact can be either a file or a coordinate
+	 * @return generated revision call graph
+	 */
+	public <T> PartialJavaCallGraph generate(final T artifact, final String artifactName,
+											 final CGAlgorithm algorithm) {
+		final PartialJavaCallGraph result;
 
-        if (artifact instanceof File) {
-            logger.info("Generating graph for {}", ((File) artifact).getAbsolutePath());
-            final var cg = new PartialCallGraph(
-                    new CallGraphConstructor((File) artifact, mainClass, algorithm));
-            revisionCallGraph =
-                    ExtendedRevisionCallGraph.extendedBuilder().graph(cg.getGraph())
-                            .product(cleanUpFileName((File) artifact))
-                            .version("").timestamp(0).cgGenerator("").forge("")
-                            .classHierarchy(cg.getClassHierarchy()).nodeCount(cg.getNodeCount())
-                            .build();
+		final long startTime = System.currentTimeMillis();
+		result = generatePCG(artifact, artifactName, algorithm);
+		logger.info("Generated the call graph in {} seconds.",
+				new DecimalFormat("#0.000").format((System.currentTimeMillis() - startTime) / 1000d));
 
-        } else {
-            revisionCallGraph = PartialCallGraph
-                    .createExtendedRevisionCallGraph((MavenCoordinate) artifact, mainClass,
-                            algorithm, Long.parseLong(this.commands.computations.timestamp));
-        }
+		if (output.isEmpty()) {
+			return result;
+		}
+		try {
+			CallGraphUtils.writeToFile(getPath(result.getRevisionName()),
+				JSONUtils.toJSONString(result),"");
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+		return result;
+	}
 
-        logger.info("Generated the call graph in {} seconds.", new DecimalFormat("#0.000")
-                .format((System.currentTimeMillis() - startTime) / 1000d));
+	private <T> PartialJavaCallGraph generatePCG(final T artifact, final String artifactName,
+												 final CGAlgorithm algorithm) {
+		final PartialJavaCallGraph revisionCallGraph;
+		if (artifact instanceof File) {
+			logger.info("Generating graph for {}", getArtifact(artifact).getAbsolutePath());
+			revisionCallGraph = generatePCGFromFile(getArtifact(artifact), artifactName, algorithm);
+		} else {
+			revisionCallGraph = OPALPartialCallGraphConstructor
+				.createPartialJavaCG((MavenCoordinate) artifact, algorithm,
+					Long.parseLong(timestamp), getArtifactRepo(), INCLUDING_ALL_SUBTYPES);
+		}
+		return revisionCallGraph;
+	}
 
-        if (writeToFile) {
-            CallGraphUtils.writeToFile(this.output, revisionCallGraph.toJSON(), "");
-        }
-        return revisionCallGraph;
-    }
+	private <T> File getArtifact(final T artifact) {
+		return (File) artifact;
+	}
 
-    private String cleanUpFileName(File artifact) {
-        return artifact.getName().replace(".class", "").replace("$", "").replace(".jar", "");
-    }
+	private <T> PartialJavaCallGraph generatePCGFromFile(final File artifact,
+														 final String artifactName,
+														 final CGAlgorithm algorithm) {
+		PartialJavaCallGraph revisionCallGraph;
+		final var cg = new OPALPartialCallGraphConstructor()
+			.construct(new OPALCallGraphConstructor().construct(artifact, algorithm),
+				INCLUDING_ALL_SUBTYPES);
 
-    /**
-     * Get a list of files of dependencies.
-     *
-     * @return a list of dependencies files
-     */
-    private List<File> getDependenciesFiles() {
-        final var result = new ArrayList<File>();
-        if (this.commands.computations.tools.merge.dependencies != null) {
-            for (String currentCoordinate : this.commands.computations.tools.merge.dependencies) {
-                result.add(new File(currentCoordinate));
-            }
-        }
-        return result;
-    }
+		final var coord = getMavenCoordinate(artifactName);
+		revisionCallGraph = new PartialJavaCallGraph("mvn", coord.getProduct(),
+			coord.getVersionConstraint(), 0, "OPAL", cg.classHierarchy, cg.graph);
+		return revisionCallGraph;
+	}
 
-    /**
-     * Get a list of coordinates of dependencies.
-     *
-     * @return a list of Maven coordinates
-     */
-    private List<MavenCoordinate> getDependenciesCoordinates() {
-        final var result = new ArrayList<MavenCoordinate>();
-        if (this.commands.computations.tools.merge.dependencies != null) {
-            for (String currentCoordinate : this.commands.computations.tools.merge.dependencies) {
-                var coordinate = MavenCoordinate.fromString(currentCoordinate, "jar");
-                if (this.repos != null && !this.repos.isEmpty()) {
-                    coordinate.setMavenRepos(this.repos);
-                }
-                result.add(coordinate);
-            }
-        }
-        return result;
-    }
+	private String getArtifactRepo() {
+		return
+			(repos == null || repos.size() < 1) ? MavenUtilities.MAVEN_CENTRAL_REPO : repos.get(0);
+	}
 
-    /**
-     * Get an artifact file from a provided path.
-     *
-     * @return artifact file
-     */
-    private File getArtifactFile() {
-        File result = null;
-        if (this.commands.computations.artifact != null) {
-            result = new File(this.commands.computations.artifact);
-        }
-        return result;
-    }
+	private MavenCoordinate getMavenCoordinate(final String artifactCoordinate) {
+		if (artifactCoordinate == null || artifactCoordinate.isEmpty()) {
+			throw new RuntimeException("coordinate is not specified check the arguments!");
+		}
+		return MavenCoordinate.fromString(artifactCoordinate, "jar");
+	}
 
-    /**
-     * Get an artifact coordinate for an artifact.
-     *
-     * @return artifact coordinate
-     */
-    private MavenCoordinate getArtifactCoordinate() {
-        MavenCoordinate result = null;
-        if (this.commands.computations.artifact != null) {
-            result = MavenCoordinate.fromString(this.commands.computations.artifact, "jar");
-            if (this.repos != null && !this.repos.isEmpty()) {
-                result.setMavenRepos(this.repos);
-            }
-        }
-        return result;
-    }
+	/**
+	 * Get a list of files of dependencies.
+	 *
+	 * @return a list of dependencies files
+	 */
+	private List<File> getDependenciesFiles() {
+		final var result = new ArrayList<File>();
+		if (dependencies != null) {
+			for (final var currentCoordinate : dependencies) {
+				result.add(new File(currentCoordinate));
+			}
+		}
+		return result;
+	}
+
+	/**
+	 * Get a list of coordinates of dependencies.
+	 *
+	 * @return a list of Maven coordinates
+	 */
+	private List<MavenCoordinate> getDependenciesCoordinates() {
+		final var result = new ArrayList<MavenCoordinate>();
+		if (dependencies != null) {
+			for (final var currentCoordinate : dependencies) {
+				final var coordinate = getMavenCoordinate(currentCoordinate);
+				if (repos != null && !repos.isEmpty()) {
+					coordinate.setMavenRepos(this.repos);
+				}
+				result.add(coordinate);
+			}
+		}
+		return result;
+	}
+
+	/**
+	 * Get an artifact file from a provided path.
+	 *
+	 * @return artifact file
+	 */
+	private File getArtifactFile() {
+		File result = null;
+		if (artifact != null) {
+			result = new File(artifact);
+		}
+		return result;
+	}
+
+	/**
+	 * Get an artifact coordinate for an artifact.
+	 *
+	 * @return artifact coordinate
+	 */
+	private MavenCoordinate getArtifactNameCoordinate() {
+		MavenCoordinate result = null;
+		if (artifact != null) {
+			result = MavenCoordinate.fromString(artifactName, "jar");
+			if (this.repos != null && !this.repos.isEmpty()) {
+				result.setMavenRepos(this.repos);
+			}
+		}
+		return result;
+	}
 }

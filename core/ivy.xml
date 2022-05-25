@@ -21,5 +21,7 @@
 		<dependency org="org.pf4j" name="pf4j" rev="3.1.0"/>
 		<dependency org="ch.qos.logback" name="logback-classic" rev="latest.release" conf="runtime"/>
 		<dependency org="net.javacrumbs.json-unit" name="json-unit" rev="latest.release"/>
+		<dependency org="com.github.t9t.jooq" name="jooq-postgresql-json" rev="latest.release"/>
+		<dependency org="org.jgrapht" name="jgrapht-core" rev="latest.release"/>
 	</dependencies>
 </ivy-module>

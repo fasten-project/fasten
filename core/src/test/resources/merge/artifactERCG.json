@@ -1,0 +1,193 @@
+{
+  "product": "Main",
+  "nodes": 0,
+  "forge": "",
+  "generator": "",
+  "version": "",
+  "cha": {
+    "externalTypes": {
+      "/test.group/Bar": {
+        "access": "",
+        "methods": {
+          "4": {
+            "metadata": {},
+            "uri": "/test.group/Bar.superMethod()%2Fjava.lang%2FVoidType"
+          },
+          "5": {
+            "metadata": {},
+            "uri": "/test.group/Bar.%3Cinit%3E(%2Fjava.lang%2FIntegerType,%2Fjava.lang%2FIntegerType)%2Fjava.lang%2FVoidType"
+          }
+        },
+        "final": false,
+        "superInterfaces": [],
+        "sourceFile": "",
+        "superClasses": []
+      },
+      "/test.group/Baz": {
+        "access": "",
+        "methods": {
+          "3": {
+            "metadata": {},
+            "uri": "/test.group/Baz.%3Cinit%3E(%2Fjava.lang%2FIntegerType,%2Fjava.lang%2FIntegerType,%2Fjava.lang%2FIntegerType)%2Fjava.lang%2FVoidType"
+          }
+        },
+        "final": false,
+        "superInterfaces": [],
+        "sourceFile": "",
+        "superClasses": []
+      },
+      "/java.lang/Object": {
+        "access": "",
+        "methods": {
+          "2": {
+            "metadata": {},
+            "uri": "/java.lang/Object.%3Cinit%3E()VoidType"
+          }
+        },
+        "final": false,
+        "superInterfaces": [],
+        "sourceFile": "",
+        "superClasses": []
+      },
+      "/test.group/Foo": {
+        "access": "",
+        "methods": {
+          "6": {
+            "metadata": {},
+            "uri": "/test.group/Foo.staticMethod()%2Fjava.lang%2FIntegerType"
+          },
+          "7": {
+            "metadata": {},
+            "uri": "/test.group/Foo.%3Cinit%3E(%2Fjava.lang%2FIntegerType)%2Fjava.lang%2FVoidType"
+          }
+        },
+        "final": false,
+        "superInterfaces": [],
+        "sourceFile": "",
+        "superClasses": []
+      }
+    },
+    "internalTypes": {
+      "/test.group/Main": {
+        "access": "public",
+        "methods": {
+          "0": {
+            "metadata": {
+              "access": "public",
+              "last": 6,
+              "defined": true,
+              "first": 6
+            },
+            "uri": "/test.group/Main.%3Cinit%3E()%2Fjava.lang%2FVoidType"
+          },
+          "1": {
+            "metadata": {
+              "access": "public",
+              "last": 17,
+              "defined": true,
+              "first": 8
+            },
+            "uri": "/test.group/Main.main(%2Fjava.lang%2FString%5B%5D)%2Fjava.lang%2FVoidType"
+          }
+        },
+        "final": false,
+        "superInterfaces": [],
+        "sourceFile": "test/group/Main.java",
+        "superClasses": [
+          "/java.lang/Object"
+        ]
+      }
+    },
+    "resolvedTypes": {}
+  },
+  "call-sites": [
+    [
+      "1",
+      "0",
+      {
+        "47": {
+          "receiver": "[/test.group/Main]",
+          "type": "invokespecial",
+          "line": 16
+        }
+      }
+    ],
+    [
+      "0",
+      "0",
+      {}
+    ],
+    [
+      "0",
+      "2",
+      {
+        "1": {
+          "receiver": "[/java.lang/Object]",
+          "type": "invokespecial",
+          "line": 6
+        }
+      }
+    ],
+    [
+      "1",
+      "3",
+      {
+        "7": {
+          "receiver": "[/test.group/Baz]",
+          "type": "invokespecial",
+          "line": 8
+        }
+      }
+    ],
+    [
+      "1",
+      "4",
+      {
+        "26": {
+          "receiver": "[/test.group/Bar]",
+          "type": "invokevirtual",
+          "line": 12
+        },
+        "12": {
+          "receiver": "[/test.group/Bar]",
+          "type": "invokevirtual",
+          "line": 9
+        }
+      }
+    ],
+    [
+      "1",
+      "5",
+      {
+        "21": {
+          "receiver": "[/test.group/Bar]",
+          "type": "invokespecial",
+          "line": 11
+        }
+      }
+    ],
+    [
+      "1",
+      "6",
+      {
+        "29": {
+          "receiver": "[/test.group/Foo]",
+          "type": "invokestatic",
+          "line": 14
+        }
+      }
+    ],
+    [
+      "1",
+      "7",
+      {
+        "38": {
+          "receiver": "[/test.group/Foo]",
+          "type": "invokespecial",
+          "line": 15
+        }
+      }
+    ]
+  ],
+  "timestamp": 0
+}

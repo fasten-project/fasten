@@ -18,39 +18,65 @@
 
 package eu.fasten.analyzer.javacgopal;
 
+import static eu.fasten.core.plugins.KafkaPlugin.ProcessingLane.NORMAL;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import eu.fasten.core.data.ExtendedRevisionCallGraph;
-import java.io.FileNotFoundException;
-import java.io.IOException;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
+
+import eu.fasten.core.data.PartialJavaCallGraph;
+import eu.fasten.core.data.opal.exceptions.EmptyCallGraphException;
+import eu.fasten.core.data.opal.exceptions.MissingArtifactException;
 
 class OPALPluginTest {
 
-    static OPALPlugin.OPAL plugin;
+    private OPALPlugin.OPAL plugin;
 
-    @BeforeAll
-    public static void setUp() {
+    @BeforeEach
+    public void setUp() {
         plugin = new OPALPlugin.OPAL();
     }
 
     @Test
-    public void testConsumerTopic() {
-        assertTrue(plugin.consumeTopic().isPresent());
-        assertEquals("fasten.maven.pkg", plugin.consumeTopic().get().get(0));
+    public void testConsumerTopicNotSetByDefault() {
+        assertThrows(RuntimeException.class, ()->{
+            plugin.consumeTopic();
+        });
     }
 
     @Test
     public void testSetTopic() {
-        String topicName = "fasten.mvn.pkg";
-        plugin.setTopic(topicName);
+        List<String> consumeTopics = Collections.singletonList("fasten.mvn.pkg");
+        plugin.setTopics(consumeTopics);
         assertTrue(plugin.consumeTopic().isPresent());
-        assertEquals(topicName, plugin.consumeTopic().get().get(0));
+        assertEquals(Optional.of(consumeTopics), plugin.consumeTopic());
+    }
+
+    @Test
+    public void testConsumeFromDifferentRepo() throws JSONException {
+        JSONObject coordinateJSON = new JSONObject("{" +
+                "\"payload\": {" +
+                "\"artifactId\": \"common\"," +
+                "\"groupId\": \"android.arch.core\"," +
+                "\"version\": \"1.1.1\"," +
+                "\"artifactRepository\": \"https://dl.google.com/android/maven2/\"" +
+                "}}");
+
+        plugin.consume(coordinateJSON.toString(), NORMAL);
+
+        assertTrue(plugin.produce().isPresent());
+        assertFalse(new PartialJavaCallGraph(new JSONObject(plugin.produce().get()))
+                .isCallGraphEmpty());
     }
 
     @Test
@@ -63,10 +89,10 @@ class OPALPluginTest {
                 "    \"date\":\"1574072773\"\n" +
                 "}");
 
-        plugin.consume(coordinateJSON.toString());
+        plugin.consume(coordinateJSON.toString(), NORMAL);
 
         assertTrue(plugin.produce().isPresent());
-        assertFalse(new ExtendedRevisionCallGraph(new JSONObject(plugin.produce().get()))
+        assertFalse(new PartialJavaCallGraph(new JSONObject(plugin.produce().get()))
                 .isCallGraphEmpty());
     }
 
@@ -81,10 +107,10 @@ class OPALPluginTest {
                 "    \"date\":\"1574072773\"\n" +
                 "}}");
 
-        plugin.consume(coordinateJSON.toString());
+        plugin.consume(coordinateJSON.toString(), NORMAL);
 
         assertTrue(plugin.produce().isPresent());
-        assertFalse(new ExtendedRevisionCallGraph(new JSONObject(plugin.produce().get()))
+        assertFalse(new PartialJavaCallGraph(new JSONObject(plugin.produce().get()))
                 .isCallGraphEmpty());
     }
 
@@ -97,11 +123,10 @@ class OPALPluginTest {
                 "    \"date\":\"1521511260\"\n" +
                 "}");
 
-        plugin.consume(noJARFile.toString());
+        plugin.consume(noJARFile.toString(), NORMAL);
         var error = plugin.getPluginError();
-
         assertFalse(plugin.produce().isPresent());
-        assertEquals(FileNotFoundException.class.getSimpleName(), error.getClass().getSimpleName());
+        assertEquals(MissingArtifactException.class.getSimpleName(), error.getClass().getSimpleName());
     }
 
     @Test
@@ -113,15 +138,14 @@ class OPALPluginTest {
                 + "    \"date\":\"1574072773\"\n"
                 + "}");
 
-        plugin.consume(emptyCGCoordinate.toString());
-        assertTrue(plugin.produce().isPresent());
-        var graph = plugin.produce().get();
-        var cg = new ExtendedRevisionCallGraph(new JSONObject(graph));
-        assertTrue(cg.isCallGraphEmpty());
+        plugin.consume(emptyCGCoordinate.toString(), NORMAL);
+        assertFalse(plugin.produce().isPresent());
+        assertEquals(EmptyCallGraphException.class, plugin.getPluginError().getClass());
     }
 
+    @Disabled
     @Test
-    public void testShouldNotFaceClassReadingError() throws JSONException, IOException {
+    public void testShouldNotFaceClassReadingError() throws JSONException {
 
         JSONObject coordinateJSON1 = new JSONObject("{\n" +
                 "    \"groupId\": \"com.zarbosoft\",\n" +
@@ -130,15 +154,15 @@ class OPALPluginTest {
                 "    \"date\":\"1574072773\"\n" +
                 "}");
 
-        plugin.consume(coordinateJSON1.toString());
+        plugin.consume(coordinateJSON1.toString(), NORMAL);
 
         assertTrue(plugin.produce().isPresent());
-        assertFalse(new ExtendedRevisionCallGraph(new JSONObject(plugin.produce().get()))
+        assertFalse(new PartialJavaCallGraph(new JSONObject(plugin.produce().get()))
                 .isCallGraphEmpty());
     }
 
     @Test
     public void testName() {
-        assertEquals("eu.fasten.analyzer.javacgopal.OPALPlugin.OPAL", plugin.name());
+        assertEquals("OPAL", plugin.name());
     }
 }

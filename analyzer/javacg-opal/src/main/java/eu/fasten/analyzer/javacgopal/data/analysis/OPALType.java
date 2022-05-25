@@ -18,18 +18,21 @@
 
 package eu.fasten.analyzer.javacgopal.data.analysis;
 
-import com.google.common.collect.BiMap;
-import com.google.common.collect.HashBiMap;
 import com.google.common.collect.Lists;
-import eu.fasten.core.data.ExtendedRevisionCallGraph.Node;
-import eu.fasten.core.data.ExtendedRevisionCallGraph.Type;
+import eu.fasten.core.data.JavaNode;
+import eu.fasten.core.data.JavaType;
 import eu.fasten.core.data.FastenURI;
+import eu.fasten.core.data.Node;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import org.apache.commons.lang3.tuple.MutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.opalj.br.ClassHierarchy;
 import org.opalj.br.DeclaredMethod;
 import org.opalj.br.Method;
@@ -47,6 +50,7 @@ public class OPALType {
     private final List<ObjectType> superInterfaces;
     private final String access;
     private final boolean isFinal;
+    private final Map<String, List<Pair<String, String>>> annotations;
 
     /**
      * Creates {@link OPALType} for the given data.
@@ -58,13 +62,15 @@ public class OPALType {
      */
     public OPALType(final Map<Method, Integer> methods, final LinkedList<ObjectType> superClasses,
                     final List<ObjectType> superInterfaces, final String sourceFileName,
-                    final String access, final boolean isFinal) {
+                    final String access, final boolean isFinal,
+                    final Map<String, List<Pair<String, String>>> annotations) {
         this.methods = methods;
         this.superClasses = superClasses;
         this.superInterfaces = superInterfaces;
         this.sourceFileName = sourceFileName;
         this.access = access;
         this.isFinal = isFinal;
+        this.annotations = annotations;
     }
 
     public Map<Method, Integer> getMethods() {
@@ -83,16 +89,20 @@ public class OPALType {
         return sourceFileName;
     }
 
+    public Map<String, List<Pair<String, String>>> getAnnotations() {
+        return annotations;
+    }
+
     /**
      * Get a map of {@link FastenURI} of Type and
-     * corresponding {@link Type}.
+     * corresponding {@link JavaType}.
      *
      * @param projectHierarchy class hierarchy of the project
      * @param methods          methods belonging to this type
      * @param klass            object type
      * @return map of FastenURI and corresponding Types
      */
-    public static Map<FastenURI, Type> getType(ClassHierarchy projectHierarchy,
+    public static Map<String, JavaType> getType(ClassHierarchy projectHierarchy,
                                                final Map<DeclaredMethod, Integer> methods,
                                                final ObjectType klass) {
         final var superTypes = extractSuperClasses(projectHierarchy, klass);
@@ -104,48 +114,80 @@ public class OPALType {
             superClassesURIs = new LinkedList<>();
         }
 
-        return Map.of(OPALMethod.getTypeURI(klass),
-                new Type("", toURIDeclaredMethods(methods), superClassesURIs,
+        String uri = OPALMethod.getTypeURI(klass).toString();
+		return Map.of(uri,
+                new JavaType(uri, "", toURIDeclaredMethods(methods), new HashMap<>(),superClassesURIs,
                         toURIInterfaces(extractSuperInterfaces(projectHierarchy, klass)),
-                        "", false));
+                        "", false, new HashMap<>()));
     }
 
     /**
      * Get a map of {@link FastenURI} of Type and
-     * corresponding {@link Type}.
+     * corresponding {@link JavaType}.
      *
      * @param type  OPAL type
      * @param klass object type
      * @return map of FastenURI and corresponding Types
      */
-    public static Map<FastenURI, Type> getType(final OPALType type, final ObjectType klass) {
+    public static Pair<String, JavaType> getType(final OPALType type, final ObjectType klass) {
         final LinkedList<FastenURI> superClassesURIs;
         if (type.getSuperClasses() != null) {
             superClassesURIs = toURIClasses(type.getSuperClasses());
         } else {
             superClassesURIs = new LinkedList<>();
         }
-
-        return Map.of(OPALMethod.getTypeURI(klass),
-                new Type(type.getSourceFileName(), toURIMethods(type.getMethods()),
-                        superClassesURIs, toURIInterfaces(type.getSuperInterfaces()),
-                        type.access, type.isFinal));
+        final var methodMaps = getMethodMaps(type.methods);
+        final String uri = OPALMethod.getTypeURI(klass).toString();
+		return MutablePair.of(uri,
+            new JavaType(uri, type.sourceFileName, methodMaps.getRight(),
+                methodMaps.getLeft(), superClassesURIs, toURIInterfaces(type.superInterfaces),
+                type.access, type.isFinal, type.getAnnotations()));
     }
 
     /**
-     * Convert a map of {@link DeclaredMethod} to a BiMap of
-     * {@link Node}.
+     * Converts a {@link Map} of {@link Method} to a Map of {@link FastenURI}. And also
+     * shifts the keys and values.
      *
-     * @param methods map of methods to convert
-     * @return BiMap of Nodes
+     * @param methods {@link Method} are keys and their unique id in the artifact are
+     *                values.
+     * @return A Map in which the unique id of each method in the artifact is the key and the
+     * {@link FastenURI} of the method is the value.
      */
-    public static BiMap<Integer, Node> toURIDeclaredMethods(
-            final Map<DeclaredMethod, Integer> methods) {
-        final BiMap<Integer, Node> result = HashBiMap.create();
+    public static Pair<Map<String, JavaNode>, Int2ObjectMap<JavaNode>> getMethodMaps(final Map<Method,
+            Integer> methods) {
+        final Int2ObjectMap<JavaNode> nodes = new Int2ObjectOpenHashMap<>();
+        final Map<String, JavaNode> defs = new HashMap<>();
 
         for (final var entry : methods.entrySet()) {
             final var method = entry.getKey();
-            result.put(entry.getValue(), new Node(OPALMethod.toCanonicalSchemelessURI(null,
+            final var defined = method.instructionsOption().isDefined();
+            final var node = new JavaNode(getUri(method), Map.of("first",
+                    getFirstLine(method),
+                    "last", getLastLine(method),
+                    "defined", defined,
+                    "access", getAccessModifier(method)));
+            if (defined) {
+                defs.put(node.getSignature(), node);
+            }
+            nodes.put(entry.getValue(), node);
+        }
+        return MutablePair.of(defs, nodes);
+    }
+
+    /**
+     * Convert a map of {@link DeclaredMethod} to a Map of
+     * {@link Node}.
+     *
+     * @param methods map of methods to convert
+     * @return Map of Nodes
+     */
+    public static Int2ObjectMap<JavaNode> toURIDeclaredMethods(
+            final Map<DeclaredMethod, Integer> methods) {
+        final Int2ObjectMap<JavaNode> result = new Int2ObjectOpenHashMap<>();
+
+        for (final var entry : methods.entrySet()) {
+            final var method = entry.getKey();
+            result.put(entry.getValue(), new JavaNode(OPALMethod.toCanonicalSchemelessURI(null,
                     method.declaringClassType(), method.name(),
                     method.descriptor()), new HashMap<>()));
         }
@@ -185,12 +227,12 @@ public class OPALType {
      * @return A Map in which the unique id of each method in the artifact is the key and the
      * {@link FastenURI} of the method is the value.
      */
-    public static BiMap<Integer, Node> toURIMethods(final Map<Method, Integer> methods) {
-        final BiMap<Integer, Node> result = HashBiMap.create();
+    public static Int2ObjectMap<JavaNode> toURIMethods(final Map<Method, Integer> methods) {
+        final Int2ObjectMap<JavaNode> result = new Int2ObjectOpenHashMap<>();
 
         for (final var entry : methods.entrySet()) {
             final var method = entry.getKey();
-            result.put(entry.getValue(), new Node(getUri(method),
+            result.put(entry.getValue(), new JavaNode(getUri(method),
                     Map.of("first", getFirstLine(method),
                             "last", getLastLine(method),
                             "defined", method.instructionsOption().isDefined(),
@@ -217,9 +259,18 @@ public class OPALType {
      * @return last line of the method
      */
     private static Object getFirstLine(Method method) {
-        return method.body().nonEmpty()
-                ? method.body().get().firstLineNumber().getOrElse(() -> "")
-                : "notFound";
+
+        if (method != null) {
+            if (method.body().isDefined()) {
+                if (method.body().get().lineNumberTable() != null)
+                    if(method.body().get().lineNumberTable().isDefined()) {
+                    return method.body().get().lineNumberTable().get().lineNumbers().head()
+                        .lineNumber();
+                }
+            }
+        }
+        return "notFound";
+
     }
 
     /**
@@ -229,9 +280,16 @@ public class OPALType {
      * @return last line of the method
      */
     private static Object getLastLine(Method method) {
-        return method.body().nonEmpty()
-                ? method.body().get().lineNumber(method.body().get().codeSize()).getOrElse(() -> "")
-                : "notFound";
+        if (method != null) {
+            if (method.body().isDefined()) {
+                if (method.body().get().lineNumberTable() != null)
+                    if(method.body().get().lineNumberTable().isDefined()) {
+                        return method.body().get().lineNumberTable().get().lineNumbers().last()
+                            .lineNumber();
+                    }
+            }
+        }
+        return "notFound";
     }
 
     /**

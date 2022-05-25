@@ -1,88 +1,87 @@
 {
-    "product": "groupID:artifactID",
-    "nodes": 5,
-    "forge": "mvn",
-    "generator": "OPAL",
-    "version": "2.6",
-    "cha": {
-        "externalTypes": {
-            "/external.package/A": {
-                "access": "",
-                "methods": {
-                    "1": {
-                        "metadata": {},
-                        "uri": "/external.package/A.someMethod()%2Fjava.lang%2FObject"
-                    },
-                    "2": {
-                        "metadata": {},
-                        "uri": "/external.package/A.otherMethod()%2Fjava.lang%2FVoidType"
-                    }
-                },
-                "final": false,
-                "superInterfaces": [],
-                "sourceFile": "",
-                "superClasses": []
-            }
+  "product": "groupID:artifactID",
+  "nodes": 5,
+  "forge": "mvn",
+  "generator": "OPAL",
+  "version": "2.6",
+  "cha": {
+    "externalTypes": {
+      "/external.package/A": {
+        "access": "",
+        "methods": {
+          "1": {
+            "metadata": {},
+            "uri": "/external.package/A.someMethod()%2Fjava.lang%2FObject"
+          },
+          "2": {
+            "metadata": {},
+            "uri": "/external.package/A.otherMethod()%2Fjava.lang%2FVoidType"
+          }
         },
-        "internalTypes": {},
-        "resolvedTypes": {
-            "/resolved.package/C": {
-                "access": "public",
-                "methods": {
-                    "5": {
-                        "metadata": {
-                            "access": "public",
-                            "last": 140,
-                            "defined": true,
-                            "first": 253
-                        },
-                        "uri": "/resolved.package/C.resolvedMethod(%2Fjava.lang%2FClass)%2Fjava.lang%2FVoidType"
-                    },
-                    "6": {
-                        "metadata": {
-                            "access": "private",
-                            "last": 381,
-                            "defined": true,
-                            "first": 400
-                        },
-                        "uri": "/resolved.package/C.newInstance()%2Fjava.lang%2FObject"
-                    }
-                },
-                "final": false,
-                "superInterfaces": [
-                    "/resolved.package/CInterface"
-                ],
-                "sourceFile": "C.java",
-                "superClasses": [
-                    "/java.lang/Object"
-                ]
-            }
-        }
+        "final": false,
+        "superInterfaces": [],
+        "sourceFile": "",
+        "superClasses": []
+      }
     },
-    "graph": {
-        "internalCalls": [],
-        "externalCalls": [
-            [
-                "3",
-                "1",
-                {"1": {
-                    "receiver": "/java.lang/Object",
-                    "line": 42,
-                    "type": "invokespecial"
-                }}
-            ]
+    "internalTypes": {},
+    "resolvedTypes": {
+      "/resolved.package/C": {
+        "access": "public",
+        "methods": {
+          "5": {
+            "metadata": {
+              "access": "public",
+              "last": 140,
+              "defined": true,
+              "first": 253
+            },
+            "uri": "/resolved.package/C.resolvedMethod(%2Fjava.lang%2FClass)%2Fjava.lang%2FVoidType"
+          },
+          "6": {
+            "metadata": {
+              "access": "private",
+              "last": 381,
+              "defined": true,
+              "first": 400
+            },
+            "uri": "/resolved.package/C.newInstance()%2Fjava.lang%2FObject"
+          }
+        },
+        "final": false,
+        "superInterfaces": [
+          "/resolved.package/CInterface"
         ],
-        "resolvedCalls": [
-            [
-                "4",
-                "3",
-                {"3": {
-                    "receiver": "/internal.package/B",
-                    "line": 25,
-                    "type": "invokespecial"
-                }}
-            ]
+        "sourceFile": "C.java",
+        "superClasses": [
+          "/java.lang/Object"
         ]
-    },
-    "timestamp": 123
+      }
+    }
+  },
+  "call-sites": [
+    [
+      "3",
+      "1",
+      {
+        "1": {
+          "receiver": "/java.lang/Object",
+          "line": 42,
+          "type": "invokespecial"
+        }
+      }
+    ],
+    [
+      "4",
+      "3",
+      {
+        "3": {
+          "receiver": "/internal.package/B",
+          "line": 25,
+          "type": "invokespecial"
+        }
+      }
+    ]
+  ],
+  "timestamp": 123
 }

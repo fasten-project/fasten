@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
 import java.net.URISyntaxException;
+
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
@@ -16,6 +17,14 @@ public class FastenURITest {
         assertEquals("a", fastenURI.getForge());
         assertEquals("b", fastenURI.getProduct());
         assertEquals("c", fastenURI.getVersion());
+        assertEquals("∂∂∂", fastenURI.getNamespace());
+        assertEquals("πππ", fastenURI.getEntity());
+
+        fastenURI = new FastenURI("fasten://a!b$c!a/∂∂∂/πππ");
+        assertEquals("fasten", fastenURI.getScheme());
+        assertEquals("a", fastenURI.getForge());
+        assertEquals("b", fastenURI.getProduct());
+        assertEquals("c!a", fastenURI.getVersion());
         assertEquals("∂∂∂", fastenURI.getNamespace());
         assertEquals("πππ", fastenURI.getEntity());
 
@@ -58,10 +67,6 @@ public class FastenURITest {
 
         Assertions.assertThrows(IllegalArgumentException.class, () -> {
             new FastenURI("fasten://a!b!c/∂∂∂/πππ");
-        });
-
-        Assertions.assertThrows(IllegalArgumentException.class, () -> {
-            new FastenURI("fasten://a$b!c/∂∂∂/πππ");
         });
 
         Assertions.assertThrows(IllegalArgumentException.class, () -> {
@@ -113,6 +118,11 @@ public class FastenURITest {
         u = FastenURI.create("mvn!prod", "foo", "Bar");
         assertEquals("fasten://mvn!prod/foo/Bar", u.toString());
 
+		u = FastenURI.create(null, null, null, "/foo/Bar");
+		assertEquals("fasten:/foo/Bar", u.toString());
+
+		u = FastenURI.create("mvn", "prod", null, "/foo/Bar");
+		assertEquals("fasten://mvn!prod/foo/Bar", u.toString());
     }
 
     @Test
@@ -230,5 +240,4 @@ public class FastenURITest {
         assertEquals("fasten://mvn$a/foo/" + u, v.resolve(v.relativize(u)).toString());
         assertEquals(v.relativize(u), v.relativize(v.resolve(u)));
     }
-
 }

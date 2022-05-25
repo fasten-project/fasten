@@ -1,0 +1,99 @@
+{
+  "product": "Foo",
+  "nodes": 0,
+  "forge": "",
+  "generator": "",
+  "version": "",
+  "cha": {
+    "externalTypes": {
+      "/java.lang/Object": {
+        "access": "",
+        "methods": {
+          "104": {
+            "metadata": {},
+            "uri": "/java.lang/Object.%3Cinit%3E()VoidType"
+          }
+        },
+        "final": false,
+        "superInterfaces": [],
+        "sourceFile": "",
+        "superClasses": []
+      }
+    },
+    "internalTypes": {
+      "/test.group/Foo": {
+        "access": "public",
+        "methods": {
+          "100": {
+            "metadata": {
+              "access": "packagePrivate",
+              "last": 6,
+              "first": 5,
+              "defined": true
+            },
+            "uri": "/test.group/Foo.%3Cclinit%3E()%2Fjava.lang%2FVoidType"
+          },
+          "101": {
+            "metadata": {
+              "access": "public",
+              "last": 9,
+              "first": 8,
+              "defined": true
+            },
+            "uri": "/test.group/Foo.%3Cinit%3E(%2Fjava.lang%2FIntegerType)%2Fjava.lang%2FVoidType"
+          },
+          "102": {
+            "metadata": {
+              "access": "public",
+              "last": 12,
+              "first": 12,
+              "defined": true
+            },
+            "uri": "/test.group/Foo.fooMethod()%2Fjava.lang%2FVoidType"
+          },
+          "103": {
+            "metadata": {
+              "access": "public",
+              "last": 15,
+              "first": 15,
+              "defined": true
+            },
+            "uri": "/test.group/Foo.staticMethod()%2Fjava.lang%2FIntegerType"
+          }
+        },
+        "final": false,
+        "superInterfaces": [],
+        "sourceFile": "test/group/Foo.java",
+        "superClasses": [
+          "/java.lang/Object"
+        ]
+      }
+    },
+    "resolvedTypes": {}
+  },
+  "graph": [
+      [
+        "101",
+        "104",
+        {
+          "1": {
+            "receiver": "[/java.lang/Object]",
+            "type": "invokespecial",
+            "line": 8
+          }
+        }
+      ],
+      [
+        "100",
+        "104",
+        {
+          "4": {
+            "receiver": "[/java.lang/Object]",
+            "type": "invokespecial",
+            "line": 5
+          }
+        }
+      ]
+    ],
+  "timestamp": 0
+}

@@ -18,20 +18,33 @@
 
 package eu.fasten.analyzer.javacgopal.data.analysis;
 
-import eu.fasten.core.data.ExtendedRevisionCallGraph;
-import eu.fasten.core.data.ExtendedRevisionCallGraph.Graph;
-import eu.fasten.core.data.ExtendedRevisionCallGraph.Scope;
-import eu.fasten.core.data.ExtendedRevisionCallGraph.Type;
-import eu.fasten.core.data.FastenURI;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.EnumMap;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+
 import org.opalj.br.ClassHierarchy;
 import org.opalj.br.DeclaredMethod;
 import org.opalj.br.Method;
 import org.opalj.br.ObjectType;
+import org.opalj.br.ReferenceType;
+import org.opalj.collection.immutable.UIDSet;
+import org.opalj.tac.DUVar;
+import org.opalj.tac.Stmt;
+import org.opalj.tac.UVar;
+import org.opalj.value.ValueInformation;
+
+import eu.fasten.analyzer.javacgopal.data.CallPreservationStrategy;
+import eu.fasten.core.data.FastenURI;
+import eu.fasten.core.data.JavaGraph;
+import eu.fasten.core.data.JavaScope;
+import eu.fasten.core.data.JavaType;
+import it.unimi.dsi.fastutil.ints.IntIntPair;
 import scala.Tuple2;
 import scala.collection.Iterator;
 import scala.collection.JavaConverters;
@@ -77,16 +90,16 @@ public class OPALClassHierarchy {
      * Converts all of the members of the classHierarchy to {@link FastenURI}.
      *
      * @param projectHierarchy OPAL class hierarchy
-     * @return A {@link Map} of {@link FastenURI} and {@link ExtendedRevisionCallGraph.Type}
+     * @return A {@link Map} of {@link FastenURI} and {@link JavaType}
      */
-    public Map<Scope, Map<FastenURI, Type>> asURIHierarchy(ClassHierarchy projectHierarchy) {
+    public EnumMap<JavaScope, Map<String, JavaType>> asURIHierarchy(ClassHierarchy projectHierarchy) {
 
-        final Map<FastenURI, Type> internalResult = new HashMap<>();
-        final Map<FastenURI, Type> externalResult = new HashMap<>();
-
+        final Map<String, JavaType> internalResult = new HashMap<>();
+        final Map<String, JavaType> externalResult = new HashMap<>();
         final var internals = this.getInternalCHA();
         for (final var aClass : internals.keySet()) {
-            internalResult.putAll(OPALType.getType(internals.get(aClass), aClass));
+            final var klass = OPALType.getType(internals.get(aClass), aClass);
+            internalResult.put(klass.getLeft(), klass.getRight());
         }
         final var externals = this.getExternalCHA();
         for (final var aClass : externals.keySet()) {
@@ -94,8 +107,8 @@ public class OPALClassHierarchy {
                     .putAll(OPALType.getType(projectHierarchy, externals.get(aClass), aClass));
         }
 
-        return Map.of(Scope.internalTypes, internalResult, Scope.externalTypes, externalResult,
-                Scope.resolvedTypes, new HashMap<>());
+        return new EnumMap<>(Map.of(JavaScope.internalTypes, internalResult, JavaScope.externalTypes, externalResult,
+                JavaScope.resolvedTypes, new HashMap<>()));
     }
 
     /**
@@ -183,9 +196,7 @@ public class OPALClassHierarchy {
         } else {
             putExternalCall(source, externalCalls, targetDeclaration, metadata);
         }
-        if (target.isConstructor()) {
-            externalCalls.put(this.getInternalCallKeys(target, target), new HashMap<>());
-        }
+
     }
 
     /**
@@ -223,78 +234,159 @@ public class OPALClassHierarchy {
     }
 
     /**
-     * Append a sub-graph to already existing ExtendedRevisionCallGraph.
-     *
-     * @param source      source method
+     * Append a sub-graph to already existing PartialJavaCallGraph.
+     *  @param source      source method
      * @param targets     list of targets
-     * @param resultGraph already existing ExtendedRevisionCallGraph
+     * @param resultGraph already existing PartialJavaCallGraph
+     * @param callSiteOnly
      */
     public void appendGraph(final Object source,
                             final Iterator<Tuple2<Object, Iterator<DeclaredMethod>>> targets,
-                            ExtendedRevisionCallGraph.Graph resultGraph) {
-        final var edges = this.getSubGraph(source, targets);
+                            final Stmt<DUVar<ValueInformation>>[] stmts,
+                            final JavaGraph resultGraph, List<Integer> incompeletes,
+                            final Set<Integer> visitedPCs, CallPreservationStrategy callSiteOnly) {
+        final var edges = this.getSubGraph(source, targets, stmts, incompeletes, visitedPCs, callSiteOnly);
         resultGraph.append(edges);
     }
 
     /**
-     * Given a source method and a list of targets return a sub-graph of ExtendedRevisionCallGraph.
+     * Given a source method and a list of targets return a sub-graph of PartialJavaCallGraph.
      *
      * @param source  source method
      * @param targets list of targets
-     * @return ExtendedRevisionCallGraph sub-graph
+     * @param callSiteOnly
+     * @return PartialJavaCallGraph sub-graph
      */
-    public Graph getSubGraph(final Object source,
-                             final Iterator<Tuple2<Object, Iterator<DeclaredMethod>>> targets) {
+    public JavaGraph getSubGraph(final Object source,
+                             final Iterator<Tuple2<Object, Iterator<DeclaredMethod>>> targets,
+                             final Stmt<DUVar<ValueInformation>>[] stmts,
+                             final List<Integer> incompeletes,
+                             final Set<Integer> visitedPCs, CallPreservationStrategy callSiteOnly) {
 
-        final var internalCalls = new HashMap<List<Integer>, Map<Object, Object>>();
-        final var externalCalls = new HashMap<List<Integer>, Map<Object, Object>>();
+        final var callSites = new HashMap<List<Integer>, Map<Object, Object>>();
 
         if (targets != null) {
             for (final var opalCallSite : JavaConverters.asJavaIterable(targets.toIterable())) {
+
                 for (final var targetDeclaration : JavaConverters
-                        .asJavaIterable(opalCallSite._2().toIterable())) {
-                    Map<Object, Object> metadata = new HashMap<>();
-                    if (source instanceof Method) {
-                        metadata = getCallSite((Method) source, (Integer) opalCallSite._1());
-                    }
-
-                    if (targetDeclaration.hasMultipleDefinedMethods()) {
-                        for (final var target : JavaConverters
-                                .asJavaIterable(targetDeclaration.definedMethods())) {
-                            this.putCalls(source, internalCalls, externalCalls, targetDeclaration,
-                                    metadata, target);
+                    .asJavaIterable(opalCallSite._2().toIterable())) {
+                    final var pc = (Integer) opalCallSite._1();
+                    incompeletes.remove(pc);
+                    if (callSiteOnly == CallPreservationStrategy.ONLY_STATIC_CALLSITES) {
+                        if (!visitedPCs.contains(pc)) {
+                            processPC(source, stmts, visitedPCs, callSites, callSites,
+                                opalCallSite, targetDeclaration, pc);
                         }
-
-                    } else if (targetDeclaration.hasSingleDefinedMethod()) {
-                        this.putCalls(source, internalCalls, externalCalls, targetDeclaration,
-                                metadata, targetDeclaration.definedMethod());
-
-                    } else if (targetDeclaration.isVirtualOrHasSingleDefinedMethod()) {
-                        this.putExternalCall(source, externalCalls, targetDeclaration, metadata);
+                    } else {
+                        processPC(source, stmts, visitedPCs, callSites, callSites,
+                                opalCallSite, targetDeclaration, pc);
                     }
                 }
             }
         }
-        return new ExtendedRevisionCallGraph.Graph(internalCalls, externalCalls);
+        return new JavaGraph(convert(callSites));
     }
 
-    /**
+    private void processPC(final Object source, final Stmt<DUVar<ValueInformation>>[] stmts,
+                           final Set<Integer> visitedPCs,
+                           final HashMap<List<Integer>, Map<Object, Object>> internalCalls,
+                           final HashMap<List<Integer>, Map<Object, Object>> externalCalls,
+                           final Tuple2<Object, Iterator<DeclaredMethod>> opalCallSite,
+                           final DeclaredMethod targetDeclaration, final Integer pc) {
+        visitedPCs.add(pc);
+        Map<Object, Object> metadata = new HashMap<>();
+        if (source instanceof Method) {
+            metadata = getCallSite((Method) source, (Integer) opalCallSite._1(),
+                stmts);
+        }
+
+        if (targetDeclaration.hasMultipleDefinedMethods()) {
+            for (final var target : JavaConverters
+                .asJavaIterable(targetDeclaration.definedMethods())) {
+                this.putCalls(source, internalCalls, externalCalls,
+                    targetDeclaration,
+                    metadata, target);
+            }
+
+        } else if (targetDeclaration.hasSingleDefinedMethod()) {
+            this.putCalls(source, internalCalls, externalCalls, targetDeclaration,
+                metadata, targetDeclaration.definedMethod());
+
+        } else if (targetDeclaration.isVirtualOrHasSingleDefinedMethod()) {
+            this.putExternalCall(source, externalCalls, targetDeclaration,
+                metadata);
+        }
+    }
+
+    // Conversion from List<Integer> to IntIntPair
+	private HashMap<IntIntPair, Map<Object, Object>> convert(final HashMap<List<Integer>, Map<Object, Object>> externalCalls) {
+		final HashMap<IntIntPair, Map<Object, Object>> result = new HashMap<>();
+		for (final var e : externalCalls.entrySet()) {
+			final List<Integer> key = e.getKey();
+			result.put(IntIntPair.of(key.get(0), key.get(1)), e.getValue());
+		}
+		return result;
+	}
+	/**
      * Get call site for a method.
      *
      * @param source source method
      * @param pc     pc
      * @return call site
      */
-    public Map<Object, Object> getCallSite(final Method source, final Integer pc) {
+    public Map<Object, Object> getCallSite(final Method source, final Integer pc,
+                                           Stmt<DUVar<ValueInformation>>[] stmts) {
         final var instruction = source.instructionsOption().get()[pc].mnemonic();
-        final var receiverType = OPALMethod.getTypeURI(source.instructionsOption().get()[pc]
-                .asMethodInvocationInstruction().declaringClass());
+        final var receiverType = new HashSet<FastenURI>();
+
+        if (instruction.equals("invokevirtual") | instruction.equals("invokeinterface")) {
+            if (stmts != null) {
+                for (final var stmt : stmts) {
+                    if (stmt.pc() == pc) {
+
+                        try {
+                            final var stmtValue = getValue(stmt).value();
+                            final var upperBounds =
+                                stmtValue.getClass().getMethod("upperTypeBound").invoke(stmtValue);
+                            ((UIDSet<? extends ReferenceType>)upperBounds).foreach(v1 -> receiverType.add(OPALMethod.getTypeURI(v1)));
+
+                        } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
+                            e.printStackTrace();
+                            throw new RuntimeException("A problem occurred while finding receiver " +
+                                "type");
+                        }
+
+                    }
+                }
+            }
+
+        } else {
+            receiverType.add(OPALMethod.getTypeURI(source.instructionsOption().get()[pc]
+                .asMethodInvocationInstruction().declaringClass()));
+        }
 
         var callSite = new HashMap<>();
         callSite.put("line", source.body().get().lineNumber(pc).getOrElse(() -> 404));
         callSite.put("type", instruction);
-        callSite.put("receiver", receiverType.toString());
+        callSite.put("receiver", "[" + receiverType.stream().map(FastenURI::toString)
+                .reduce((f1, f2) -> f1 + "," + f2).orElse("") + "]");
 
         return Map.of(pc.toString(), callSite);
+    }
+
+    private UVar<?> getValue(Stmt<DUVar<ValueInformation>> stmt) {
+        UVar<?> uVar;
+        if (stmt.isAssignment()) {
+            uVar =
+                (UVar) stmt.asAssignment().expr().asVirtualFunctionCall().receiverOption()
+                    .value();
+        } else if (stmt.isExprStmt()) {
+            uVar = (UVar) stmt.asExprStmt().expr().asVirtualFunctionCall().receiverOption()
+                .value();
+        } else {
+            uVar = (UVar) stmt.asVirtualMethodCall().receiverOption()
+                .value();
+        }
+        return uVar;
     }
 }

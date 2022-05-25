@@ -1,0 +1,70 @@
+{
+  "product": "Baz",
+  "nodes": 0,
+  "forge": "",
+  "generator": "",
+  "version": "",
+  "cha": {
+    "externalTypes": {
+      "/test.group/Bar": {
+        "access": "",
+        "methods": {
+          "302": {
+            "metadata": {},
+            "uri": "/test.group/Bar.%3Cinit%3E(%2Fjava.lang%2FIntegerType,%2Fjava.lang%2FIntegerType)%2Fjava.lang%2FVoidType"
+          }
+        },
+        "final": false,
+        "superInterfaces": [],
+        "sourceFile": "",
+        "superClasses": []
+      }
+    },
+    "internalTypes": {
+      "/test.group/Baz": {
+        "access": "public",
+        "methods": {
+          "300": {
+            "metadata": {
+              "access": "public",
+              "last": 6,
+              "first": 5,
+              "defined": true
+            },
+            "uri": "/test.group/Baz.%3Cinit%3E(%2Fjava.lang%2FIntegerType,%2Fjava.lang%2FIntegerType,%2Fjava.lang%2FIntegerType)%2Fjava.lang%2FVoidType"
+          },
+          "301": {
+            "metadata": {
+              "access": "public",
+              "last": 10,
+              "first": 10,
+              "defined": true
+            },
+            "uri": "/test.group/Baz.superMethod()%2Fjava.lang%2FVoidType"
+          }
+        },
+        "final": false,
+        "superInterfaces": [],
+        "sourceFile": "test/group/Baz.java",
+        "superClasses": [
+          "/test.group/Bar"
+        ]
+      }
+    },
+    "resolvedTypes": {}
+  },
+  "call-sites": [
+      [
+        "300",
+        "302",
+        {
+          "3": {
+            "receiver": "[/test.group/Bar]",
+            "type": "invokespecial",
+            "line": 5
+          }
+        }
+      ]
+    ],
+  "timestamp": 0
+}

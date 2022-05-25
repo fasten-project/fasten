@@ -18,11 +18,25 @@
 
 package eu.fasten.core.merge;
 
-import eu.fasten.core.data.ExtendedRevisionCallGraph;
-import java.io.BufferedWriter;
-import java.io.FileWriter;
+import eu.fasten.core.data.PartialCallGraph;
+import eu.fasten.core.data.PartialJavaCallGraph;
+import eu.fasten.core.data.JSONUtils;
+import eu.fasten.core.data.JavaNode;
+import it.unimi.dsi.fastutil.ints.IntIntPair;
+import java.io.File;
 import java.io.IOException;
-import org.json.JSONObject;
+import java.io.PrintWriter;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang3.tuple.MutablePair;
+import org.apache.commons.lang3.tuple.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,37 +57,195 @@ public class CallGraphUtils {
      * @throws IOException throws IOException.
      */
     public static void diffInFile(final String resultPath, final int graphNumber,
-                                  final ExtendedRevisionCallGraph firstGraph,
-                                  final ExtendedRevisionCallGraph secondGraph) throws IOException {
+                                  final PartialJavaCallGraph firstGraph,
+                                  final PartialJavaCallGraph secondGraph)
+        throws IOException {
 
         final String graphPath =
-                resultPath + graphNumber + "_" + firstGraph.product + "." + firstGraph.version;
+            resultPath + graphNumber + "_" + firstGraph.product + "." + firstGraph.version;
 
-        writeToFile(graphPath, firstGraph.toJSON(), "_1.txt");
-        writeToFile(graphPath, secondGraph.toJSON(), "_2.txt");
+        writeToFile(graphPath, JSONUtils.toJSONString(firstGraph), "_1.txt");
+        writeToFile(graphPath, JSONUtils.toJSONString(secondGraph), "_2.txt");
 
-        Runtime.getRuntime().exec(new String[]{"sh", "-c",
-                "diff " + graphPath + "_1.txt" + " " + graphPath + "_2.txt" + " > " + graphPath
-                        + "_Diff.txt"});
+        Runtime.getRuntime().exec(new String[] {"sh", "-c",
+            "diff " + graphPath + "_1.txt" + " " + graphPath + "_2.txt" + " > " + graphPath
+                + "_Diff.txt"});
     }
 
     /**
      * Writes Strings to files, can be used to output the graphs.
      *
-     * @param path   the path to write
-     * @param graph  the String representation of graph or any other String to be written to a file
-     * @param suffix the suffix to put at the end of the path, most of the time file name
+     * @param path    the path to write
+     * @param content the String representation of graph or any other String to be written to a file
+     * @param suffix  the suffix to put at the end of the path, most of the time file name
      * @throws IOException throws if IO problems occur during writing in a file
      */
-    public static void writeToFile(final String path, final JSONObject graph, final String suffix)
-            throws IOException {
-        if (!graph.isEmpty()) {
-            logger.info("Writing graph to {}", path + suffix);
+    public static void writeToFile(final String path, final String content, final String suffix)
+        throws IOException {
+        if (content.isEmpty()) {
+            logger.info("Trying to write empty graph");
         }
-        final BufferedWriter writer;
-        writer = new BufferedWriter(new FileWriter(path + suffix));
-        writer.write(graph.toString(4));
-        writer.close();
+        logger.info("Writing graph to {}", path + suffix);
+        final var f = new File(path + suffix);
+        FileUtils.write(f, content, StandardCharsets.UTF_8);
+    }
+
+    /**
+     * Writes Strings to files, can be used to output the graphs.
+     *
+     * @param path    the path to write
+     * @param content the String representation of graph or any other String to be written to a file
+     * @throws IOException throws if IO problems occur during writing in a file
+     */
+    public static void writeToFile(final String path, final String content)
+        throws IOException {
+        writeToFile(path, content, "");
+    }
+
+    /**
+     * Converts {@link PartialCallGraph} graph into the list of node pairs.
+     *
+     * @param ercg call graph
+     * @return list of node pairs
+     */
+    public static Map<String, List<Pair<String, String>>> convertToNodePairs(
+        final PartialJavaCallGraph ercg) {
+
+        return convertToNodePairs(ercg, true);
+    }
+
+    public static Map<String, List<Pair<String, String>>> convertToNodePairs(
+        final PartialJavaCallGraph ercg,
+        final boolean includeInternals) {
+
+        final Map<String, List<Pair<String, String>>> result =
+            new HashMap<>();
+        final var methods = ercg.mapOfAllMethods();
+        final var types = ercg.nodeIDtoTypeNameMap();
+        if (includeInternals) {
+            result.put("internalTypes",
+                getEdges(ercg.getGraph().getCallSites(), methods, types));
+        }
+        return result;
+    }
+
+    /**
+     * Get edges of an {@link PartialCallGraph}.
+     *
+     * @param calls   source, target of a call and metadata
+     * @param methods node information
+     * @param types   types information
+     * @return edges list
+     */
+    private static List<Pair<String, String>> getEdges(
+        final Map<IntIntPair, Map<Object, Object>> calls,
+        final Map<Integer, JavaNode> methods,
+        final Map<Integer, String> types) {
+
+        final List<Pair<String, String>> result = new ArrayList<>();
+
+        for (final var exCall : calls.entrySet()) {
+            result.add(MutablePair.of(decode(types.get(exCall.getKey().firstInt())) + "." +
+                    decode(methods.get(exCall.getKey().firstInt()).getSignature()),
+                decode(types.get(exCall.getKey().secondInt())) + "." +
+                    decode(methods.get(exCall.getKey().secondInt()).getSignature())));
+        }
+        return result;
+    }
+
+    /**
+     * Decodes method signature.
+     *
+     * @param methodSignature method signature
+     * @return decoded method signature
+     */
+    public static String decode(final String methodSignature) {
+        String result = methodSignature;
+        while (result.contains("%")) {
+            result = URLDecoder.decode(result, StandardCharsets.UTF_8);
+        }
+        return result;
+    }
+
+    /**
+     * Convert pairs of edges to a String.
+     *
+     * @param pairs edges
+     * @return String representation of edges
+     */
+    public static String toStringEdges(List<Pair<String, String>> pairs) {
+        StringBuilder result = new StringBuilder();
+        if (pairs != null) {
+            for (final var edge : pairs.stream().sorted().collect(Collectors.toList())) {
+                result.append(getStringEdge(edge));
+            }
+        }
+        return result.toString();
+    }
+
+    /**
+     * Converts a pair of edges to a String representation.
+     *
+     * @param edge edge
+     * @return String representation of an edge
+     */
+    public static String getStringEdge(final Pair<String, String> edge) {
+        return decode(edge.getLeft()) + " '->" + "'\n" + decode(edge.getRight()) + "\n\n";
+    }
+
+    /**
+     * Convert data to a CSV file.
+     *
+     * @param data data to convert
+     * @return data in CSV format
+     */
+    public static String convertToCSV(final String[] data) {
+        return Stream.of(data)
+            .map(CallGraphUtils::escapeSpecialCharacters)
+            .collect(Collectors.joining(","));
+    }
+
+    /**
+     * Write data into CSV file.
+     *
+     * @param data       data to write
+     * @param resultPath path to write to
+     * @throws IOException occurs if write is unsuccessful
+     */
+    public static void writeToCSV(final List<String[]> data,
+                                  final String resultPath) throws IOException {
+        File csvOutputFile = new File(resultPath);
+        try (PrintWriter pw = new PrintWriter(csvOutputFile)) {
+            data.stream()
+                .map(CallGraphUtils::convertToCSV)
+                .forEach(pw::println);
+        }
+    }
+
+    /**
+     * Escape special characters in a string.
+     *
+     * @param data data to escape characters in
+     * @return escaped String
+     */
+    public static String escapeSpecialCharacters(String data) {
+        String escapedData = data.replaceAll("\\R", " ");
+        if (data.contains(",") || data.contains("\"") || data.contains("'")) {
+            data = data.replace("\"", "\"\"");
+            escapedData = "\"" + data + "\"";
+        }
+        return escapedData;
+    }
+
+    public static String getString(final Map<String,
+        List<Pair<String, String>>> nodePairs) {
+        StringBuilder result = new StringBuilder();
+        for (final var scope : nodePairs.entrySet()) {
+            result.append(toStringEdges(
+                nodePairs.get(scope.getKey())));
+        }
+
+        return result.toString();
     }
 
 }

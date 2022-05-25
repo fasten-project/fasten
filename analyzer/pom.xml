@@ -1,27 +1,51 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-        xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
 
     <modelVersion>4.0.0</modelVersion>
+    <dependencies>
+        <dependency>
+            <groupId>org.pf4j</groupId>
+            <artifactId>pf4j</artifactId>
+            <version>3.4.0</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>info.picocli</groupId>
+            <artifactId>picocli</artifactId>
+            <version>4.0.4</version>
+            <scope>compile</scope>
+        </dependency>
+    </dependencies>
 
     <parent>
         <groupId>eu.fasten</groupId>
         <artifactId>parent</artifactId>
-        <version>0.0.1-SNAPSHOT</version>
+        <version>0.0.9-SNAPSHOT</version>
     </parent>
 
     <artifactId>analyzer</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
     <packaging>pom</packaging>
     <description>Collection of FASTEN-specific graph analyses.</description>
 
     <modules>
         <module>javacg-opal</module>
         <module>metadata-plugin</module>
-        <module>graph-plugin</module>
-        <module>pom-analyzer</module>
+        <module>callable-index</module>
         <module>repo-cloner-plugin</module>
+        <module>quality-analyzer</module>
+        <module>restapi-plugin</module>
+        <module>repo-analyzer</module>
+        <module>vulnerability-cache-invalidation-plugin</module>
+        <module>parallel-vulnerability-cache-invalidation-plugin</module>
+        <module>vulnerability-statements-processor</module>
+        <module>vulnerability-packages-listener</module>
+        <module>dummy-plugin</module>
+        <module>debian-license-detector</module>
+        <module>debian-license-feeder</module>
+        <module>license-detector</module>
+        <module>license-feeder</module>
+        <module>python-license-detector</module>
+        <module>python-license-feeder</module>
     </modules>
 
     <build>
@@ -57,5 +81,20 @@
             </plugin>
         </plugins>
     </build>
+<!--   Jacoco  reporting   -->
+    <reporting>
+        <plugins>
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>0.8.2</version>
+                <configuration>
+                    <excludes>
+                        <exclude>**/Main.*</exclude>
+                    </excludes>
+                </configuration>
+            </plugin>
+        </plugins>
+    </reporting>
 
 </project>

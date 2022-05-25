@@ -39,15 +39,10 @@ public class GitClonerTest {
         this.gitCloner = new GitCloner(baseDir);
     }
 
-    @AfterEach
-    public void teardown() throws IOException {
-        FileUtils.deleteDirectory(Path.of(baseDir).toFile());
-    }
-
     @Test
     public void cloneRepoTest() throws GitAPIException, IOException {
-        var repo = Path.of(baseDir, "f/fasten-project/fasten").toFile();
-        var path = gitCloner.cloneRepo("https://github.com/fasten-project/fasten.git");
+        var repo = Path.of(baseDir, "f", "fasten-project", "fasten").toFile();
+        var path = gitCloner.cloneRepo("https://github.com/fasten-project/fasten.git", "fasten", "fasten-project");
         Assertions.assertEquals(repo.getAbsolutePath(), path);
         Assertions.assertTrue(repo.exists());
         Assertions.assertTrue(repo.isDirectory());
@@ -55,8 +50,8 @@ public class GitClonerTest {
 
     @Test
     public void cloneRepoWithoutExtensionTest() throws GitAPIException, IOException {
-        var repo = Path.of(baseDir, "f/fasten-project/fasten").toFile();
-        var path = gitCloner.cloneRepo("https://github.com/fasten-project/fasten");
+        var repo = Path.of(baseDir, "f", "fasten-project", "fasten").toFile();
+        var path = gitCloner.cloneRepo("https://github.com/fasten-project/fasten", "fasten", "fasten-project");
         Assertions.assertEquals(repo.getAbsolutePath(), path);
         Assertions.assertTrue(repo.exists());
         Assertions.assertTrue(repo.isDirectory());
@@ -64,8 +59,8 @@ public class GitClonerTest {
 
     @Test
     public void cloneRepoWithoutExtensionWithSlashTest() throws GitAPIException, IOException {
-        var repo = Path.of(baseDir, "f/fasten-project/fasten").toFile();
-        var path = gitCloner.cloneRepo("https://github.com/fasten-project/fasten/");
+        var repo = Path.of(baseDir, "f", "fasten-project", "fasten").toFile();
+        var path = gitCloner.cloneRepo("https://github.com/fasten-project/fasten/", "fasten", "fasten-project");
         Assertions.assertEquals(repo.getAbsolutePath(), path);
         Assertions.assertTrue(repo.exists());
         Assertions.assertTrue(repo.isDirectory());
@@ -73,8 +68,17 @@ public class GitClonerTest {
 
     @Test
     public void cloneRepoWithBranchTest() throws GitAPIException, IOException {
-        var repo = Path.of(baseDir, "f/fasten-project/fasten").toFile();
-        var path = gitCloner.cloneRepo("https://github.com/fasten-project/fasten/tree/master/");
+        var repo = Path.of(baseDir, "f", "fasten-project", "fasten").toFile();
+        var path = gitCloner.cloneRepo("https://github.com/fasten-project/fasten/tree/master/", "fasten", "fasten-project");
+        Assertions.assertEquals(repo.getAbsolutePath(), path);
+        Assertions.assertTrue(repo.exists());
+        Assertions.assertTrue(repo.isDirectory());
+    }
+
+    @Test
+    public void cloneRepoWithSshTest() throws GitAPIException, IOException {
+        var repo = Path.of(baseDir, "d", "delors", "opal").toFile();
+        var path = gitCloner.cloneRepo("git@bitbucket.org:delors/opal.git", "opal", "delors");
         Assertions.assertEquals(repo.getAbsolutePath(), path);
         Assertions.assertTrue(repo.exists());
         Assertions.assertTrue(repo.isDirectory());

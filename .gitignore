@@ -1,3 +1,7 @@
+### Analysis Artifacts ###
+
+/graph*.json
+
 ### Java ###
 
 # Compiled class file
@@ -25,7 +29,7 @@
 hs_err_pid*
 
 ### Maven ###
-target/
+target
 pom.xml.tag
 pom.xml.releaseBackup
 pom.xml.versionsBackup
@@ -35,6 +39,10 @@ dependency-reduced-pom.xml
 buildNumber.properties
 .mvn/timing.properties
 .mvn/wrapper/maven-wrapper.jar
+.classpath
+.project
+.settings
+.checkstyle
 
 ### Vim ###
 # Swap
@@ -182,8 +190,7 @@ modules.xml
 
 # End of https://www.gitignore.io/api/intellij
 
-!/analyzer/javacg-wala/src/test/resources/*.jar
-!/analyzer/javacg-opal/lib/**/*.jar
+# Keep class file required for byte code processing tests
 !/analyzer/javacg-opal/src/test/resources/*.class
 
 # Eclipse
@@ -193,3 +200,8 @@ modules.xml
 .checkstyle
 .fbprefs
 bin
+
+# Serialized Dependency Graphs
+
+*.edges
+*.nodes

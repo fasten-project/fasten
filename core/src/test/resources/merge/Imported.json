@@ -1,0 +1,58 @@
+{
+    "product": "Imported",
+    "nodes": 3,
+    "forge": "",
+    "generator": "",
+    "version": "1",
+    "cha": {
+        "externalTypes": {"/java.lang/Object": {
+            "access": "",
+            "methods": {"2": {
+                "metadata": {},
+                "uri": "/java.lang/Object.%3Cinit%3E()VoidType"
+            }},
+            "final": false,
+            "superInterfaces": [],
+            "sourceFile": "",
+            "superClasses": []
+        }},
+        "internalTypes": {"/merge.simpleImport/Imported": {
+            "access": "public",
+            "methods": {
+                "0": {
+                    "metadata": {
+                        "access": "public",
+                        "last": 5,
+                        "defined": true,
+                        "first": 4
+                    },
+                    "uri": "/merge.simpleImport/Imported.%3Cinit%3E()%2Fjava.lang%2FVoidType"
+                },
+                "1": {
+                    "metadata": {
+                        "access": "public",
+                        "last": 8,
+                        "defined": true,
+                        "first": 8
+                    },
+                    "uri": "/merge.simpleImport/Imported.targetMethod()%2Fjava.lang%2FVoidType"
+                }
+            },
+            "final": false,
+            "superInterfaces": [],
+            "sourceFile": "merge/simpleImport/Imported.java",
+            "superClasses": ["/java.lang/Object"]
+        }},
+        "resolvedTypes": {}
+    },
+    "call-sites": [[
+            "0",
+            "2",
+            {"1": {
+                "receiver": "[/java.lang/Object]",
+                "type": "invokespecial",
+                "line": 4
+            }}
+        ]],
+    "timestamp": 0
+}
