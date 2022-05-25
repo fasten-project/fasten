@@ -79,7 +79,7 @@ import it.unimi.dsi.lang.ObjectParser;
 public class SearchEngine implements AutoCloseable {
 	public interface UniverseVisitor {
 		public void init();
-		public void visit(final DirectedGraph mergedGraph, final LongCollection seed);
+		public void visit(final DirectedGraph mergedGraph, final LongCollection seed, Revision dependent);
 		public void close();
 	}
 
@@ -97,6 +97,8 @@ public class SearchEngine implements AutoCloseable {
 		public long gid;
 		/** The score associated to the callable during the search. */
 		public double score;
+		/** The dependent that generated this result. */
+		public Revision dependent;
 
 		/**
 		 * Creates a {@link Result} instance with fields initialized to zero.
@@ -109,15 +111,17 @@ public class SearchEngine implements AutoCloseable {
 		 *
 		 * @param gid the GID of a callable.
 		 * @param score the associated score.
+		 * @param dependent 
 		 */
-		public Result(final long gid, final double score) {
+		public Result(final long gid, final double score, final Revision dependent) {
 			this.gid = gid;
 			this.score = score;
+			this.dependent = dependent;
 		}
 
 		@Override
 		public String toString() {
-			return gid + " (" + score + ")";
+			return gid + " (" + score + ") [dependent " + dependent.groupId + ":" + dependent.artifactId + ":" + dependent.version.toString() + "]";
 		}
 
 		@Override
@@ -285,9 +289,10 @@ public class SearchEngine implements AutoCloseable {
 	 * will replace results with a lower score if the {@code maxResults} threshold is exceeded.
 	 * @param globalVisitTime an {@link AtomicLong} where the visit time in nanoseconds will be added.
 	 * @param globalVisitedArcs an {@link AtomicLong} where the number of visited arcs will be added.
+	 * @param dependent 
 	 * @return an ordered set of scored results.
 	 */
-	protected static ObjectRBTreeSet<Result> bfs(final DirectedGraph graph, final boolean forward, final LongCollection seed, final LongPredicate filter, final Scorer scorer, final int maxResults, final AtomicLong globalVisitTime, final AtomicLong globalVisitedArcs) {
+	protected static ObjectRBTreeSet<Result> bfs(final DirectedGraph graph, final boolean forward, final LongCollection seed, final LongPredicate filter, final Scorer scorer, final int maxResults, final AtomicLong globalVisitTime, final AtomicLong globalVisitedArcs, final Revision dependent) {
 		final LongSet nodes = graph.nodes();
 		final LongArrayFIFOQueue visitQueue = new LongArrayFIFOQueue(graph.numNodes() + 1); // The +1 can be removed in fastutil > 8.5.9
 		final LongOpenHashSet seen = new LongOpenHashSet(graph.numNodes(), 0.5f);
@@ -317,7 +322,7 @@ public class SearchEngine implements AutoCloseable {
 			if (!seed.contains(gid) && filter.test(gid)) {
 				final double score = scorer.score(graph, gid, d);
 				if (results.size() < maxResults || score > results.last().score) {
-					results.add(new Result(gid, score));
+					results.add(new Result(gid, score, dependent));
 					if (results.size() > maxResults) results.remove(results.last());
 				}
 			}
@@ -489,8 +494,8 @@ public class SearchEngine implements AutoCloseable {
 		return visitUniverse(revId, providedSeed, maxDependents, new UniverseVisitor() {
 			
 			@Override
-			public void visit(final DirectedGraph mergedGraph, final LongCollection seed) {
-				publisher.submit(bfs(mergedGraph, false, seed, filter, scorer, maxResults, visitTime, visitedArcs));
+			public void visit(final DirectedGraph mergedGraph, final LongCollection seed, final Revision dependent) {
+				publisher.submit(bfs(mergedGraph, false, seed, filter, scorer, maxResults, visitTime, visitedArcs, dependent));
 			}
 			
 			@Override
@@ -507,8 +512,8 @@ public class SearchEngine implements AutoCloseable {
 		return visitUniverse(revId, providedSeed, maxDependents, new UniverseVisitor() {
 			
 			@Override
-			public void visit(final DirectedGraph mergedGraph, final LongCollection seed) {
-				publisher.submit(bfs(mergedGraph, true, seed, filter, scorer, maxResults, visitTime, visitedArcs));
+			public void visit(final DirectedGraph mergedGraph, final LongCollection seed, final Revision dependent) {
+				publisher.submit(bfs(mergedGraph, true, seed, filter, scorer, maxResults, visitTime, visitedArcs, dependent));
 			}
 			
 			@Override
@@ -530,7 +535,7 @@ public class SearchEngine implements AutoCloseable {
 		return visitUniverse(rev, LongArrayList.of(gidFrom), maxDependents, new UniverseVisitor() {
 			
 			@Override
-			public void visit(final DirectedGraph mergedGraph, final LongCollection seed) {
+			public void visit(final DirectedGraph mergedGraph, final LongCollection seed, final Revision dependent) {
 				PathResult path = bfsBetween(mergedGraph, gidFrom, gidTo, filter, visitTime, visitedArcs); // May return a path of length 0 if it could not reach the target
 				if (path.size() > 0) publisher.submit(path);
 			}
@@ -661,7 +666,7 @@ public class SearchEngine implements AutoCloseable {
 						+ " has " + mergedGraph.numNodes() + " nodes");
 				LOGGER.debug("Going to visit it with seed " + seed);
 				LOGGER.debug("Does the graph contain 753250517? " + mergedGraph.nodes().contains(753250517L));
-				visitor.visit(mergedGraph, seed);
+				visitor.visit(mergedGraph, seed, dependent);
 			}
 		}));
 
