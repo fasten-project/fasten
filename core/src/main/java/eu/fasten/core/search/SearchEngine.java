@@ -380,7 +380,7 @@ public class SearchEngine implements AutoCloseable {
 			LOGGER.debug("Dequeued " + gid);
 			final LongIterator iterator = graph.successorsIterator(gid);
 
-			while (iterator.hasNext()) {
+			while (iterator.hasNext() && !found) {
 				final long x = iterator.nextLong();
 				LOGGER.debug("Among the successors of " + gid + " found " + x);
 				visitedArcs++;
@@ -662,10 +662,10 @@ public class SearchEngine implements AutoCloseable {
 					}
 				}
 				
-				LOGGER.debug("Stitched graph for dependent" + dependent.groupId + ":" + dependent.artifactId + ":" + dependent.version.toString() 
+				LOGGER.debug("Stitched graph for dependent " + dependent.groupId + ":" + dependent.artifactId + ":" + dependent.version.toString() 
 						+ " has " + mergedGraph.numNodes() + " nodes");
 				LOGGER.debug("Going to visit it with seed " + seed);
-				LOGGER.debug("Does the graph contain 753250517? " + mergedGraph.nodes().contains(753250517L));
+				LOGGER.debug("Does the graph contain 435579? " + mergedGraph.nodes().contains(435579L));
 				visitor.visit(mergedGraph, seed, dependent);
 			}
 		}));
