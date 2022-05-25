@@ -191,6 +191,7 @@ public class SearchEngineClient {
 						if (i != 0) System.out.println(" ->");
 						System.out.print(FastenJavaURI.create(Util.getCallableName(p.getLong(i), se.context()).toString()).toSimpleString());
 					}
+					System.out.println("\n[dependent " + p.dependent.groupId + ":" + p.dependent.artifactId + ":" + p.dependent.version.toString() + "]");
 					System.out.println();
 				}
 				else System.out.println(p);

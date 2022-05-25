@@ -149,6 +149,12 @@ public class SearchEngine implements AutoCloseable {
 	
 	public final class PathResult extends LongArrayList {
 		private static final long serialVersionUID = 1L;
+		/** The dependent that generated this result. */
+		public final Revision dependent;
+		
+		public PathResult(final Revision dependent) {
+			this.dependent = dependent;
+		}
 		
 		@Override
 		public int compareTo(final LongArrayList other) {
@@ -163,7 +169,7 @@ public class SearchEngine implements AutoCloseable {
 			final String sep = " -> ";
 			for (long gid: this) sb.append(gid + "\t" + Util.getCallableName(gid, context) + sep);
 			if (size() > 0) sb.setLength(sb.length() - sep.length());
-			return sb.append("]").toString();
+			return sb.append("] [dependent " + dependent.groupId + ":" + dependent.artifactId + ":" + dependent.version.toString() + "]").toString();
 		}	
 	}
 
@@ -346,13 +352,13 @@ public class SearchEngine implements AutoCloseable {
 
 
 	
-	protected PathResult bfsBetween(final DirectedGraph graph, final long gidFrom, final long gidTo, final LongPredicate filter, final AtomicLong globalVisitTime, final AtomicLong globalVisitedArcs) {
+	protected PathResult bfsBetween(final DirectedGraph graph, final long gidFrom, final long gidTo, final LongPredicate filter, final AtomicLong globalVisitTime, final AtomicLong globalVisitedArcs, final Revision dependent) {
 		LOGGER.debug("Starting point-to-point visit from " + gidFrom + " to " + gidTo);
 		final LongSet nodes = graph.nodes();
 		final LongArrayFIFOQueue visitQueue = new LongArrayFIFOQueue(graph.numNodes() + 1); // The +1 can be removed in fastutil > 8.5.9
 		final LongOpenHashSet seen = new LongOpenHashSet(graph.numNodes(), Hash.FAST_LOAD_FACTOR);
 		final Long2LongOpenHashMap parent = new Long2LongOpenHashMap(graph.numNodes(), Hash.FAST_LOAD_FACTOR);
-		final PathResult results = new PathResult();
+		final PathResult results = new PathResult(dependent);
 		
 		if (nodes.contains(gidFrom)) {
 			visitQueue.enqueue(gidFrom);
@@ -536,7 +542,7 @@ public class SearchEngine implements AutoCloseable {
 			
 			@Override
 			public void visit(final DirectedGraph mergedGraph, final LongCollection seed, final Revision dependent) {
-				PathResult path = bfsBetween(mergedGraph, gidFrom, gidTo, filter, visitTime, visitedArcs); // May return a path of length 0 if it could not reach the target
+				PathResult path = bfsBetween(mergedGraph, gidFrom, gidTo, filter, visitTime, visitedArcs, dependent); // May return a path of length 0 if it could not reach the target
 				if (path.size() > 0) publisher.submit(path);
 			}
 			
