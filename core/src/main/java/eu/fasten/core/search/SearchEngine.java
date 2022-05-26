@@ -18,6 +18,7 @@
 
 package eu.fasten.core.search;
 
+import java.io.Closeable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -56,6 +57,7 @@ import it.unimi.dsi.fastutil.longs.LongArrayList;
 import it.unimi.dsi.fastutil.longs.LongCollection;
 import it.unimi.dsi.fastutil.longs.LongIterator;
 import it.unimi.dsi.fastutil.longs.LongLinkedOpenHashSet;
+import it.unimi.dsi.fastutil.longs.LongList;
 import it.unimi.dsi.fastutil.longs.LongOpenHashSet;
 import it.unimi.dsi.fastutil.longs.LongSet;
 import it.unimi.dsi.fastutil.longs.LongSets;
@@ -70,27 +72,55 @@ import it.unimi.dsi.lang.ObjectParser;
  * revision call graphs. Users can interrogate the engine by providing an entry point (e.g., a
  * callable) and a {@link LongPredicate} that will be used to filter the results. For more
  * documentation on the available filters, see {@link PredicateFactory}.
- *
+ * 
  * <p>
- * This class sports a {@link #main(String[])} method offering a command-line interface over an
- * instance. Please use the command-line help for more information.
+ * The resolution of a query related to a given entry point (e.g., a specific callable) yields a certain <em>universe</em>
+ * (set of revisions that contain the callable in their merged graph). See Deliverable D.5 for details. 
+ * Note that during a search, each merged graph was caused by a specific revision in the universe: this is
+ * often called (within this class) the <em>dependent</em> that yield a certain merged graph, or that produced a specific result.
+ * 
+ * <p>For instance, suppose that we are looking for all the callables called by a given callable <pre>fasten://mvn!foo$1.2/bar()</pre>.
+ * We first determine the universe of revisions where the callable <pre>fasten://mvn!foo$1.2/bar()</pre> may appear: they are all
+ * the revisions that depend (directly or indirectly) on <pre>fasten://mvn!foo$1.2/</pre>.
+ * Suppose that <pre>fasten://mvn!goo$3.4/</pre> is one of them, and that in the corresponding merged graph the callable 
+ * <pre>fasten://mvn!foo$1.2/bar()</pre> actually appears, and one of the callable that it can reach in
+ * that graph is  <pre>fasten://mvn!hoo$1.10/baz()</pre>; when we insert the latter in the list of result, we will
+ * indicate that it was added because of <pre>fasten://mvn!goo$3.4/</pre> (this is the dependent that caused <pre>fasten://mvn!hoo$1.10/baz()</pre>
+ * to appear in the list of results).
  */
 
 public class SearchEngine implements AutoCloseable {
-	public interface UniverseVisitor {
+	
+	/** A visitor of merged graphs: its {@link #visit(DirectedGraph, LongCollection, Revision)} method is called
+	 *  on every merged graph of the universe. */
+	public interface UniverseVisitor extends Closeable {
+		/** Initializes the visitor.*/
 		public void init();
+		
+		/** Visits a specific merged graph.
+		 * 
+		 * @param mergedGraph the merged graph to be visited; its nodes represent callable ids.
+		 * @param seed the collection of nodes (callable ids) to be used in the visit.
+		 * @param dependent the revision that gave rise to this merged graph.
+		 */
 		public void visit(final DirectedGraph mergedGraph, final LongCollection seed, Revision dependent);
+		
+		/** Closes the visitor. */
 		public void close();
 	}
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(SearchEngine.class);
+	
+	/** Represents an empty graph. */
 	private static final ArrayImmutableDirectedGraph NO_GRAPH = new ArrayImmutableDirectedGraph.Builder().build();
 
 
 	/**
-	 * A class representing results with an associated score.
+	 * A class representing results with an associated score. More precisely, a result is given by a callable (represented by its id),
+	 * a score and the revision that caused that callable to appear in the first place.
 	 * 
-	 * <p>Results are comparable by inverse score ordering (higher scores come first).
+	 * <p>Results are comparable by inverse score ordering (higher scores come first). Results with the same score are compared by
+	 * id.
 	 */
 	public final static class Result implements Comparable<Result> {
 		/** The GID of a callable. */
@@ -107,11 +137,11 @@ public class SearchEngine implements AutoCloseable {
 		}
 
 		/**
-		 * Creates a {@link Result} instance using a provided GID and score.
+		 * Creates a {@link Result} instance using a provided GID, a score and a dependent.
 		 *
 		 * @param gid the GID of a callable.
 		 * @param score the associated score.
-		 * @param dependent 
+		 * @param dependent the revision that caused this result to appear.
 		 */
 		public Result(final long gid, final double score, final Revision dependent) {
 			this.gid = gid;
@@ -146,12 +176,23 @@ public class SearchEngine implements AutoCloseable {
 			return Long.compare(gid, o.gid);
 		}
 	}
-	
+
+	/**
+	 * A class representing results in the form of a path. More precisely, a result is given by a {@link LongList} (representing the ids of the callable found along the path),
+	 * and the revision that caused that callable to appear in the first place.
+	 * 
+	 * <p>Results are comparable by length (shortest paths come first). Results with the same length are compared lexicographically.
+	 */
 	public final class PathResult extends LongArrayList {
 		private static final long serialVersionUID = 1L;
+		
 		/** The dependent that generated this result. */
 		public final Revision dependent;
 		
+		/** Creates an empty path for the given dependent. 
+		 * 
+		 * @param dependent the dependent that generated this result.
+		 */
 		public PathResult(final Revision dependent) {
 			this.dependent = dependent;
 		}
@@ -236,7 +277,6 @@ public class SearchEngine implements AutoCloseable {
 	 *            {@link TrivialScorer} will be used instead.
 	 * @param blacklist a blacklist of GIDs that will be considered as missing.
 	 */
-
 	public SearchEngine(final DSLContext context, final RocksDao rocksDao, final PersistentCache cache, final String resolverGraph, final Scorer scorer, final LongOpenHashSet blacklist) throws Exception {
 		this.context = context;
 		this.rocksDao = rocksDao;
@@ -295,7 +335,7 @@ public class SearchEngine implements AutoCloseable {
 	 * will replace results with a lower score if the {@code maxResults} threshold is exceeded.
 	 * @param globalVisitTime an {@link AtomicLong} where the visit time in nanoseconds will be added.
 	 * @param globalVisitedArcs an {@link AtomicLong} where the number of visited arcs will be added.
-	 * @param dependent 
+	 * @param dependent the revision that produced the graph.
 	 * @return an ordered set of scored results.
 	 */
 	protected static ObjectRBTreeSet<Result> bfs(final DirectedGraph graph, final boolean forward, final LongCollection seed, final LongPredicate filter, final Scorer scorer, final int maxResults, final AtomicLong globalVisitTime, final AtomicLong globalVisitedArcs, final Revision dependent) {
@@ -350,7 +390,20 @@ public class SearchEngine implements AutoCloseable {
 		return results;
 	}
 
-
+	/** 
+	 * Performs a breadth-first visit of the given graph, starting from a given gid and trying to reach a certain other gid, using the
+	 * provided predicate and returning a {@link PathResult} (possibly empty, if no path was found). The first (hence, one of the shortest) path
+	 * found is returned.
+	 * 
+	 * @param graph the graph to be visied.
+	 * @param gidFrom the id of the callable to start from.
+	 * @param gidTo the id of the callable to reach.
+	 * @param filter the filter that is applied to all nodes (except for <pre>gidFrom</pre>) before adding them to the visit queue.
+	 * @param globalVisitTime an {@link AtomicLong} where the visit time in nanoseconds will be added.
+	 * @param globalVisitedArcs an {@link AtomicLong} where the number of visited arcs will be added.
+	 * @param dependent the revision that produced the graph.
+	 * @return the path found (or an empty path, if no path was found).
+	 */
 	
 	protected PathResult bfsBetween(final DirectedGraph graph, final long gidFrom, final long gidTo, final LongPredicate filter, final AtomicLong globalVisitTime, final AtomicLong globalVisitedArcs, final Revision dependent) {
 		LOGGER.debug("Starting point-to-point visit from " + gidFrom + " to " + gidTo);
@@ -418,15 +471,15 @@ public class SearchEngine implements AutoCloseable {
 	}
 
 	/**
-	 * Computes the callables satisfying the given predicate and reachable from the provided callable,
+	 * Computes the callables satisfying the given predicate and reachable from the provided callable, in all the revisions of the universe,
 	 * and returns them in a ranked list.
 	 *
 	 * @param gid the global ID of a callable.
 	 * @param filter a {@link LongPredicate} that will be used to filter callables.
 	 * @param maxResults the maximum number of results returned.
 	 * @param maxDependents the maximum number of dependents.
-	 * @param publisher a publisher for the intermediate result updates.
-	 * @return a list of {@linkplain Result results}.
+	 * @param publisher a publisher where each intermediate result is published.
+	 * @return a future to be used to wait for the computation to complete.
 	 */
 	public Future<Void> fromCallable(final long gid, final LongPredicate filter, final int maxResults, final int maxDependents, final SubmissionPublisher<SortedSet<Result>> publisher) throws RocksDBException {
 		return from(Util.getRevision(gid, context), LongSets.singleton(gid), filter, maxResults, maxDependents, publisher);
@@ -440,8 +493,8 @@ public class SearchEngine implements AutoCloseable {
 	 * @param filter a {@link LongPredicate} that will be used to filter callables.
 	 * @param maxResults the maximum number of results returned.
 	 * @param maxDependents the maximum number of dependents.
-	 * @param publisher a publisher for the intermediate result updates.
-	 * @return a list of {@linkplain Result results}.
+	 * @param publisher a publisher where each intermediate result is published.
+	 * @return a future to be used to wait for the computation to complete.
 	 */
 	public Future<Void> fromRevision(final FastenURI revisionUri, final LongPredicate filter, final int maxResults, final int maxDependents, final SubmissionPublisher<SortedSet<Result>> publisher) throws RocksDBException {
 		// Fetch revision id
@@ -459,8 +512,8 @@ public class SearchEngine implements AutoCloseable {
 	 * @param gid the global ID of a callable.
 	 * @param maxResults the maximum number of results returned.
 	 * @param maxDependents the maximum number of dependents.
-	 * @param publisher a publisher for the intermediate result updates.
-	 * @return a future controlling the completion of the search.
+	 * @param publisher a publisher where each intermediate result is published.
+	 * @return a future to be used to wait for the computation to complete.
 	 */
 	public Future<Void> toCallable(final long gid, final LongPredicate filter, final int maxResults, final int maxDependents, final SubmissionPublisher<SortedSet<Result>> publisher) throws RocksDBException {
 		return to(Util.getRevision(gid, context), LongSets.singleton(gid), filter, maxResults, maxDependents, publisher);
@@ -474,8 +527,8 @@ public class SearchEngine implements AutoCloseable {
 	 * @param filter a {@link LongPredicate} that will be used to filter callables.
 	 * @param maxResults the maximum number of results returned.
 	 * @param maxDependents the maximum number of dependents.
-	 * @param publisher a publisher for the intermediate result updates.
-	 * @return a future controlling the completion of the search.
+	 * @param publisher a publisher where each intermediate result is published.
+	 * @return a future to be used to wait for the computation to complete.
 	 */
 	public Future<Void> toRevision(final FastenURI revisionUri, final LongPredicate filter, final int maxResults, final int maxDependents, final SubmissionPublisher<SortedSet<Result>> publisher) throws RocksDBException {
 		// Fetch revision id
@@ -486,7 +539,7 @@ public class SearchEngine implements AutoCloseable {
 
 	/**
 	 * Computes the callables satisfying the given predicate and coreachable from the provided seed, in
-	 * the stitched graph associated with the provided revision, and returns them in a ranked list.
+	 * the merged graph associated with the provided revision.
 	 *
 	 * @param revId the database id of a revision.
 	 * @param providedSeed a collection of GIDs that will be used as a seed for the visit; if {@code null}, the
@@ -494,6 +547,7 @@ public class SearchEngine implements AutoCloseable {
 	 * @param filter a {@link LongPredicate} that will be used to filter callables.
 	 * @param maxResults the maximum number of results returned.
 	 * @param maxDependents the maximum number of dependents.
+	 * @param publisher a publisher where each intermediate result is published.
 	 * @return a future controlling the completion of the search.
 	 */
 	public Future<Void> to(final long revId, final LongCollection providedSeed, final LongPredicate filter, final int maxResults,  final int maxDependents, final SubmissionPublisher<SortedSet<Result>> publisher) throws RocksDBException {
@@ -514,6 +568,19 @@ public class SearchEngine implements AutoCloseable {
 		});
 	}
 
+	/**
+	 * Computes the callables satisfying the given predicate and reachable from the provided seed, in
+	 * the merged graph associated with the provided revision.
+	 *
+	 * @param revId the database id of a revision.
+	 * @param providedSeed a collection of GIDs that will be used as a seed for the visit; if {@code null}, the
+	 *            entire set of GIDs of the specified revision will be used as a seed.
+	 * @param filter a {@link LongPredicate} that will be used to filter callables.
+	 * @param maxResults the maximum number of results returned.
+	 * @param maxDependents the maximum number of dependents.
+	 * @param publisher a publisher where each intermediate result is published.
+	 * @return a future controlling the completion of the search.
+	 */
 	public Future<Void> from(final long revId, LongCollection providedSeed, final LongPredicate filter, final int maxResults,  int maxDependents, final SubmissionPublisher<SortedSet<Result>> publisher) throws RocksDBException {
 		return visitUniverse(revId, providedSeed, maxDependents, new UniverseVisitor() {
 			
@@ -532,6 +599,19 @@ public class SearchEngine implements AutoCloseable {
 		});
 	}
 	
+	/**
+	 * Computes the shortest paths from a given callable to another given callable, such that all nodes (except possibly for the first one) satisfy the given predicate, in
+	 * the merged graph associated with the provided revision.
+	 *
+	 * @param gidFrom the starting callable id.
+	 * @param gidTo the ending callable id.
+	 * @param filter a {@link LongPredicate} that will be used to filter callables.
+	 * @param maxResults the maximum number of results returned.
+	 * @param maxDependents the maximum number of dependents.
+	 * @param publisher a publisher where each intermediate result is published.
+	 * @return a future controlling the completion of the search.
+	 * @throws RocksDBException
+	 */
 	public Future<Void> between(long gidFrom, long gidTo, final LongPredicate filter, int maxDependents, SubmissionPublisher<PathResult> publisher) throws RocksDBException {
 		long rev = Util.getRevision(gidFrom, context);
 		final var graph = rocksDao.getGraphData(rev);
@@ -569,7 +649,7 @@ public class SearchEngine implements AutoCloseable {
 	 * @param providedSeed a collection of GIDs that will be used as a seed for the visit; if {@code null}, the
 	 *            entire set of GIDs of the specified revision will be used as a seed.
 	 * @param maxDependents the maximum number of dependents.
-	 * @param visitor the visitor
+	 * @param visitor the visitor to be used.
 	 * @return a future controlling the completion of the search.
 	 */
 	public Future<Void> visitUniverse(final long revId, final LongCollection providedSeed, final int maxDependents, final UniverseVisitor visitor) throws RocksDBException {
