@@ -221,7 +221,8 @@ public class SearchEngineClient {
 				"\t$limit <LIMIT>                  Print at most <LIMIT> results (-1 for infinity)\n" + 
 				"\t$maxDependents <LIMIT>          Maximum number of dependents considered in coreachable query resolution (-1 for infinity)\n" + 
 				"\t$time                           Time statistics about the queries issued so far\n" +
-				"\t$pretty                         Toggles pretty printing\n" +
+				"\t$reset                          Reset time statistics\n" +
+				"\t$pretty                         Toggle pretty printing\n" +
 				"\n\tFILTER-RELATED COMMANDS\n" +
 				"\t$f ?                            Print the current filter\n" + 
 				"\t$f pmatches <REGEXP>            Add filter: package (a.k.a. product) matches <REGEXP>\n" + 
@@ -241,10 +242,10 @@ public class SearchEngineClient {
 				"\n\tQUERY-RELATED COMMANDS\n" +
 				"\t±<URI>                          Issue a new query to find reachable (+) or coreachable (-) callables from the given callable <URI> satisfying all filters\n" + 
 				"\t*<URI> <URI>                    Issue a new query to find a path connecting two callables\n" + 
-				"\t$show                           Lists the running queries with their IDs\n" +
+				"\t$show                           List the running queries with their IDs\n" +
 				"\t$inspect [<ID>]                 Show the current results of the last query (or query with given ID), without stopping it\n" +
 				"\t$wait [<ID>]                    Wait until the last query (or query with given ID) is completed and show its results\n" +
-				"\t$cancel [<ID>]                  Cancels the last query (or query with given ID) and stops all the related threads (this may take some time)\n" +
+				"\t$cancel [<ID>]                  Cancel the last query (or query with given ID) and stops all the related threads (this may take some time)\n" +
 				"";
 		try {
 			final String verb = commandAndArgs[0].toLowerCase();
@@ -329,10 +330,15 @@ public class SearchEngineClient {
 				break;
 
 				
+			case "reset":
+				resetCounters();
+				break;
+				
 			case "time":
 				assertNargs(nArgs, 0, 0);
-				System.err.printf("\n%,d arcs \nResolve time: %,.3fs  Merge time: %,.3fs  Visit time %,.3fs\n",
+				System.err.printf("\n%,d arcs %,.3f arcs/s\nResolve time: %,.3fs  Merge time: %,.3fs  Visit time %,.3fs\n",
 						Long.valueOf(se.visitedArcs.get()),
+						Double.valueOf(1E9 * se.visitedArcs.get() / se.visitTime.get()),
 						Double.valueOf(se.resolveTime.get() * 1E-9),
 						Double.valueOf(se.mergeTime.get() * 1E-9),
 						Double.valueOf(se.visitTime.get() * 1E-9));
@@ -517,8 +523,6 @@ public class SearchEngineClient {
 				if (dir == '+' || dir == '-') {
 					final FastenJavaURI uri = FastenJavaURI.create(line.substring(1));
 
-					client.resetCounters();
-
 					SubmissionPublisher<SortedSet<Result>> publisher = new SubmissionPublisher<>();
 					TopKProcessor topKProcessor = new TopKProcessor(client.limit, searchEngine);
 					publisher.subscribe(topKProcessor);
@@ -576,8 +580,6 @@ public class SearchEngineClient {
 						continue;
 					}
 					
-					client.resetCounters();
-
 					SubmissionPublisher<PathResult> publisher = new SubmissionPublisher<>();
 					ShortestKProcessor shortestKProcessor = new ShortestKProcessor(client.limit);
 					publisher.subscribe(shortestKProcessor);

@@ -117,6 +117,7 @@ public class SearchEngine implements AutoCloseable {
 		public void visit(final DirectedGraph mergedGraph, final LongCollection seed, Revision dependent);
 		
 		/** Closes the visitor. */
+		@Override
 		public void close();
 	}
 
@@ -270,11 +271,11 @@ public class SearchEngine implements AutoCloseable {
 	 * @param resolverGraph the path to a serialized resolver graph (will be created if it does not
 	 *            exist).
 	 * @param scorer an {@link ObjectParser} specification providing a scorer; if {@code null}, a
-	 *            {@link TrivialScorer} will be used instead.
+	 *            {@link NormalizedIndegreeScorer} will be used instead.
 	 * @param blacklist a blacklist of GIDs that will be considered as missing.
 	 */
 	public SearchEngine(final String jdbcURI, final String database, final String rocksDb, final String cacheDir, final String resolverGraph, final String scorer, final LongOpenHashSet blacklist) throws Exception {
-		this(PostgresConnector.getDSLContext(jdbcURI, database, false), new RocksDao(rocksDb, true), new PersistentCache(cacheDir, false), resolverGraph, scorer == null ? TrivialScorer.getInstance() : ObjectParser.fromSpec(scorer, Scorer.class), blacklist);
+		this(PostgresConnector.getDSLContext(jdbcURI, database, false), new RocksDao(rocksDb, true), new PersistentCache(cacheDir, false), resolverGraph, scorer == null ? NormalizedIndegreeScorer.getInstance() : ObjectParser.fromSpec(scorer, Scorer.class), blacklist);
 	}
 
 	/**
@@ -285,14 +286,14 @@ public class SearchEngine implements AutoCloseable {
 	 * @param resolverGraph the path to a serialized resolver graph (will be created if it does not
 	 *            exist).
 	 * @param scorer a scorer that will be used to sort results; if {@code null}, a
-	 *            {@link TrivialScorer} will be used instead.
+	 *            {@link NormalizedIndegreeScorer} will be used instead.
 	 * @param blacklist a blacklist of GIDs that will be considered as missing.
 	 */
 	public SearchEngine(final DSLContext context, final RocksDao rocksDao, final PersistentCache cache, final String resolverGraph, final Scorer scorer, final LongOpenHashSet blacklist) throws Exception {
 		this.context = context;
 		this.rocksDao = rocksDao;
 		this.cache = cache;
-		this.scorer = scorer == null ? TrivialScorer.getInstance() : scorer;
+		this.scorer = scorer == null ? NormalizedIndegreeScorer.getInstance() : scorer;
 		this.blacklist = blacklist;
 		resolver = new GraphMavenResolver();
 		resolver.buildDependencyGraph(context, resolverGraph);
