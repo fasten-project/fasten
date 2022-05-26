@@ -37,7 +37,7 @@ public class SearchEngineTest {
 		final ArrayImmutableDirectedGraph graph = builder.build();
 		final AtomicLong visitTime = new AtomicLong();
 		final AtomicLong visitedArcs = new AtomicLong();
-    	final ObjectRBTreeSet<Result> results = SearchEngine.bfs(graph, true, LongList.of(1), x -> true, TrivialScorer.getInstance(), 100, visitTime, visitedArcs);
+    	final ObjectRBTreeSet<Result> results = SearchEngine.bfs(graph, true, LongList.of(1), x -> true, TrivialScorer.getInstance(), 100, visitTime, visitedArcs, null);
 		// #node #indegree #outdegree #distance (from 1)
 		// 1 2 2 0
 		// 2 1 1 1
@@ -66,7 +66,7 @@ public class SearchEngineTest {
     	final int maxResults = 10;
     	LongSet gids = new LongOpenHashSet();
 
-    	for (int i = 0; i < n; i++) all.add(new Result(random.nextInt(100), random.nextInt(100)));
+    	for (int i = 0; i < n; i++) all.add(new Result(random.nextInt(100), random.nextInt(100), null));
     	
     	TopKProcessor processor = new TopKProcessor(maxResults, null);
     	final WaitOnTerminateFutureSubscriber<Update> futureSubscriber = new WaitOnTerminateFutureSubscriber<>();
