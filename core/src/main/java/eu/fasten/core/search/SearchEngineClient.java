@@ -204,7 +204,8 @@ public class SearchEngineClient {
 				for(var r : u) System.out.println(FastenJavaURI.create(Util.getCallableName(r.gid, se.context()).toString()).toSimpleString() + "\t" + r.score + "\t" + r.dependent.groupId + ":" + r.dependent.artifactId + ":" + r.dependent.version.toString());
 			}
 			else System.out.println(o);
-		} else System.out.println(o);
+		} else if (o == null) System.out.println("No result");
+		else System.out.println(o);
 	}
 	
 	/**
