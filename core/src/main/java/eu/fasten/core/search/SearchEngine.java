@@ -751,7 +751,6 @@ public class SearchEngine implements AutoCloseable {
 				LOGGER.debug("Stitched graph for dependent " + dependent.groupId + ":" + dependent.artifactId + ":" + dependent.version.toString() 
 						+ " has " + mergedGraph.numNodes() + " nodes");
 				LOGGER.debug("Going to visit it with seed " + seed);
-				LOGGER.debug("Does the graph contain 435579? " + mergedGraph.nodes().contains(435579L));
 				visitor.visit(mergedGraph, seed, dependent);
 			}
 		}));
