@@ -70,8 +70,19 @@ import it.unimi.dsi.lang.ObjectParser;
  * <p>
  * Instances of this class access the metadata Postgres database and the RocksDB database of
  * revision call graphs. Users can interrogate the engine by providing an entry point (e.g., a
- * callable) and a {@link LongPredicate} that will be used to filter the results. For more
+ * callable) and a {@link LongPredicate} that will be used to filter the results.
+ * Reachability queries can be performed using 
+ * {@link #fromCallable(long, LongPredicate, int, int, SubmissionPublisher) fromCallable()} and {@link #fromRevision(FastenURI, LongPredicate, int, int, SubmissionPublisher) fromRevision()},
+ * whereas coreachability queries can be performed using 
+ * {@link #toCallable(long, LongPredicate, int, int, SubmissionPublisher) toCallable()} and {@link #toRevision(FastenURI, LongPredicate, int, int, SubmissionPublisher) toRevision()}.
+ * More flexibility can be achieved by calling directly {@link #to(long, LongCollection, LongPredicate, int, int, SubmissionPublisher) to()} and
+ * {@link #from(long, LongCollection, LongPredicate, int, int, SubmissionPublisher) from()}, which start from an arbitrary seed.
+ * Point-to-point queries (path searches) can be performed using {@link #between(long, long, LongPredicate, int, SubmissionPublisher) between()}.
+ * 
+ * <p>For more
  * documentation on the available filters, see {@link PredicateFactory}.
+ * 
+ * <p>For an explicit, detailed example of instantiation and usage of an instance of this class, see {@link SearchEngineClient}.
  * 
  * <p>
  * The resolution of a query related to a given entry point (e.g., a specific callable) yields a certain <em>universe</em>
@@ -79,13 +90,13 @@ import it.unimi.dsi.lang.ObjectParser;
  * Note that during a search, each merged graph was caused by a specific revision in the universe: this is
  * often called (within this class) the <em>dependent</em> that yield a certain merged graph, or that produced a specific result.
  * 
- * <p>For instance, suppose that we are looking for all the callables called by a given callable <pre>fasten://mvn!foo$1.2/bar()</pre>.
- * We first determine the universe of revisions where the callable <pre>fasten://mvn!foo$1.2/bar()</pre> may appear: they are all
- * the revisions that depend (directly or indirectly) on <pre>fasten://mvn!foo$1.2/</pre>.
- * Suppose that <pre>fasten://mvn!goo$3.4/</pre> is one of them, and that in the corresponding merged graph the callable 
- * <pre>fasten://mvn!foo$1.2/bar()</pre> actually appears, and one of the callable that it can reach in
- * that graph is  <pre>fasten://mvn!hoo$1.10/baz()</pre>; when we insert the latter in the list of result, we will
- * indicate that it was added because of <pre>fasten://mvn!goo$3.4/</pre> (this is the dependent that caused <pre>fasten://mvn!hoo$1.10/baz()</pre>
+ * <p>For instance, suppose that we are looking for all the callables called by a given callable <code>fasten://mvn!foo$1.2/bar()</code>.
+ * We first determine the universe of revisions where the callable <code>fasten://mvn!foo$1.2/bar()</code> may appear: they are all
+ * the revisions that depend (directly or indirectly) on <code>fasten://mvn!foo$1.2/</code>.
+ * Suppose that <code>fasten://mvn!goo$3.4/</code> is one of them, and that in the corresponding merged graph the callable 
+ * <code>fasten://mvn!foo$1.2/bar()</code> actually appears, and one of the callable that it can reach in
+ * that graph is  <code>fasten://mvn!hoo$1.10/baz()</code>; when we insert the latter in the list of result, we will
+ * indicate that it was added because of <code>fasten://mvn!goo$3.4/</code> (this is the dependent that caused <code>fasten://mvn!hoo$1.10/baz()</code>
  * to appear in the list of results).
  */
 
@@ -398,7 +409,7 @@ public class SearchEngine implements AutoCloseable {
 	 * @param graph the graph to be visied.
 	 * @param gidFrom the id of the callable to start from.
 	 * @param gidTo the id of the callable to reach.
-	 * @param filter the filter that is applied to all nodes (except for <pre>gidFrom</pre>) before adding them to the visit queue.
+	 * @param filter the filter that is applied to all nodes (except for <code>gidFrom</code>) before adding them to the visit queue.
 	 * @param globalVisitTime an {@link AtomicLong} where the visit time in nanoseconds will be added.
 	 * @param globalVisitedArcs an {@link AtomicLong} where the number of visited arcs will be added.
 	 * @param dependent the revision that produced the graph.
