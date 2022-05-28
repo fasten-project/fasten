@@ -686,8 +686,6 @@ public class SearchEngine implements AutoCloseable {
 		final ExecutorCompletionService<Void> executorCompletionService = new ExecutorCompletionService<>(executorService);
 
 		final ArrayList<Future<Void>> futures = new ArrayList<>();
-		// First future is the pipeline future
-		futures.add(resolver.resolveDependentsPipeline(groupId, artifactId, version, s, -1, true, maxDependents, numberOfThreads, executorCompletionService));
 
 		for(int i = 0; i < numberOfThreads; i++) futures.add(executorCompletionService.submit(() -> {
 			for(;;) {
@@ -766,6 +764,9 @@ public class SearchEngine implements AutoCloseable {
 				visitor.visit(mergedGraph, seed, dependent);
 			}
 		}));
+
+		// Last future is the pipeline future
+		futures.add(resolver.resolveDependentsPipeline(groupId, artifactId, version, s, -1, true, maxDependents, numberOfThreads, executorCompletionService));
 
 		executorService.shutdown();
 
