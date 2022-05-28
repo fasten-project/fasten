@@ -17,6 +17,12 @@
 
 package eu.fasten.core.search.predicate;
 
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock.ReadLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock.WriteLock;
+
 import org.jooq.DSLContext;
 import org.jooq.JSONB;
 import org.jooq.Record1;
@@ -56,9 +62,15 @@ public class CachingPredicateFactory extends TrivialPredicateFactory {
 	private final Long2LongLinkedOpenHashMap callableGID2moduleGID;
 	/**
 	 * LRU cache of the map between {@linkplain Modules#MODULES module database ids} and
-	 * {@linkplains PackageVersions#PACKAGE_VERSIONS revision ids}.
+	 * {@linkplain PackageVersions#PACKAGE_VERSIONS revision ids}.
 	 */
 	private final Long2LongLinkedOpenHashMap moduleGID2packageVersionGID;
+	/** The read-write lock to access all maps. */
+	private final ReadWriteLock lock = new ReentrantReadWriteLock();
+	/** The read lock of {@link #lock}. */
+	private final Lock readLock = lock.readLock();
+	/** The write lock of {@link #lock}. */
+	private final Lock writeLock = lock.writeLock();
 
 	/** A factory for predicates that will be matched against a given database.
 	 *
@@ -108,7 +120,15 @@ public class CachingPredicateFactory extends TrivialPredicateFactory {
 	 */
 	@Override
 	protected JSONObject getCallableMetadata(final long callableGID) {
-		JSONObject jsonMetadata = callableGID2callableMetadata.get(callableGID);
+		JSONObject jsonMetadata;
+		try {
+			readLock.lock();
+			jsonMetadata = callableGID2callableMetadata.get(callableGID);
+		}
+		finally {
+			readLock.unlock();
+		}
+
 		if (jsonMetadata == null) {
 			final SelectConditionStep<Record1<JSONB>> rs = dbContext.select(Callables.CALLABLES.METADATA).from(Callables.CALLABLES).where(Callables.CALLABLES.ID.eq(callableGID));
 			if (rs != null) {
@@ -117,7 +137,14 @@ public class CachingPredicateFactory extends TrivialPredicateFactory {
 					jsonMetadata = new JSONObject(record.component1().data());
 				}
 			}
-			putLRUMap(callableGID2callableMetadata, callableGID, jsonMetadata, METADATA_MAP_MAXSIZE);
+
+			try {
+				writeLock.lock();
+				putLRUMap(callableGID2callableMetadata, callableGID, jsonMetadata, METADATA_MAP_MAXSIZE);
+			}
+			finally {
+				writeLock.unlock();
+			}
 		}
 		return jsonMetadata;
 	}
@@ -129,8 +156,17 @@ public class CachingPredicateFactory extends TrivialPredicateFactory {
 	 */
 	@Override
 	protected JSONObject getModuleMetadata(final long callableGID) {
-		long moduleGID = callableGID2moduleGID.get(callableGID);
-		JSONObject jsonMetadata = moduleGID >= 0? moduleGID2moduleMetadata.get(moduleGID) : null;
+		long moduleGID;
+		JSONObject jsonMetadata;
+		try {
+			readLock.lock();
+			moduleGID = callableGID2moduleGID.get(callableGID);
+			jsonMetadata = moduleGID >= 0? moduleGID2moduleMetadata.get(moduleGID) : null;
+		}
+		finally {
+			readLock.unlock();
+		}
+
 		if (jsonMetadata == null) {
 			final Record2<JSONB, Long> queryResult = dbContext.select(Modules.MODULES.METADATA, Modules.MODULES.ID)
 					.from(Callables.CALLABLES)
@@ -138,8 +174,14 @@ public class CachingPredicateFactory extends TrivialPredicateFactory {
 					.where(Callables.CALLABLES.ID.eq(callableGID)).fetchOne();
 			moduleGID = queryResult.component2().longValue();
 			jsonMetadata = moduleGID >=0? new JSONObject(queryResult.component1().data()) : null;
-			putLRUMap(callableGID2moduleGID, callableGID, moduleGID, LONG_MAP_MAXSIZE);
-			putLRUMap(moduleGID2moduleMetadata, moduleGID, jsonMetadata, METADATA_MAP_MAXSIZE);
+			try {
+				writeLock.lock();
+				putLRUMap(callableGID2moduleGID, callableGID, moduleGID, LONG_MAP_MAXSIZE);
+				putLRUMap(moduleGID2moduleMetadata, moduleGID, jsonMetadata, METADATA_MAP_MAXSIZE);
+			}
+			finally {
+				writeLock.unlock();
+			}
 		}
 		return jsonMetadata;
 	}
@@ -151,9 +193,19 @@ public class CachingPredicateFactory extends TrivialPredicateFactory {
 	 */
 	@Override
 	protected JSONObject getPackageVersionMetadata(final long callableGID) {
-		long moduleGID = callableGID2moduleGID.get(callableGID);
-		long packageVersionGID = callableGID >= 0? moduleGID2packageVersionGID.get(moduleGID) : -1;
-		JSONObject jsonMetadata = packageVersionGID >= 0? packageVersionGID2packageVersionMetadata.get(packageVersionGID) : null;
+		long moduleGID;
+		long packageVersionGID;
+		JSONObject jsonMetadata;
+		try {
+			readLock.lock();
+			moduleGID = callableGID2moduleGID.get(callableGID);
+			packageVersionGID = callableGID >= 0? moduleGID2packageVersionGID.get(moduleGID) : -1;
+			jsonMetadata = packageVersionGID >= 0? packageVersionGID2packageVersionMetadata.get(packageVersionGID) : null;
+		}
+		finally {
+			readLock.unlock();
+		}
+
 		if (jsonMetadata == null ) {
 			final Record3<JSONB, Long, Long> queryResult = dbContext.select(PackageVersions.PACKAGE_VERSIONS.METADATA, PackageVersions.PACKAGE_VERSIONS.ID, Modules.MODULES.ID)
 					.from(Callables.CALLABLES)
@@ -163,9 +215,15 @@ public class CachingPredicateFactory extends TrivialPredicateFactory {
 			packageVersionGID = queryResult.component2().longValue();
 			moduleGID = queryResult.component3().longValue();
 			jsonMetadata = packageVersionGID >= 0 && moduleGID >= 0? new JSONObject(queryResult.component1().data()) : null;
-			putLRUMap(callableGID2moduleGID, callableGID, moduleGID, LONG_MAP_MAXSIZE);
-			putLRUMap(moduleGID2packageVersionGID, moduleGID, packageVersionGID, LONG_MAP_MAXSIZE);
-			putLRUMap(packageVersionGID2packageVersionMetadata, packageVersionGID, jsonMetadata, METADATA_MAP_MAXSIZE);
+			try {
+				writeLock.lock();
+				putLRUMap(callableGID2moduleGID, callableGID, moduleGID, LONG_MAP_MAXSIZE);
+				putLRUMap(moduleGID2packageVersionGID, moduleGID, packageVersionGID, LONG_MAP_MAXSIZE);
+				putLRUMap(packageVersionGID2packageVersionMetadata, packageVersionGID, jsonMetadata, METADATA_MAP_MAXSIZE);
+			}
+			finally {
+				writeLock.unlock();
+			}
 		}
 		return jsonMetadata;
 	}
