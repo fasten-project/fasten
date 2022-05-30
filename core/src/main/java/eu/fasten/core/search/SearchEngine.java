@@ -722,6 +722,27 @@ public class SearchEngine implements AutoCloseable {
 					continue;
 				}
 
+				// Check that the graph is a true dependent
+				final LongLinkedOpenHashSet depFromCache = cache.getDeps(dependentId);
+
+				final LongLinkedOpenHashSet dependencyIds;
+				if (depFromCache == null) {
+					final long start = -System.nanoTime();
+					final Set<Revision> dependencySet = resolver.resolveDependencies(dependent.groupId, dependent.artifactId, dependent.version.toString(), -1, context, true);
+					dependencyIds = LongLinkedOpenHashSet.toSet(dependencySet.stream().mapToLong(x -> x.id));
+					dependencyIds.addAndMoveToFirst(dependentId);
+					resolveTime.addAndGet(start + System.nanoTime());
+					cache.putDeps(dependentId, dependencyIds);
+				} else dependencyIds = depFromCache;
+
+				LOGGER.debug("Found " + dependencyIds.size() + " dependencies");
+
+				if (dependentId != revId && !dependencyIds.contains(revId)) {
+					LOGGER.debug("False dependent " + dependent.groupId + ":" + dependent.artifactId + ":" + dependent.version.toString());
+					continue; // We cannot possibly reach the callable
+				}
+				LOGGER.debug("True dependent " + dependent.groupId + ":" + dependent.artifactId + ":" + dependent.version.toString());
+				
 				DirectedGraph mergedGraph = cache.getMerged(dependentId);
 				if (mergedGraph == NO_GRAPH) {
 					LOGGER.debug("Dependent with GID " + dependent.id + " [" + dependent.groupId + ":" + dependent.artifactId + "$" + dependent.version.toString() + "] is mapped to NO_GRAPH");
@@ -729,27 +750,6 @@ public class SearchEngine implements AutoCloseable {
 				}
 				if (mergedGraph == null) {
 					LOGGER.debug("Analyzing dependent " + dependent.groupId + ":" + dependent.artifactId + ":" + dependent.version.toString());
-
-					final LongLinkedOpenHashSet depFromCache = cache.getDeps(dependentId);
-
-					final LongLinkedOpenHashSet dependencyIds;
-					if (depFromCache == null) {
-						final long start = -System.nanoTime();
-						final Set<Revision> dependencySet = resolver.resolveDependencies(dependent.groupId, dependent.artifactId, dependent.version.toString(), -1, context, true);
-						dependencyIds = LongLinkedOpenHashSet.toSet(dependencySet.stream().mapToLong(x -> x.id));
-						dependencyIds.addAndMoveToFirst(dependentId);
-						resolveTime.addAndGet(start + System.nanoTime());
-						cache.putDeps(dependentId, dependencyIds);
-					} else dependencyIds = depFromCache;
-
-					LOGGER.debug("Dependent has " + graph.numNodes() + " nodes");
-					LOGGER.debug("Found " + dependencyIds.size() + " dependencies");
-
-					if (dependentId != revId && !dependencyIds.contains(revId)) {
-						LOGGER.debug("False dependent");
-						continue; // We cannot possibly reach the callable
-					}
-					LOGGER.debug("True dependent " + dependent.groupId + ":" + dependent.artifactId + ":" + dependent.version.toString());
 
 					for(LongIterator iterator =  dependencyIds.iterator(); iterator.hasNext();) 
 						if (!revisionCache.mayContain(iterator.nextLong())) iterator.remove();
