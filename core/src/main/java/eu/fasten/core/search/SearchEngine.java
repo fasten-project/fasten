@@ -101,6 +101,8 @@ import it.unimi.dsi.lang.ObjectParser;
  */
 
 public class SearchEngine implements AutoCloseable {
+	/** The number of threads use in searches will be {@link java.lang.Runtime#availableProcessors()} minimized with this constant. */ 
+	public static final int MAX_NUMBER_OF_THREADS = 64;
 	
 	/** A visitor of merged graphs: its {@link #visit(DirectedGraph, LongCollection, Revision)} method is called
 	 *  on every merged graph of the universe. */
@@ -682,7 +684,7 @@ public class SearchEngine implements AutoCloseable {
 		LOGGER.debug("visitUniverse(" + groupId + ":" + artifactId + ":" + version.toString() + "), maxDependents=" + maxDependents);
 
 
-		final int numberOfThreads = Runtime.getRuntime().availableProcessors();
+		final int numberOfThreads = Math.min(MAX_NUMBER_OF_THREADS, Runtime.getRuntime().availableProcessors());
 		final ArrayBlockingQueue<Revision> s = new ArrayBlockingQueue<>(numberOfThreads * 10);
 
 		final ExecutorService executorService = Executors.newFixedThreadPool(numberOfThreads + 1); // +1 for the pipeline
@@ -710,12 +712,8 @@ public class SearchEngine implements AutoCloseable {
 					LOGGER.debug("Dependent with GID " + dependent.id + " [" + dependent.groupId + ":" + dependent.artifactId + "$" + dependent.version.toString() + "] is blacklisted");
 					continue;
 				}
+
 				if (!revisionCache.contains(dependentId)) {
-					// Temporary
-					if (cache.getMerged(dependentId) != null) {
-						LOGGER.error("Missing graph appears in cache (removing)");
-						cache.remove(dependentId);
-					}
 					LOGGER.debug("Dependent with GID " + dependent.id + " [" + dependent.groupId + ":" + dependent.artifactId + "$" + dependent.version.toString() + "] is not in the callable index");
 					continue;
 				}
