@@ -44,6 +44,9 @@ import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
  * <p>
  * The factory must be able to produce predicates for all types of sources (specified using the
  * {@link MetadataSource} enum).
+ * 
+ * <p><strong>WARNING</strong>: the returned predicates must be reentrant, as they will be 
+ * called by multiple visit threads.
  */
 
 public interface PredicateFactory {
