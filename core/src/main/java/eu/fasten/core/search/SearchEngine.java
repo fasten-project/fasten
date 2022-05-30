@@ -692,6 +692,10 @@ public class SearchEngine implements AutoCloseable {
 				final Revision dependent;
 				try {
 					dependent = s.take();
+					if (LOGGER.isDebugEnabled()) {
+						if (dependent == GraphMavenResolver.END) LOGGER.debug("Obtained poison pill");
+						else LOGGER.debug("Obtained dependent " + dependent.groupId + ":" + dependent.artifactId + "$" + dependent.version.toString());
+					}
 				} catch(InterruptedException canceled) {
 					return null;
 				}
