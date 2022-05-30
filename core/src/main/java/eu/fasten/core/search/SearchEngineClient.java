@@ -597,10 +597,11 @@ public class SearchEngineClient {
 
 				for (final var t : client.throwables()) {
 					System.out.println(t);
-					System.out.println("\t" + t.getStackTrace()[0]);
+					t.printStackTrace(System.err);
 				}
 			} catch (final Exception e) {
-				e.printStackTrace();
+				System.out.println(e);
+				e.printStackTrace(System.err);
 			} finally {}
 		}
 	}
