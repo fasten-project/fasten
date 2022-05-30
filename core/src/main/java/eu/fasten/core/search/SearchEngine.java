@@ -19,6 +19,7 @@
 package eu.fasten.core.search;
 
 import java.io.Closeable;
+import java.text.Format;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -165,7 +166,7 @@ public class SearchEngine implements AutoCloseable {
 
 		@Override
 		public String toString() {
-			return gid + " (" + score + ") [dependent " + dependent.groupId + ":" + dependent.artifactId + ":" + dependent.version.toString() + "]";
+			return gid + " (" + String.format("%.4f", Double.valueOf(score)) + ") [dependent " + dependent.groupId + ":" + dependent.artifactId + ":" + dependent.version.toString() + "]";
 		}
 
 		@Override
