@@ -380,8 +380,7 @@ public class SearchEngine implements AutoCloseable {
 				sentinel = -1;
 			}
 
-			// We do not want the seed in the result
-			if (!seed.contains(gid) && filter.test(gid)) {
+			if (filter.test(gid)) {
 				final double score = scorer.score(graph, gid, d);
 				if (results.size() < maxResults || score > results.last().score) {
 					results.add(new Result(gid, score, dependent));
