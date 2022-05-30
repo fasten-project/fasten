@@ -41,7 +41,7 @@ public class TopKProcessor extends SubmissionPublisher<TopKProcessor.Update> imp
 			StringBuilder sb = new StringBuilder(); 
 			Result[] r = current;
 			for (int i = 0; i < Math.min(maxResults, r.length); i++) 
-				sb.append(r[i].gid + "\t" + Util.getCallableName(r[i].gid, searchEngine.context()) + "\t" + r[i].score + "\t" + r[i].dependent.groupId + ":" + r[i].dependent.artifactId + ":" + r[i].dependent.version.toString() + "\n");
+				sb.append(r[i].gid + "\t" + Util.getCallableName(r[i].gid, searchEngine.context()) + "\t" + String.format("%.4f", Double.valueOf(r[i].score)) + "\t" + r[i].dependent.groupId + ":" + r[i].dependent.artifactId + ":" + r[i].dependent.version.toString() + "\n");
 			return sb.toString();
 		}
 	}
