@@ -260,7 +260,7 @@ public class SearchEngineClient {
 
 			case "help":
 				assertNargs(nArgs, 0, 0);
-				System.err.println(help);
+				System.out.println(help);
 				break;
 
 			case "limit":
@@ -297,14 +297,14 @@ public class SearchEngineClient {
 				assertNargs(nArgs, 0, 1);
 				final int wcid = nArgs == 1? (int)index2arg.get(0) : nextFutureId - 1;
 				Future<Void> future = id2Future.get(wcid);
-				if (future == null) System.err.println("No such search ID");
+				if (future == null) System.out.println("No such search ID");
 				else {
 					if ("wait".equals(verb)) {
 						try {
 							final var o = id2Subscriber.get(wcid).get();
 							printResult(o);
 						} catch (InterruptedException e) {
-							System.err.println("Interrupted!");
+							System.out.println("Interrupted!");
 							break;
 						}
 					} else {
@@ -321,7 +321,7 @@ public class SearchEngineClient {
 				assertNargs(nArgs, 0, 1);
 				final int insid = nArgs == 1? (int)index2arg.get(0) : nextFutureId - 1;
 				final var subscriber = id2Subscriber.get(insid);
-				if (subscriber == null) System.err.println("No such search ID");
+				if (subscriber == null) System.out.println("No such search ID");
 				else {
 					System.out.printf("%3d\t%s\n", Integer.valueOf(insid), id2Future.get(insid).isDone()? "Completed" : "Running");
 					final var rr = subscriber.last() == null? new PathResult[0] : subscriber.last();
@@ -336,7 +336,7 @@ public class SearchEngineClient {
 				
 			case "time":
 				assertNargs(nArgs, 0, 0);
-				System.err.printf("\n%,d arcs %,.3f arcs/s\nResolve time: %,.3fs  Merge time: %,.3fs  Visit time %,.3fs\n",
+				System.out.printf("\n%,d arcs %,.3f arcs/s\nResolve time: %,.3fs  Merge time: %,.3fs  Visit time %,.3fs\n",
 						Long.valueOf(se.visitedArcs.get()),
 						Double.valueOf(1E9 * se.visitedArcs.get() / se.visitTime.get()),
 						Double.valueOf(se.resolveTime.get() * 1E-9),
@@ -408,7 +408,7 @@ public class SearchEngineClient {
 					predicate = se.predicateFactory().metadataQueryJSONPointer(mds, jsonPointer, s -> matchRegexp(s, regExp));
 					break;
 				case "?":
-					System.err.println(String.join(" && ", predicateFiltersSpec));
+					System.out.println(String.join(" && ", predicateFiltersSpec));
 					break;
 				default:
 					throw new RuntimeException("Unknown type of predicate " + commandAndArgs[1]);
@@ -444,18 +444,17 @@ public class SearchEngineClient {
 				if (predicateFilters.size() < 1) throw new RuntimeException("At least one predicates must be present");
 				final String uri = commandAndArgs[1];
 				final long gid = getCallableGID(FastenJavaURI.create(uri));
-				if (gid == -1) System.err.println("Unknown URI " + uri);
+				if (gid == -1) System.out.println("Unknown URI " + uri);
 				else System.out.println(predicateFilters.stream().reduce(x -> true, LongPredicate::and).test(gid));
 				break;
 
 			default:
-				System.err.println("Unknown command " + command);
+				System.out.println("Unknown command " + command);
 			}
 
 		} catch (final RuntimeException e) {
-			System.err.println("Exception while executing command " + command);
+			System.out.println("Exception while executing command " + command + ": " + e);
 			e.printStackTrace(System.err);
-			System.err.println(help);
 		}
 	}
 
@@ -517,7 +516,7 @@ public class SearchEngineClient {
 			try {
 				final char dir = line.charAt(0);
 				if (dir != '+' && dir != '-' && dir != '*') {
-					if (dir != '#') System.err.println("First character must be '+', '-', '*' or '#'");
+					if (dir != '#') System.out.println("First character must be '+', '-', '*' or '#'");
 					continue;
 				}
 				if (dir == '+' || dir == '-') {
@@ -541,7 +540,7 @@ public class SearchEngineClient {
 					else {
 						final long gid = client.getCallableGID(uri);
 						if (gid == -1) {
-							System.err.println("Unknown URI " + uri);
+							System.out.println("Unknown URI " + uri);
 							continue;
 						}
 						client.id2Future.put(id, dir == '+'? 
@@ -550,33 +549,33 @@ public class SearchEngineClient {
 					}
 					client.id2Subscriber.put(id, futureSubscriber);
 					client.id2Query.put(id, line);
-					System.err.println("Id: " + id);
+					System.out.println("Id: " + id);
 					client.nextFutureId++;
 
 				} else {  // dir == '*'
 					String[] uris = line.substring(1).split("\\s+");
 					if (uris.length != 2) {
-						System.err.println("Exactly two callable URIs must be provided!");
+						System.out.println("Exactly two callable URIs must be provided!");
 						continue;
 					}
 					final FastenJavaURI uriFrom = FastenJavaURI.create(uris[0]);
 					if (uriFrom == null || uriFrom.getPath() == null) {
-						System.err.println("Invalid URI (or not a callable URI): " + uriFrom);
+						System.out.println("Invalid URI (or not a callable URI): " + uriFrom);
 						continue;
 					}
 					final long gidFrom = client.getCallableGID(uriFrom);
 					if (gidFrom == -1) {
-						System.err.println("Unknown URI: " + uriFrom);
+						System.out.println("Unknown URI: " + uriFrom);
 						continue;
 					}
 					final FastenJavaURI uriTo = FastenJavaURI.create(uris[1]);
 					if (uriTo == null || uriTo.getPath() == null) {
-						System.err.println("Invalid URI (or not a callable URI): " + uriTo);
+						System.out.println("Invalid URI (or not a callable URI): " + uriTo);
 						continue;
 					}
 					final long gidTo = client.getCallableGID(uriTo);
 					if (gidTo == -1) {
-						System.err.println("Unknown URI: " + uriTo);
+						System.out.println("Unknown URI: " + uriTo);
 						continue;
 					}
 					
@@ -592,13 +591,13 @@ public class SearchEngineClient {
 					client.id2Future.put(id, client.between(gidFrom, gidTo, client.limit, filter, client.maxDependents, publisher));
 					client.id2Subscriber.put(id, futureSubscriber);
 					client.id2Query.put(id, line);
-					System.err.println("Id: " + id);
+					System.out.println("Id: " + id);
 					client.nextFutureId++;
 				}
 
 				for (final var t : client.throwables()) {
-					System.err.println(t);
-					System.err.println("\t" + t.getStackTrace()[0]);
+					System.out.println(t);
+					System.out.println("\t" + t.getStackTrace()[0]);
 				}
 			} catch (final Exception e) {
 				e.printStackTrace();

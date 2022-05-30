@@ -434,7 +434,10 @@ public class GraphMavenResolver implements Runnable {
                                                           boolean transitive, final long maxDeps, int numberOfThreads, ExecutorCompletionService<Void> executorCompletionService) {
         var artifact = new Revision(groupId, artifactId, version, new Timestamp(timestamp));
 
-        if (!dependentGraph.containsVertex(artifact)) return null;
+        if (!dependentGraph.containsVertex(artifact)) {
+			logger.debug("Artifact " + groupId + ":" + artifactId + "$" + version + " does not belong to the dependent graph");
+			return null;
+		}
 
         var workQueue = new ObjectArrayFIFOQueue<Revision>();
         var seen = new LongOpenHashSet();

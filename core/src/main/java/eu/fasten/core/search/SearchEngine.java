@@ -325,7 +325,7 @@ public class SearchEngine implements AutoCloseable {
 	private DirectedGraph getMergedGraph(final CGMerger dm, final long id) {
 		final DirectedGraph result = dm.mergeAllDeps();
 		if (result != null) {
-			LOGGER.info("Graph id: " + id + " stitched graph nodes: " + result.numNodes() + " stitched graph arcs: " + result.numArcs());
+			LOGGER.info("Graph id: " + id + " merged graph nodes: " + result.numNodes() + " merged graph arcs: " + result.numArcs());
 			return result;
 		}
 		else return null;
@@ -355,12 +355,14 @@ public class SearchEngine implements AutoCloseable {
 		final LongArrayFIFOQueue visitQueue = new LongArrayFIFOQueue(graph.numNodes() + 1); // The +1 can be removed in fastutil > 8.5.9
 		final LongOpenHashSet seen = new LongOpenHashSet(graph.numNodes(), 0.5f);
 		final ObjectRBTreeSet<Result> results = new ObjectRBTreeSet<>();
-		
+
 		seed.forEach(gid -> {
 			if (nodes.contains(gid)) {
 				visitQueue.enqueue(gid);
 				seen.add(gid);
 			}}); // Load initial state, skipping seeds out of graph
+
+		LOGGER.debug("Going to visit a graph with " + graph.numNodes() + " nodes and " + graph.numArcs() + " arcs and seed size " + visitQueue.size());
 
 		if (visitQueue.isEmpty()) return results;
 		
@@ -396,7 +398,8 @@ public class SearchEngine implements AutoCloseable {
 				}
 			}
 		}
-	
+
+		LOGGER.debug("Visited " + visitedArcs + " arcs");	
 		globalVisitTime.addAndGet(start + System.nanoTime());
 		globalVisitedArcs.addAndGet(visitedArcs);
 		return results;
@@ -665,7 +668,7 @@ public class SearchEngine implements AutoCloseable {
 	 * @return a future controlling the completion of the search.
 	 */
 	public Future<Void> visitUniverse(final long revId, final LongCollection providedSeed, final int maxDependents, final UniverseVisitor visitor) throws RocksDBException {
-		LOGGER.debug("Called visitUniverse for revision " + revId + " with seed " + providedSeed);
+		LOGGER.debug("Called visitUniverse for revision " + revId + " with " + (providedSeed == null || providedSeed.size() <= 10 ? "seed " + providedSeed : "large (size>10) seed"));
 		throwables.clear();
 		if (blacklist.contains(revId)) throw new NoSuchElementException("Revision " + revId + " is blacklisted");
 		final var graph = rocksDao.getGraphData(revId);
@@ -762,9 +765,8 @@ public class SearchEngine implements AutoCloseable {
 					}
 				}
 				
-				LOGGER.debug("Stitched graph for dependent " + dependent.groupId + ":" + dependent.artifactId + ":" + dependent.version.toString() 
+				LOGGER.debug("Merged graph for dependent " + dependent.groupId + ":" + dependent.artifactId + ":" + dependent.version.toString() 
 						+ " has " + mergedGraph.numNodes() + " nodes");
-				LOGGER.debug("Going to visit it with seed " + seed);
 				visitor.visit(mergedGraph, seed, dependent);
 			}
 		}));
