@@ -20,8 +20,6 @@ package eu.fasten.core.search.predicate;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock.ReadLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock.WriteLock;
 
 import org.jooq.DSLContext;
 import org.jooq.JSONB;
@@ -46,9 +44,9 @@ import it.unimi.dsi.fastutil.longs.Long2ObjectLinkedOpenHashMap;
  */
 public class CachingPredicateFactory extends TrivialPredicateFactory {
 	/** Maximum size of all metadata caches (all maps are kept trimmed to this size). */
-	private static final int METADATA_MAP_MAXSIZE = 1024;
+	private static final int METADATA_MAP_MAXSIZE = 16 * 1024;
 	/** Maximum size of all ID association caches (all maps are kept trimmed to this size). */
-	private static final int LONG_MAP_MAXSIZE = 1024*1024;
+	private static final int LONG_MAP_MAXSIZE = 128 * 1024 * 1024;
 	/** LRU cache of the last metadata from the {@link Callables#CALLABLES} table. */
 	private final Long2ObjectLinkedOpenHashMap<JSONObject> callableGID2callableMetadata;
 	/** LRU cache of the last metadata from the {@link Modules#MODULES} table. */
