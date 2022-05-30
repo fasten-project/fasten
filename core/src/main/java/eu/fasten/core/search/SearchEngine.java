@@ -362,7 +362,7 @@ public class SearchEngine implements AutoCloseable {
 				seen.add(gid);
 			}}); // Load initial state, skipping seeds out of graph
 
-		LOGGER.debug("Going to visit a graph with " + graph.numNodes() + " nodes and " + graph.numArcs() + " arcs and seed size " + visitQueue.size());
+		LOGGER.debug("Going to visit a graph with " + graph.numNodes() + " nodes and " + graph.numArcs() + " arcs and seed size " + visitQueue.size() + " within dependent " + dependent.groupId + ":" + dependent.artifactId + "$" + dependent.version);
 
 		if (visitQueue.isEmpty()) return results;
 		
@@ -705,18 +705,28 @@ public class SearchEngine implements AutoCloseable {
 				if (dependent == GraphMavenResolver.END) return null;
 
 				var dependentId = dependent.id;
-				if (blacklist.contains(dependentId)) continue;
+
+				LOGGER.debug(resolver.resolveDependencies(dependent.groupId, dependent.artifactId, dependent.version.toString(), -1, context, true).toString());
+
+				if (blacklist.contains(dependentId)) {
+					LOGGER.debug("Dependent with GID " + dependent.id + " [" + dependent.groupId + ":" + dependent.artifactId + "$" + dependent.version.toString() + "] is blacklisted");
+					continue;
+				}
 				if (!revisionCache.contains(dependentId)) {
 					// Temporary
 					if (cache.getMerged(dependentId) != null) {
 						LOGGER.error("Missing graph appears in cache (removing)");
 						cache.remove(dependentId);
 					}
+					LOGGER.debug("Dependent with GID " + dependent.id + " [" + dependent.groupId + ":" + dependent.artifactId + "$" + dependent.version.toString() + "] is not in the callable index");
 					continue;
 				}
 
 				DirectedGraph mergedGraph = cache.getMerged(dependentId);
-				if (mergedGraph == NO_GRAPH) continue;
+				if (mergedGraph == NO_GRAPH) {
+					LOGGER.debug("Dependent with GID " + dependent.id + " [" + dependent.groupId + ":" + dependent.artifactId + "$" + dependent.version.toString() + "] is mapped to NO_GRAPH");
+					continue;
+				}
 				if (mergedGraph == null) {
 					LOGGER.debug("Analyzing dependent " + dependent.groupId + ":" + dependent.artifactId + ":" + dependent.version.toString());
 
