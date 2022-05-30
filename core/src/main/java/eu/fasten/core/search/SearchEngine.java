@@ -706,8 +706,6 @@ public class SearchEngine implements AutoCloseable {
 
 				var dependentId = dependent.id;
 
-				LOGGER.debug(resolver.resolveDependencies(dependent.groupId, dependent.artifactId, dependent.version.toString(), -1, context, true).toString());
-
 				if (blacklist.contains(dependentId)) {
 					LOGGER.debug("Dependent with GID " + dependent.id + " [" + dependent.groupId + ":" + dependent.artifactId + "$" + dependent.version.toString() + "] is blacklisted");
 					continue;
