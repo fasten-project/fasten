@@ -57,9 +57,9 @@ public class PersistentCache implements AutoCloseable {
 	/** The handle for dependencies in the persistent cache. */
 	private ColumnFamilyHandle dependenciesHandle;
 	/** A size-bound cache from GIDs to memory-cached merged graphs. */
-	private final SizeBoundCache<ArrayImmutableDirectedGraph> mergedCache = new SizeBoundCache<>(64L << 30, x -> x.numNodes() * 32L + x.numArcs() * 8L);
+	private final SizeBoundCache<ArrayImmutableDirectedGraph> mergedCache = new SizeBoundCache<>(128L << 30, x -> x.numNodes() * 32L + x.numArcs() * 8L);
 	/** A size-bound cache from GIDs to memory-cached resolved dependency sets. */
-	private final SizeBoundCache<LongLinkedOpenHashSet> depsCache = new SizeBoundCache<>(8L << 30, x -> x.size() * 16L);
+	private final SizeBoundCache<LongLinkedOpenHashSet> depsCache = new SizeBoundCache<>(16L << 30, x -> x.size() * 16L);
 
 	/** Structure gathering the fields returned by {@link #openCache(String, boolean)}. */
 	public static final class RocksDBData {
