@@ -3,7 +3,6 @@ package eu.fasten.analyzer.licensefeeder;
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.metadatadb.MetadataDao;
 import eu.fasten.core.maven.data.Revision;
-import eu.fasten.core.plugins.AbstractKafkaPlugin;
 import eu.fasten.core.plugins.DBConnector;
 import eu.fasten.core.plugins.KafkaPlugin;
 import org.jooq.DSLContext;
@@ -17,7 +16,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.Timestamp;
-import java.util.*;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 public class LicenseFeederPlugin extends Plugin {
 
@@ -74,7 +77,7 @@ public class LicenseFeederPlugin extends Plugin {
 
             } catch (Exception e) { // Fasten error-handling guidelines
                 logger.error(e.getMessage(), e.getCause());
-                setPluginError(e);
+                throw e;
             }
         }
 

@@ -2,9 +2,6 @@ package eu.fasten.analyzer.debianlicensefeeder;
 
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.metadatadb.MetadataDao;
-//This import should probably be different
-import eu.fasten.core.maven.data.Revision;
-import eu.fasten.core.plugins.AbstractKafkaPlugin;
 import eu.fasten.core.plugins.DBConnector;
 import eu.fasten.core.plugins.KafkaPlugin;
 import org.jooq.DSLContext;
@@ -17,8 +14,13 @@ import org.pf4j.PluginWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.sql.Timestamp;
-import java.util.*;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
+//This import should probably be different
 
 public class DebianLicenseFeederPlugin extends Plugin {
 
@@ -82,7 +84,7 @@ public class DebianLicenseFeederPlugin extends Plugin {
 
             } catch (Exception e) { // Fasten error-handling guidelines
                 logger.error(e.getMessage(), e.getCause());
-                setPluginError(e);
+                throw e;
             }
         }
 

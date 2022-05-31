@@ -18,14 +18,18 @@
 
 package eu.fasten.analyzer.metadataplugin;
 
-import eu.fasten.core.data.*;
+import eu.fasten.core.data.Constants;
+import eu.fasten.core.data.PartialCCallGraph;
+import eu.fasten.core.data.PartialCallGraph;
+import eu.fasten.core.data.PartialJavaCallGraph;
+import eu.fasten.core.data.PartialPythonCallGraph;
 import eu.fasten.core.data.callableindex.ExtendedGidGraph;
-import eu.fasten.core.data.callableindex.GidGraph;
 import eu.fasten.core.data.metadatadb.MetadataDao;
 import eu.fasten.core.data.metadatadb.codegen.enums.Access;
 import eu.fasten.core.data.metadatadb.codegen.enums.CallableType;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.CallSitesRecord;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.CallablesRecord;
+import eu.fasten.core.exceptions.UnrecoverableError;
 import eu.fasten.core.maven.utils.MavenUtilities;
 import eu.fasten.core.plugins.DBConnector;
 import eu.fasten.core.plugins.KafkaPlugin;
@@ -49,7 +53,11 @@ import java.io.IOException;
 import java.nio.file.Paths;
 import java.sql.BatchUpdateException;
 import java.sql.Timestamp;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 public abstract class MetadataDBExtension implements KafkaPlugin, DBConnector {
 
@@ -166,6 +174,14 @@ public abstract class MetadataDBExtension implements KafkaPlugin, DBConnector {
                     }
                 });
             } catch (Exception expected) {
+                if (expected instanceof DataAccessException) {
+                    // The error codes starting with 57P0 are related to the DB connection issues.
+                    // See https://www.postgresql.org/docs/current/errcodes-appendix.html
+                    if (((DataAccessException) expected).sqlState().contains("57P0")) {
+                        throw new UnrecoverableError("Could not connect to the Postgres DB and the plug-in should be stopped and restarted.",
+                                expected.getCause());
+                    }
+                }
             }
             transactionRestartCount++;
         } while (restartTransaction && !processedRecord
