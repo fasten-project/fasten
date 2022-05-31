@@ -196,7 +196,7 @@ public class KnowledgeBaseConnector {
      */
     @PostConstruct
     public void connectToGraphDB() {
-        if (this.forge.equals(Constants.mvnForge)) {
+        if (forge.equals(Constants.mvnForge)) {
             logger.info("Establishing connection to the Graph Database at " + graphdbPath + "...");
             try {
                 graphDao = RocksDBConnector.createReadOnlyRocksDBAccessObject(graphdbPath);
@@ -210,14 +210,14 @@ public class KnowledgeBaseConnector {
 
     @PostConstruct
     public void initKafkaProducer() {
-        if (!this.forge.equals(Constants.debianForge)) {
+        if (forge.equals(Constants.pypiForge) | forge.equals(Constants.mvnForge)) {
             ingestTopic = this.kafkaOutputTopic;
             var producerProperties = new Properties();
             producerProperties.setProperty(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, kafkaAddress);
             producerProperties.setProperty(ProducerConfig.CLIENT_ID_CONFIG, "fasten_restapi_producer");
             producerProperties.setProperty(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
             producerProperties.setProperty(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
-            producerProperties.setProperty(ProducerConfig.MAX_REQUEST_SIZE_CONFIG, "1000000");
+            producerProperties.setProperty(ProducerConfig.MAX_REQUEST_SIZE_CONFIG, "3000000");
             kafkaProducer = new KafkaProducer<>(producerProperties);
         }
     }
