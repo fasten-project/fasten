@@ -96,6 +96,8 @@ public class ResolutionApi {
                                                @RequestParam(required = false, defaultValue = "true") boolean transitive,
                                                @RequestParam(required = false, defaultValue = "-1") long timestamp,
                                                @RequestParam(required = false, defaultValue = "true") boolean useDepGraph) {
+        String query;
+        String result;
         switch (KnowledgeBaseConnector.forge) {
             case Constants.mvnForge: {
                 if (!KnowledgeBaseConnector.kbDao.assertPackageExistence(packageName, packageVersion)) {
@@ -129,13 +131,30 @@ public class ResolutionApi {
                             artifact.charAt(0), artifact, artifact, group, ver);
                     json.put("url", url);
                 }).forEach(jsonArray::put);
-                var result = jsonArray.toString();
+                result = jsonArray.toString();
                 result = result.replace("\\/", "/");
                 return new ResponseEntity<>(result, HttpStatus.OK);
             }
+            case Constants.pypiForge:
+                if (!KnowledgeBaseConnector.kbDao.assertPackageExistence(packageName, packageVersion)) {
+                    try {
+                        LazyIngestionProvider.ingestArtifactWithDependencies(packageName, packageVersion);
+                    } catch (IllegalArgumentException e) {
+                        return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
+                    } catch (IOException e) {
+                        return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+                    }
+                }
+                query = KnowledgeBaseConnector.dependencyResolverAddress+"/dependencies/"+packageName+"/"+packageVersion;
+                result = MavenUtilities.sendGetRequest(query);
+                if (result == null || result.contains("\"error\"")) {
+                    return new ResponseEntity<>("Could not find the requested data", HttpStatus.NOT_FOUND);
+                }
+                result = result.replaceAll("\\s+","");
+                return new ResponseEntity<>(result, HttpStatus.OK);
             default: {
-                var query = KnowledgeBaseConnector.dependencyResolverAddress+"/dependencies/"+packageName+"/"+packageVersion;
-                var result = MavenUtilities.sendGetRequest(query);
+                query = KnowledgeBaseConnector.dependencyResolverAddress+"/dependencies/"+packageName+"/"+packageVersion;
+                result = MavenUtilities.sendGetRequest(query);
                 if (result == null || result.contains("\"error\"")) {
                     return new ResponseEntity<>("Could not find the requested data", HttpStatus.NOT_FOUND);
                 }
