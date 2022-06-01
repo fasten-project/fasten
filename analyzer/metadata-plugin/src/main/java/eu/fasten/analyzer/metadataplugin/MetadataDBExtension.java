@@ -173,15 +173,15 @@ public abstract class MetadataDBExtension implements KafkaPlugin, DBConnector {
                         setOutputPath(callgraph);
                     }
                 });
-            } catch (Exception expected) {
-                if (expected instanceof DataAccessException) {
-                    // The error codes starting with 57P0 are related to the DB connection issues.
-                    // See https://www.postgresql.org/docs/current/errcodes-appendix.html
-                    if (((DataAccessException) expected).sqlState().contains("57P0")) {
-                        throw new UnrecoverableError("Could not connect to the Postgres DB and the plug-in should be stopped and restarted.",
-                                expected.getCause());
-                    }
+            } catch (DataAccessException e) {
+                // The error codes starting with 57P0 are related to the DB connection issues.
+                // See https://www.postgresql.org/docs/current/errcodes-appendix.html
+                if (e.sqlState().contains("57P0")) {
+                    throw new UnrecoverableError("Could not connect to the Postgres DB and the plug-in should be stopped and restarted.",
+                            e.getCause());
                 }
+            } catch (Exception expected) {
+
             }
             transactionRestartCount++;
         } while (restartTransaction && !processedRecord

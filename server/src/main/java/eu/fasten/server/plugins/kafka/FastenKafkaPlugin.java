@@ -354,15 +354,16 @@ public class FastenKafkaPlugin implements FastenServerPlugin {
             // therefore K8s will restart the plug-in.
             logger.error("Forced to stop the plug-in due to ", e);
             throw e;
-        } catch (Exception e) {
-            if (e instanceof DataAccessException) {
-                // The error codes starting with 57P0 are related to the DB connection issues.
-                // See https://www.postgresql.org/docs/current/errcodes-appendix.html
-                if (((DataAccessException) e).sqlState().contains("57P0")) {
-                    throw new UnrecoverableError("Could not connect to the Postgres DB and the plug-in should be stopped and restarted.",
-                            e.getCause());
-                }
+
+        } catch (DataAccessException e) {
+            // The error codes starting with 57P0 are related to the DB connection issues.
+            // See https://www.postgresql.org/docs/current/errcodes-appendix.html
+            if (e.sqlState().contains("57P0")) {
+                throw new UnrecoverableError("Could not connect to the Postgres DB and the plug-in should be stopped and restarted.",
+                        e.getCause());
             }
+            plugin.setPluginError(e);
+        } catch (Exception e) {
             logger.error("An error occurred in " + plugin.getClass().getCanonicalName(), e);
             plugin.setPluginError(e);
         }
