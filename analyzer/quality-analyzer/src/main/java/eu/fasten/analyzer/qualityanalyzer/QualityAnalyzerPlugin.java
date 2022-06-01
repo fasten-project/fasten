@@ -20,6 +20,7 @@ package eu.fasten.analyzer.qualityanalyzer;
 
 import eu.fasten.analyzer.qualityanalyzer.data.QAConstants;
 import eu.fasten.core.data.Constants;
+import eu.fasten.core.exceptions.UnrecoverableError;
 import eu.fasten.core.plugins.DBConnector;
 import eu.fasten.core.plugins.KafkaPlugin;
 import org.jooq.DSLContext;
@@ -32,7 +33,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.sql.BatchUpdateException;
-import java.util.*;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 
 public class QualityAnalyzerPlugin extends Plugin {
@@ -105,6 +110,13 @@ public class QualityAnalyzerPlugin extends Plugin {
                 catch(DataAccessException e) {
                     logger.info("Data access exception");
                     // Database connection error
+                    // The error codes starting with 57P0 are related to the DB connection issues.
+                    // See https://www.postgresql.org/docs/current/errcodes-appendix.html
+                    if (e.sqlState().contains("57P0")) {
+                        throw new UnrecoverableError("Could not connect to the Postgres DB and the plug-in should be stopped and restarted.",
+                                e.getCause());
+                    }
+
                     if (e.getCause() instanceof BatchUpdateException) {
                         var exception = ((BatchUpdateException) e.getCause())
                                 .getNextException();
