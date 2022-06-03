@@ -92,7 +92,10 @@ public class DebianLicenseDetectorPlugin extends Plugin {
             try { // Fasten error-handling guidelines
                 reset();
                 JSONObject json = new JSONObject(record);
-                object = new JSONObject();
+                JSONObject object2 = new JSONObject();
+                object = object2;
+                System.out.println("Object at the beginning of consume:");
+                System.out.println(object);
                 logger.info("Debian license detector started.");
 
                 // Retrieving the package name
@@ -155,26 +158,9 @@ public class DebianLicenseDetectorPlugin extends Plugin {
                     AnalyzeDirectory(jsonOutputPayload, packageName, packageVersion);
                 }
 
-                // Creating a json pretty printed in the jsons directory
-                String directoryNameJson = "jsons";
-                File directoryJson = new File(directoryNameJson);
-                if (! directoryJson.exists()){
-                    directoryJson.mkdir();
-                }
-
-                fileJson = new File("jsons/" + packageName + "-" + packageVersion + "_LicensesAtFileLevel_pp.json");
-                BufferedWriter writer = new BufferedWriter(new FileWriter(fileJson));
-                // here is missing the control upon jsons already created
-                writer.write(object.toString(4));
-                writer.close();
 
 
-                JSONArray fileLicenses = parseScanResult(String.valueOf(fileJson));
-                if (fileLicenses != null && !fileLicenses.isEmpty()) {
-                    detectedLicenses.addFiles(fileLicenses);
-                } else {
-                    logger.warn("Scanner hasn't detected any licenses in " + String.valueOf(fileJson) + ".");
-                }
+
 
 
 
@@ -194,7 +180,7 @@ public class DebianLicenseDetectorPlugin extends Plugin {
                     );
                 }
 
-                fileJson.delete();
+
                 file.delete();
                 //System.out.println("Json files deleted.");
 
@@ -218,6 +204,28 @@ public class DebianLicenseDetectorPlugin extends Plugin {
 
         @Override
         public Optional<String> produce() {
+        try{
+            System.out.println(object);
+            // Creating a json pretty printed in the jsons directory
+            String directoryNameJson = "jsons";
+            File directoryJson = new File(directoryNameJson);
+            if (! directoryJson.exists()){
+                directoryJson.mkdir();
+            }
+            fileJson = new File("jsons/" + packageName + "-" + packageVersion + "_LicensesAtFileLevel_pp.json");
+            BufferedWriter writer = new BufferedWriter(new FileWriter(fileJson));
+            // here is missing the control upon jsons already created
+            writer.write(object.toString(4));
+            writer.close();
+
+            JSONArray fileLicenses = parseScanResult(String.valueOf(fileJson));
+            fileJson.delete();
+            if (fileLicenses != null && !fileLicenses.isEmpty()) {
+                detectedLicenses.addFiles(fileLicenses);
+            } else {
+                logger.warn("Scanner hasn't detected any licenses in " + String.valueOf(fileJson) + ".");
+            }
+
             if (detectedLicenses == null ||
                     (detectedLicenses.getOutbound().isEmpty() && detectedLicenses.getFiles().isEmpty())
             ) {
@@ -227,6 +235,12 @@ public class DebianLicenseDetectorPlugin extends Plugin {
                 //System.out.println("Producing the payload with the produce method.");
                 return Optional.of(new JSONObject(detectedLicenses).toString());
             }
+        } catch (SocketTimeoutException ex) {
+            ex.printStackTrace();
+        } catch (IOException ex) {
+            ex.printStackTrace();
+        }
+        return null;
         }
 
         // this method first get the license from one of the copyrights files (copyright, license or readme), if
@@ -463,9 +477,16 @@ public class DebianLicenseDetectorPlugin extends Plugin {
                     }
                 }
             } catch (IOException e) {
+                //System.out.println(object);
+                //System.out.println(detectedLicenses);
+                System.out.println("Inside of line 480 - IOException catched");
+                produce();
+                /*
                 throw new IOException(
                         "Couldn't get data from the HTTP response returned by Debian's API using the checksum: " + e.getMessage(),
                         e.getCause());
+                 */
+                return null;
             }
             return checksum;
         }
@@ -507,18 +528,32 @@ public class DebianLicenseDetectorPlugin extends Plugin {
                             //System.out.println(CurrentPathAndFilename);
                             if (CurrentPathAndFilename != null){
                                 if (CurrentPathAndFilename.equals(path)) {
+                                    //JSONObject licenses = new JSONObject();
                                     if (!obj2.isNull("license")) {
                                         license = obj2.getString("license");
+                                        /*
+                                        licenses.put("name", license);
+                                        licenses.put("source", "DEBIAN_PACKAGES");
+                                        System.out.println("licenses JSONObject line 515");
+                                        System.out.println(licenses);*/
+                                        //licenseAndFilePath.put("licenses", licenses);
                                         licenseAndFilePath.put("license", license);
                                         FilesWithLicensesCount += 1;
                                     }
                                     else{
                                         license = null;
-                                        licenseAndFilePath.put("license", license);
+                                        /*
+                                        licenses.put("name", license);
+                                        licenses.put("source", "DEBIAN_PACKAGES");
+                                        System.out.println("licenses JSONObject line 524");
+                                        System.out.println(licenses);
+                                        licenseAndFilePath.put("licenses", licenses);
+                                        */
                                     }
                                     filePath = obj2.getString("path");
                                     FilesCount+=1;
                                     licenseAndFilePath.put("path", filePath);
+                                    System.out.println(licenseAndFilePath);
                                     //System.out.println(CurrentPathAndFilename+" and "+path+" matched!");
                                 }
                             }
