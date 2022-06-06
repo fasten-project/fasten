@@ -18,18 +18,13 @@
 
 package eu.fasten.analyzer.restapiplugin;
 
-<<<<<<< HEAD
+
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
-=======
+
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import eu.fasten.core.data.Constants;
-import eu.fasten.core.maven.MavenResolver;
-import eu.fasten.core.maven.utils.MavenUtilities;
-import org.json.JSONObject;
->>>>>>> Ingest the whole transitive closure of a pypi coordinate
 
 import java.io.IOException;
 import java.util.List;
@@ -105,36 +100,22 @@ public class LazyIngestionProvider {
     }
 
     public static void ingestArtifactWithDependencies(String packageName, String version) throws IllegalArgumentException, IOException {
-<<<<<<< HEAD
-        var groupId = packageName.split(Constants.mvnCoordinateSeparator)[0];
-        var artifactId = packageName.split(Constants.mvnCoordinateSeparator)[0];
-        ingestArtifactIfNecessary(packageName, version, null, null);
-        var mavenResolver = new NativeMavenResolver();
-        var dependencies = mavenResolver.resolveDependencies(groupId + ":" + artifactId + ":" + version);
-        ingestArtifactIfNecessary(packageName, version, null, null);
-        dependencies.forEach(d -> {
-            try {
-                ingestArtifactIfNecessary(d.getGroupId() + Constants.mvnCoordinateSeparator + d.getArtifactId(), d.version.toString(), null, null);
-            } catch (IOException e) {
-                e.printStackTrace();
-=======
         switch(KnowledgeBaseConnector.forge){
             case Constants.mvnForge: {
                 var groupId = packageName.split(Constants.mvnCoordinateSeparator)[0];
                 var artifactId = packageName.split(Constants.mvnCoordinateSeparator)[0];
                 ingestArtifactIfNecessary(packageName, version, null, null);
-                var mavenResolver = new MavenResolver();
+                var mavenResolver = new NativeMavenResolver();
                 var dependencies = mavenResolver.resolveDependencies(groupId + ":" + artifactId + ":" + version);
                 ingestArtifactIfNecessary(packageName, version, null, null);
                 dependencies.forEach(d -> {
                     try {
-                        ingestArtifactIfNecessary(d.groupId + Constants.mvnCoordinateSeparator + d.artifactId, d.version.toString(), null, null);
+                        ingestArtifactIfNecessary(d.getGroupId() + Constants.mvnCoordinateSeparator + d.getArtifactId(), d.version.toString(), null, null);
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
                 });
                 break;
->>>>>>> Ingest the whole transitive closure of a pypi coordinate
             }
             case Constants.pypiForge: {
                 var query = KnowledgeBaseConnector.dependencyResolverAddress+"/dependencies/"+packageName+"/"+version;
