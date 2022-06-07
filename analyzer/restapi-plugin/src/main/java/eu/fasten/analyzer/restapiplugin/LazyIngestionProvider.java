@@ -18,7 +18,6 @@
 
 package eu.fasten.analyzer.restapiplugin;
 
-
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
@@ -50,89 +49,105 @@ public class LazyIngestionProvider {
     public static void ingestArtifactIfNecessary(String packageName, String version, String artifactRepo, Long date) throws IllegalArgumentException, IOException {
         switch(KnowledgeBaseConnector.forge){
             case Constants.mvnForge: {
-                var groupId = packageName.split(Constants.mvnCoordinateSeparator)[0];
-                var artifactId = packageName.split(Constants.mvnCoordinateSeparator)[1];
-                if(artifactRepo == null || artifactRepo.isEmpty()) {
-                    artifactRepo = MavenUtilities.MAVEN_CENTRAL_REPO;
-                }
-                if (!MavenUtilities.mavenArtifactExists(groupId, artifactId, version, artifactRepo)) {
-                    throw new IllegalArgumentException("Maven artifact '" + packageName + ":" + version
-                            + "' could not be found in the repository of '"
-                            + (artifactRepo == null ? MavenUtilities.MAVEN_CENTRAL_REPO : artifactRepo) + "'."
-                            + " Make sure the Maven coordinate and repository are correct");
-                }
-                if (!hasArtifactBeenIngested(packageName, version)) {
-                    var jsonRecord = new JSONObject();
-                    jsonRecord.put("groupId", groupId);
-                    jsonRecord.put("artifactId", artifactId);
-                    jsonRecord.put("version", version);
-                    jsonRecord.put("artifactRepository", artifactRepo);
-                    if (date != null && date > 0) {
-                        // TODO why is the date necessary?
-                        jsonRecord.put("date", date);
-                    }
-                    if (KnowledgeBaseConnector.kafkaProducer != null && KnowledgeBaseConnector.ingestTopic != null) {
-                        KafkaWriter.sendToKafka(KnowledgeBaseConnector.kafkaProducer, KnowledgeBaseConnector.ingestTopic, jsonRecord.toString());
-                    }
-                }
+                ingestMvnArtifactIfNecessary(packageName, version, artifactRepo, date);
                 break;
             }
             case Constants.pypiForge: {
-                var query = "https://pypi.org/pypi/" + packageName + "/" + version +"/json";
-                String result;
-                try {
-                    result = MavenUtilities.sendGetRequest(query);
-                } catch (IllegalStateException ex) {
-                    throw new IllegalArgumentException("PyPI package " + packageName + ":" + version
-                            + " could not be found. Make sure the PyPI coordinate is correct");
-                }
-                JSONObject json = new JSONObject(result);
-                var jsonRecord = new JSONObject();
-                jsonRecord.put("title", packageName + " " + version);
-                jsonRecord.put("project", json);
-                jsonRecord.put("ingested", true);
-                if (KnowledgeBaseConnector.kafkaProducer != null && KnowledgeBaseConnector.ingestTopic != null) {
-                    KafkaWriter.sendToKafka(KnowledgeBaseConnector.kafkaProducer, KnowledgeBaseConnector.ingestTopic, jsonRecord.toString());
-                }
+                ingestPypiArtifactIfNecessary(packageName, version);
                 break;
             }
+        }
+    }
+
+    public static void ingestMvnArtifactIfNecessary(String packageName, String version, String artifactRepo, Long date) throws IllegalArgumentException, IOException {
+        var groupId = packageName.split(Constants.mvnCoordinateSeparator)[0];
+        var artifactId = packageName.split(Constants.mvnCoordinateSeparator)[1];
+        if(artifactRepo == null || artifactRepo.isEmpty()) {
+            artifactRepo = MavenUtilities.MAVEN_CENTRAL_REPO;
+        }
+        if (!MavenUtilities.mavenArtifactExists(groupId, artifactId, version, artifactRepo)) {
+            throw new IllegalArgumentException("Maven artifact '" + packageName + ":" + version
+                    + "' could not be found in the repository of '"
+                    + (artifactRepo == null ? MavenUtilities.MAVEN_CENTRAL_REPO : artifactRepo) + "'."
+                    + " Make sure the Maven coordinate and repository are correct");
+        }
+        if (!hasArtifactBeenIngested(packageName, version)) {
+            var jsonRecord = new JSONObject();
+            jsonRecord.put("groupId", groupId);
+            jsonRecord.put("artifactId", artifactId);
+            jsonRecord.put("version", version);
+            jsonRecord.put("artifactRepository", artifactRepo);
+            if (date != null && date > 0) {
+                // TODO why is the date necessary?
+                jsonRecord.put("date", date);
+            }
+            if (KnowledgeBaseConnector.kafkaProducer != null && KnowledgeBaseConnector.ingestTopic != null) {
+                KafkaWriter.sendToKafka(KnowledgeBaseConnector.kafkaProducer, KnowledgeBaseConnector.ingestTopic, jsonRecord.toString());
+            }
+        }
+    }
+
+    public static void ingestPypiArtifactIfNecessary(String packageName, String version) throws IllegalArgumentException, IOException {
+        var query = "https://pypi.org/pypi/" + packageName + "/" + version +"/json";
+        String result;
+        try {
+            result = MavenUtilities.sendGetRequest(query);
+        } catch (IllegalStateException ex) {
+            throw new IllegalArgumentException("PyPI package " + packageName + ":" + version
+                    + " could not be found. Make sure the PyPI coordinate is correct");
+        }
+        JSONObject json = new JSONObject(result);
+        var jsonRecord = new JSONObject();
+        jsonRecord.put("title", packageName + " " + version);
+        jsonRecord.put("project", json);
+        jsonRecord.put("ingested", true);
+        if (KnowledgeBaseConnector.kafkaProducer != null && KnowledgeBaseConnector.ingestTopic != null) {
+            KafkaWriter.sendToKafka(KnowledgeBaseConnector.kafkaProducer, KnowledgeBaseConnector.ingestTopic, jsonRecord.toString());
         }
     }
 
     public static void ingestArtifactWithDependencies(String packageName, String version) throws IllegalArgumentException, IOException {
         switch(KnowledgeBaseConnector.forge){
             case Constants.mvnForge: {
-                var groupId = packageName.split(Constants.mvnCoordinateSeparator)[0];
-                var artifactId = packageName.split(Constants.mvnCoordinateSeparator)[0];
-                ingestArtifactIfNecessary(packageName, version, null, null);
-                var mavenResolver = new NativeMavenResolver();
-                var dependencies = mavenResolver.resolveDependencies(groupId + ":" + artifactId + ":" + version);
-                ingestArtifactIfNecessary(packageName, version, null, null);
-                dependencies.forEach(d -> {
-                    try {
-                        ingestArtifactIfNecessary(d.getGroupId() + Constants.mvnCoordinateSeparator + d.getArtifactId(), d.version.toString(), null, null);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                });
+                ingestMvnArtifactWithDependencies(packageName, version);
                 break;
             }
             case Constants.pypiForge: {
-                var query = KnowledgeBaseConnector.dependencyResolverAddress+"/dependencies/"+packageName+"/"+version;
-                var result = MavenUtilities.sendGetRequest(query);
-                result = result.replaceAll("\\s+","");
-                JsonArray dependencyList = JsonParser.parseString(result).getAsJsonArray();
-                for (var coordinate : dependencyList) {
-                    JsonObject jsonObject = coordinate.getAsJsonObject();
-                    String dependencyPackage = jsonObject.get("product").getAsString();
-                    String dependencyVersion = jsonObject.get("version").getAsString();
-                    try {
-                        ingestArtifactIfNecessary(dependencyPackage, dependencyVersion, null, null);
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-                }
+                ingestPypiArtifactWithDependencies(packageName, version);
                 break;
+            }
+        }
+    }
+
+    public static void ingestMvnArtifactWithDependencies(String packageName, String version) throws IllegalArgumentException, IOException {
+        var groupId = packageName.split(Constants.mvnCoordinateSeparator)[0];
+        var artifactId = packageName.split(Constants.mvnCoordinateSeparator)[0];
+        ingestMvnArtifactIfNecessary(packageName, version, null, null);
+        var mavenResolver = new NativeMavenResolver();
+        var dependencies = mavenResolver.resolveDependencies(groupId + ":" + artifactId + ":" + version);
+        ingestMvnArtifactIfNecessary(packageName, version, null, null);
+        dependencies.forEach(d -> {
+            try {
+                ingestMvnArtifactIfNecessary(d.getGroupId() + Constants.mvnCoordinateSeparator + d.getArtifactId(), d.version.toString(), null, null);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        });
+    }
+
+    public static void ingestPypiArtifactWithDependencies(String packageName, String version) throws IllegalArgumentException, IOException {
+        var query = KnowledgeBaseConnector.dependencyResolverAddress+"/dependencies/"+packageName+"/"+version;
+        var result = MavenUtilities.sendGetRequest(query);
+        result = result.replaceAll("\\s+","");
+        JsonArray dependencyList = JsonParser.parseString(result).getAsJsonArray();
+        for (var coordinate : dependencyList) {
+            JsonObject jsonObject = coordinate.getAsJsonObject();
+            String dependencyPackage = jsonObject.get("product").getAsString();
+            String dependencyVersion = jsonObject.get("version").getAsString();
+            try {
+                ingestPypiArtifactIfNecessary(dependencyPackage, dependencyVersion);
+            } catch (IOException e) {
+                e.printStackTrace();
             }
         }
     }
