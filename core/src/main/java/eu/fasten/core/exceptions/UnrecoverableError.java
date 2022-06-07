@@ -1,11 +1,37 @@
+/*
+ * Copyright 2021 Delft University of Technology
+ * 
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ * 
+ *    http://www.apache.org/licenses/LICENSE-2.0
+ * 
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package eu.fasten.core.exceptions;
 
-/**
- * This exception is defined for rare circumstances where we need to deliberately crash a plug-in and
- * cause Kubernetes to restart the pod. Otherwise, RuntimeExceptions are normally catched and handled by the FASTEN server.
- */
 public class UnrecoverableError extends Error {
-    public UnrecoverableError(String errorMsg, Throwable err) {
-        super(errorMsg, err);
+
+    private static final long serialVersionUID = -952922266056203198L;
+
+    public UnrecoverableError() {
+        super();
+    }
+
+    public UnrecoverableError(String message) {
+        super(message);
+    }
+
+    public UnrecoverableError(Throwable cause) {
+        super(cause);
+    }
+
+    public UnrecoverableError(String message, Throwable cause) {
+        super(message, cause);
     }
 }
