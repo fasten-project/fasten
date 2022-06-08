@@ -101,19 +101,20 @@ public class QualityAnalyzerPlugin extends Plugin {
             do {
                 logger.info("Beginning of the transaction sequence");
                 setPluginError(null);
+                transactionRestartCount++;
+
                 try {
                     recordId = utils.processJsonRecord(jsonRecord);
-                    if(recordId == null) {
+                    if (recordId == null) {
                         throw new IllegalStateException("No callables matched");
                     }
                 }
-                catch(DataAccessException e) {
+                // Database-related errors
+                catch (DataAccessException e) {
                     logger.info("Data access exception");
-                    // Database connection error
-                    // The error codes starting with 57P0 are related to the DB connection issues.
-                    // See https://www.postgresql.org/docs/current/errcodes-appendix.html
-                    if (e.sqlState().contains("57P0")) {
-                        throw new UnrecoverableError("Could not connect to the Postgres DB and the plug-in should be stopped and restarted.",
+
+                    if (transactionRestartCount >= Constants.transactionRestartLimit) {
+                        throw new UnrecoverableError("Could not connect to or query the Postgres DB and the plug-in should be stopped and restarted.",
                                 e.getCause());
                     }
 
@@ -123,6 +124,7 @@ public class QualityAnalyzerPlugin extends Plugin {
                         setPluginError(exception);
                     }
 
+                    setPluginError(e);
                     logger.info("Restarting transaction for '" + recordId + "'");
                     // It could be a deadlock, so restart transaction
                     restartTransaction = true;
@@ -147,8 +149,6 @@ public class QualityAnalyzerPlugin extends Plugin {
                     logger.info("Updated the callable for  '" + forge + "' metadata "
                             + "with callable id = " + recordId);
                 }
-
-                transactionRestartCount++;
 
             } while( restartTransaction && !processedRecord && transactionRestartCount < Constants.transactionRestartLimit );
         }
