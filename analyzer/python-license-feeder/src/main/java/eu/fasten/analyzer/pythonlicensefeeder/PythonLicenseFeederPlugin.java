@@ -54,32 +54,24 @@ public class PythonLicenseFeederPlugin extends Plugin {
 
         @Override
         public void consume(String record) {
-            try { // Fasten error-handling guidelines
+            this.pluginError = null;
 
-                this.pluginError = null;
+            logger.info("License feeder started.");
 
-                logger.info("License feeder started.");
+            String packageName = extractPackageName(record);
+            String packageVersion = extractPackageVersion(record);
+            String sourcePath = extractSourcePath(record);
 
-                String packageName = extractPackageName(record);
-                String packageVersion = extractPackageVersion(record);
-                String sourcePath = extractSourcePath(record);
+            logger.info("Package name: " + packageName + ".");
+            logger.info("Package version: " + packageVersion + ".");
 
-                logger.info("Package name: " + packageName + ".");
-                logger.info("Package version: " + packageVersion + ".");
-
-                // Inserting detected outbound into the database
-                var metadataDao = new MetadataDao(dslContext);
-                dslContext.transaction(transaction -> {
-                    metadataDao.setContext(DSL.using(transaction));
-                    insertOutboundLicenses(packageName, packageVersion, record, metadataDao);
-                    insertFileLicenses(packageName, packageVersion, sourcePath, record, metadataDao);
-                });
-
-
-            } catch (Exception e) { // Fasten error-handling guidelines
-                logger.error(e.getMessage(), e.getCause());
-                throw e;
-            }
+            // Inserting detected outbound into the database
+            var metadataDao = new MetadataDao(dslContext);
+            dslContext.transaction(transaction -> {
+                metadataDao.setContext(DSL.using(transaction));
+                insertOutboundLicenses(packageName, packageVersion, record, metadataDao);
+                insertFileLicenses(packageName, packageVersion, sourcePath, record, metadataDao);
+            });
         }
 
         protected String extractPackageName(String record) {

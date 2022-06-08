@@ -55,30 +55,23 @@ public class LicenseFeederPlugin extends Plugin {
 
         @Override
         public void consume(String record) {
-            try { // Fasten error-handling guidelines
+            this.pluginError = null;
 
-                this.pluginError = null;
+            logger.info("License feeder started.");
 
-                logger.info("License feeder started.");
+            // Retrieving coordinates of the input record
+            Revision coordinates = extractMavenCoordinates(record);
+            logger.info("Input coordinates: " + coordinates + ".");
 
-                // Retrieving coordinates of the input record
-                Revision coordinates = extractMavenCoordinates(record);
-                logger.info("Input coordinates: " + coordinates + ".");
+            // Inserting detected outbound into the database
+            var metadataDao = new MetadataDao(dslContext);
+            dslContext.transaction(transaction -> {
+                metadataDao.setContext(DSL.using(transaction));
+                insertOutboundLicenses(coordinates, record, metadataDao);
+                insertFileLicenses(coordinates, record, metadataDao);
+            });
 
-                // Inserting detected outbound into the database
-                var metadataDao = new MetadataDao(dslContext);
-                dslContext.transaction(transaction -> {
-                    metadataDao.setContext(DSL.using(transaction));
-                    insertOutboundLicenses(coordinates, record, metadataDao);
-                    insertFileLicenses(coordinates, record, metadataDao);
-                });
-
-                // TODO Inserting licenses in files
-
-            } catch (Exception e) { // Fasten error-handling guidelines
-                logger.error(e.getMessage(), e.getCause());
-                throw e;
-            }
+            // TODO Inserting licenses in files
         }
 
         /**
