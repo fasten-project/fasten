@@ -38,11 +38,26 @@ import eu.fasten.core.maven.utils.MavenUtilities;
 public class LazyIngestionProvider {
 
     private static boolean hasArtifactBeenIngested(String packageName, String version) {
-        return KnowledgeBaseConnector.kbDao.isArtifactIngested(toKey(packageName, version));
+        switch(KnowledgeBaseConnector.forge){
+            case Constants.mvnForge: {
+                return KnowledgeBaseConnector.kbDao.isArtifactIngested(toMvnKey(packageName, version));
+            }
+            case Constants.pypiForge: {
+                return KnowledgeBaseConnector.kbDao.isArtifactIngested(toPypiKey(packageName, version));
+            }
+            default:
+                return false;
+        }
     }
 
-    private static String toKey(String packageName, String version) {
+
+    private static String toMvnKey(String packageName, String version) {
         var key = String.format("%s:jar:%s-PRIORITY", packageName, version);
+        return key;
+    }
+
+    private static String toPypiKey(String packageName, String version) {
+        var key = String.format("%s:%s", packageName, version);
         return key;
     }
 
@@ -96,13 +111,16 @@ public class LazyIngestionProvider {
             throw new IllegalArgumentException("PyPI package " + packageName + ":" + version
                     + " could not be found. Make sure the PyPI coordinate is correct");
         }
-        JSONObject json = new JSONObject(result);
-        var jsonRecord = new JSONObject();
-        jsonRecord.put("title", packageName + " " + version);
-        jsonRecord.put("project", json);
-        jsonRecord.put("ingested", true);
-        if (KnowledgeBaseConnector.kafkaProducer != null && KnowledgeBaseConnector.ingestTopic != null) {
-            KafkaWriter.sendToKafka(KnowledgeBaseConnector.kafkaProducer, KnowledgeBaseConnector.ingestTopic, jsonRecord.toString());
+        if (!hasArtifactBeenIngested(packageName, version)) {
+            JSONObject json = new JSONObject(result);
+            var jsonRecord = new JSONObject();
+            jsonRecord.put("title", packageName + " " + version);
+            jsonRecord.put("project", json);
+            jsonRecord.put("ingested", true);
+            KnowledgeBaseConnector.kbDao.insertIngestedArtifact(toPypiKey(packageName, version), "0.1.1-SNAPSHOT");
+            if (KnowledgeBaseConnector.kafkaProducer != null && KnowledgeBaseConnector.ingestTopic != null) {
+                KafkaWriter.sendToKafka(KnowledgeBaseConnector.kafkaProducer, KnowledgeBaseConnector.ingestTopic, jsonRecord.toString());
+            }
         }
     }
 
@@ -154,11 +172,11 @@ public class LazyIngestionProvider {
 
     public static void batchIngestArtifacts(List<IngestedArtifact> artifacts) throws IllegalArgumentException {
         var keys = artifacts.stream() //
-                .map(a -> toKey(a.packageName, a.version)) //
+                .map(a -> toMvnKey(a.packageName, a.version)) //
                 .collect(toList());
         var alreadyIngestedArtifacts = KnowledgeBaseConnector.kbDao.areArtifactsIngested(keys);
         artifacts = artifacts.stream()
-                .filter(a -> !alreadyIngestedArtifacts.contains(toKey(a.packageName, a.version)))
+                .filter(a -> !alreadyIngestedArtifacts.contains(toMvnKey(a.packageName, a.version)))
                 .collect(toList());
         artifacts.forEach(a -> {
             var groupId = a.packageName.split(":")[0];
@@ -171,7 +189,7 @@ public class LazyIngestionProvider {
             }
         });
         var newKeys = artifacts.stream()
-                .map(a -> toKey(a.packageName, a.version))
+                .map(a -> toMvnKey(a.packageName, a.version))
                 .collect(toSet());
         KnowledgeBaseConnector.kbDao.batchInsertIngestedArtifacts(newKeys, "");
         for (var artifact : artifacts) {
