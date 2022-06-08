@@ -166,7 +166,7 @@ public class OPALPartialCallGraphConstructor {
                                 final var valueClass = OPALMethod.getClassName(value.value().valueType());
                                 final var valueContent = StringEscapeUtils.escapeJava(value.value().toJava());
                                 valueList.add(Pair.of(valuePackage + "/" + valueClass, valueContent));
-                            } catch (NullPointerException ignored) {
+                            } catch (NullPointerException | ArrayIndexOutOfBoundsException ignored) {
                             	// TODO fix swallowed exception
                             	logger.error("!! SWALLOWED EXCEPTION !!");
                             }
