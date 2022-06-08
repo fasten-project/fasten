@@ -43,6 +43,7 @@ public class MavenResolverIO {
     private DSLContext dbContext;
     private File baseDir;
     private ObjectMapper om;
+    private final int PG_FETCH_SIZE = 1000;
 
     public MavenResolverIO(DSLContext dbContext, File baseDir) {
         this(dbContext, baseDir, new ObjectMapperBuilder().build());
@@ -109,24 +110,29 @@ public class MavenResolverIO {
     public Set<Pom> readFromDB() {
         LOG.info("Collecting poms from DB ...");
 
+        var poms = new HashSet<Pom>();
+
         var dbRes = dbContext.select( //
                 PACKAGE_VERSIONS.METADATA, //
                 PACKAGE_VERSIONS.ID) //
                 .from(PACKAGE_VERSIONS) //
-                .where(PACKAGE_VERSIONS.METADATA.isNotNull()) //
-                .fetch();
+                .where(PACKAGE_VERSIONS.METADATA.isNotNull()).fetchSize(this.PG_FETCH_SIZE); //
 
-        var poms = dbRes.stream() //
-                .map(x -> {
+        try (var cursor = dbRes.fetchLazy()) {
+            while (cursor.hasNext()) {
+                var record = cursor.fetchNext();
+                if (record != null) {
                     try {
-                        var json = x.component1().data();
+                        var json = record.component1().data();
                         var pom = simplify(om.readValue(json, Pom.class));
-                        pom.id = x.component2();
-                        return pom;
+                        pom.id = record.component2();
+                        poms.add(pom);
                     } catch (JsonProcessingException e) {
                         throw new RuntimeException(e);
                     }
-                }).collect(Collectors.toSet());
+                }
+            }
+        }
 
         LOG.info("Found {} poms in DB", poms.size());
 
