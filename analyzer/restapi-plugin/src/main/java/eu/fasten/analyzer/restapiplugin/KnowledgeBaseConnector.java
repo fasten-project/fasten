@@ -133,8 +133,10 @@ public class KnowledgeBaseConnector {
     @PostConstruct
     public void connectToKnowledgeBase() {
         try {
-            logger.info("Establishing connection to the " + kbForge +  " KnowledgeBase at " + kbUrl + ", user " + kbUser +"...");
-            dbContext = PostgresConnector.getDSLContext(kbUrl, kbUser, true);
+            logger.info("Establishing connection to the " + kbForge + " KnowledgeBase at " + kbUrl + ", user " + kbUser + "...");
+            // JDBC auto-commit should be false: (1) Postgres doesn't like it when using non-zero fetch size.
+            // (2) It is not usually a good practice.
+            dbContext = PostgresConnector.getDSLContext(kbUrl, kbUser, false);
             kbDao = new MetadataDao(dbContext);
         } catch (SQLException e) {
             logger.error("Couldn't connect to the KnowledgeBase", e);
