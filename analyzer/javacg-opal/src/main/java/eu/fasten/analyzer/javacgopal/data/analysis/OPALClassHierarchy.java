@@ -21,11 +21,13 @@ package eu.fasten.analyzer.javacgopal.data.analysis;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Set;
 
 import org.opalj.br.ClassHierarchy;
@@ -33,6 +35,7 @@ import org.opalj.br.DeclaredMethod;
 import org.opalj.br.Method;
 import org.opalj.br.ObjectType;
 import org.opalj.br.ReferenceType;
+import org.opalj.br.instructions.Instruction;
 import org.opalj.collection.immutable.UIDSet;
 import org.opalj.tac.DUVar;
 import org.opalj.tac.Stmt;
@@ -45,6 +48,7 @@ import eu.fasten.core.data.JavaGraph;
 import eu.fasten.core.data.JavaScope;
 import eu.fasten.core.data.JavaType;
 import it.unimi.dsi.fastutil.ints.IntIntPair;
+import scala.Option;
 import scala.Tuple2;
 import scala.collection.Iterator;
 import scala.collection.JavaConverters;
@@ -336,7 +340,12 @@ public class OPALClassHierarchy {
      */
     public Map<Object, Object> getCallSite(final Method source, final Integer pc,
                                            Stmt<DUVar<ValueInformation>>[] stmts) {
-        final var instruction = source.instructionsOption().get()[pc].mnemonic();
+        final var instructionsOption = source.instructionsOption();
+        if (instructionsOption.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
+        final var instruction = instructionsOption.get()[pc].mnemonic();
         final var receiverType = new HashSet<FastenURI>();
 
         if (instruction.equals("invokevirtual") | instruction.equals("invokeinterface")) {
@@ -351,9 +360,8 @@ public class OPALClassHierarchy {
                             ((UIDSet<? extends ReferenceType>)upperBounds).foreach(v1 -> receiverType.add(OPALMethod.getTypeURI(v1)));
 
                         } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
-                            e.printStackTrace();
                             throw new RuntimeException("A problem occurred while finding receiver " +
-                                "type");
+                                "type", e);
                         }
 
                     }
@@ -361,7 +369,7 @@ public class OPALClassHierarchy {
             }
 
         } else {
-            receiverType.add(OPALMethod.getTypeURI(source.instructionsOption().get()[pc]
+            receiverType.add(OPALMethod.getTypeURI(instructionsOption.get()[pc]
                 .asMethodInvocationInstruction().declaringClass()));
         }
 
