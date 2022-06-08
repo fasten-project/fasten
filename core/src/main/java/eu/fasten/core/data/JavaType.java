@@ -97,8 +97,7 @@ public class JavaType {
         this.sourceFileName = sourceFile;
         this.methods = methods;
         this.javaNodes = new Object2IntOpenHashMap<>();
-        methods.forEach((x, y) -> javaNodes.put(y, x));
-        ;
+        methods.forEach((x, y) -> javaNodes.put(y, x.intValue()));
         javaNodes.defaultReturnValue(-1);
         this.definedMethods = defineds;
         this.superClasses = superClasses;

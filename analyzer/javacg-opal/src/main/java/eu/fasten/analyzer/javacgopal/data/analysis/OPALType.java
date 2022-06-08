@@ -169,7 +169,7 @@ public class OPALType {
             if (defined) {
                 defs.put(node.getSignature(), node);
             }
-            nodes.put(entry.getValue(), node);
+            nodes.put(entry.getValue().intValue(), node);
         }
         return MutablePair.of(defs, nodes);
     }
