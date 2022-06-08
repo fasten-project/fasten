@@ -26,6 +26,7 @@ import it.unimi.dsi.fastutil.longs.LongSet;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -35,6 +36,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
+import org.codehaus.plexus.util.CollectionUtils;
 import org.jgrapht.Graphs;
 import org.jgrapht.graph.DefaultDirectedGraph;
 import org.jgrapht.graph.DefaultEdge;
@@ -47,12 +49,13 @@ import org.slf4j.LoggerFactory;
 public class ClassHierarchy {
     private static final Logger logger = LoggerFactory.getLogger(ClassHierarchy.class);
 
-    private final Map<String, Map<String, LongSet>> typeDictionary;
+    private final Map<String, Map<String, LongSet>> definedMethods;
     private final Map<String, List<String>> universalChildren;
     private final Map<String, List<String>> universalParents;
+    private final Map<String, Map<String, LongSet>> abstractMethods;
 
-    public Map<String, Map<String, LongSet>> getTypeDictionary() {
-        return typeDictionary;
+    public Map<String, Map<String, LongSet>> getDefinedMethods() {
+        return definedMethods;
     }
 
     public Map<String, List<String>> getUniversalChildren() {
@@ -72,17 +75,22 @@ public class ClassHierarchy {
         final var childrenAndParents = createUniversalCHA(dependencySet);
         this.universalParents = childrenAndParents.getLeft();
         this.universalChildren = childrenAndParents.getRight();
-        this.typeDictionary = createTypeDictionary(dependencySet, allUris);
+        final var typeDictionary = createTypeDictionary(dependencySet, allUris);
+        this.definedMethods = typeDictionary.getLeft();
+        this.abstractMethods = typeDictionary.getRight();
     }
 
-    public ClassHierarchy(Set<Long> dependencySet, DSLContext dbContext, RocksDao rocksDao) {
+    public ClassHierarchy(final Set<Long> dependencySet, final DSLContext dbContext,
+                          final RocksDao rocksDao) {
+        this.rocksDao = rocksDao;
         final var universalCHA = createUniversalCHA(dependencySet, dbContext, rocksDao);
         this.universalChildren = new HashMap<>(universalCHA.getRight().size());
         universalCHA.getRight()
             .forEach((k, v) -> this.universalChildren.put(k, new ArrayList<>(v)));
         this.universalParents = new HashMap<>(universalCHA.getLeft().size());
         universalCHA.getLeft().forEach((k, v) -> this.universalParents.put(k, new ArrayList<>(v)));
-        this.typeDictionary = createTypeDictionary(dependencySet);
+        this.definedMethods = createTypeDictionary(dependencySet);
+        this.abstractMethods = new HashMap<>();
     }
 
 
@@ -291,7 +299,7 @@ public class ClassHierarchy {
      *
      * @return a type dictionary
      */
-    private Map<String, Map<String, LongSet>> createTypeDictionary(Set<Long> dependencySet) {
+    private Map<String, Map<String, LongSet>> createTypeDictionary(final Set<Long> dependencySet) {
         final long startTime = System.currentTimeMillis();
         var result = new HashMap<String, Map<String, LongSet>>();
         int noCGCounter = 0, noMetadaCounter = 0;
@@ -340,27 +348,58 @@ public class ClassHierarchy {
         return cg;
     }
 
-    private Map<String, Map<String, LongSet>> createTypeDictionary(
+    private Pair<Map<String, Map<String, LongSet>>, Map<String, Map<String, LongSet>>> createTypeDictionary(
         final List<PartialJavaCallGraph> dependencySet,
-        final BiMap<Long, String> allUris) {
+        final BiMap<Long, String> globalUris) {
 
-        Map<String, Map<String, LongSet>> typeDict = new HashMap<>();
+        Map<String, Map<String, LongSet>> definedResult = new HashMap<>();
+        Map<String, Map<String, LongSet>> abstractResult = new HashMap<>();
         for (final var rcg : dependencySet) {
-            final var uris = rcg.mapOfFullURIStrings();
+            final var localUris = rcg.mapOfFullURIStrings();
             for (final var type : rcg.getClassHierarchy().get(JavaScope.internalTypes).entrySet()) {
-                type.getValue().getDefinedMethods().forEach((signature, node) -> {
-                    final var localId = type.getValue().getMethodKey(node);
-                    final var oldType = typeDict.getOrDefault(type.getKey(), new HashMap<>());
-                    final var oldNode =
-                        oldType.getOrDefault(node.getSignature(), new LongOpenHashSet());
-                    oldNode.add(allUris.inverse().get(uris.get(localId)).longValue());
-                    oldType.put(node.getSignature(), oldNode);
-                    typeDict.put(type.getKey(), oldType);
-                });
+                final var javaType = type.getValue();
+                final var typeUri = type.getKey();
+
+                final var definedMethods = javaType.getDefinedMethods().values();
+                final var abstractMethods = CollectionUtils.subtract(javaType.getMethods().values(),
+                    definedMethods);
+
+                addMethodsToResult(definedMethods, javaType, globalUris, localUris, typeUri, definedResult);
+                addMethodsToResult(abstractMethods, javaType, globalUris, localUris, typeUri, abstractResult);
             }
         }
 
-        return typeDict;
+        return Pair.of(definedResult, abstractResult);
     }
 
+    private void addMethodsToResult(final Collection<JavaNode> methods, final JavaType type,
+                                    final BiMap<Long, String> globalUris,
+                                    final BiMap<Integer, String> localUris,
+                                    final String typeUri,
+                                    Map<String, Map<String, LongSet>> result) {
+        for (final var method : methods) {
+            final var id = nodeToGlobalId(type, method, globalUris, localUris);
+            putMethods(result, id, typeUri, method);
+        }
+    }
+
+    private Long nodeToGlobalId(final JavaType type, final JavaNode node,
+                                final BiMap<Long, String> allUris, final BiMap<Integer, String> uris) {
+        final var localId = type.getMethodKey(node);
+        return allUris.inverse().get(uris.get(localId));
+    }
+
+    private void putMethods(Map<String, Map<String, LongSet>> result,
+                            final long id, final String typeUri, final JavaNode node) {
+        final var oldType = result.getOrDefault(typeUri, new HashMap<>());
+        final var oldNode =
+            oldType.getOrDefault(node.getSignature(), new LongOpenHashSet());
+        oldNode.add(id);
+        oldType.put(node.getSignature(), oldNode);
+        result.put(typeUri, oldType);
+    }
+
+    public Map<String, Map<String, LongSet>> getAbstractMethods() {
+        return abstractMethods;
+    }
 }

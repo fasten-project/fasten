@@ -433,7 +433,7 @@ public class CGMerger {
         // Cache frequently accessed variables
         final Map<String, LongSet> emptyMap = Collections.emptyMap();
         final LongSet emptyLongSet = LongSets.emptySet();
-        Map<String, Map<String, LongSet>> typeDictionary = this.classHierarchy.getTypeDictionary();
+        Map<String, Map<String, LongSet>> typeDictionary = this.classHierarchy.getDefinedMethods();
         Map<String, List<String>> universalParents = this.classHierarchy.getUniversalParents();
         Map<String, List<String>> universalChildren = this.classHierarchy.getUniversalChildren();
 
