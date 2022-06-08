@@ -332,11 +332,8 @@ public class CGMerger {
             return null;
         }
 
-        final long totalTime = System.currentTimeMillis();
         var result = new MergedDirectedGraph();
 
-        logger.info("Merging graph with {} nodes and {} edges",
-            callGraph.numNodes(), callGraph.numArcs());
         final Set<LongLongPair> edges = ConcurrentHashMap.newKeySet();
 
         metadata.gid2NodeMetadata.long2ObjectEntrySet().parallelStream().forEach(entry -> {
