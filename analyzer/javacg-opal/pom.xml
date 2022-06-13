@@ -6,7 +6,7 @@
     <parent>
         <artifactId>analyzer</artifactId>
         <groupId>eu.fasten</groupId>
-        <version>0.0.9-SNAPSHOT</version>
+        <version>0.0.10-SNAPSHOT</version>
     </parent>
 
     <groupId>eu.fasten.analyzer</groupId>
@@ -16,11 +16,11 @@
     <name>javacg-opal</name>
 
     <dependencies>
-        <dependency>
-            <groupId>eu.fasten</groupId>
-            <artifactId>core</artifactId>
-			<version>0.0.9-SNAPSHOT</version>
-        </dependency>
+		<dependency>
+			<groupId>eu.fasten</groupId>
+			<artifactId>core</artifactId>
+			<version>0.0.10-SNAPSHOT</version>
+		</dependency>
 		<dependency>
 			<groupId>de.opal-project</groupId>
 			<artifactId>bytecode-representation_2.12</artifactId>
