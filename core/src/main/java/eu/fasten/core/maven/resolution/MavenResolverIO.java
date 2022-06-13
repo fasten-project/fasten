@@ -43,7 +43,7 @@ public class MavenResolverIO {
     private DSLContext dbContext;
     private File baseDir;
     private ObjectMapper om;
-    private final int PG_FETCH_SIZE = 1000;
+    private final int PG_FETCH_SIZE = 10000;
 
     public MavenResolverIO(DSLContext dbContext, File baseDir) {
         this(dbContext, baseDir, new ObjectMapperBuilder().build());
@@ -92,6 +92,7 @@ public class MavenResolverIO {
         LOG.info("Saving poms to {} ...", to);
         try {
             var tmp = tmpFile();
+            createFileIfDoNotExist(tmp);
             om.writeValue(tmp, poms);
             FileUtils.moveFile(tmp, to);
         } catch (IOException e) {
@@ -111,6 +112,7 @@ public class MavenResolverIO {
         LOG.info("Collecting poms from DB ...");
 
         var poms = new HashSet<Pom>();
+        var numberOfFetchedPoms = 0;
 
         var dbRes = dbContext.select( //
                 PACKAGE_VERSIONS.METADATA, //
@@ -127,6 +129,10 @@ public class MavenResolverIO {
                         var pom = simplify(om.readValue(json, Pom.class));
                         pom.id = record.component2();
                         poms.add(pom);
+                        numberOfFetchedPoms++;
+                        if (numberOfFetchedPoms % PG_FETCH_SIZE == 0) {
+                            LOG.info("Fetched {} POMs", numberOfFetchedPoms);
+                        }
                     } catch (JsonProcessingException e) {
                         throw new RuntimeException(e);
                     }
@@ -167,5 +173,18 @@ public class MavenResolverIO {
 
         LOG.info("Initialization done");
         return new MavenResolver(dpdRes, depRes);
+    }
+
+    private void createFileIfDoNotExist(File file) {
+        if (!file.exists()) {
+            try {
+                file.createNewFile();
+            } catch (IOException e) {
+                e.printStackTrace();
+                LOG.error("Could not create file {}", file.toPath());
+            }
+        } else {
+            LOG.info("File {} exists!", file.toPath());
+        }
     }
 }
