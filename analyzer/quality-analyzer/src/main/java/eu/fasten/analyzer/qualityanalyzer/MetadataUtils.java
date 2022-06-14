@@ -25,11 +25,16 @@ import eu.fasten.core.data.metadatadb.codegen.tables.Modules;
 import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
 import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
 import org.jooq.DSLContext;
+import org.jooq.Record1;
+import org.jooq.exception.TooManyRowsException;
+import org.jooq.impl.DSL;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
+
+import static eu.fasten.analyzer.qualityanalyzer.data.QAConstants.QA_CALLABLE_START_END_LINE_TOLERANCE;
 
 public class MetadataUtils {
 
@@ -39,7 +44,7 @@ public class MetadataUtils {
         this.dslContexts = contexts;
     }
 
-    public Long processJsonRecord(JSONObject jsonRecord) throws IllegalStateException {
+    public void processJsonRecord(JSONObject jsonRecord) throws IllegalStateException {
         String rapidVersion = jsonRecord.getString("plugin_version");
         String forge;
         String packageName;
@@ -68,7 +73,7 @@ public class MetadataUtils {
         int endLine = payload.getInt("end_line");
         String methodName = getMethodName(payload);
         JSONObject metadata = getQualityMetadata(payload, rapidVersion);
-        return updateCallableMetadata(forge, packageName, packageVersion, methodName, path, startLine, endLine, metadata);
+        updateCallableMetadata(forge, packageName, packageVersion, methodName, path, startLine, endLine, metadata);
     }
 
     private String getMethodName(JSONObject payload) {
@@ -93,28 +98,42 @@ public class MetadataUtils {
         return metadata;
     }
 
-    public Long updateCallableMetadata(String forge, String packageName, String packageVersion, String methodName, String path, int lineStart, int lineEnd, JSONObject metadata) {
+    public void updateCallableMetadata(String forge, String packageName, String packageVersion, String methodName, String path, int lineStart, int lineEnd, JSONObject metadata) {
         var context = dslContexts.get(forge);
-        var result = context.update(Callables.CALLABLES)
-                .set(Callables.CALLABLES.METADATA, JsonbDSL.concat(Callables.CALLABLES.METADATA, JsonbDSL.field(metadata.toString())))
-                .from(Packages.PACKAGES, PackageVersions.PACKAGE_VERSIONS, Files.FILES, ModuleContents.MODULE_CONTENTS, Modules.MODULES)
-                .where(Packages.PACKAGES.FORGE.equal(forge))
-                .and(Packages.PACKAGES.PACKAGE_NAME.equal(packageName))
-                .and(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.equal(Packages.PACKAGES.ID))
-                .and(PackageVersions.PACKAGE_VERSIONS.VERSION.equal(packageVersion))
-                .and(Files.FILES.PACKAGE_VERSION_ID.equal(PackageVersions.PACKAGE_VERSIONS.ID))
-                .and(Files.FILES.PATH.equal(path))
-                .and(ModuleContents.MODULE_CONTENTS.FILE_ID.equal(Files.FILES.ID))
-                .and(Modules.MODULES.ID.equal(ModuleContents.MODULE_CONTENTS.MODULE_ID))
-                .and(Callables.CALLABLES.MODULE_ID.equal(Modules.MODULES.ID))
-                .and(Callables.CALLABLES.LINE_START.lessOrEqual(lineEnd))
-                .and(Callables.CALLABLES.LINE_END.greaterOrEqual(lineStart))
-                .and(Callables.CALLABLES.FASTEN_URI.contains(methodName))
-                .returningResult(Callables.CALLABLES.ID)
-                .fetchOne();
-        if(result != null) {
-            return result.getValue(Callables.CALLABLES.ID);
-        }
-        return null;
+        context.transaction(configuration -> {
+            Record1<Long> result;
+            try {
+                result = DSL.using(configuration).update(Callables.CALLABLES)
+                        .set(Callables.CALLABLES.METADATA, JsonbDSL.concat(Callables.CALLABLES.METADATA, JsonbDSL.field(metadata.toString())))
+                        .from(Packages.PACKAGES, PackageVersions.PACKAGE_VERSIONS, Files.FILES, ModuleContents.MODULE_CONTENTS, Modules.MODULES)
+                        .where(Packages.PACKAGES.FORGE.equal(forge))
+                        .and(Packages.PACKAGES.PACKAGE_NAME.equal(packageName))
+                        .and(PackageVersions.PACKAGE_VERSIONS.PACKAGE_ID.equal(Packages.PACKAGES.ID))
+                        .and(PackageVersions.PACKAGE_VERSIONS.VERSION.equal(packageVersion))
+                        .and(Files.FILES.PACKAGE_VERSION_ID.equal(PackageVersions.PACKAGE_VERSIONS.ID))
+                        .and(Files.FILES.PATH.equal(path))
+                        .and(ModuleContents.MODULE_CONTENTS.FILE_ID.equal(Files.FILES.ID))
+                        .and(Modules.MODULES.ID.equal(ModuleContents.MODULE_CONTENTS.MODULE_ID))
+                        .and(Callables.CALLABLES.MODULE_ID.equal(Modules.MODULES.ID))
+                        .and(Callables.CALLABLES.LINE_START.between(
+                                lineStart - QA_CALLABLE_START_END_LINE_TOLERANCE,
+                                lineStart + QA_CALLABLE_START_END_LINE_TOLERANCE))
+                        .and(Callables.CALLABLES.LINE_END.between(
+                                lineEnd - QA_CALLABLE_START_END_LINE_TOLERANCE,
+                                lineEnd + QA_CALLABLE_START_END_LINE_TOLERANCE))
+                        .and(Callables.CALLABLES.FASTEN_URI.contains(methodName))
+                        .returningResult(Callables.CALLABLES.ID)
+                        .fetchOne();
+            }
+            catch(TooManyRowsException e) {
+                var errorMessage = "Error: more than one callable matched.";
+                logger.info(errorMessage);
+                throw new IllegalStateException(errorMessage);
+            }
+
+            if(result == null) {
+                throw new IllegalStateException("Error: no callables matched.");
+            }
+        });
     }
 }

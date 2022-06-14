@@ -16,17 +16,6 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.jooq</groupId>
-            <artifactId>jooq</artifactId>
-            <version>3.14.4</version>
-            <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>info.picocli</groupId>
-            <artifactId>picocli</artifactId>
-            <version>4.0.4</version>
-        </dependency>
-        <dependency>
             <groupId>org.json</groupId>
             <artifactId>json</artifactId>
             <version>20180813</version>
@@ -40,6 +29,18 @@
             <groupId>eu.fasten</groupId>
             <artifactId>server</artifactId>
             <version>0.0.10-SNAPSHOT</version>
+        </dependency>
+        <dependency>
+            <groupId>org.jooq</groupId>
+            <artifactId>jooq</artifactId>
+            <version>3.16.3</version>
+            <scope>provided</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.github.t9t.jooq</groupId>
+            <artifactId>jooq-postgresql-json</artifactId>
+            <version>3.2.0</version>
+            <scope>provided</scope>
         </dependency>
     </dependencies>
 
