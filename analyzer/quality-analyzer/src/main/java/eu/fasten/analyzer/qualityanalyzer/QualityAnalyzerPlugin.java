@@ -32,7 +32,6 @@ import org.pf4j.PluginWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.sql.BatchUpdateException;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -53,6 +52,7 @@ public class QualityAnalyzerPlugin extends Plugin {
         private List<String> consumeTopics = new LinkedList<>(Collections.singletonList("fasten.RapidPlugin.callable.out"));
         private static MetadataUtils utils = null;
         private Exception pluginError = null;
+        private String lastProcessedPayload = null;
 
         @Override
         public void setDBConnection(Map<String, DSLContext> dslContexts) {
@@ -71,32 +71,26 @@ public class QualityAnalyzerPlugin extends Plugin {
 
         @Override
         public void consume(String kafkaMessage) {
+            lastProcessedPayload = null;
 
             logger.info("Consumed: " + kafkaMessage);
 
             var jsonRecord = new JSONObject(kafkaMessage);
 
-            String forge = null;
-
+            String payload = null;
             if (jsonRecord.has("payload")) {
-                forge = jsonRecord
-                        .getJSONObject("payload")
-                        .getString("forge".replaceAll("[\\n\\t ]", ""));
+                payload = jsonRecord.getJSONObject("payload").toString();
             }
 
-            logger.info("forge = " + forge);
-
-            if(forge == null) {
-                logger.error("Could not extract forge from the message");
-                setPluginError(new RuntimeException("Could not extract forge from the message"));
+            if(payload == null) {
+                var message = "Could not extract payload from the Kafka message: " + kafkaMessage;
+                logger.error(message);
+                setPluginError(new RuntimeException(message));
                 return;
             }
 
-            boolean processedRecord = false;
             int transactionRestartCount = 0;
             boolean restartTransaction = false;
-
-            Long recordId = null;
 
             do {
                 logger.info("Beginning of the transaction sequence");
@@ -104,58 +98,48 @@ public class QualityAnalyzerPlugin extends Plugin {
                 transactionRestartCount++;
 
                 try {
-                    recordId = utils.processJsonRecord(jsonRecord);
-                    if (recordId == null) {
-                        throw new IllegalStateException("No callables matched");
-                    }
+                    utils.processJsonRecord(jsonRecord);
                 }
-                // Database-related errors
-                catch (DataAccessException e) {
-                    logger.info("Data access exception");
 
+                catch (DataAccessException e) {
+                    logger.info("Data access exception: " + e);
                     if (transactionRestartCount >= Constants.transactionRestartLimit) {
                         throw new UnrecoverableError("Could not connect to or query the Postgres DB and the plug-in should be stopped and restarted.",
                                 e.getCause());
                     }
-
-                    if (e.getCause() instanceof BatchUpdateException) {
-                        var exception = ((BatchUpdateException) e.getCause())
-                                .getNextException();
-                        setPluginError(exception);
-                    }
-
                     setPluginError(e);
-                    logger.info("Restarting transaction for '" + recordId + "'");
-                    // It could be a deadlock, so restart transaction
+                    logger.info("Restarting transaction for '" + payload + "'");
                     restartTransaction = true;
                 }
+
                 catch(IllegalStateException e) {
-                    logger.info("Illegal state exception");
-                    //do not restart transaction, callable list is empty
+                    logger.info("Illegal state exception: " + e.getMessage());
                     restartTransaction = false;
                     setPluginError(e);
                 }
+
                 catch (RuntimeException e) {
-                    processedRecord = false;
                     restartTransaction = false;
-                    logger.error("Error saving to the database: '" + forge + "'", e);
+                    logger.error("Error saving to the database: '" + payload + "'", e);
                     setPluginError(e);
                 }
 
                 if (getPluginError() == null) {
-                    processedRecord = true;
                     restartTransaction = false;
-
-                    logger.info("Updated the callable for  '" + forge + "' metadata "
-                            + "with callable id = " + recordId);
+                    lastProcessedPayload = payload;
+                    logger.info("Processed " + payload + " successfully.");
                 }
 
-            } while( restartTransaction && !processedRecord && transactionRestartCount < Constants.transactionRestartLimit );
+            } while( restartTransaction && transactionRestartCount < Constants.transactionRestartLimit );
         }
 
         @Override
         public Optional<String> produce() {
-            return Optional.empty();
+            if (lastProcessedPayload == null) {
+                return Optional.empty();
+            } else {
+                return Optional.of("{\"result\" : \"Successfully inserted payload into the Metadata DB.\"}");
+            }
         }
 
         @Override
@@ -202,8 +186,7 @@ public class QualityAnalyzerPlugin extends Plugin {
 
         @Override
         public long getMaxConsumeTimeout() {
-            return 3600000; //The QualityAnalyzer plugin takes up to 1h to process a record.
+            return 10 * 1000;
         }
-
     }
 }
