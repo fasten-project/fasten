@@ -35,6 +35,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Map;
 
 import static eu.fasten.analyzer.qualityanalyzer.data.QAConstants.QA_CALLABLE_START_END_LINE_TOLERANCE;
+import static eu.fasten.analyzer.qualityanalyzer.data.QAConstants.QA_VERSION_NUMBER;
 
 public class MetadataUtils {
 
@@ -93,6 +94,7 @@ public class MetadataUtils {
                 "callable_parameters",
                 "metrics"});
         quality.put("rapid_plugin_version", rapidVersion);
+        quality.put("rapid_metadata_plugin_version", QA_VERSION_NUMBER);
         var metadata = new JSONObject();
         metadata.put("quality", quality);
         return metadata;
