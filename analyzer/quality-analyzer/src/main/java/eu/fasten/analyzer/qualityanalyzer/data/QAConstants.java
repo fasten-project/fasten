@@ -19,7 +19,7 @@
 package eu.fasten.analyzer.qualityanalyzer.data;
 
 public class QAConstants {
-    public static final String QA_VERSION_NUMBER = "1.2.1";
+    public static final String QA_VERSION_NUMBER = "1.2.2";
     public static final String QA_PLUGIN_NAME = "Quality Analyzer Plugin";
 
     // Number of lines difference allowed between the start of a callable measured by Lizard and
