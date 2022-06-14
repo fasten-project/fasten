@@ -22,7 +22,6 @@ public class QAConstants {
     public static final String QA_VERSION_NUMBER = "1.2.2";
     public static final String QA_PLUGIN_NAME = "Quality Analyzer Plugin";
 
-    // Number of lines difference allowed between the start of a callable measured by Lizard and
-    // stored in the metadata DB.
-    public static final int QA_CALLABLE_START_END_LINE_TOLERANCE = 2;
+    public static final String LIZARD_CALLABLE_SEPARATOR = "::";
+    public static final String JAVA_CONSTRUCTOR_NAME = "%3Cinit%3E";
 }

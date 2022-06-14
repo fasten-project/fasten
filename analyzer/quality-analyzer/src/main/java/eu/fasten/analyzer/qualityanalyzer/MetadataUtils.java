@@ -34,7 +34,8 @@ import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 
-import static eu.fasten.analyzer.qualityanalyzer.data.QAConstants.QA_CALLABLE_START_END_LINE_TOLERANCE;
+import static eu.fasten.analyzer.qualityanalyzer.data.QAConstants.JAVA_CONSTRUCTOR_NAME;
+import static eu.fasten.analyzer.qualityanalyzer.data.QAConstants.LIZARD_CALLABLE_SEPARATOR;
 import static eu.fasten.analyzer.qualityanalyzer.data.QAConstants.QA_VERSION_NUMBER;
 
 public class MetadataUtils {
@@ -72,16 +73,34 @@ public class MetadataUtils {
         String path = payload.getString("filename");
         int startLine = payload.getInt("start_line");
         int endLine = payload.getInt("end_line");
-        String methodName = getMethodName(payload);
+        String callableName = normalizeCallableName(payload.getString("callable_name"));
         JSONObject metadata = getQualityMetadata(payload, rapidVersion);
-        updateCallableMetadata(forge, packageName, packageVersion, methodName, path, startLine, endLine, metadata);
+        updateCallableMetadata(forge, packageName, packageVersion, callableName, path, startLine, endLine, metadata);
     }
 
-    private String getMethodName(JSONObject payload) {
-        String separator = ":";
-        String callableName = payload.getString("callable_name");
-        int position = callableName.lastIndexOf(separator);
-        return callableName.substring(position+separator.length());
+    public static String normalizeCallableName(String callableName) {
+        StringBuilder result = new StringBuilder();
+        if(callableName == null) {
+            return "";
+        }
+        var components = callableName.split(LIZARD_CALLABLE_SEPARATOR);
+
+        if(components.length == 1) {
+            result = new StringBuilder(components[0]);
+        }
+        else if(components.length > 1) {
+            if(components[components.length - 2].equals(components[components.length - 1])) {
+                components[components.length - 1] = JAVA_CONSTRUCTOR_NAME;
+            }
+            result.append(components[0]);
+            int i = 1;
+            while(i < components.length - 1) {
+                result.append("$").append(components[i]);
+                i++;
+            }
+            result.append(".").append(components[i]);
+        }
+        return result.toString();
     }
 
     private JSONObject getQualityMetadata(JSONObject payload, String rapidVersion) {
@@ -100,7 +119,7 @@ public class MetadataUtils {
         return metadata;
     }
 
-    public void updateCallableMetadata(String forge, String packageName, String packageVersion, String methodName, String path, int lineStart, int lineEnd, JSONObject metadata) {
+    public void updateCallableMetadata(String forge, String packageName, String packageVersion, String callableName, String path, int lineStart, int lineEnd, JSONObject metadata) {
         var context = dslContexts.get(forge);
         context.transaction(configuration -> {
             Record1<Long> result;
@@ -117,13 +136,9 @@ public class MetadataUtils {
                         .and(ModuleContents.MODULE_CONTENTS.FILE_ID.equal(Files.FILES.ID))
                         .and(Modules.MODULES.ID.equal(ModuleContents.MODULE_CONTENTS.MODULE_ID))
                         .and(Callables.CALLABLES.MODULE_ID.equal(Modules.MODULES.ID))
-                        .and(Callables.CALLABLES.LINE_START.between(
-                                lineStart - QA_CALLABLE_START_END_LINE_TOLERANCE,
-                                lineStart + QA_CALLABLE_START_END_LINE_TOLERANCE))
-                        .and(Callables.CALLABLES.LINE_END.between(
-                                lineEnd - QA_CALLABLE_START_END_LINE_TOLERANCE,
-                                lineEnd + QA_CALLABLE_START_END_LINE_TOLERANCE))
-                        .and(Callables.CALLABLES.FASTEN_URI.contains(methodName))
+                        .and(Callables.CALLABLES.LINE_START.lessOrEqual(lineEnd))
+                        .and(Callables.CALLABLES.LINE_END.greaterOrEqual(lineStart))
+                        .and(Callables.CALLABLES.FASTEN_URI.contains(callableName))
                         .returningResult(Callables.CALLABLES.ID)
                         .fetchOne();
             }
