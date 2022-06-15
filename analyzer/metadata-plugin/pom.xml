@@ -6,12 +6,12 @@
     <parent>
         <artifactId>analyzer</artifactId>
         <groupId>eu.fasten</groupId>
-        <version>0.0.10-SNAPSHOT</version>
+        <version>0.0.11-SNAPSHOT</version>
     </parent>
 
     <groupId>eu.fasten.analyzer</groupId>
     <artifactId>metadata-plugin</artifactId>
-    <version>0.0.10-SNAPSHOT</version>
+    <version>0.0.11-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>metadata-plugin</name>
@@ -20,12 +20,12 @@
         <dependency>
             <groupId>eu.fasten</groupId>
             <artifactId>core</artifactId>
-            <version>0.0.10-SNAPSHOT</version>
+            <version>0.0.11-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>eu.fasten</groupId>
             <artifactId>server</artifactId>
-            <version>0.0.10-SNAPSHOT</version>
+            <version>0.0.11-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>org.jooq</groupId>
