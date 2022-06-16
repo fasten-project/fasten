@@ -79,28 +79,29 @@ public class MetadataUtils {
     }
 
     public static String normalizeCallableName(String callableName) {
-        StringBuilder result = new StringBuilder();
-        if(callableName == null) {
+        if(callableName == null || callableName.equals("")) {
             return "";
         }
-        var components = callableName.split(LIZARD_CALLABLE_SEPARATOR);
-
-        if(components.length == 1) {
-            result = new StringBuilder(components[0]);
-        }
-        else if(components.length > 1) {
-            if(components[components.length - 2].equals(components[components.length - 1])) {
-                components[components.length - 1] = JAVA_CONSTRUCTOR_NAME;
+        else {
+            StringBuilder result = new StringBuilder();
+            var components = callableName.split(LIZARD_CALLABLE_SEPARATOR);
+            if(components.length == 1) {
+                result = new StringBuilder(components[0]);
             }
-            result.append(components[0]);
-            int i = 1;
-            while(i < components.length - 1) {
-                result.append("$").append(components[i]);
-                i++;
+            else if(components.length > 1) {
+                if(components[components.length - 2].equals(components[components.length - 1])) {
+                    components[components.length - 1] = JAVA_CONSTRUCTOR_NAME;
+                }
+                result.append(components[0]);
+                int i = 1;
+                while(i < components.length - 1) {
+                    result.append("$").append(components[i]);
+                    i++;
+                }
+                result.append(".").append(components[i]);
             }
-            result.append(".").append(components[i]);
+            return result.append("(").toString();
         }
-        return result.toString();
     }
 
     private JSONObject getQualityMetadata(JSONObject payload, String rapidVersion) {
