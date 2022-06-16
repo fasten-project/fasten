@@ -72,7 +72,7 @@
                                         <X-Compile-Target-JDK>11</X-Compile-Target-JDK>
                                         <Plugin-Class>eu.fasten.analyzer.debianlicensedetector.DebianLicenseDetectorPlugin
                                         </Plugin-Class>
-                                        <Plugin-Id>license-detector</Plugin-Id>
+                                        <Plugin-Id>debian-license-detector</Plugin-Id>
                                         <Plugin-Version>0.0.1</Plugin-Version>
                                         <Plugin-Description>
                                             Detects licenses of a repository.
