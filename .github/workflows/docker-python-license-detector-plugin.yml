@@ -50,10 +50,14 @@ jobs:
           # Strip git ref prefix from version
           VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
 
-          # Strip "v" prefix from tag name
-          [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
-
-          VERSION=${GITHUB_SHA::8}
+          # If a tag is being pushed
+          if [[ "${{ github.ref }}" == "refs/tags/"* ]]
+          then
+            # Strip "v" prefix from tag name
+            VERSION=$(echo $VERSION | sed -e 's/^v//')
+          else
+            VERSION=${GITHUB_SHA::8}
+          fi
 
           echo IMAGE_ID=$IMAGE_ID
           echo VERSION=$VERSION
