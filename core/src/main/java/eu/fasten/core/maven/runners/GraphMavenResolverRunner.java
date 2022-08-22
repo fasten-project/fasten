@@ -16,7 +16,6 @@
 package eu.fasten.core.maven.runners;
 
 import static eu.fasten.core.maven.resolution.ResolverConfig.resolve;
-import static eu.fasten.core.maven.resolution.ResolverDepth.TRANSITIVE;
 
 import java.io.File;
 import java.sql.SQLException;
@@ -120,7 +119,7 @@ public class GraphMavenResolverRunner implements Runnable {
                 Set<ResolvedRevision> revisions;
                 var startTS = System.currentTimeMillis();
                 try {
-                    var cfg = resolve().at(timestamp).depth(TRANSITIVE);
+                    var cfg = resolve().at(timestamp).includeTransitiveDeps();
                     if (parts[0].startsWith("!")) {
                         parts[0] = parts[0].substring(1);
                         revisions = graphResolver.resolveDependents(parts[0], parts[1], parts[2], cfg);

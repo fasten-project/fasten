@@ -102,6 +102,10 @@ public class MavenDependencyResolver {
         while (!queue.isEmpty()) {
             var data = queue.poll();
 
+            if (data.depth > config.depth) {
+                continue;
+            }
+
             var p = data.pom.toProduct();
             if (addedProducts.contains(p)) {
                 continue;
@@ -127,7 +131,7 @@ public class MavenDependencyResolver {
                 var depData = QueueData.nest(data, dep.getScope());
                 if (depData.isTransitiveDep()) {
 
-                    if (config.depth == ResolverDepth.DIRECT) {
+                    if (config.isExcludingTransitiveDeps()) {
                         continue;
                     }
 

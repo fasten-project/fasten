@@ -16,7 +16,6 @@
 package eu.fasten.core.maven.resolution;
 
 import static eu.fasten.core.maven.data.Scope.RUNTIME;
-import static eu.fasten.core.maven.resolution.ResolverDepth.TRANSITIVE;
 import static org.apache.commons.lang3.builder.ToStringStyle.MULTI_LINE_STYLE;
 
 import java.util.Date;
@@ -30,7 +29,7 @@ import eu.fasten.core.maven.data.Scope;
 public class ResolverConfig {
 
     public long resolveAt = new Date().getTime();
-    public ResolverDepth depth = TRANSITIVE;
+    public int depth = Integer.MAX_VALUE;
     public Scope scope = RUNTIME;
 
     /**
@@ -48,8 +47,28 @@ public class ResolverConfig {
         return this;
     }
 
-    public ResolverConfig depth(ResolverDepth depth) {
+    public ResolverConfig includeTransitiveDeps() {
+        this.depth = Integer.MAX_VALUE;
+        return this;
+        }
+
+    public ResolverConfig excludeTransitiveDeps() {
+        this.depth = 1;
+        return this;
+    }
+
+    public ResolverConfig limitTransitiveDeps(int depth) {
+        if (depth < 1) {
+            var msg = "Resolution depth must be >0, but was %d";
+            throw new MavenResolutionException(String.format(msg, depth));
+        }
         this.depth = depth;
+        return this;
+            }
+
+    public boolean isExcludingTransitiveDeps() {
+        return depth == 1;
+        }
         return this;
     }
 
