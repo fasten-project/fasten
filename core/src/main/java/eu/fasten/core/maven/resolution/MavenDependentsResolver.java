@@ -20,7 +20,6 @@ import static eu.fasten.core.maven.data.Scope.PROVIDED;
 import static eu.fasten.core.maven.data.Scope.RUNTIME;
 import static eu.fasten.core.maven.data.Scope.SYSTEM;
 import static eu.fasten.core.maven.data.Scope.TEST;
-import static eu.fasten.core.maven.resolution.ResolverDepth.TRANSITIVE;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -49,7 +48,7 @@ public class MavenDependentsResolver {
         }
 
         var dependents = new HashSet<ResolvedRevision>();
-        resolve(pom, config, dependents, new HashSet<>(), false, COMPILE);
+        resolve(pom, config, dependents, new HashSet<>(), false, COMPILE, 1);
         return dependents;
     }
 
@@ -61,7 +60,11 @@ public class MavenDependentsResolver {
     }
 
     private void resolve(Pom pom, ResolverConfig config, Set<ResolvedRevision> dependents, Set<Object> visited,
-            boolean stopAfterThis, Scope propagatedScope) {
+            boolean stopAfterThis, Scope propagatedScope, int depth) {
+
+        if (depth > config.depth) {
+            return;
+        }
 
         visited.add(pom);
 
@@ -81,9 +84,9 @@ public class MavenDependentsResolver {
                 propagatedScope = deriveScope(propagatedScope, decl.getScope());
                 dependents.add(toRR(dpd, propagatedScope));
 
-                if (config.depth == TRANSITIVE && !stopAfterThis && shouldProcessDependent(config, decl)) {
+                if (config.depth > depth && !stopAfterThis && shouldProcessDependent(config, decl)) {
                     var onlyOneMore = decl.getScope() == PROVIDED;
-                    resolve(dpd, config, dependents, visited, onlyOneMore, propagatedScope);
+                    resolve(dpd, config, dependents, visited, onlyOneMore, propagatedScope, depth + 1);
                 }
             }
         }

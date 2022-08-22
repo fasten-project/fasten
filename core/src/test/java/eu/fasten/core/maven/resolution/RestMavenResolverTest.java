@@ -17,7 +17,6 @@ package eu.fasten.core.maven.resolution;
 
 import static eu.fasten.core.maven.data.Scope.IMPORT;
 import static eu.fasten.core.maven.data.Scope.TEST;
-import static eu.fasten.core.maven.resolution.ResolverDepth.DIRECT;
 import static jakarta.ws.rs.core.MediaType.APPLICATION_JSON;
 import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -118,12 +117,31 @@ public class RestMavenResolverTest {
     }
 
     @Test
+    public void dependenciesCorrectDefaultDepth() {
+        var cfg = new ResolverConfig().at(123).includeTransitiveDeps();
+        var r = resolveSomeDependencies(cfg);
+        Map<String, String> expected = Map.of( //
+                "resolveAt", Long.toString(123));
+        assertEquals(expected, r.queryParams);
+    }
+
+    @Test
     public void dependenciesCorrectNonDefaultDepth() {
-        var cfg = new ResolverConfig().at(123).depth(DIRECT);
+        var cfg = new ResolverConfig().at(123).excludeTransitiveDeps();
         var r = resolveSomeDependencies(cfg);
         Map<String, String> expected = Map.of( //
                 "resolveAt", Long.toString(123), //
-                "depth", "DIRECT");
+                "depth", "1");
+        assertEquals(expected, r.queryParams);
+    }
+
+    @Test
+    public void dependenciesCorrectNonDefaultCustomDepth() {
+        var cfg = new ResolverConfig().at(123).limitTransitiveDeps(13);
+        var r = resolveSomeDependencies(cfg);
+        Map<String, String> expected = Map.of( //
+                "resolveAt", Long.toString(123), //
+                "depth", "13");
         assertEquals(expected, r.queryParams);
     }
 
@@ -212,12 +230,31 @@ public class RestMavenResolverTest {
     }
 
     @Test
+    public void dependentsCorrectDefaultDepth() {
+        var cfg = new ResolverConfig().at(123).includeTransitiveDeps();
+        var r = resolveSomeDependents(cfg);
+        Map<String, String> expected = Map.of( //
+                "resolveAt", Long.toString(123));
+        assertEquals(expected, r.queryParams);
+    }
+
+    @Test
     public void dependentsCorrectNonDefaultDepth() {
-        var cfg = new ResolverConfig().at(123).depth(DIRECT);
+        var cfg = new ResolverConfig().at(123).excludeTransitiveDeps();
         var r = resolveSomeDependents(cfg);
         Map<String, String> expected = Map.of( //
                 "resolveAt", Long.toString(123), //
-                "depth", "DIRECT");
+                "depth", "1");
+        assertEquals(expected, r.queryParams);
+    }
+
+    @Test
+    public void dependentsCorrectNonDefaultCustomDepth() {
+        var cfg = new ResolverConfig().at(123).limitTransitiveDeps(13);
+        var r = resolveSomeDependents(cfg);
+        Map<String, String> expected = Map.of( //
+                "resolveAt", Long.toString(123), //
+                "depth", "13");
         assertEquals(expected, r.queryParams);
     }
 

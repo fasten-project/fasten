@@ -19,7 +19,6 @@
 package eu.fasten.core.search;
 
 import static eu.fasten.core.maven.resolution.ResolverConfig.resolve;
-import static eu.fasten.core.maven.resolution.ResolverDepth.TRANSITIVE;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -506,7 +505,7 @@ public class SearchEngine {
 		final String artifactId = a[1];
 		final String version = record.component2();
 		resolveTime -= System.nanoTime();
-		final Set<ResolvedRevision> dependencySet = resolver.resolveDependencies(groupId, artifactId, version, resolve().depth(TRANSITIVE));
+		final Set<ResolvedRevision> dependencySet = resolver.resolveDependencies(groupId, artifactId, version, resolve().includeTransitiveDeps());
 		resolveTime += System.nanoTime();
 
 		LOGGER.debug("Found " + dependencySet.size() + " dependencies");
@@ -603,7 +602,7 @@ public class SearchEngine {
 		String artifactId = data[1];
 		String version = data[2];
 		resolveTime -= System.nanoTime();
-		final Set<ResolvedRevision> s = resolver.resolveDependents(groupId, artifactId, version, resolve().depth(TRANSITIVE));
+		final Set<ResolvedRevision> s = resolver.resolveDependents(groupId, artifactId, version, resolve().includeTransitiveDeps());
 		final Set<Revision> dependentSet = new ObjectOpenHashSet<>();
 
 		// Temporary reduction in size to circumvent mergeWithCHA() crashes
@@ -641,7 +640,7 @@ public class SearchEngine {
 			LOGGER.debug("Analyzing dependent " + groupId + ":" + artifactId + ":" + version);
 
 			resolveTime -= System.nanoTime();
-			final Set<ResolvedRevision> dependencySet = resolver.resolveDependencies(groupId, artifactId, version, resolve().depth(TRANSITIVE));
+			final Set<ResolvedRevision> dependencySet = resolver.resolveDependencies(groupId, artifactId, version, resolve().includeTransitiveDeps());
 			resolveTime += System.nanoTime();
 
 			LOGGER.debug("Dependent has " + graph.numNodes() + " nodes");

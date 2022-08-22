@@ -15,9 +15,7 @@
  */
 package eu.fasten.core.maven.resolution;
 
-import static eu.fasten.core.maven.resolution.ResolverDepth.DIRECT;
-import static eu.fasten.core.maven.resolution.ResolverDepth.TRANSITIVE;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.util.HashSet;
 
@@ -30,7 +28,7 @@ public class MavenDependencyResolverDepthTest extends AbstractMavenDependencyRes
 
     @Test
     public void defaultIsTransitive() {
-        assertEquals(TRANSITIVE, config.depth);
+        assertTrue(config.depth == Integer.MAX_VALUE);
     }
 
     @Test
@@ -40,22 +38,33 @@ public class MavenDependencyResolverDepthTest extends AbstractMavenDependencyRes
     }
 
     @Test
-    public void transitiveDependency() {
+    public void transitiveDeps() {
         add(BASE, "a:1");
         add("a:1", "b:1");
+        add("b:1", "c:1");
+        assertResolution(BASE, "a:1", "b:1", "c:1");
+    }
+
+    @Test
+    public void transitiveDepsLimited() {
+        config.depth = 2;
+        add(BASE, "a:1");
+        add(BASE, "a:1");
+        add("a:1", "b:1");
+        add("b:1", "c:1");
         assertResolution(BASE, "a:1", "b:1");
     }
 
     @Test
-    public void onlyDirectDependency() {
-        config.depth = DIRECT;
+    public void onlyDirectDep() {
+        config.depth = 1;
         add(BASE, "a:1");
         assertResolution(BASE, "a:1");
     }
 
     @Test
     public void onlyDirectDependencyButTransitiveExists() {
-        config.depth = DIRECT;
+        config.depth = 1;
         add(BASE, "a:1");
         add("a:1", "b:1");
         assertResolution(BASE, "a:1");
