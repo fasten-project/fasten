@@ -85,7 +85,7 @@ public class Main implements Runnable {
 	boolean doGenerate;
 
 	@CommandLine.Option(names = { "-m",
-			"--merge" }, paramLabel = "MERGE", description = "Merge artifact CG to dependencies", required = true)
+			"--merge" }, paramLabel = "MERGE", description = "Merge artifact CG to dependencies")
 	boolean doMerge;
 
 	@CommandLine.Option(names = { "-d",
