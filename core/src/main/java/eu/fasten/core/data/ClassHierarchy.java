@@ -224,7 +224,7 @@ public class ClassHierarchy {
 
             final var parents = new ArrayList<>(Collections.singletonList(type));
             parents.addAll(getAllParents(result, type));
-            universalParents.put(type, organize(parents));
+            universalParents.put(type, organize(parents, result));
         }
         return ImmutablePair.of(universalParents, universalChildren);
     }
@@ -233,18 +233,18 @@ public class ClassHierarchy {
      * Add super classes and interfaces to the universal CHA.
      *
      * @param result      universal CHA graph
-     * @param sourceTypes source type
+     * @param sourceType source type
      * @param targetTypes list of target target types
      */
     private void addSuperTypes(final DefaultDirectedGraph<String, DefaultEdge> result,
-                               final String sourceTypes,
+                               final String sourceType,
                                final List<String> targetTypes) {
         for (final var superClass : targetTypes) {
             if (!result.containsVertex(superClass)) {
                 result.addVertex(superClass);
             }
-            if (!result.containsEdge(sourceTypes, superClass)) {
-                result.addEdge(superClass, sourceTypes);
+            if (!result.containsEdge(sourceType, superClass)) {
+                result.addEdge(superClass, sourceType);
             }
         }
     }
@@ -266,11 +266,17 @@ public class ClassHierarchy {
         return result;
     }
 
-    private List<String> organize(ArrayList<String> parents) {
+    private List<String> organize(ArrayList<String> parents,
+                                  DefaultDirectedGraph<String, DefaultEdge> CHGraph) {
         final List<String> result = new ArrayList<>();
         for (String parent : parents) {
             if (!result.contains(parent) && !parent.equals("/java.lang/Object")) {
                 result.add(parent);
+            }
+        }
+        for (int i = 0; i < result.size()-1; i++) {
+            if (CHGraph.containsEdge(result.get(i), result.get(i+1))) {
+                Collections.swap(result, i, i+1);
             }
         }
         result.add("/java.lang/Object");
