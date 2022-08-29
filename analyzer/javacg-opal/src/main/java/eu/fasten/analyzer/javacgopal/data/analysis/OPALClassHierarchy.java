@@ -354,7 +354,11 @@ public class OPALClassHierarchy {
                     if (stmt.pc() == pc) {
 
                         try {
-                            final var stmtValue = getValue(stmt).value();
+                            final UVar<?> value = getValue(stmt);
+                            if (value == null) {
+                                continue;
+                            }
+                            final var stmtValue = value.value();
                             final var upperBounds =
                                 stmtValue.getClass().getMethod("upperTypeBound").invoke(stmtValue);
                             ((UIDSet<? extends ReferenceType>)upperBounds).foreach(v1 -> receiverType.add(OPALMethod.getTypeURI(v1)));
@@ -386,14 +390,17 @@ public class OPALClassHierarchy {
         UVar<?> uVar;
         if (stmt.isAssignment()) {
             uVar =
-                (UVar) stmt.asAssignment().expr().asVirtualFunctionCall().receiverOption()
-                    .value();
+                (UVar) stmt.asAssignment().expr().asVirtualFunctionCall().receiverOption().value();
         } else if (stmt.isExprStmt()) {
-            uVar = (UVar) stmt.asExprStmt().expr().asVirtualFunctionCall().receiverOption()
-                .value();
+            uVar = (UVar) stmt.asExprStmt().expr().asVirtualFunctionCall().receiverOption().value();
+        } else if(stmt.isVirtualMethodCall()) {
+            uVar = (UVar) stmt.asVirtualMethodCall().receiverOption().value();
+        } else if (stmt.isStaticMethodCall()){
+            uVar = (UVar) stmt.asStaticMethodCall().receiverOption().get();
+        } else if (stmt.isNonVirtualMethodCall()){
+            uVar = (UVar) stmt.asNonVirtualMethodCall().receiverOption().value();
         } else {
-            uVar = (UVar) stmt.asVirtualMethodCall().receiverOption()
-                .value();
+            uVar = null;
         }
         return uVar;
     }
