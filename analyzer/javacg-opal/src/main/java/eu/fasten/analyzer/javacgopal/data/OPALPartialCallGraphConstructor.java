@@ -162,6 +162,9 @@ public class OPALPartialCallGraphConstructor {
                     if (values != null) {
                         for (ElementValuePair value : values) {
                             try {
+                                if (value.value().toJava().equals("{}")) {
+                                    continue;
+                                }
                                 final var valuePackage = OPALMethod.getPackageName(value.value().valueType());
                                 final var valueClass = OPALMethod.getClassName(value.value().valueType());
                                 final var valueContent = StringEscapeUtils.escapeJava(value.value().toJava());
