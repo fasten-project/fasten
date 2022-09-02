@@ -50,6 +50,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.IntConsumer;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.ImmutablePair;
 import org.apache.commons.lang3.tuple.Pair;
@@ -154,8 +155,9 @@ public class CGMerger {
 
     private LongSet getAllInternalNodes(PartialJavaCallGraph pcg) {
         LongSet nodes = new LongOpenHashSet();
+        IntConsumer nodeAddingFunction = integer -> nodes.add(Long.valueOf(integer).longValue());
         pcg.getClassHierarchy().get(JavaScope.internalTypes)
-            .forEach((key, value) -> value.getMethods().keySet().forEach(nodes::add));
+            .forEach((key, value) -> value.getMethods().keySet().forEach(nodeAddingFunction));
         return nodes;
     }
 
