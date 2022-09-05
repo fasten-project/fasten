@@ -15,6 +15,11 @@
  */
 package eu.fasten.core.data.opal;
 
+import eu.fasten.core.data.opal.exceptions.MissingArtifactException;
+import eu.fasten.core.maven.utils.MavenUtilities;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
@@ -25,12 +30,6 @@ import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.Optional;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import eu.fasten.core.data.opal.exceptions.MissingArtifactException;
-import eu.fasten.core.maven.utils.MavenUtilities;
 
 /**
  * A set of methods for downloading POM and JAR files given Maven coordinates.
@@ -54,6 +53,12 @@ public class MavenArtifactDownloader {
         this.mavenRepos = mavenCoordinate.getMavenRepos();
     }
 
+    public MavenArtifactDownloader(final MavenCoordinate mavenCoordinate, final File artifactFilePath) {
+        this.mavenCoordinate = mavenCoordinate;
+        this.mavenRepos = mavenCoordinate.getMavenRepos();
+        this.artifactFile = Optional.of(artifactFilePath);
+    }
+
     /**
      * It tries to download the Maven artifact with the specified extension. E.g. jar
      */
@@ -61,7 +66,11 @@ public class MavenArtifactDownloader {
         try {
             if (Arrays.asList(packaging).contains(mavenCoordinate.getPackaging())) {
                 foundPackage = true;
-                artifactFile = httpGetFile(mavenCoordinate.toProductUrl());
+                if (artifactFile.isEmpty()) {
+                    artifactFile = httpGetFile(mavenCoordinate.toProductUrl());
+                } else {
+                    httpGetToFile(mavenCoordinate.toProductUrl(), artifactFile.get());
+                }
             }
         } catch (MissingArtifactException e) {
             foundPackage = false;
@@ -91,7 +100,12 @@ public class MavenArtifactDownloader {
             startTime = System.nanoTime();
             try {
                 foundPackage = true;
-                artifactFile = httpGetFile(mavenCoordinate.toProductUrl());
+                if (artifactFile.isEmpty()) {
+                    artifactFile = httpGetFile(mavenCoordinate.toProductUrl());
+                } else {
+                    httpGetToFile(mavenCoordinate.toProductUrl(), artifactFile.get());
+                }
+
             } catch (MissingArtifactException e) {
                 foundPackage = false;
 
@@ -159,7 +173,25 @@ public class MavenArtifactDownloader {
 
             return Optional.of(new File(tempFile.toAbsolutePath().toString()));
         } catch (IOException e) {
-            if (tempFile != null) {tempFile.toFile().delete();}
+            if (tempFile != null) {
+                tempFile.toFile().delete();
+            }
+            throw new MissingArtifactException(e.getMessage(), e.getCause());
+        }
+    }
+
+    /**
+     * Utility function that stores the contents of GET request to a given file
+     */
+    private static void httpGetToFile(final String url, final File file) throws MissingArtifactException {
+        logger.info("Downloading artifact from URL: {} to File: {}", url, file.getAbsolutePath());
+        try {
+            final var packaging = url.substring(url.lastIndexOf("."));
+
+            final InputStream in = new URL(url).openStream();
+            Files.copy(in, file.toPath(), StandardCopyOption.REPLACE_EXISTING);
+            in.close();
+        } catch (IOException e) {
             throw new MissingArtifactException(e.getMessage(), e.getCause());
         }
     }
