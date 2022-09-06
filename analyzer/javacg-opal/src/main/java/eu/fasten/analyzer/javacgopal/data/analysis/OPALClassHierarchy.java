@@ -18,6 +18,7 @@
 
 package eu.fasten.analyzer.javacgopal.data.analysis;
 
+import eu.fasten.core.data.Constants;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -27,7 +28,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.Set;
 
 import org.opalj.br.ClassHierarchy;
@@ -35,20 +35,18 @@ import org.opalj.br.DeclaredMethod;
 import org.opalj.br.Method;
 import org.opalj.br.ObjectType;
 import org.opalj.br.ReferenceType;
-import org.opalj.br.instructions.Instruction;
 import org.opalj.collection.immutable.UIDSet;
 import org.opalj.tac.DUVar;
 import org.opalj.tac.Stmt;
 import org.opalj.tac.UVar;
 import org.opalj.value.ValueInformation;
 
-import eu.fasten.analyzer.javacgopal.data.CallPreservationStrategy;
+import eu.fasten.core.data.CallPreservationStrategy;
 import eu.fasten.core.data.FastenURI;
 import eu.fasten.core.data.JavaGraph;
 import eu.fasten.core.data.JavaScope;
 import eu.fasten.core.data.JavaType;
 import it.unimi.dsi.fastutil.ints.IntIntPair;
-import scala.Option;
 import scala.Tuple2;
 import scala.collection.Iterator;
 import scala.collection.JavaConverters;
@@ -300,16 +298,14 @@ public class OPALClassHierarchy {
         visitedPCs.add(pc);
         Map<Object, Object> metadata = new HashMap<>();
         if (source instanceof Method) {
-            metadata = getCallSite((Method) source, (Integer) opalCallSite._1(),
-                stmts);
+            metadata = getCallSite((Method) source, (Integer) opalCallSite._1(), stmts);
         }
 
         if (targetDeclaration.hasMultipleDefinedMethods()) {
             for (final var target : JavaConverters
                 .asJavaIterable(targetDeclaration.definedMethods())) {
                 this.putCalls(source, internalCalls, externalCalls,
-                    targetDeclaration,
-                    metadata, target);
+                    targetDeclaration, metadata, target);
             }
 
         } else if (targetDeclaration.hasSingleDefinedMethod()) {
@@ -317,8 +313,7 @@ public class OPALClassHierarchy {
                 metadata, targetDeclaration.definedMethod());
 
         } else if (targetDeclaration.isVirtualOrHasSingleDefinedMethod()) {
-            this.putExternalCall(source, externalCalls, targetDeclaration,
-                metadata);
+            this.putExternalCall(source, externalCalls, targetDeclaration, metadata);
         }
     }
 
@@ -378,9 +373,9 @@ public class OPALClassHierarchy {
         }
 
         var callSite = new HashMap<>();
-        callSite.put("line", source.body().get().lineNumber(pc).getOrElse(() -> 404));
-        callSite.put("type", instruction);
-        callSite.put("receiver", "[" + receiverType.stream().map(FastenURI::toString)
+        callSite.put(Constants.CALLSITE_LINE, source.body().get().lineNumber(pc).getOrElse(() -> 404));
+        callSite.put(Constants.INVOCATION_TYPE, instruction);
+        callSite.put(Constants.RECEIVER_TYPE, "[" + receiverType.stream().map(FastenURI::toString)
                 .reduce((f1, f2) -> f1 + "," + f2).orElse("") + "]");
 
         return Map.of(pc.toString(), callSite);
