@@ -16,7 +16,7 @@
  * limitations under the License.
  */
 
-package eu.fasten.analyzer.javacgopal.data;
+package eu.fasten.core.data;
 
 public enum CallPreservationStrategy {
 	ONLY_STATIC_CALLSITES, INCLUDING_ALL_SUBTYPES

@@ -18,6 +18,7 @@
 
 package eu.fasten.analyzer.javacgopal.data;
 
+import eu.fasten.core.data.CallPreservationStrategy;
 import eu.fasten.core.data.PartialJavaCallGraph;
 import java.io.File;
 import java.util.ArrayList;

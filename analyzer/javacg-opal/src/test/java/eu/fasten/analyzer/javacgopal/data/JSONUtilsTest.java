@@ -2,6 +2,7 @@ package eu.fasten.analyzer.javacgopal.data;
 
 import static eu.fasten.core.utils.TestUtils.getTestResource;
 
+import eu.fasten.core.data.CallPreservationStrategy;
 import eu.fasten.core.data.PartialJavaCallGraph;
 import java.io.File;
 import java.io.FileReader;

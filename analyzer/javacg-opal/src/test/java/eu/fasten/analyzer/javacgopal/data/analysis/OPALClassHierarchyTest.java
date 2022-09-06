@@ -50,7 +50,7 @@ import org.opalj.collection.immutable.UIDSet;
 import org.opalj.collection.immutable.UIDSet1;
 import org.opalj.tac.Stmt;
 
-import eu.fasten.analyzer.javacgopal.data.CallPreservationStrategy;
+import eu.fasten.core.data.CallPreservationStrategy;
 import eu.fasten.core.data.JavaGraph;
 import eu.fasten.core.data.JavaScope;
 import scala.Option;

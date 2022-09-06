@@ -19,7 +19,7 @@
 package eu.fasten.analyzer.javacgopal;
 
 import static eu.fasten.analyzer.javacgopal.data.CGAlgorithm.CHA;
-import static eu.fasten.analyzer.javacgopal.data.CallPreservationStrategy.ONLY_STATIC_CALLSITES;
+import static eu.fasten.core.data.CallPreservationStrategy.ONLY_STATIC_CALLSITES;
 import static eu.fasten.core.maven.utils.MavenUtilities.MAVEN_CENTRAL_REPO;
 import static java.lang.System.currentTimeMillis;
 
