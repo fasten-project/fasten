@@ -322,6 +322,7 @@ public class OPALClassHierarchy {
             for (final var target : JavaConverters
                 .asJavaIterable(targetDeclaration.definedMethods())) {
                 this.putCall(source, target, metadata);
+
             }
 
         } else if (targetDeclaration.hasSingleDefinedMethod()) {
@@ -329,6 +330,7 @@ public class OPALClassHierarchy {
 
         } else if (targetDeclaration.isVirtualOrHasSingleDefinedMethod()) {
             this.putExternalCall(source, targetDeclaration, metadata);
+
         }
     }
 
