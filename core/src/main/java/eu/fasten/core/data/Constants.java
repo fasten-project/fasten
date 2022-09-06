@@ -12,6 +12,8 @@ public class Constants {
 
     public static final String opalGenerator = "OPAL";
 
+    public static final String walaGenerator = "WALA";
+
     public static final int transactionRestartLimit = 3;
 
     public static final int insertionBatchSize = 4096;
@@ -29,4 +31,13 @@ public class Constants {
     public static final String fastenApiUrlEnvVariable = "FASTEN_API_URL";
 
     public static final String fastenApiUrlDefault = "https://api.fasten.eu/api/";
+
+    public static final String FIRST_LINE = "first";
+    public static final String LAST_LINE = "last";
+    public static final String IS_DEFINED = "defined";
+    public static final String ACCESS_MODIFIER = "access";
+
+    public static final String CALLSITE_LINE = "line";
+    public static final String INVOCATION_TYPE = "type";
+    public static final String RECEIVER_TYPE = "receiver";
 }

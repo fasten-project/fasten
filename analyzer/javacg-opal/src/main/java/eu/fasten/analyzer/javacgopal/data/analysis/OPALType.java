@@ -18,7 +18,13 @@
 
 package eu.fasten.analyzer.javacgopal.data.analysis;
 
+import static eu.fasten.core.data.Constants.ACCESS_MODIFIER;
+import static eu.fasten.core.data.Constants.FIRST_LINE;
+import static eu.fasten.core.data.Constants.IS_DEFINED;
+import static eu.fasten.core.data.Constants.LAST_LINE;
+
 import com.google.common.collect.Lists;
+import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.JavaNode;
 import eu.fasten.core.data.JavaType;
 import eu.fasten.core.data.FastenURI;
@@ -161,11 +167,10 @@ public class OPALType {
         for (final var entry : methods.entrySet()) {
             final var method = entry.getKey();
             final var defined = method.instructionsOption().isDefined();
-            final var node = new JavaNode(getUri(method), Map.of("first",
-                    getFirstLine(method),
-                    "last", getLastLine(method),
-                    "defined", defined,
-                    "access", getAccessModifier(method)));
+            final var node = new JavaNode(getUri(method), Map.of(FIRST_LINE, getFirstLine(method),
+                Constants.LAST_LINE, getLastLine(method),
+                Constants.IS_DEFINED, defined,
+                Constants.ACCESS_MODIFIER, getAccessModifier(method)));
             if (defined) {
                 defs.put(node.getSignature(), node);
             }
@@ -233,10 +238,10 @@ public class OPALType {
         for (final var entry : methods.entrySet()) {
             final var method = entry.getKey();
             result.put(entry.getValue(), new JavaNode(getUri(method),
-                    Map.of("first", getFirstLine(method),
-                            "last", getLastLine(method),
-                            "defined", method.instructionsOption().isDefined(),
-                            "access", getAccessModifier(method))));
+                    Map.of( FIRST_LINE, getFirstLine(method),
+                            LAST_LINE, getLastLine(method),
+                            IS_DEFINED, method.instructionsOption().isDefined(),
+                            ACCESS_MODIFIER, getAccessModifier(method))));
         }
         return result;
     }
