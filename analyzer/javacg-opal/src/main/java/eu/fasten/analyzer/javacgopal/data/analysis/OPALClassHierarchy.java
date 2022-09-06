@@ -18,9 +18,11 @@
 
 package eu.fasten.analyzer.javacgopal.data.analysis;
 
+import eu.fasten.core.data.Constants;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -39,7 +41,7 @@ import org.opalj.tac.Stmt;
 import org.opalj.tac.UVar;
 import org.opalj.value.ValueInformation;
 
-import eu.fasten.analyzer.javacgopal.data.CallPreservationStrategy;
+import eu.fasten.core.data.CallPreservationStrategy;
 import eu.fasten.core.data.FastenURI;
 import eu.fasten.core.data.JavaGraph;
 import eu.fasten.core.data.JavaScope;
@@ -296,16 +298,14 @@ public class OPALClassHierarchy {
         visitedPCs.add(pc);
         Map<Object, Object> metadata = new HashMap<>();
         if (source instanceof Method) {
-            metadata = getCallSite((Method) source, (Integer) opalCallSite._1(),
-                stmts);
+            metadata = getCallSite((Method) source, (Integer) opalCallSite._1(), stmts);
         }
 
         if (targetDeclaration.hasMultipleDefinedMethods()) {
             for (final var target : JavaConverters
                 .asJavaIterable(targetDeclaration.definedMethods())) {
                 this.putCalls(source, internalCalls, externalCalls,
-                    targetDeclaration,
-                    metadata, target);
+                    targetDeclaration, metadata, target);
             }
 
         } else if (targetDeclaration.hasSingleDefinedMethod()) {
@@ -313,8 +313,7 @@ public class OPALClassHierarchy {
                 metadata, targetDeclaration.definedMethod());
 
         } else if (targetDeclaration.isVirtualOrHasSingleDefinedMethod()) {
-            this.putExternalCall(source, externalCalls, targetDeclaration,
-                metadata);
+            this.putExternalCall(source, externalCalls, targetDeclaration, metadata);
         }
     }
 
@@ -336,7 +335,12 @@ public class OPALClassHierarchy {
      */
     public Map<Object, Object> getCallSite(final Method source, final Integer pc,
                                            Stmt<DUVar<ValueInformation>>[] stmts) {
-        final var instruction = source.instructionsOption().get()[pc].mnemonic();
+        final var instructionsOption = source.instructionsOption();
+        if (instructionsOption.isEmpty()) {
+            return Collections.emptyMap();
+        }
+
+        final var instruction = instructionsOption.get()[pc].mnemonic();
         final var receiverType = new HashSet<FastenURI>();
 
         if (instruction.equals("invokevirtual") | instruction.equals("invokeinterface")) {
@@ -345,15 +349,18 @@ public class OPALClassHierarchy {
                     if (stmt.pc() == pc) {
 
                         try {
-                            final var stmtValue = getValue(stmt).value();
+                            final UVar<?> value = getValue(stmt);
+                            if (value == null) {
+                                continue;
+                            }
+                            final var stmtValue = value.value();
                             final var upperBounds =
                                 stmtValue.getClass().getMethod("upperTypeBound").invoke(stmtValue);
                             ((UIDSet<? extends ReferenceType>)upperBounds).foreach(v1 -> receiverType.add(OPALMethod.getTypeURI(v1)));
 
                         } catch (NoSuchMethodException | IllegalAccessException | InvocationTargetException e) {
-                            e.printStackTrace();
                             throw new RuntimeException("A problem occurred while finding receiver " +
-                                "type");
+                                "type", e);
                         }
 
                     }
@@ -361,14 +368,14 @@ public class OPALClassHierarchy {
             }
 
         } else {
-            receiverType.add(OPALMethod.getTypeURI(source.instructionsOption().get()[pc]
+            receiverType.add(OPALMethod.getTypeURI(instructionsOption.get()[pc]
                 .asMethodInvocationInstruction().declaringClass()));
         }
 
         var callSite = new HashMap<>();
-        callSite.put("line", source.body().get().lineNumber(pc).getOrElse(() -> 404));
-        callSite.put("type", instruction);
-        callSite.put("receiver", "[" + receiverType.stream().map(FastenURI::toString)
+        callSite.put(Constants.CALLSITE_LINE, source.body().get().lineNumber(pc).getOrElse(() -> 404));
+        callSite.put(Constants.INVOCATION_TYPE, instruction);
+        callSite.put(Constants.RECEIVER_TYPE, "[" + receiverType.stream().map(FastenURI::toString)
                 .reduce((f1, f2) -> f1 + "," + f2).orElse("") + "]");
 
         return Map.of(pc.toString(), callSite);
@@ -378,14 +385,17 @@ public class OPALClassHierarchy {
         UVar<?> uVar;
         if (stmt.isAssignment()) {
             uVar =
-                (UVar) stmt.asAssignment().expr().asVirtualFunctionCall().receiverOption()
-                    .value();
+                (UVar) stmt.asAssignment().expr().asVirtualFunctionCall().receiverOption().value();
         } else if (stmt.isExprStmt()) {
-            uVar = (UVar) stmt.asExprStmt().expr().asVirtualFunctionCall().receiverOption()
-                .value();
+            uVar = (UVar) stmt.asExprStmt().expr().asVirtualFunctionCall().receiverOption().value();
+        } else if(stmt.isVirtualMethodCall()) {
+            uVar = (UVar) stmt.asVirtualMethodCall().receiverOption().value();
+        } else if (stmt.isStaticMethodCall()){
+            uVar = (UVar) stmt.asStaticMethodCall().receiverOption().get();
+        } else if (stmt.isNonVirtualMethodCall()){
+            uVar = (UVar) stmt.asNonVirtualMethodCall().receiverOption().value();
         } else {
-            uVar = (UVar) stmt.asVirtualMethodCall().receiverOption()
-                .value();
+            uVar = null;
         }
         return uVar;
     }

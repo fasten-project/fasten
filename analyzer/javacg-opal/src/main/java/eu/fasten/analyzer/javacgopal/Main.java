@@ -18,7 +18,7 @@
 
 package eu.fasten.analyzer.javacgopal;
 
-import static eu.fasten.analyzer.javacgopal.data.CallPreservationStrategy.INCLUDING_ALL_SUBTYPES;
+import static eu.fasten.core.data.CallPreservationStrategy.INCLUDING_ALL_SUBTYPES;
 
 import eu.fasten.analyzer.javacgopal.data.CGAlgorithm;
 import eu.fasten.analyzer.javacgopal.data.OPALCallGraphConstructor;
@@ -85,7 +85,7 @@ public class Main implements Runnable {
 	boolean doGenerate;
 
 	@CommandLine.Option(names = { "-m",
-			"--merge" }, paramLabel = "MERGE", description = "Merge artifact CG to dependencies", required = true)
+			"--merge" }, paramLabel = "MERGE", description = "Merge artifact CG to dependencies")
 	boolean doMerge;
 
 	@CommandLine.Option(names = { "-d",

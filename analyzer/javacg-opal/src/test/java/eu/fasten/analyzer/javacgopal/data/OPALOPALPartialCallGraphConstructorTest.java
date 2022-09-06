@@ -19,12 +19,13 @@
 package eu.fasten.analyzer.javacgopal.data;
 
 import static eu.fasten.analyzer.javacgopal.data.CGAlgorithm.CHA;
-import static eu.fasten.analyzer.javacgopal.data.CallPreservationStrategy.ONLY_STATIC_CALLSITES;
+import static eu.fasten.core.data.CallPreservationStrategy.ONLY_STATIC_CALLSITES;
 import static eu.fasten.core.utils.TestUtils.getTestResource;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import eu.fasten.core.data.CallPreservationStrategy;
 import java.io.File;
 import java.util.HashMap;
 

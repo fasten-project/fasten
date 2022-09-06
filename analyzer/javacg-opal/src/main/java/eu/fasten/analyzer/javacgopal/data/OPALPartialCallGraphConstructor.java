@@ -18,6 +18,7 @@
 
 package eu.fasten.analyzer.javacgopal.data;
 
+import eu.fasten.core.data.CallPreservationStrategy;
 import eu.fasten.core.data.PartialJavaCallGraph;
 import java.io.File;
 import java.util.ArrayList;
@@ -162,11 +163,14 @@ public class OPALPartialCallGraphConstructor {
                     if (values != null) {
                         for (ElementValuePair value : values) {
                             try {
+                                if (value.value().toJava().equals("{}")) {
+                                    continue;
+                                }
                                 final var valuePackage = OPALMethod.getPackageName(value.value().valueType());
                                 final var valueClass = OPALMethod.getClassName(value.value().valueType());
                                 final var valueContent = StringEscapeUtils.escapeJava(value.value().toJava());
                                 valueList.add(Pair.of(valuePackage + "/" + valueClass, valueContent));
-                            } catch (NullPointerException ignored) {
+                            } catch (NullPointerException | ArrayIndexOutOfBoundsException ignored) {
                             	// TODO fix swallowed exception
                             	logger.error("!! SWALLOWED EXCEPTION !!");
                             }

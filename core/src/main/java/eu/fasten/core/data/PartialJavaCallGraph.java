@@ -44,6 +44,15 @@ public class PartialJavaCallGraph extends PartialCallGraph {
 
     public static final String classHierarchyJSONKey = "cha";
 
+    public void setClassHierarchy(
+        final EnumMap<JavaScope, Map<String, JavaType>> classHierarchy) {
+        this.classHierarchy = classHierarchy;
+    }
+
+    public void setGraph(final JavaGraph graph) {
+        this.graph = graph;
+    }
+
     protected EnumMap<JavaScope, Map<String, JavaType>> classHierarchy;
 
     /**
@@ -91,6 +100,9 @@ public class PartialJavaCallGraph extends PartialCallGraph {
         return this.graph;
     }
 
+    public Map<it.unimi.dsi.fastutil.ints.IntIntPair, Map<Object, Object>> getCallSites(){
+        return this.getGraph().getCallSites();
+    }
     /**
      * Creates a class hierarchy for the given JSONObject.
      *
@@ -275,4 +287,5 @@ public class PartialJavaCallGraph extends PartialCallGraph {
     public boolean isCallGraphEmpty() {
         return graph.getCallSites().isEmpty();
     }
+
 }
