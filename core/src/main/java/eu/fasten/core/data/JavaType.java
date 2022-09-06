@@ -60,6 +60,9 @@ public class JavaType {
         return definedMethods;
     }
 
+    public boolean hasMethod(final JavaNode node){
+        return this.javaNodes.containsKey(node);
+    }
     /**
      * Interfaces that this type or its super classes implement.
      */
