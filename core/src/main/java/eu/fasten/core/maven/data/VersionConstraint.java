@@ -15,13 +15,13 @@
  */
 package eu.fasten.core.maven.data;
 
-import static eu.fasten.core.utils.Asserts.assertNotNull;
-import static eu.fasten.core.utils.Asserts.assertTrue;
+import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
 
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
+import static eu.fasten.core.utils.Asserts.assertNotNull;
+import static eu.fasten.core.utils.Asserts.assertTrue;
 
 public class VersionConstraint {
 
@@ -63,7 +63,7 @@ public class VersionConstraint {
     public String getLowerBound() {
         if (isRange) {
             var parts = spec.substring(1, spec.length() - 1).split(",", -1);
-            return parts[0].isEmpty() ? "0" : parts[0];
+            return parts[0].isEmpty() ? "0" : parts[0].trim();
         }
         if (isHard) {
             return spec.substring(1, spec.length() - 1);
@@ -78,7 +78,7 @@ public class VersionConstraint {
     public String getUpperBound() {
         if (isRange) {
             var parts = spec.substring(1, spec.length() - 1).split(",", -1);
-            return parts[1].isEmpty() ? "999" : parts[1];
+            return parts[1].isEmpty() ? "999" : parts[1].trim();
 
         }
         if (isHard) {
