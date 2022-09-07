@@ -79,7 +79,7 @@ public class MavenArtifactDownloader {
             logger.warn("[ARTIFACT-DOWNLOAD] [UNPROCESSED] [" + duration + "] [" + mavenCoordinate.getCoordinate() + "] [" + e.getClass().getSimpleName() + "] Artifact couldn't be retrieved for repo: " + mavenRepos.get(repoNumber), e);
         }
 
-        if (artifactFile.isPresent()) {
+        if (artifactFile.isPresent() && artifactFile.get().exists()) {
             long duration = computeDurationInMs(startTime);
             logger.info("[ARTIFACT-DOWNLOAD] [SUCCESS] [" + duration + "] [" + mavenCoordinate.getCoordinate() + "] [NONE] Artifact retrieved from repo: " + mavenRepos.get(repoNumber));
             return artifactFile.get();
@@ -113,7 +113,7 @@ public class MavenArtifactDownloader {
                 logger.warn("[ARTIFACT-DOWNLOAD] [UNPROCESSED] [" + duration + "] [" + mavenCoordinate.getCoordinate() + "] [" + e.getClass().getSimpleName() + "] Artifact couldn't be retrieved for repo: " + mavenRepos.get(repoNumber), e);
             }
 
-            if (artifactFile.isPresent()) {
+            if (artifactFile.isPresent() && artifactFile.get().exists()) {
                 long duration = computeDurationInMs(startTime);
                 logger.info("[ARTIFACT-DOWNLOAD] [SUCCESS] [" + duration + "] [" + mavenCoordinate.getCoordinate() + "] [NONE] Artifact retrieved from repo: " + mavenRepos.get(repoNumber));
                 return artifactFile.get();
