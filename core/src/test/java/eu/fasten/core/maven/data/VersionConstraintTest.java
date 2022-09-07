@@ -15,12 +15,7 @@
  */
 package eu.fasten.core.maven.data;
 
-import static eu.fasten.core.maven.data.VersionConstraint.parseVersionSpec;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import org.junit.jupiter.api.Test;
 
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -28,7 +23,12 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
-import org.junit.jupiter.api.Test;
+import static eu.fasten.core.maven.data.VersionConstraint.parseVersionSpec;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @SuppressWarnings("unchecked")
 public class VersionConstraintTest {
@@ -137,6 +137,15 @@ public class VersionConstraintTest {
         validate("[1.1],[1.2]", //
                 vc(false, true, "+1.1", "+1.1"), //
                 vc(false, true, "+1.2", "+1.2"));
+    }
+
+    @Test
+    public void spaceInVersionConstraint() {
+        var actual = new VersionConstraint("[ 1.2 , 1.3 )");
+        var expectedLowerBound = "1.2";
+        var expectedUpperBound = "1.3";
+        assertEquals(actual.getLowerBound(), expectedLowerBound);
+        assertEquals(actual.getUpperBound(), expectedUpperBound);
     }
 
     @Test
