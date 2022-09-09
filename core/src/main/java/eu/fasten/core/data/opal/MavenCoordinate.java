@@ -20,6 +20,8 @@ import eu.fasten.core.maven.utils.MavenUtilities;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.File;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.LinkedList;
 import java.util.List;
@@ -162,9 +164,8 @@ public class MavenCoordinate {
         return getCoordinate();
     }
 
-    public String toPath() {
-        return Paths.get(groupID.replace('.', '/'), artifactID, versionConstraint,
-                artifactID + "-" + versionConstraint + "." + packaging).toString();
+    public Path toPath() {
+        return Paths.get(groupID.replace('.', File.pathSeparatorChar), artifactID, versionConstraint,
+                artifactID + "-" + versionConstraint + "." + packaging);
     }
-
 }
