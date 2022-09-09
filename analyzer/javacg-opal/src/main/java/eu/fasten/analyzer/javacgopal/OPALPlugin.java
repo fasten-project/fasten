@@ -36,7 +36,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.nio.file.Paths;
 import java.util.Optional;
 
@@ -74,21 +73,15 @@ public class OPALPlugin extends Plugin {
             }
             var artifactRepository = fixResetAndGetArtifactRepo(json);
             final var mavenCoordinate = new MavenCoordinate(json);
+            final var mavenArtifactFile = new File(Paths.get(baseDir, ".m2", "repository", mavenCoordinate.toPath().toString()).toString());
             long startTime = System.currentTimeMillis();
             try {
                 // Generate CG and measure construction duration.
                 logger.info("[CG-GENERATION] [UNPROCESSED] [-1] [" + mavenCoordinate.getCoordinate() + "] [NONE] ");
                 long date = json.optLong("releaseDate", -1);
-                try {
-                    this.graph = OPALPartialCallGraphConstructor.createPCGFromLocalJar(mavenCoordinate, date,
-                            Paths.get(baseDir, mavenCoordinate.toPath()).toString(),
-                            CHA, ONLY_STATIC_CALLSITES);
-                } catch (FileNotFoundException e) {
-                    logger.warn(e.getMessage());
-                    // Downloads the JAR file from Maven central
-                    this.graph = OPALPartialCallGraphConstructor.createPartialJavaCG(mavenCoordinate,
-                            CHA, date, artifactRepository, ONLY_STATIC_CALLSITES);
-                }
+
+                this.graph = OPALPartialCallGraphConstructor.createPartialJavaCG(mavenCoordinate,
+                        CHA, date, artifactRepository, mavenArtifactFile, ONLY_STATIC_CALLSITES);
 
                 long duration = currentTimeMillis() - startTime;
 
