@@ -305,15 +305,15 @@ public class OPALType {
      */
     private static String getAccessModifier(Method method) {
         if (method.isPrivate()) {
-            return "private";
+            return Constants.PRIVATE;
         } else if (method.isPublic()) {
-            return "public";
+            return Constants.PUBLIC;
         } else if (method.isPackagePrivate()) {
-            return "packagePrivate";
+            return Constants.PACKAGE_PRIVATE;
         } else if (method.isProtected()) {
-            return "protected";
+            return Constants.PROTECTED;
         }
-        return "notFound";
+        return Constants.NOT_FOUND;
     }
 
     /**
