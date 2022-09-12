@@ -17,9 +17,10 @@
  */
 package eu.fasten.analyzer.javacgopal.data;
 
-import java.io.File;
-import java.net.URL;
-
+import com.typesafe.config.Config;
+import com.typesafe.config.ConfigFactory;
+import com.typesafe.config.ConfigValueFactory;
+import eu.fasten.core.data.opal.exceptions.OPALException;
 import org.opalj.br.analyses.Project;
 import org.opalj.log.GlobalLogContext$;
 import org.opalj.log.LogContext;
@@ -31,11 +32,8 @@ import org.opalj.tac.cg.CallGraph;
 import org.opalj.tac.cg.RTACallGraphKey$;
 import org.opalj.tac.cg.TypeBasedPointsToCallGraphKey$;
 
-import com.typesafe.config.Config;
-import com.typesafe.config.ConfigFactory;
-import com.typesafe.config.ConfigValueFactory;
-
-import eu.fasten.core.data.opal.exceptions.OPALException;
+import java.io.File;
+import java.net.URL;
 
 public class OPALCallGraphConstructor {
 
@@ -103,6 +101,10 @@ public class OPALCallGraphConstructor {
 
 		var entryPointFinder = "org.opalj.br.analyses.cg.LibraryEntryPointsFinder";
 		var instantiatedTypeFinder = "org.opalj.br.analyses.cg.LibraryInstantiatedTypesFinder";
+		// This is a conservative approach, Open Package Assumption (OPA), that produces sounds call graphs with more
+		// call edges at the expense of precision. See this paper for more detail:
+		// https://sse.cs.tu-dortmund.de/storages/sse-cs/r/Publications/Preprints/reh_16-callgraphs.pdf
+		var openCodeBase = "org.opalj.br.analyses.cg.OpenCodeBase";
 
 		Config cfg = ConfigFactory.load()
 				.withValue("org.opalj.br.reader.ClassFileReader.Invokedynamic.rewrite",
@@ -110,7 +112,9 @@ public class OPALCallGraphConstructor {
 				.withValue("org.opalj.br.analyses.cg.InitialEntryPointsKey.analysis",
 						ConfigValueFactory.fromAnyRef(entryPointFinder))
 				.withValue("org.opalj.br.analyses.cg.InitialInstantiatedTypesKey.analysis",
-						ConfigValueFactory.fromAnyRef(instantiatedTypeFinder));
+						ConfigValueFactory.fromAnyRef(instantiatedTypeFinder))
+				.withValue("org.opalj.br.analyses.cg.ClosedPackagesKey.analysis",
+						ConfigValueFactory.fromAnyRef(openCodeBase));
 
 		return cfg;
 	}
