@@ -227,37 +227,35 @@ public class OPALPartialCallGraphConstructor {
     private void createGraphWithExternalCHA(final OPALCallGraph ocg,
                                             final OPALClassHierarchy cha, CallPreservationStrategy callSiteOnly) {
         // TODO instead of relying on pcg field, use parameter
-    	final var cg = ocg.callGraph;
+        final var cg = ocg.callGraph;
         final var tac = ocg.project.get(ComputeTACAIKey$.MODULE$);
-        
-        for (final var sourceDeclaration : JavaConverters
-            .asJavaIterable(cg.reachableMethods().toIterable())) {
+
+        JavaConverters.asJavaCollection(cg.reachableMethods().toIterable()).parallelStream().forEach(sourceDeclaration -> {
             final List<Integer> incompeletes = new ArrayList<>();
             if (cg.incompleteCallSitesOf(sourceDeclaration) != null) {
                 JavaConverters.asJavaIterator(cg.incompleteCallSitesOf(sourceDeclaration))
-                    .forEachRemaining(pc -> incompeletes.add((int) pc));
+                        .forEachRemaining(pc -> incompeletes.add((int) pc));
             }
             final Set<Integer> visitedPCs = new HashSet<>();
 
             if (sourceDeclaration.hasMultipleDefinedMethods()) {
                 for (final var source : JavaConverters
-                    .asJavaIterable(sourceDeclaration.definedMethods())) {
+                        .asJavaIterable(sourceDeclaration.definedMethods())) {
                     cha.appendGraph(source, cg.calleesOf(sourceDeclaration),
-                        getStmts(tac, sourceDeclaration.definedMethod()), pcg.graph, incompeletes,
-                        visitedPCs, callSiteOnly);
+                            getStmts(tac, sourceDeclaration.definedMethod()), pcg.graph, incompeletes,
+                            visitedPCs, callSiteOnly);
                 }
             } else if (sourceDeclaration.hasSingleDefinedMethod()) {
                 final var definedMethod = sourceDeclaration.definedMethod();
                 cha.appendGraph(definedMethod, cg.calleesOf(sourceDeclaration),
-                    getStmts(tac, definedMethod), pcg.graph, incompeletes, visitedPCs, callSiteOnly);
+                        getStmts(tac, definedMethod), pcg.graph, incompeletes, visitedPCs, callSiteOnly);
 
             } else if (sourceDeclaration.isVirtualOrHasSingleDefinedMethod()) {
 
                 cha.appendGraph(sourceDeclaration, cg.calleesOf(sourceDeclaration), getStmts(tac,
-                    null), pcg.graph, incompeletes, visitedPCs, callSiteOnly);
+                        null), pcg.graph, incompeletes, visitedPCs, callSiteOnly);
             }
-
-        }
+        });
     }
 
     private Stmt<DUVar<ValueInformation>>[] getStmts(Function1<Method, AITACode<TACMethodParameter, ValueInformation>> tac,
