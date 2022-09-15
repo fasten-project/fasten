@@ -18,16 +18,12 @@
 
 package eu.fasten.analyzer.javacgopal.data.analysis;
 
-import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.EnumMap;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
+import eu.fasten.analyzer.javacgopal.data.CallPreservationStrategy;
+import eu.fasten.core.data.FastenURI;
+import eu.fasten.core.data.JavaGraph;
+import eu.fasten.core.data.JavaScope;
+import eu.fasten.core.data.JavaType;
+import it.unimi.dsi.fastutil.ints.IntIntPair;
 import org.opalj.br.ClassHierarchy;
 import org.opalj.br.DeclaredMethod;
 import org.opalj.br.Method;
@@ -38,16 +34,20 @@ import org.opalj.tac.DUVar;
 import org.opalj.tac.Stmt;
 import org.opalj.tac.UVar;
 import org.opalj.value.ValueInformation;
-
-import eu.fasten.analyzer.javacgopal.data.CallPreservationStrategy;
-import eu.fasten.core.data.FastenURI;
-import eu.fasten.core.data.JavaGraph;
-import eu.fasten.core.data.JavaScope;
-import eu.fasten.core.data.JavaType;
-import it.unimi.dsi.fastutil.ints.IntIntPair;
 import scala.Tuple2;
 import scala.collection.Iterator;
 import scala.collection.JavaConverters;
+
+import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.EnumMap;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Class hierarchy class containing two types of CHA - internal and external CHA
@@ -106,6 +106,34 @@ public class OPALClassHierarchy {
             externalResult
                     .putAll(OPALType.getType(projectHierarchy, externals.get(aClass), aClass));
         }
+
+        return new EnumMap<>(Map.of(JavaScope.internalTypes, internalResult, JavaScope.externalTypes, externalResult,
+                JavaScope.resolvedTypes, new HashMap<>()));
+    }
+
+    /**
+     * An optimized version of `asURIHierarchy`.
+     * Converts all of the members of the classHierarchy to {@link FastenURI}.
+     *
+     * @param projectHierarchy OPAL class hierarchy
+     * @return A {@link Map} of {@link FastenURI} and {@link JavaType}
+     */
+    public EnumMap<JavaScope, Map<String, JavaType>> asURIHierarchyParallel(ClassHierarchy projectHierarchy) {
+
+        final Map<String, JavaType> internalResult = new ConcurrentHashMap<>();
+        final Map<String, JavaType> externalResult = new ConcurrentHashMap<>();
+        final var internals = this.getInternalCHA();
+
+        internals.keySet().stream().parallel().forEach(aClass -> {
+            final var klass = OPALType.getType(internals.get(aClass), aClass);
+            internalResult.put(klass.getLeft(), klass.getRight());
+        });
+
+        final var externals = this.getExternalCHA();
+        externals.keySet().stream().parallel().forEach(aClass -> {
+            externalResult
+                    .putAll(OPALType.getType(projectHierarchy, externals.get(aClass), aClass));
+        });
 
         return new EnumMap<>(Map.of(JavaScope.internalTypes, internalResult, JavaScope.externalTypes, externalResult,
                 JavaScope.resolvedTypes, new HashMap<>()));
