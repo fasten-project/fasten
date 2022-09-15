@@ -19,18 +19,16 @@
 package eu.fasten.analyzer.javacgopal.data;
 
 import eu.fasten.core.data.CallPreservationStrategy;
+import com.google.common.collect.Lists;
+import eu.fasten.analyzer.javacgopal.data.analysis.OPALClassHierarchy;
+import eu.fasten.analyzer.javacgopal.data.analysis.OPALMethod;
+import eu.fasten.analyzer.javacgopal.data.analysis.OPALType;
+import eu.fasten.core.data.Constants;
+import eu.fasten.core.data.JavaGraph;
 import eu.fasten.core.data.PartialJavaCallGraph;
-import java.io.File;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
-
+import eu.fasten.core.data.opal.MavenArtifactDownloader;
+import eu.fasten.core.data.opal.MavenCoordinate;
+import eu.fasten.core.data.opal.exceptions.OPALException;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.text.StringEscapeUtils;
 import org.opalj.br.Annotation;
@@ -46,19 +44,19 @@ import org.opalj.tac.TACMethodParameter;
 import org.opalj.value.ValueInformation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.google.common.collect.Lists;
-
-import eu.fasten.analyzer.javacgopal.data.analysis.OPALClassHierarchy;
-import eu.fasten.analyzer.javacgopal.data.analysis.OPALMethod;
-import eu.fasten.analyzer.javacgopal.data.analysis.OPALType;
-import eu.fasten.core.data.Constants;
-import eu.fasten.core.data.JavaGraph;
-import eu.fasten.core.data.opal.MavenArtifactDownloader;
-import eu.fasten.core.data.opal.MavenCoordinate;
-import eu.fasten.core.data.opal.exceptions.OPALException;
 import scala.Function1;
 import scala.collection.JavaConverters;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Call graphs that are not still fully resolved. i.e. isolated call graphs which within-artifact
@@ -86,7 +84,7 @@ public class OPALPartialCallGraphConstructor {
             createGraphWithExternalCHA(ocg, cha, callSiteOnly);
 
             pcg.nodeCount = cha.getNodeCount();
-            pcg.classHierarchy = cha.asURIHierarchy(ocg.project.classHierarchy());
+            pcg.classHierarchy = cha.asURIHierarchyParallel(ocg.project.classHierarchy());
         } catch (Exception e) {
             if (e.getStackTrace().length > 0) {
                 var stackTrace = e.getStackTrace()[0];
