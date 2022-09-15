@@ -262,17 +262,18 @@ public class OPALClassHierarchy {
     }
 
     /**
-     * Append a sub-graph to already existing PartialJavaCallGraph.
-     *  @param source      source method
-     * @param targets     list of targets
-     * @param resultGraph already existing PartialJavaCallGraph
+     * Append a sub-graph to already existing PartialJavaCallGraph. It is thread-safe.
+     *
+     * @param source       source method
+     * @param targets      list of targets
+     * @param resultGraph  already existing PartialJavaCallGraph
      * @param callSiteOnly
      */
-    public void appendGraph(final Object source,
-                            final Iterator<Tuple2<Object, Iterator<DeclaredMethod>>> targets,
-                            final Stmt<DUVar<ValueInformation>>[] stmts,
-                            final JavaGraph resultGraph, List<Integer> incompeletes,
-                            final Set<Integer> visitedPCs, CallPreservationStrategy callSiteOnly) {
+    public synchronized void appendGraph(final Object source,
+                                         final Iterator<Tuple2<Object, Iterator<DeclaredMethod>>> targets,
+                                         final Stmt<DUVar<ValueInformation>>[] stmts,
+                                         final JavaGraph resultGraph, List<Integer> incompeletes,
+                                         final Set<Integer> visitedPCs, CallPreservationStrategy callSiteOnly) {
         final var edges = this.getSubGraph(source, targets, stmts, incompeletes, visitedPCs, callSiteOnly);
         resultGraph.append(edges);
     }
