@@ -174,9 +174,30 @@ public class FastenJavaURI extends FastenURI {
                                        final String rawTypeName, final String rawFunction,
                                        final FastenJavaURI[] argTypes,
                                        final FastenJavaURI returnType) {
-        final StringBuilder entitysb = new StringBuilder();
         final var typeName = validateURI(rawTypeName, true) ? rawTypeName : pctEncodeArg(rawTypeName);
         final var function = validateURI(rawFunction, true) ? rawFunction : pctEncodeArg(rawFunction);
+        final var entitysb = createRawEntity(typeName, function, returnType, argTypes);
+
+        final var fastenURI = FastenURI.create(rawForge, rawProduct, rawVersion, rawNamespace, entitysb);
+        return new FastenJavaURI(fastenURI.uri, typeName, function, argTypes, returnType);
+    }
+
+    public static FastenJavaURI createSchemeless(final String rawForge, final String rawProduct,
+                                                 final String rawVersion, final String rawNamespace,
+                                                 final String rawTypeName, final String rawFunction,
+                                                 final FastenJavaURI[] argTypes,
+                                                 final FastenJavaURI returnType) {
+        final var typeName = validateURI(rawTypeName, true) ? rawTypeName : pctEncodeArg(rawTypeName);
+        final var function = validateURI(rawFunction, true) ? rawFunction : pctEncodeArg(rawFunction);
+        final var fastenURI = FastenURI.createSchemeless(rawForge, rawProduct, rawVersion,
+            rawNamespace, createRawEntity(typeName, function, returnType, argTypes));
+        return new FastenJavaURI(fastenURI.uri, typeName, function, argTypes, returnType);
+    }
+
+    private static String createRawEntity(final String typeName, final String function,
+                                          final FastenJavaURI returnType,
+                                          final FastenJavaURI[] argTypes) {
+        final var entitysb = new StringBuilder();
         entitysb.append(typeName).append('.');
         entitysb.append(function);
 
@@ -193,9 +214,7 @@ public class FastenJavaURI extends FastenURI {
 
         } else if (argTypes != null && argTypes.length > 0)
             throw new IllegalArgumentException("You cannot specify argument types for an attribute");
-
-        final var fastenURI = FastenURI.create(rawForge, rawProduct, rawVersion, rawNamespace, entitysb.toString());
-        return new FastenJavaURI(fastenURI.uri, typeName, function, argTypes, returnType);
+        return entitysb.toString();
     }
 
     /**
@@ -345,6 +364,7 @@ public class FastenJavaURI extends FastenURI {
         return FastenJavaURI.create(u.toString());
     }
 
+    @Override
     public FastenJavaURI decanonicalize() {
         final FastenJavaURI[] derelativizedArgs = new FastenJavaURI[args.length];
 
@@ -365,5 +385,14 @@ public class FastenJavaURI extends FastenURI {
         for (int i = 0; i < args.length; i++) relativizedArgs[i] = relativize(args[i]);
         final FastenJavaURI relativizedReturnType = relativize(returnType);
         return FastenJavaURI.create(rawForge, rawProduct, rawVersion, rawNamespace, className, functionOrAttributeName, relativizedArgs, relativizedReturnType);
+    }
+
+    public FastenJavaURI canonicalizeSchemeless() {
+        final FastenJavaURI[] relativizedArgs = new FastenJavaURI[args.length];
+
+        for (int i = 0; i < args.length; i++) relativizedArgs[i] = relativize(args[i]);
+        final FastenJavaURI relativizedReturnType = relativize(returnType);
+        return FastenJavaURI.createSchemeless(rawForge, rawProduct, rawVersion, rawNamespace, className,
+            functionOrAttributeName, relativizedArgs, relativizedReturnType);
     }
 }

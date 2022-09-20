@@ -129,7 +129,8 @@ public class JavaType {
             final var nodeJson = methodsJson.getJSONObject(methodKey);
 
             final var metadata = nodeJson.getJSONObject("metadata");
-            final var node = new JavaNode(FastenURI.create(nodeJson.getString("uri")), metadata.toMap());
+            final var node = new JavaNode(FastenJavaURI.create(nodeJson.getString("uri")),
+                metadata.toMap());
             final int k = Integer.parseInt(methodKey);
             this.methods.put(k, node);
             this.javaNodes.put(node, k);
@@ -213,7 +214,7 @@ public class JavaType {
      * @return the associated integer key, or &minus;1 if {@code node} is not in the map.
      */
     public int getMethodKey(final JavaNode node) {
-        return javaNodes.getInt(node);
+        return javaNodes.getOrDefault(node, -1);
     }
 
     /**

@@ -192,7 +192,7 @@ public class OPALType {
 
         for (final var entry : methods.entrySet()) {
             final var method = entry.getKey();
-            result.put(entry.getValue(), new JavaNode(OPALMethod.toCanonicalSchemelessURI(null,
+            result.put(entry.getValue(), new JavaNode(OPALMethod.toSchemelessURI(null,
                     method.declaringClassType(), method.name(),
                     method.descriptor()), new HashMap<>()));
         }
@@ -253,7 +253,7 @@ public class OPALType {
      * @return method URI
      */
     private static FastenURI getUri(Method method) {
-        return OPALMethod.toCanonicalSchemelessURI(null, method.declaringClassFile().thisType(),
+        return OPALMethod.toSchemelessURI(null, method.declaringClassFile().thisType(),
                 method.name(), method.descriptor());
     }
 

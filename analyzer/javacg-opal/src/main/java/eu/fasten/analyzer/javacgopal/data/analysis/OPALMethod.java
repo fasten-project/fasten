@@ -43,23 +43,18 @@ public class OPALMethod {
      * @param descriptor Descriptor of the method in {@link MethodDescriptor} format
      * @return canonicalized Schemeless {@link FastenURI} of the given method
      */
-    public static FastenURI toCanonicalSchemelessURI(final String product,
-                                                     final ReferenceType klass,
-                                                     final String method,
-                                                     final MethodDescriptor descriptor)
+    public static FastenURI toSchemelessURI(final String product,
+                                            final ReferenceType klass,
+                                            final String method,
+                                            final MethodDescriptor descriptor)
             throws IllegalArgumentException, NullPointerException {
         var packageName = getPackageName(klass);
         var className = getClassName(klass);
         var params = getParametersURI(JavaConverters.seqAsJavaList(descriptor.parameterTypes()));
         var returnType = getTypeURI(descriptor.returnType());
 
-        final var javaURIRaw = FastenJavaURI.create(null, product, null,
+        return FastenJavaURI.createSchemeless(null, product, null,
                 packageName, className, method, params, returnType);
-        final var javaURI = javaURIRaw.canonicalize();
-
-        return FastenURI.createSchemeless(javaURI.getRawForge(), javaURI.getRawProduct(),
-                javaURI.getRawVersion(),
-                javaURI.getRawNamespace(), javaURI.getRawEntity());
     }
 
     /**
