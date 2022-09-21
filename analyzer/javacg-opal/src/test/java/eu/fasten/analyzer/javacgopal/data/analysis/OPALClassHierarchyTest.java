@@ -22,13 +22,15 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
+import eu.fasten.core.data.CallPreservationStrategy;
+import eu.fasten.core.data.JavaGraph;
+import eu.fasten.core.data.JavaScope;
+import it.unimi.dsi.fastutil.ints.IntIntPair;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -49,10 +51,6 @@ import org.opalj.collection.immutable.RefArray;
 import org.opalj.collection.immutable.UIDSet;
 import org.opalj.collection.immutable.UIDSet1;
 import org.opalj.tac.Stmt;
-
-import eu.fasten.core.data.CallPreservationStrategy;
-import eu.fasten.core.data.JavaGraph;
-import eu.fasten.core.data.JavaScope;
 import scala.Option;
 import scala.Tuple2;
 import scala.collection.Iterator;
@@ -225,9 +223,8 @@ class OPALClassHierarchyTest {
 
         var internalKeys = classHierarchy.getInternalCallKeys(source, target);
 
-        assertEquals(2, internalKeys.size());
-        assertEquals(123, internalKeys.get(0).intValue());
-        assertEquals(234, internalKeys.get(1).intValue());
+        assertEquals(123, internalKeys.firstInt());
+        assertEquals(234, internalKeys.secondInt());
     }
 
     @Test
@@ -254,11 +251,12 @@ class OPALClassHierarchyTest {
 
         var classHierarchy = new OPALClassHierarchy(internal, new HashMap<>(), 5);
 
+        Mockito.when(target.declaringClassType()).thenReturn(thisType);
+
         var externalKeys = classHierarchy.getExternalCallKeys(source, target);
 
-        assertEquals(2, externalKeys.size());
-        assertEquals(123, externalKeys.get(0).intValue());
-        assertEquals(5, externalKeys.get(1).intValue());
+        assertEquals(123, externalKeys.firstInt());
+        assertEquals(5, externalKeys.secondInt());
     }
 
     @Test
@@ -273,6 +271,7 @@ class OPALClassHierarchyTest {
 
         var source = Mockito.mock(DeclaredMethod.class);
         var target = Mockito.mock(Method.class);
+        Mockito.when(source.declaringClassType()).thenReturn(thisType);
         Mockito.when(target.declaringClassFile()).thenReturn(classFile);
 
         var methods = new HashMap<Method, Integer>();
@@ -287,9 +286,8 @@ class OPALClassHierarchyTest {
 
         var externalKeys = classHierarchy.getExternalCallKeys(source, target);
 
-        assertEquals(2, externalKeys.size());
-        assertEquals(5, externalKeys.get(0).intValue());
-        assertEquals(123, externalKeys.get(1).intValue());
+        assertEquals(5, externalKeys.firstInt());
+        assertEquals(123, externalKeys.secondInt());
     }
 
     @Test
@@ -299,18 +297,22 @@ class OPALClassHierarchyTest {
 
         var classHierarchy = new OPALClassHierarchy(new HashMap<>(), new HashMap<>(), 5);
 
+        var thisType = Mockito.mock(ObjectType.class);
+        Mockito.when(source.declaringClassType()).thenReturn(thisType);
+        Mockito.when(target.declaringClassType()).thenReturn(thisType);
+
         var externalKeys = classHierarchy.getExternalCallKeys(source, target);
 
-        assertEquals(2, externalKeys.size());
-        assertEquals(5, externalKeys.get(0).intValue());
-        assertEquals(6, externalKeys.get(1).intValue());
+        assertEquals(5, externalKeys.firstInt());
+        assertEquals(6, externalKeys.secondInt());
     }
 
     @Test
     void getExternalCallKeysWrongTypes() {
         var classHierarchy = new OPALClassHierarchy(new HashMap<>(), new HashMap<>(), 5);
 
-        assertEquals(0, classHierarchy.getExternalCallKeys(new Object(), new Object()).size());
+        assertEquals(IntIntPair.of(-1,-1), classHierarchy.getExternalCallKeys(new Object(),
+            new Object()));
     }
 
     @Test
@@ -319,7 +321,8 @@ class OPALClassHierarchyTest {
 
         var classHierarchy = new OPALClassHierarchy(new HashMap<>(), new HashMap<>(), 5);
 
-        assertEquals(0, classHierarchy.getExternalCallKeys(source, new Object()).size());
+        assertEquals(IntIntPair.of(-1,-1), classHierarchy.getExternalCallKeys(source,
+            new Object()));
     }
 
     @Test
@@ -345,25 +348,22 @@ class OPALClassHierarchyTest {
 
         var internal = new HashMap<ObjectType, OPALType>();
         internal.put(objectType, type);
-
-        var classHierarchy = new OPALClassHierarchy(internal, new HashMap<>(), 5);
-
-        var internalCalls = new HashMap<List<Integer>, Map<Object, Object>>();
-        var internalCallKeys = classHierarchy.getInternalCallKeys(source, target);
-        internalCalls.put(internalCallKeys, new HashMap<>());
-
-        var externalCalls = new HashMap<List<Integer>, Map<Object, Object>>();
+        var calls = new JavaGraph();
 
         var newMetadata = new HashMap<>();
         newMetadata.put(10, "newMetadata");
 
-        assertEquals(0, internalCalls.get(internalCallKeys).size());
+        var classHierarchy = new OPALClassHierarchy(internal, new HashMap<>(), 5, calls);
 
-        classHierarchy.putCalls(source, internalCalls, externalCalls, null, newMetadata, target
-        );
+        var internalCallKeys = classHierarchy.getInternalCallKeys(source, target);
+        calls.put(internalCallKeys, new HashMap<>());
 
-        assertEquals(1, internalCalls.get(internalCallKeys).size());
-        assertEquals("newMetadata", internalCalls.get(internalCallKeys).get(10));
+        assertEquals(0, calls.get(internalCallKeys).size());
+
+        classHierarchy.putCall(source, target, newMetadata);
+
+        assertEquals(1, calls.get(internalCallKeys).size());
+        assertEquals("newMetadata", calls.get(internalCallKeys).get(10));
     }
 
     @Test
@@ -378,30 +378,33 @@ class OPALClassHierarchyTest {
 
         var source = Mockito.mock(DeclaredMethod.class);
         var target = Mockito.mock(Method.class);
+        Mockito.when(source.declaringClassType()).thenReturn(thisType);
         Mockito.when(target.declaringClassFile()).thenReturn(classFile);
 
-        var type = new OPALType(new HashMap<>(), new LinkedList<>(), new ArrayList<>(), "source.java", "", false, new HashMap<>());
+        var type = new OPALType(Map.of(target, 6), new LinkedList<>(), new ArrayList<>(), "source" +
+            ".java", "", false, new HashMap<>());
 
         var internal = new HashMap<ObjectType, OPALType>();
         internal.put(objectType, type);
 
-        var classHierarchy = new OPALClassHierarchy(internal, new HashMap<>(), 5);
+        var external = new HashMap<ObjectType, Map<DeclaredMethod, Integer>>();
+        external.put(thisType, Map.of(source, 5));
+        var calls = new JavaGraph();
+        calls.put(IntIntPair.of(5, 6), new HashMap<>());
 
-        var externalCalls = new HashMap<List<Integer>, Map<Object, Object>>();
-        externalCalls.put(List.of(5, 6), new HashMap<>());
-
-        var internalCalls = new HashMap<List<Integer>, Map<Object, Object>>();
+        var classHierarchy = new OPALClassHierarchy(internal, external, 5, calls);
 
         var newMetadata = new HashMap<>();
         newMetadata.put(10, "newMetadata");
 
-        assertEquals(0, externalCalls.get(List.of(5, 6)).size());
+        assertEquals(0, calls.get(IntIntPair.of(5, 6)).size());
+        final var targetDeclaration = Mockito.mock(DeclaredMethod.class);
+        Mockito.when(targetDeclaration.declaringClassType()).thenReturn(thisType);
 
-        classHierarchy.putCalls(source, internalCalls, externalCalls,
-            Mockito.mock(DeclaredMethod.class), newMetadata, target);
+        classHierarchy.putCall(source, target, newMetadata);
 
-        assertEquals(1, externalCalls.get(List.of(5, 6)).size());
-        assertEquals("newMetadata", externalCalls.get(List.of(5, 6)).get(10));
+        assertEquals(1, calls.get(IntIntPair.of(5, 6)).size());
+        assertEquals("newMetadata", calls.get(IntIntPair.of(5, 6)).get(10));
     }
 
     @Test
@@ -414,37 +417,35 @@ class OPALClassHierarchyTest {
         var classFile = Mockito.mock(ClassFile.class);
         Mockito.when(classFile.thisType()).thenReturn(thisType);
 
-        var source = Mockito.mock(DeclaredMethod.class);
+        var source = Mockito.mock(Method.class);
         var target = Mockito.mock(Method.class);
+        Mockito.when(source.declaringClassFile()).thenReturn(classFile);
         Mockito.when(target.declaringClassFile()).thenReturn(classFile);
         Mockito.when(target.isConstructor()).thenReturn(true);
 
         var methods = new HashMap<Method, Integer>();
+        methods.put(source, 5);
         methods.put(target, 6);
 
         var type = new OPALType(methods, new LinkedList<>(), new ArrayList<>(), "source.java", "", false, new HashMap<>());
 
         var internal = new HashMap<ObjectType, OPALType>();
         internal.put(objectType, type);
+        var calls = new JavaGraph();
+        calls.put(IntIntPair.of(5, 6), new HashMap<>());
 
-        var classHierarchy = new OPALClassHierarchy(internal, new HashMap<>(), 5);
-
-        var externalCalls = new HashMap<List<Integer>, Map<Object, Object>>();
-        externalCalls.put(List.of(5, 6), new HashMap<>());
-
-        var internalCalls = new HashMap<List<Integer>, Map<Object, Object>>();
+        var classHierarchy = new OPALClassHierarchy(internal, new HashMap<>(), 5, calls);
 
         var newMetadata = new HashMap<>();
         newMetadata.put(10, "newMetadata");
 
-        assertEquals(0, externalCalls.get(List.of(5, 6)).size());
+        assertEquals(0, calls.get(IntIntPair.of(5, 6)).size());
 
-        classHierarchy.putCalls(source, internalCalls, externalCalls,
-            Mockito.mock(DeclaredMethod.class), newMetadata, target);
+        classHierarchy.putCall(source, target, newMetadata);
 
-        assertEquals(1, externalCalls.size());
-        assertEquals("newMetadata", externalCalls.get(List.of(5, 6)).get(10));
-        assertNull(externalCalls.get(List.of(6, 6)));
+        assertEquals(1, calls.size());
+        assertEquals("newMetadata", calls.get(IntIntPair.of(5, 6)).get(10));
+        assertNull(calls.get(IntIntPair.of(6, 6)));
     }
 
     @Test
@@ -452,13 +453,17 @@ class OPALClassHierarchyTest {
         var source = Mockito.mock(DeclaredMethod.class);
         var target = Mockito.mock(DeclaredMethod.class);
 
-        var classHierarchy = new OPALClassHierarchy(new HashMap<>(), new HashMap<>(), 5);
+        var calls = new JavaGraph();
+        var classHierarchy = new OPALClassHierarchy(new HashMap<>(), new HashMap<>(), 5, calls);
 
         assertEquals(0, classHierarchy.getExternalCHA().size());
+        var thisType = Mockito.mock(ObjectType.class);
+
+        Mockito.when(source.declaringClassType()).thenReturn(thisType);
+        Mockito.when(target.declaringClassType()).thenReturn(thisType);
 
         var externalKeys = classHierarchy.getExternalCallKeys(source, target);
-        var calls = new HashMap<List<Integer>, Map<Object, Object>>();
-        classHierarchy.putExternalCall(source, calls, target, new HashMap<>());
+        classHierarchy.putExternalCall(source, target, new HashMap<>());
 
         assertEquals(1, classHierarchy.getExternalCHA().size());
         assertNotNull(calls.get(externalKeys));
@@ -466,23 +471,21 @@ class OPALClassHierarchyTest {
 
     @Test
     void getInternalMetadata() {
-        var callKeys = new ArrayList<Integer>();
-        callKeys.add(1);
-        callKeys.add(2);
+        var callKeys = IntIntPair.of(1,2);
 
         var internalMetadata = new HashMap<>();
 
-        var internalCalls = new HashMap<List<Integer>, Map<Object, Object>>();
-        internalCalls.put(callKeys, internalMetadata);
+        var calls = new JavaGraph();
+        calls.put(callKeys, internalMetadata);
 
         var metadata = new HashMap<>();
         metadata.put(123, "testMetadata");
 
-        var classHierarchy = new OPALClassHierarchy(new HashMap<>(), new HashMap<>(), 5);
+        var classHierarchy = new OPALClassHierarchy(new HashMap<>(), new HashMap<>(), 5, calls);
 
         assertEquals(0, internalMetadata.size());
+        var internalMetadataUpdated = classHierarchy.getInternalMetadata(metadata, callKeys);
 
-        var internalMetadataUpdated = classHierarchy.getInternalMetadata(internalCalls, metadata, callKeys);
 
         assertEquals(1, internalMetadata.size());
         assertEquals(internalMetadata, internalMetadataUpdated);
@@ -494,24 +497,19 @@ class OPALClassHierarchyTest {
     void appendGraph() {
         OPALClassHierarchy classHierarchy =
             Mockito.spy(new OPALClassHierarchy(new HashMap<>(), new HashMap<>(), 5));
-        var newGraph = Mockito.mock(JavaGraph.class);
         var existingGraph = Mockito.mock(JavaGraph.class);
         final var incompeletes = new ArrayList<Integer>();
         final Set<Integer> visitedPCs = new java.util.HashSet<>();
-
-        Mockito.doReturn(newGraph).when(classHierarchy).getSubGraph(Mockito.any(), Mockito.any(),
-            Mockito.any(), Mockito.any(), Mockito.any(), Mockito.eq(CallPreservationStrategy.INCLUDING_ALL_SUBTYPES));
 
         var source = Mockito.mock(Method.class);
         var targets = new HashSet<Tuple2<Object, Iterator<DeclaredMethod>>>().iterator();
         var stmts = new Stmt[] { Mockito.mock(Stmt.class) };
 
-        classHierarchy.appendGraph(source, targets, stmts, existingGraph, incompeletes, visitedPCs,
-        		CallPreservationStrategy.INCLUDING_ALL_SUBTYPES);
+        classHierarchy.getSubGraph(source, targets, stmts, incompeletes, visitedPCs,
+            CallPreservationStrategy.INCLUDING_ALL_SUBTYPES);
 
         Mockito.verify(classHierarchy, Mockito.times(1)).getSubGraph(source, targets, stmts,
             incompeletes, visitedPCs, CallPreservationStrategy.INCLUDING_ALL_SUBTYPES);
-        Mockito.verify(existingGraph, Mockito.times(1)).append(newGraph);
     }
 
     @Test
@@ -519,12 +517,10 @@ class OPALClassHierarchyTest {
         OPALClassHierarchy classHierarchy =
             Mockito.spy(new OPALClassHierarchy(new HashMap<>(), new HashMap<>(), 5));
 
+        Mockito.doNothing().when(classHierarchy).putCall(Mockito.any(),
+                Mockito.any(), Mockito.any());
         Mockito.doNothing().when(classHierarchy)
-            .putCalls(Mockito.any(), Mockito.any(), Mockito.any(),
-                Mockito.any(), Mockito.any(), Mockito.any());
-        Mockito.doNothing().when(classHierarchy)
-            .putExternalCall(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any()
-            );
+            .putExternalCall(Mockito.any(), Mockito.any(), Mockito.any());
 
         var callSite = new HashMap<String, Object>();
         callSite.put("line", 20);
@@ -551,11 +547,10 @@ class OPALClassHierarchyTest {
         		CallPreservationStrategy.INCLUDING_ALL_SUBTYPES);
 
         Mockito.verify(classHierarchy, Mockito.times(1)).getCallSite(source, 1, stmts);
-        Mockito.verify(classHierarchy, Mockito.never()).putCalls(Mockito.any(), Mockito.any(),
-            Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any());
+        Mockito.verify(classHierarchy, Mockito.never()).putCall(Mockito.any(),
+            Mockito.any(), Mockito.any());
         Mockito.verify(classHierarchy, Mockito.never())
-            .putExternalCall(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any()
-            );
+            .putExternalCall(Mockito.any(), Mockito.any(), Mockito.any());
     }
 
     @Test
@@ -564,10 +559,9 @@ class OPALClassHierarchyTest {
             Mockito.spy(new OPALClassHierarchy(new HashMap<>(), new HashMap<>(), 5));
 
         Mockito.doNothing().when(classHierarchy)
-            .putCalls(Mockito.any(), Mockito.any(), Mockito.any(),
-                Mockito.any(), Mockito.any(), Mockito.any());
+            .putCall(Mockito.any(), Mockito.any(), Mockito.any());
         Mockito.doNothing().when(classHierarchy)
-            .putExternalCall(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any()
+            .putExternalCall(Mockito.any(), Mockito.any(), Mockito.any()
             );
         var callSite = new HashMap<String, Object>();
         var stmts = new Stmt[] { Mockito.mock(Stmt.class) };
@@ -599,11 +593,10 @@ class OPALClassHierarchyTest {
         		CallPreservationStrategy.INCLUDING_ALL_SUBTYPES);
 
         Mockito.verify(classHierarchy, Mockito.times(1)).getCallSite(source, 1, stmts);
-        Mockito.verify(classHierarchy, Mockito.times(2)).putCalls(Mockito.any(), Mockito.any(),
-            Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any());
+        Mockito.verify(classHierarchy, Mockito.times(2)).putCall(Mockito.any(),
+             Mockito.any(), Mockito.any());
         Mockito.verify(classHierarchy, Mockito.never())
-            .putExternalCall(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any()
-            );
+            .putExternalCall(Mockito.any(), Mockito.any(), Mockito.any());
     }
 
     @Test
@@ -612,11 +605,9 @@ class OPALClassHierarchyTest {
             Mockito.spy(new OPALClassHierarchy(new HashMap<>(), new HashMap<>(), 5));
 
         Mockito.doNothing().when(classHierarchy)
-            .putCalls(Mockito.any(), Mockito.any(), Mockito.any(),
-                Mockito.any(), Mockito.any(), Mockito.any());
+            .putCall(Mockito.any(), Mockito.any(), Mockito.any());
         Mockito.doNothing().when(classHierarchy)
-            .putExternalCall(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any()
-            );
+            .putExternalCall(Mockito.any(), Mockito.any(), Mockito.any());
         var callSite = new HashMap<String, Object>();
         var stmts = new Stmt[] { Mockito.mock(Stmt.class) };
 
@@ -647,11 +638,10 @@ class OPALClassHierarchyTest {
         		CallPreservationStrategy.INCLUDING_ALL_SUBTYPES);
 
         Mockito.verify(classHierarchy, Mockito.times(1)).getCallSite(source, 1, stmts);
-        Mockito.verify(classHierarchy, Mockito.times(1)).putCalls(Mockito.any(), Mockito.any(),
-            Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any());
+        Mockito.verify(classHierarchy, Mockito.times(1)).putCall(Mockito.any(), Mockito.any(),
+            Mockito.any());
         Mockito.verify(classHierarchy, Mockito.never())
-            .putExternalCall(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any()
-            );
+            .putExternalCall(Mockito.any(), Mockito.any(), Mockito.any());
     }
 
     @Test
@@ -660,11 +650,9 @@ class OPALClassHierarchyTest {
             Mockito.spy(new OPALClassHierarchy(new HashMap<>(), new HashMap<>(), 5));
 
         Mockito.doNothing().when(classHierarchy)
-            .putCalls(Mockito.any(), Mockito.any(), Mockito.any(),
-                Mockito.any(), Mockito.any(), Mockito.any());
+            .putCall(Mockito.any(), Mockito.any(), Mockito.any());
         Mockito.doNothing().when(classHierarchy)
-            .putExternalCall(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any()
-            );
+            .putExternalCall(Mockito.any(), Mockito.any(), Mockito.any());
         var callSite = new HashMap<String, Object>();
         var stmts = new Stmt[] { Mockito.mock(Stmt.class) };
 
@@ -692,11 +680,9 @@ class OPALClassHierarchyTest {
         		CallPreservationStrategy.INCLUDING_ALL_SUBTYPES);
 
         Mockito.verify(classHierarchy, Mockito.times(1)).getCallSite(source, 1, stmts);
-        Mockito.verify(classHierarchy, Mockito.times(0)).putCalls(Mockito.any(), Mockito.any(),
-            Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any());
+        Mockito.verify(classHierarchy, Mockito.times(0)).putCall(Mockito.any(), Mockito.any(), Mockito.any());
         Mockito.verify(classHierarchy, Mockito.times(1))
-            .putExternalCall(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any()
-            );
+            .putExternalCall(Mockito.any(), Mockito.any(), Mockito.any());
     }
 
     @Test
@@ -705,11 +691,9 @@ class OPALClassHierarchyTest {
             Mockito.spy(new OPALClassHierarchy(new HashMap<>(), new HashMap<>(), 5));
 
         Mockito.doNothing().when(classHierarchy)
-            .putCalls(Mockito.any(), Mockito.any(), Mockito.any(),
-                Mockito.any(), Mockito.any(), Mockito.any());
+            .putCall(Mockito.any(), Mockito.any(),Mockito.any());
         Mockito.doNothing().when(classHierarchy)
-            .putExternalCall(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any()
-            );
+            .putExternalCall(Mockito.any(), Mockito.any(), Mockito.any());
         var stmts = new Stmt[] { Mockito.mock(Stmt.class) };
 
         var callSite = new HashMap<String, Object>();
@@ -737,11 +721,9 @@ class OPALClassHierarchyTest {
 
         Mockito.verify(classHierarchy, Mockito.times(0)).getCallSite(Mockito.any(), Mockito.any(),
             Mockito.eq(stmts));
-        Mockito.verify(classHierarchy, Mockito.never()).putCalls(Mockito.any(), Mockito.any(),
-            Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any());
+        Mockito.verify(classHierarchy, Mockito.never()).putCall(Mockito.any(), Mockito.any(), Mockito.any());
         Mockito.verify(classHierarchy, Mockito.never())
-            .putExternalCall(Mockito.any(), Mockito.any(), Mockito.any(), Mockito.any()
-            );
+            .putExternalCall(Mockito.any(), Mockito.any(), Mockito.any());
     }
 
     @Test

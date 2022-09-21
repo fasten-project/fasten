@@ -64,7 +64,7 @@ import scala.Option;
 import scala.collection.Iterator;
 import scala.collection.mutable.HashSet;
 
-class OPALOPALPartialCallGraphConstructorTest {
+class OPALPartialCallGraphConstructorTest {
 
 	private static OPALPartialCallGraph singleCallCG;
 
@@ -156,7 +156,7 @@ class OPALOPALPartialCallGraphConstructorTest {
 
 	@Test
 	void getNodeCount() {
-		assertEquals(4, singleCallCG.nodeCount);
+		assertEquals(4, singleCallCG.nodeCount.get());
 	}
 
 	@Test
