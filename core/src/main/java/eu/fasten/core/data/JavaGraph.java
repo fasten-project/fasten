@@ -19,10 +19,11 @@
 package eu.fasten.core.data;
 
 import it.unimi.dsi.fastutil.ints.IntIntPair;
-import org.json.JSONArray;
-import org.json.JSONObject;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import org.json.JSONArray;
+import org.json.JSONObject;
 
 public class JavaGraph {
 
@@ -40,6 +41,9 @@ public class JavaGraph {
         this.callSites = callSites;
     }
 
+    public void put(IntIntPair key, Map<Object, Object> value){
+        this.callSites.put(key, value);
+    }
     /**
      * Creates {@link JavaGraph} for the given JSONObject.
      *
@@ -62,7 +66,7 @@ public class JavaGraph {
      * Creates {@link JavaGraph} with all fields empty.
      */
     public JavaGraph() {
-        this.callSites = new HashMap<>();
+        this.callSites = new ConcurrentHashMap<>();
     }
 
 
@@ -158,5 +162,13 @@ public class JavaGraph {
     @Override
     public int hashCode() {
         return callSites != null ? callSites.hashCode() : 0;
+    }
+
+    public Map<Object, Object> getOrDefault(IntIntPair call, Map<Object, Object> metadata) {
+        return this.callSites.getOrDefault(call, metadata);
+    }
+
+    public Map<Object, Object> get(IntIntPair key) {
+        return this.callSites.get(key);
     }
 }
