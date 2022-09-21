@@ -146,7 +146,7 @@ public class OPALPartialCallGraphConstructor {
         objs.sort(Comparator.comparing(Object::toString));
 
         var opalAnnotations = new HashMap<String, List<Pair<String, String>>>();
-        for (final var classFile : objs) {
+        objs.parallelStream().forEach(classFile ->  {
             var annotations = JavaConverters.asJavaIterable(classFile.annotations());
             if (annotations != null) {
                 for (Annotation annotation : annotations) {
@@ -173,22 +173,25 @@ public class OPALPartialCallGraphConstructor {
                 }
             }
             final var currentClass = classFile.thisType();
-            final var methods = getMethodsMap(opalCha.nodeCount.get(),
+            synchronized (opalCha.nodeCount) {
+                final var methods = getMethodsMap(opalCha.nodeCount.get(),
                     JavaConverters.asJavaIterable(classFile.methods()));
-            var namespace = OPALMethod.getPackageName(classFile.thisType());
-            var filepath = namespace != null ? namespace.replace(".", "/") : "";
-            final var type = new OPALType(methods,
+                var namespace = OPALMethod.getPackageName(classFile.thisType());
+                var filepath = namespace != null ? namespace.replace(".", "/") : "";
+                final var type = new OPALType(methods,
                     OPALType.extractSuperClasses(project.classHierarchy(), currentClass),
                     OPALType.extractSuperInterfaces(project.classHierarchy(), currentClass),
                     classFile.sourceFile().isDefined()
-                            ? filepath + "/" + classFile.sourceFile().get()
-                            : "NotFound",
+                        ? filepath + "/" + classFile.sourceFile().get()
+                        : "NotFound",
                     classFile.isPublic() ? "public" : "packagePrivate", classFile.isFinal(),
                     opalAnnotations);
 
-            opalCha.internalCHA.put(currentClass, type);
-            opalCha.nodeCount.addAndGet(methods.size());
-        }
+                opalCha.internalCHA.put(currentClass, type);
+                opalCha.nodeCount.addAndGet(methods.size());
+            }
+        });
+
     }
 
     /**
