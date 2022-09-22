@@ -136,6 +136,25 @@ public class RestMavenResolverTest {
     }
 
     @Test
+    public void dependenciesCorrectDefaultLimit() {
+        var cfg = new ResolverConfig().at(123);
+        var r = resolveSomeDependencies(cfg);
+        Map<String, String> expected = Map.of( //
+                "resolveAt", Long.toString(123));
+        assertEquals(expected, r.queryParams);
+    }
+
+    @Test
+    public void dependenciesCorrectNonDefaultLimit() {
+        var cfg = new ResolverConfig().at(123).limit(234);
+        var r = resolveSomeDependencies(cfg);
+        Map<String, String> expected = Map.of( //
+                "resolveAt", Long.toString(123), //
+                "limit", "234");
+        assertEquals(expected, r.queryParams);
+    }
+
+    @Test
     public void dependenciesCorrectNonDefaultCustomDepth() {
         var cfg = new ResolverConfig().at(123).limitTransitiveDeps(13);
         var r = resolveSomeDependencies(cfg);
@@ -245,6 +264,25 @@ public class RestMavenResolverTest {
         Map<String, String> expected = Map.of( //
                 "resolveAt", Long.toString(123), //
                 "depth", "1");
+        assertEquals(expected, r.queryParams);
+    }
+
+    @Test
+    public void dependentsCorrectDefaultLimit() {
+        var cfg = new ResolverConfig().at(123);
+        var r = resolveSomeDependents(cfg);
+        Map<String, String> expected = Map.of( //
+                "resolveAt", Long.toString(123));
+        assertEquals(expected, r.queryParams);
+    }
+
+    @Test
+    public void dependentsCorrectNonDefaultLimit() {
+        var cfg = new ResolverConfig().at(123).limit(234);
+        var r = resolveSomeDependents(cfg);
+        Map<String, String> expected = Map.of( //
+                "resolveAt", Long.toString(123), //
+                "limit", "234");
         assertEquals(expected, r.queryParams);
     }
 

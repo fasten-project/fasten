@@ -106,6 +106,10 @@ public class MavenDependencyResolver {
                 continue;
             }
 
+            if (depSet.size() >= config.limit) {
+                break;
+            }
+
             var p = data.pom.toProduct();
             if (addedProducts.contains(p)) {
                 continue;
