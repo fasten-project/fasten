@@ -31,6 +31,7 @@ public class ResolverConfig {
     public long resolveAt = new Date().getTime();
     public int depth = Integer.MAX_VALUE;
     public Scope scope = RUNTIME;
+    public int limit = Integer.MAX_VALUE;
 
     /**
      * if false, include only direct dependencies
@@ -50,7 +51,7 @@ public class ResolverConfig {
     public ResolverConfig includeTransitiveDeps() {
         this.depth = Integer.MAX_VALUE;
         return this;
-        }
+    }
 
     public ResolverConfig excludeTransitiveDeps() {
         this.depth = 1;
@@ -64,11 +65,14 @@ public class ResolverConfig {
         }
         this.depth = depth;
         return this;
-            }
+    }
 
     public boolean isExcludingTransitiveDeps() {
         return depth == 1;
-        }
+    }
+
+    public ResolverConfig limit(int limit) {
+        this.limit = limit;
         return this;
     }
 

@@ -74,6 +74,10 @@ public class MavenDependentsResolver {
                 continue;
             }
 
+            if (dependents.size() >= config.limit) {
+                return;
+            }
+
             var decl = findCorrectDependencyDecl(pom, dpd.dependencies);
 
             if (!matchesScope(decl.getScope(), config.scope, config.alwaysIncludeProvided)) {

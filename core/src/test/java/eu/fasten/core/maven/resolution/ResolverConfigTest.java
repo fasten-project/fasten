@@ -35,6 +35,7 @@ public class ResolverConfigTest {
     public void defaults() {
         var sut = new ResolverConfig();
         assertEquals(Integer.MAX_VALUE, sut.depth);
+        assertEquals(Integer.MAX_VALUE, sut.limit);
         assertEquals(Scope.RUNTIME, sut.scope);
         assertFalse(sut.alwaysIncludeProvided);
         assertFalse(sut.alwaysIncludeOptional);
@@ -63,6 +64,15 @@ public class ResolverConfigTest {
         var a = getNonDefaultConfig();
         var b = getNonDefaultConfig();
         b.depth = 2;
+        assertNotEquals(a, b);
+        assertNotEquals(a.hashCode(), b.hashCode());
+    }
+
+    @Test
+    public void equalityDifferentLimit() {
+        var a = getNonDefaultConfig();
+        var b = getNonDefaultConfig();
+        b.limit = 2;
         assertNotEquals(a, b);
         assertNotEquals(a.hashCode(), b.hashCode());
     }
@@ -161,6 +171,13 @@ public class ResolverConfigTest {
     }
 
     @Test
+    public void builderSetsLimit() {
+        var sut = resolve();
+        assertSame(sut, sut.limit(23456));
+        assertEquals(23456, sut.limit);
+    }
+
+    @Test
     public void builderSetsScope() {
         var sut = resolve();
         assertSame(sut, sut.scope(Scope.COMPILE));
@@ -194,6 +211,7 @@ public class ResolverConfigTest {
     private static ResolverConfig getNonDefaultConfig() {
         var cfg = new ResolverConfig();
         cfg.depth = 1357;
+        cfg.limit = 5864;
         cfg.scope = Scope.COMPILE;
         cfg.resolveAt = 1234567890000L;
         cfg.alwaysIncludeProvided = true;
