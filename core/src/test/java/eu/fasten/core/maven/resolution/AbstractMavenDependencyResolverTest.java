@@ -56,7 +56,11 @@ public class AbstractMavenDependencyResolverTest {
 
     protected Set<ResolvedRevision> assertResolution(String... gavs) {
         addDangling();
-        var baseParts = gavs[0].split(":");
+
+        var baseShort = gavs[0];
+        gavs = Arrays.copyOfRange(gavs, 1, gavs.length);
+
+        var baseParts = baseShort.split(":");
         var base = String.format("%s:%s:%s", baseParts[0], baseParts[0], baseParts[1]);
         var actuals = sut.resolve(Set.of(base), config);
         var expecteds = Arrays.stream(gavs) //
@@ -68,8 +72,7 @@ public class AbstractMavenDependencyResolverTest {
         return actuals;
     }
 
-    private static void assertEquals(Set<ResolvedRevision> expecteds,
-                                    Set<ResolvedRevision> actuals) {
+    private static void assertEquals(Set<ResolvedRevision> expecteds, Set<ResolvedRevision> actuals) {
         if (!expecteds.equals(actuals)) {
             var sb = new StringBuilder();
             sb.append("Expected:\n");
