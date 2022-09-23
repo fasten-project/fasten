@@ -47,25 +47,25 @@ public class MavenDependencyResolverLimitTest extends AbstractMavenDependencyRes
     @Test
     public void onlyTwo() {
         config.limit = 2;
-        assertResolution(BASE, "a:1");
+        assertResolution(BASE, "a:1", "b:1");
     }
 
     @Test
     public void onlyThree() {
         config.limit = 3;
-        assertResolution(BASE, "a:1", "b:1");
+        assertResolution(BASE, "a:1", "b:1", "aa:1");
     }
 
     @Test
     public void onlyFour() {
         config.limit = 4;
-        assertResolution(BASE, "a:1", "b:1", "aa:1");
+        assertResolution(BASE, "a:1", "b:1", "aa:1", "ab:1");
     }
 
     @Test
     public void onlyFive() {
         config.limit = 5;
-        assertResolution(BASE, "a:1", "b:1", "aa:1", "ab:1");
+        assertResolution(BASE, "a:1", "b:1", "aa:1", "ab:1", "ba:1");
     }
 
     private void add(String from, String... tos) {

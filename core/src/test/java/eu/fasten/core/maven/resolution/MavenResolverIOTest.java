@@ -114,17 +114,19 @@ public class MavenResolverIOTest {
 
     @Test
     public void smokeTest() {
-        var pom = pom(0);
-        var rev = pom.toRevision();
+        var pom0 = pom(0, 1);
+        var rev0 = pom0.toRevision();
+        var rev1 = pom(1).toRevision();
 
-        data.add(pom);
+        data.add(pom0);
+        data.add(pom(1));
 
         var r = sut.loadResolver();
-        var actualDeps = r.resolveDependencies(rev);
-        var expectedDep = new ResolvedRevision(rev, COMPILE);
+        var actualDeps = r.resolveDependencies(rev0);
+        var expectedDep = new ResolvedRevision(rev1, COMPILE);
         assertEquals(Set.of(expectedDep), actualDeps);
 
-        var actualDpds = r.resolveDependents(rev);
+        var actualDpds = r.resolveDependents(rev0);
         assertEquals(Set.of(), actualDpds);
     }
 
@@ -142,26 +144,36 @@ public class MavenResolverIOTest {
 
     @Test
     public void readsFromDisk() throws StreamReadException, DatabindException, IOException {
-        var pom = pom(234);
-        var poms = Set.of(pom);
+        var pom1 = pom(234, 2);
+        var pom2 = pom(2);
+
+        var poms = Set.of(pom1, pom2);
         OM.writeValue(new File(tempDir, "poms.json"), poms);
 
         var r = sut.loadResolver();
+        var rev1 = pom1.toRevision();
+        var rev2 = pom2.toRevision();
 
-        var revision = pom.toRevision();
-        var actualDeps = r.resolveDependencies(revision);
-        var expectedDeps = Set.of(new ResolvedRevision(revision, COMPILE));
+        var actualDeps = r.resolveDependencies(rev1);
+        var expectedDeps = Set.of(new ResolvedRevision(rev2, COMPILE));
         assertEquals(expectedDeps, actualDeps);
 
         assertEquals(0, data.numExecutes);
     }
 
-    private Pom pom(int i) {
+    private Pom pom(int i, int... deps) {
         var pom = new PomBuilder();
         pom.groupId = "g" + i;
         pom.artifactId = "a" + i;
         pom.version = "v" + i;
+        for (var j : deps) {
+            pom.dependencies.add(dep(j));
+        }
         return pom.pom();
+    }
+
+    private Dependency dep(int i) {
+        return new Dependency("g" + i, "a" + i, "v" + i);
     }
 
     public class MyProvider implements MockDataProvider {

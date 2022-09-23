@@ -185,6 +185,7 @@ public class MavenDependencyResolverResolvedScopeTest extends AbstractMavenDepen
                 .map(rr -> String.format("%s:%s:%s:%s", rr.getGroupId(), rr.getArtifactId(), rr.version, rr.scope)) //
                 .collect(Collectors.toCollection(TreeSet::new));
         var expecteds = Arrays.stream(deps) //
+                .skip(1) // remove target from expected set
                 .map(d -> {
                     var parts = d.coord.split(":");
                     return String.format("%s:%s:%s:%s", parts[0], parts[0], parts[1], d.scope);

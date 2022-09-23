@@ -98,6 +98,7 @@ public class MavenDependencyResolver {
 
         var queue = new LinkedList<QueueData>();
         queue.add(startingData);
+        var isFirstElement = true;
 
         while (!queue.isEmpty()) {
             var data = queue.poll();
@@ -116,7 +117,10 @@ public class MavenDependencyResolver {
             }
             addedProducts.add(p);
 
-            depSet.add(toResolvedRevision(data));
+            if (!isFirstElement) {
+                depSet.add(toResolvedRevision(data));
+            }
+            isFirstElement = false;
 
             if (data.scope == SYSTEM) {
                 continue;
