@@ -153,7 +153,17 @@ public class PartialJavaCallGraph extends PartialCallGraph {
 
     @Override
     public int getNodeCount() {
-        return this.mapOfAllMethods().size();
+        int result = 0;
+        for (final var aClass : this.getClassHierarchy().get(JavaScope.internalTypes).entrySet()) {
+            result += aClass.getValue().getMethods().size();
+        }
+        for (final var aClass : this.getClassHierarchy().get(JavaScope.externalTypes).entrySet()) {
+            result += aClass.getValue().getMethods().size();
+        }
+        for (final var aClass : this.getClassHierarchy().get(JavaScope.resolvedTypes).entrySet()) {
+            result += aClass.getValue().getMethods().size();
+        }
+        return result;
     }
 
     /**
