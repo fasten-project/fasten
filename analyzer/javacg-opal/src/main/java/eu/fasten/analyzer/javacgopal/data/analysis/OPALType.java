@@ -192,7 +192,7 @@ public class OPALType {
 
         for (final var entry : methods.entrySet()) {
             final var method = entry.getKey();
-            result.put(entry.getValue(), new JavaNode(OPALMethod.toCanonicalSchemelessURI(null,
+            result.put(entry.getValue(), new JavaNode(OPALMethod.toSchemelessURI(null,
                     method.declaringClassType(), method.name(),
                     method.descriptor()), new HashMap<>()));
         }
@@ -253,7 +253,7 @@ public class OPALType {
      * @return method URI
      */
     private static FastenURI getUri(Method method) {
-        return OPALMethod.toCanonicalSchemelessURI(null, method.declaringClassFile().thisType(),
+        return OPALMethod.toSchemelessURI(null, method.declaringClassFile().thisType(),
                 method.name(), method.descriptor());
     }
 
@@ -305,15 +305,15 @@ public class OPALType {
      */
     private static String getAccessModifier(Method method) {
         if (method.isPrivate()) {
-            return "private";
+            return Constants.PRIVATE;
         } else if (method.isPublic()) {
-            return "public";
+            return Constants.PUBLIC;
         } else if (method.isPackagePrivate()) {
-            return "packagePrivate";
+            return Constants.PACKAGE_PRIVATE;
         } else if (method.isProtected()) {
-            return "protected";
+            return Constants.PROTECTED;
         }
-        return "notFound";
+        return Constants.NOT_FOUND;
     }
 
     /**

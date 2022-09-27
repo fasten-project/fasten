@@ -40,4 +40,10 @@ public class Constants {
     public static final String CALLSITE_LINE = "line";
     public static final String INVOCATION_TYPE = "type";
     public static final String RECEIVER_TYPE = "receiver";
+
+    public static final String PUBLIC = "public";
+    public static final String PACKAGE_PRIVATE = "packagePrivate";
+    public static final String PROTECTED = "protected";
+    public static final String NOT_FOUND = "notFound";
+    public static final String PRIVATE = "private";
 }

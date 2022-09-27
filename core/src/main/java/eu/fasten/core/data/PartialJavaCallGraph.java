@@ -18,21 +18,18 @@
 
 package eu.fasten.core.data;
 
+import com.google.common.collect.BiMap;
+import com.google.common.collect.HashBiMap;
+import eu.fasten.core.utils.FastenUriUtils;
+import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
+import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.Map;
-
 import org.apache.commons.lang3.builder.EqualsBuilder;
 import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.json.JSONException;
 import org.json.JSONObject;
-
-import com.google.common.collect.BiMap;
-import com.google.common.collect.HashBiMap;
-
-import eu.fasten.core.utils.FastenUriUtils;
-import it.unimi.dsi.fastutil.ints.Int2ObjectMap;
-import it.unimi.dsi.fastutil.ints.Int2ObjectOpenHashMap;
 
 /**
  * For each class in the revision, class hierarchy keeps a {@link JavaType} that is accessible by
@@ -76,7 +73,7 @@ public class PartialJavaCallGraph extends PartialCallGraph {
      */
     public PartialJavaCallGraph(final String forge, final String product, final String version,
                                 final long timestamp, final String cgGenerator,
-                                final EnumMap<JavaScope,Map<String, JavaType>> classHierarchy,
+                                final EnumMap<JavaScope, Map<String, JavaType>> classHierarchy,
                                 final JavaGraph graph) {
         super(forge, product, version, timestamp, cgGenerator);
         this.classHierarchy = classHierarchy;
@@ -100,9 +97,10 @@ public class PartialJavaCallGraph extends PartialCallGraph {
         return this.graph;
     }
 
-    public Map<it.unimi.dsi.fastutil.ints.IntIntPair, Map<Object, Object>> getCallSites(){
+    public Map<it.unimi.dsi.fastutil.ints.IntIntPair, Map<Object, Object>> getCallSites() {
         return this.getGraph().getCallSites();
     }
+
     /**
      * Creates a class hierarchy for the given JSONObject.
      *
@@ -153,7 +151,17 @@ public class PartialJavaCallGraph extends PartialCallGraph {
 
     @Override
     public int getNodeCount() {
-        return this.mapOfAllMethods().size();
+        int result = 0;
+        for (final var aClass : this.getClassHierarchy().get(JavaScope.internalTypes).entrySet()) {
+            result += aClass.getValue().getMethods().size();
+        }
+        for (final var aClass : this.getClassHierarchy().get(JavaScope.externalTypes).entrySet()) {
+            result += aClass.getValue().getMethods().size();
+        }
+        for (final var aClass : this.getClassHierarchy().get(JavaScope.resolvedTypes).entrySet()) {
+            result += aClass.getValue().getMethods().size();
+        }
+        return result;
     }
 
     /**
@@ -163,7 +171,7 @@ public class PartialJavaCallGraph extends PartialCallGraph {
      *
      * @return a BiMap method ids and their corresponding fully qualified {@link FastenURI}
      */
-    public BiMap<Integer, String> mapOfFullURIStrings(){
+    public BiMap<Integer, String> mapOfFullURIStrings() {
         final BiMap<Integer, String> result = HashBiMap.create();
         for (final var aClass : this.getClassHierarchy().get(JavaScope.internalTypes).entrySet()) {
             putMethodsOfType(result, aClass.getValue().getMethods());
@@ -175,22 +183,43 @@ public class PartialJavaCallGraph extends PartialCallGraph {
         return result;
     }
 
+    public BiMap<Integer, String> mapOfFullURIStrings(final Map<String, String> typeToCoordMap) {
+        final BiMap<Integer, String> result = HashBiMap.create();
+        for (final var aClass : this.getClassHierarchy().get(JavaScope.internalTypes).entrySet()) {
+            putMethodsOfType(result, toFullTypeUri(typeToCoordMap, aClass.getKey()),
+                aClass.getValue().getMethods());
+        }
+        for (final var aClass : this.getClassHierarchy().get(JavaScope.externalTypes).entrySet()) {
+            putMethodsOfType(result, toFullTypeUri(typeToCoordMap, aClass.getKey()),
+                aClass.getValue().getMethods());
+        }
+        return result;
+    }
+
+    private String toFullTypeUri(final Map<String, String> typeToCoordMap, final String aClass) {
+        final var coord = typeToCoordMap.getOrDefault(aClass, "java:lang:x").split(":");
+        return "fasten://mvn!" + coord[0] + ":" + coord[1] + "$" + coord[2] + aClass;
+    }
+
     private void putMethodsOfType(final BiMap<Integer, String> result, final String type,
                                   final Map<Integer, JavaNode> methods) {
         for (final var nodeEntry : methods.entrySet()) {
             final var typeUri = FastenURI.create(type);
-            final var fullUri = FastenUriUtils.generateFullFastenUri(Constants.mvnForge, typeUri.getProduct(),
-                typeUri.getVersion(), nodeEntry.getValue().getUri().toString());
+            final var fullUri =
+                FastenUriUtils.generateFullFastenUri(Constants.mvnForge, typeUri.getProduct(),
+                    typeUri.getVersion(), nodeEntry.getValue().getUri().toString());
             if (!result.inverse().containsKey(fullUri)) {
                 result.put(nodeEntry.getKey(), fullUri);
             }
         }
     }
 
-    private void putMethodsOfType(final BiMap<Integer, String> result, final Map<Integer, JavaNode> methods) {
+    private void putMethodsOfType(final BiMap<Integer, String> result,
+                                  final Map<Integer, JavaNode> methods) {
         for (final var nodeEntry : methods.entrySet()) {
-            final var fullUri = FastenUriUtils.generateFullFastenUri(Constants.mvnForge, this.product,
-                this.version, nodeEntry.getValue().getUri().toString());
+            final var fullUri =
+                FastenUriUtils.generateFullFastenUri(Constants.mvnForge, this.product,
+                    this.version, nodeEntry.getValue().getUri().toString());
             if (!result.inverse().containsKey(fullUri)) {
                 result.put(nodeEntry.getKey(), fullUri);
             }
@@ -276,7 +305,7 @@ public class PartialJavaCallGraph extends PartialCallGraph {
     }
 
     public EnumMap<JavaScope, Map<String, JavaType>> getClassHierarchy() {
-    return classHierarchy;
+        return classHierarchy;
     }
 
     /**

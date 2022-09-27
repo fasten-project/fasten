@@ -18,6 +18,7 @@
 
 package eu.fasten.core.data;
 
+import eu.fasten.core.merge.CallGraphUtils;
 import java.util.Map;
 import java.util.Objects;
 
@@ -37,8 +38,8 @@ public class JavaNode extends Node {
      * @param metadata metadata associated with this JavaNode
      */
     public JavaNode(final FastenURI uri, final Map<String, Object> metadata) {
-        super(uri, metadata);
-        this.signature = StringUtils.substringAfter(FastenJavaURI.create(uri.toString()).decanonicalize().getEntity(), ".");
+        super(((FastenJavaURI)uri).canonicalizeSchemeless(), metadata);
+        this.signature = CallGraphUtils.decode(StringUtils.substringAfter(uri.getEntity(), "."));
     }
 
     /**

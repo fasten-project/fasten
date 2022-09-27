@@ -28,6 +28,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Objects;
 import org.json.JSONObject;
 import org.json.JSONTokener;
@@ -188,5 +189,28 @@ class PartialJavaCallGraphTest {
                 mapURI.get(5));
 
     }
-    
+
+    @Test
+    void mapOfFullURIStrings2() throws FileNotFoundException, URISyntaxException {
+        var file = new File(Objects.requireNonNull(Thread.currentThread().getContextClassLoader()
+            .getResource("merge/merged_cg_test.json")).toURI().getPath());
+
+        JSONTokener tokener = new JSONTokener(new FileReader(file));
+        var cg = new PartialJavaCallGraph(new JSONObject(tokener));
+        var mapURI = cg.mapOfFullURIStrings(Map.of("/merge.staticInitializer/Importer", "g1:a1:1",
+            "/merge.staticInitializer/Imported", "g2:a2:2"));
+
+        // Internal types
+        assertEquals("fasten://mvn!g1:a1$1/merge.staticInitializer/Importer.%3Cinit%3E()%2Fjava.lang%2FVoidType",
+            mapURI.get(0));
+        assertEquals("fasten://mvn!g1:a1$1/merge.staticInitializer/Importer.sourceMethod()%2Fjava.lang%2FVoidType",
+            mapURI.get(1));
+
+        // Resolved types
+        assertEquals("fasten://mvn!java:lang$x/java.lang/Object.%3Cinit%3E()VoidType",
+            mapURI.get(2));
+        assertEquals("fasten://mvn!g2:a2$2/merge.staticInitializer/Imported.%3Cinit%3E()%2Fjava.lang%2FVoidType",
+            mapURI.get(3));
+
+    }
 }

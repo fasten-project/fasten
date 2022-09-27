@@ -22,7 +22,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
-import eu.fasten.analyzer.javacgopal.data.analysis.OPALMethod;
 import eu.fasten.core.data.FastenJavaURI;
 import java.util.ArrayList;
 import java.util.List;
@@ -81,7 +80,7 @@ class OPALMethodTest {
         Mockito.when(descriptor.returnType()).thenReturn(returnType);
 
         assertEquals(FastenJavaURI.create("//productName/some.package/typeName.methodName(%2Fparameter.package%2FparameterName)%2Freturn.package%2FtypeReturnName"),
-                OPALMethod.toCanonicalSchemelessURI("productName", type, "methodName", descriptor));
+                OPALMethod.toSchemelessURI("productName", type, "methodName", descriptor));
     }
 
     @Test

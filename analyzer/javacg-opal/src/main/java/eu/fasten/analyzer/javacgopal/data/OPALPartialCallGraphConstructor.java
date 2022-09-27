@@ -18,11 +18,11 @@
 
 package eu.fasten.analyzer.javacgopal.data;
 
-import eu.fasten.core.data.CallPreservationStrategy;
 import com.google.common.collect.Lists;
 import eu.fasten.analyzer.javacgopal.data.analysis.OPALClassHierarchy;
 import eu.fasten.analyzer.javacgopal.data.analysis.OPALMethod;
 import eu.fasten.analyzer.javacgopal.data.analysis.OPALType;
+import eu.fasten.core.data.CallPreservationStrategy;
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.JavaScope;
 import eu.fasten.core.data.JavaType;
