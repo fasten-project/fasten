@@ -1,11 +1,13 @@
 package eu.fasten.core.utils;
 
+import eu.fasten.core.data.opal.MavenCoordinate;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.jar.JarFile;
+import org.apache.commons.lang3.tuple.Pair;
 
 public class TypeToJarMapper {
 
@@ -15,11 +17,11 @@ public class TypeToJarMapper {
     public static final String DOT = ".";
     public static final String EMPTY = "";
 
-    public static Map<String, String> createTypeUriToCoordMap(final List<File> jars) {
+    public static Map<String, String> createTypeUriToCoordMap(final List<Pair<MavenCoordinate, File>> jars) {
         Map<String, String> result = new Object2ObjectOpenHashMap<>();
-        for (final var depJar : jars) {
-            final var coord = depJar.getName().replace(JAR_EXT, EMPTY);
-            final var depJarFile = jarOrThrow(depJar);
+        for (final var dep : jars) {
+            final var depJarFile = jarOrThrow(dep.getRight());
+            final var coord = dep.getLeft().getCoordinate();
             depJarFile.stream().forEach(jarEntry -> {
                 if (!jarEntry.isDirectory() && jarEntry.getName().endsWith(CLASS_EXT)) {
                     final var uriWithDots = jarEntry.getName().replace(CLASS_EXT, EMPTY).replace(SLASH, DOT);
