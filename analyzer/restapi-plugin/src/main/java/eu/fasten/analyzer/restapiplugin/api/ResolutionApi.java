@@ -53,7 +53,6 @@ import eu.fasten.core.maven.resolution.IMavenResolver;
 import eu.fasten.core.maven.resolution.MavenResolverIO;
 import eu.fasten.core.maven.resolution.NativeMavenResolver;
 import eu.fasten.core.maven.resolution.ResolverConfig;
-import eu.fasten.core.maven.resolution.ResolverDepth;
 import eu.fasten.core.maven.utils.MavenUtilities;
 import eu.fasten.core.merge.CGMerger;
 import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenHashSet;
@@ -163,9 +162,13 @@ public class ResolutionApi {
             }
         }
     }
-    private static ResolverConfig getConfig(boolean transitive, long resolveAt) {
+    private static ResolverConfig getConfig(boolean isTransitive, long resolveAt) {
         var cfg = new ResolverConfig();
-        cfg.depth = transitive ? ResolverDepth.TRANSITIVE : ResolverDepth.DIRECT;
+        if(isTransitive) {
+            cfg.includeTransitiveDeps();
+        } else {
+            cfg.excludeTransitiveDeps();
+        }
         if(resolveAt != -1) {
             cfg.resolveAt = resolveAt;
         }

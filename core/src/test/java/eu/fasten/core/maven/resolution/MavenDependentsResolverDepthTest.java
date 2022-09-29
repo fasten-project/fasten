@@ -15,10 +15,9 @@
  */
 package eu.fasten.core.maven.resolution;
 
-import static eu.fasten.core.maven.resolution.ResolverDepth.DIRECT;
-import static eu.fasten.core.maven.resolution.ResolverDepth.TRANSITIVE;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.Assert.assertTrue;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import eu.fasten.core.maven.data.Dependency;
@@ -28,27 +27,46 @@ public class MavenDependentsResolverDepthTest extends AbstractMavenDependentsRes
 
     @Test
     public void defaultValue() {
-        assertEquals(TRANSITIVE, config.depth);
+        assertTrue(config.depth == Integer.MAX_VALUE);
     }
 
-    @Test
-    public void ifTransitiveIncludeTransitive() {
-        addDepChain();
-        assertResolution(DEST, "a:1", "b:1");
-    }
-
-    @Test
-    public void ifDirectOnlyIncludeDirect() {
-        addDepChain();
-        config.depth = DIRECT;
-        assertResolution(DEST, "b:1");
-    }
-
-    private void addDepChain() {
+    @BeforeEach
+    private void setup() {
+        add("y:1", "z:1");
+        add("z:1", "a:1");
         add("a:1", "b:1");
         add("b:1", DEST);
         add(DEST, "c:1");
         add("c:1");
+    }
+
+    @Test
+    public void all() {
+        assertResolution(DEST, "b:1", "a:1", "z:1", "y:1");
+    }
+
+    @Test
+    public void onlyFour() {
+        config.limitTransitiveDeps(4);
+        assertResolution(DEST, "a:1", "b:1", "z:1", "y:1");
+    }
+
+    @Test
+    public void onlyThree() {
+        config.limitTransitiveDeps(3);
+        assertResolution(DEST, "a:1", "b:1", "z:1");
+    }
+
+    @Test
+    public void onlyTwo() {
+        config.limitTransitiveDeps(2);
+        assertResolution(DEST, "b:1", "a:1");
+    }
+
+    @Test
+    public void onlyOne() {
+        config.limitTransitiveDeps(1);
+        assertResolution(DEST, "b:1");
     }
 
     private void add(String from, String... tos) {

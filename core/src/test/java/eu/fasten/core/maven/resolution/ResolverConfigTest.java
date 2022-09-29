@@ -21,6 +21,7 @@ import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.Date;
 
@@ -33,7 +34,8 @@ public class ResolverConfigTest {
     @Test
     public void defaults() {
         var sut = new ResolverConfig();
-        assertEquals(ResolverDepth.TRANSITIVE, sut.depth);
+        assertEquals(Integer.MAX_VALUE, sut.depth);
+        assertEquals(Integer.MAX_VALUE, sut.limit);
         assertEquals(Scope.RUNTIME, sut.scope);
         assertFalse(sut.alwaysIncludeProvided);
         assertFalse(sut.alwaysIncludeOptional);
@@ -61,7 +63,16 @@ public class ResolverConfigTest {
     public void equalityDifferentDepth() {
         var a = getNonDefaultConfig();
         var b = getNonDefaultConfig();
-        b.depth = ResolverDepth.TRANSITIVE;
+        b.depth = 2;
+        assertNotEquals(a, b);
+        assertNotEquals(a.hashCode(), b.hashCode());
+    }
+
+    @Test
+    public void equalityDifferentLimit() {
+        var a = getNonDefaultConfig();
+        var b = getNonDefaultConfig();
+        b.limit = 2;
         assertNotEquals(a, b);
         assertNotEquals(a.hashCode(), b.hashCode());
     }
@@ -132,10 +143,38 @@ public class ResolverConfigTest {
     }
 
     @Test
-    public void builderSetsDepth() {
+    public void builderIncludesTransitives() {
         var sut = resolve();
-        assertSame(sut, sut.depth(ResolverDepth.DIRECT));
-        assertEquals(sut.depth, ResolverDepth.DIRECT);
+        assertSame(sut, sut.includeTransitiveDeps());
+        assertEquals(sut.depth, Integer.MAX_VALUE);
+    }
+
+    @Test
+    public void builderExcludesTransitives() {
+        var sut = resolve();
+        assertSame(sut, sut.excludeTransitiveDeps());
+        assertEquals(sut.depth, 1);
+    }
+
+    @Test
+    public void builderLimitsTransitives() {
+        var sut = resolve();
+        assertSame(sut, sut.limitTransitiveDeps(17));
+        assertEquals(17, sut.depth);
+    }
+
+    @Test
+    public void builderDistinguishesDirectAndTransitives() {
+        assertFalse(resolve().includeTransitiveDeps().isExcludingTransitiveDeps());
+        assertTrue(resolve().excludeTransitiveDeps().isExcludingTransitiveDeps());
+        assertFalse(resolve().limitTransitiveDeps(13).isExcludingTransitiveDeps());
+    }
+
+    @Test
+    public void builderSetsLimit() {
+        var sut = resolve();
+        assertSame(sut, sut.limit(23456));
+        assertEquals(23456, sut.limit);
     }
 
     @Test
@@ -159,9 +198,20 @@ public class ResolverConfigTest {
         assertTrue(sut.alwaysIncludeOptional);
     }
 
+    @Test
+    public void builderFailsForInvalidDepths() {
+        assertThrows(MavenResolutionException.class, () -> {
+            resolve().limitTransitiveDeps(0);
+        });
+        assertThrows(MavenResolutionException.class, () -> {
+            resolve().limitTransitiveDeps(-1);
+        });
+    }
+
     private static ResolverConfig getNonDefaultConfig() {
         var cfg = new ResolverConfig();
-        cfg.depth = ResolverDepth.DIRECT;
+        cfg.depth = 1357;
+        cfg.limit = 5864;
         cfg.scope = Scope.COMPILE;
         cfg.resolveAt = 1234567890000L;
         cfg.alwaysIncludeProvided = true;

@@ -19,55 +19,53 @@ import static org.junit.Assert.assertTrue;
 
 import java.util.HashSet;
 
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import eu.fasten.core.maven.data.Dependency;
 import eu.fasten.core.maven.data.PomBuilder;
 
-public class MavenDependencyResolverDepthTest extends AbstractMavenDependencyResolverTest {
+public class MavenDependencyResolverLimitTest extends AbstractMavenDependencyResolverTest {
 
     @Test
     public void defaultIsTransitive() {
-        assertTrue(config.depth == Integer.MAX_VALUE);
+        assertTrue(config.limit == Integer.MAX_VALUE);
+    }
+
+    @BeforeEach
+    private void setup() {
+        add(BASE, "a:1", "b:1");
+        add("a:1", "aa:1", "ab:1");
+        add("b:1", "ba:1", "bb:1");
     }
 
     @Test
-    public void directDependency() {
-        add(BASE, "a:1");
-        assertResolution(BASE, "a:1");
+    public void all() {
+        assertResolution(BASE, "a:1", "b:1", "aa:1", "ab:1", "ba:1", "bb:1");
     }
 
     @Test
-    public void transitiveDeps() {
-        add(BASE, "a:1");
-        add("a:1", "b:1");
-        add("b:1", "c:1");
-        assertResolution(BASE, "a:1", "b:1", "c:1");
-    }
-
-    @Test
-    public void transitiveDepsLimited() {
-        config.depth = 2;
-        add(BASE, "a:1");
-        add(BASE, "a:1");
-        add("a:1", "b:1");
-        add("b:1", "c:1");
+    public void onlyTwo() {
+        config.limit = 2;
         assertResolution(BASE, "a:1", "b:1");
     }
 
     @Test
-    public void onlyDirectDep() {
-        config.depth = 1;
-        add(BASE, "a:1");
-        assertResolution(BASE, "a:1");
+    public void onlyThree() {
+        config.limit = 3;
+        assertResolution(BASE, "a:1", "b:1", "aa:1");
     }
 
     @Test
-    public void onlyDirectDependencyButTransitiveExists() {
-        config.depth = 1;
-        add(BASE, "a:1");
-        add("a:1", "b:1");
-        assertResolution(BASE, "a:1");
+    public void onlyFour() {
+        config.limit = 4;
+        assertResolution(BASE, "a:1", "b:1", "aa:1", "ab:1");
+    }
+
+    @Test
+    public void onlyFive() {
+        config.limit = 5;
+        assertResolution(BASE, "a:1", "b:1", "aa:1", "ab:1", "ba:1");
     }
 
     private void add(String from, String... tos) {

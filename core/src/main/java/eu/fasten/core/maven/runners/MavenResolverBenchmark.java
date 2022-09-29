@@ -1,7 +1,6 @@
 package eu.fasten.core.maven.runners;
 
 import static eu.fasten.core.maven.resolution.ResolverConfig.resolve;
-import static eu.fasten.core.maven.resolution.ResolverDepth.TRANSITIVE;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -100,7 +99,7 @@ public class MavenResolverBenchmark implements Runnable {
             try {
                 dbCount++;
                 Set<ResolvedRevision> dbDependencySet;
-                var cfg = resolve().depth(TRANSITIVE);
+                var cfg = resolve().includeTransitiveDeps();
                 dbDependencySet = graphResolver.resolveDependencies(groupId, artifactId, version, cfg);
                 dbResolutionSuccess++;
                 onlineCount++;

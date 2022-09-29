@@ -35,6 +35,9 @@ import jakarta.ws.rs.ext.ContextResolver;
 
 public class RestMavenResolver implements IMavenResolver {
 
+    private static final int DEFAULT_DEPTH = ResolverConfig.resolve().depth;
+    private static final int DEFAULT_LIMIT = ResolverConfig.resolve().limit;
+
     private static final GenericType<Set<ResolvedRevision>> SET_OF_REV = new GenericType<Set<ResolvedRevision>>() {};
     private static final ObjectMapper OM = new ObjectMapperBuilder().build();
 
@@ -71,8 +74,11 @@ public class RestMavenResolver implements IMavenResolver {
         var base = baseTarget //
                 .path(subpath) //
                 .queryParam("resolveAt", config.resolveAt);
-        if (config.depth != ResolverDepth.TRANSITIVE) {
+        if (config.depth != DEFAULT_DEPTH) {
             base = base.queryParam("depth", config.depth);
+        }
+        if (config.limit != DEFAULT_LIMIT) {
+            base = base.queryParam("limit", config.limit);
         }
         if (config.scope != Scope.RUNTIME) {
             base = base.queryParam("scope", config.scope);

@@ -17,61 +17,64 @@ package eu.fasten.core.maven.resolution;
 
 import static org.junit.Assert.assertTrue;
 
-import java.util.HashSet;
-
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import eu.fasten.core.maven.data.Dependency;
 import eu.fasten.core.maven.data.PomBuilder;
 
-public class MavenDependencyResolverDepthTest extends AbstractMavenDependencyResolverTest {
+public class MavenDependentsResolverLimitTest extends AbstractMavenDependentsResolverTest {
 
     @Test
-    public void defaultIsTransitive() {
-        assertTrue(config.depth == Integer.MAX_VALUE);
+    public void defaultValue() {
+        assertTrue(config.limit == Integer.MAX_VALUE);
+    }
+
+    @BeforeEach
+    private void setup() {
+
+        add("c:1", "b:1");
+        add("b:1", "a:1");
+        add("a:1", DEST);
+
+        add("c:2", "b:2");
+        add("b:2", "a:2");
+        add("a:2", DEST);
+
+        add(DEST, "x:1");
+        add("x:1");
     }
 
     @Test
-    public void directDependency() {
-        add(BASE, "a:1");
-        assertResolution(BASE, "a:1");
+    public void all() {
+        assertResolution(DEST, "a:1", "b:1", "c:1", "a:2", "b:2", "c:2");
     }
 
     @Test
-    public void transitiveDeps() {
-        add(BASE, "a:1");
-        add("a:1", "b:1");
-        add("b:1", "c:1");
-        assertResolution(BASE, "a:1", "b:1", "c:1");
+    public void onlyOne() {
+        config.limit(1);
+        assertResolution(DEST, "a:1");
     }
 
     @Test
-    public void transitiveDepsLimited() {
-        config.depth = 2;
-        add(BASE, "a:1");
-        add(BASE, "a:1");
-        add("a:1", "b:1");
-        add("b:1", "c:1");
-        assertResolution(BASE, "a:1", "b:1");
+    public void onlyTwo() {
+        config.limit(2);
+        assertResolution(DEST, "a:1", "b:1");
     }
 
     @Test
-    public void onlyDirectDep() {
-        config.depth = 1;
-        add(BASE, "a:1");
-        assertResolution(BASE, "a:1");
+    public void onlyThree() {
+        config.limit(3);
+        assertResolution(DEST, "a:1", "b:1", "c:1");
     }
 
     @Test
-    public void onlyDirectDependencyButTransitiveExists() {
-        config.depth = 1;
-        add(BASE, "a:1");
-        add("a:1", "b:1");
-        assertResolution(BASE, "a:1");
+    public void onlyFour() {
+        config.limit(4);
+        assertResolution(DEST, "a:1", "b:1", "c:1", "a:2");
     }
 
     private void add(String from, String... tos) {
-        danglingGAVs.remove(from);
         var pb = new PomBuilder();
         var parts = from.split(":");
         pb.groupId = parts[0];
@@ -79,18 +82,11 @@ public class MavenDependencyResolverDepthTest extends AbstractMavenDependencyRes
         pb.version = parts[1];
 
         for (String to : tos) {
-            danglingGAVs.add(to);
             var partsTo = to.split(":");
             var d = new Dependency(partsTo[0], partsTo[0], partsTo[1]);
             pb.dependencies.add(d);
         }
 
         data.add(pb.pom());
-    }
-
-    protected void addDangling() {
-        for (var gav : new HashSet<>(danglingGAVs)) {
-            add(gav);
-        }
     }
 }

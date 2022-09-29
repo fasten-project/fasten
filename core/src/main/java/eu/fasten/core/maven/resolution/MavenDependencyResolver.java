@@ -98,9 +98,18 @@ public class MavenDependencyResolver {
 
         var queue = new LinkedList<QueueData>();
         queue.add(startingData);
+        var isFirstElement = true;
 
         while (!queue.isEmpty()) {
             var data = queue.poll();
+
+            if (data.depth > config.depth) {
+                continue;
+            }
+
+            if (depSet.size() >= config.limit) {
+                break;
+            }
 
             var p = data.pom.toProduct();
             if (addedProducts.contains(p)) {
@@ -108,7 +117,10 @@ public class MavenDependencyResolver {
             }
             addedProducts.add(p);
 
-            depSet.add(toResolvedRevision(data));
+            if (!isFirstElement) {
+                depSet.add(toResolvedRevision(data));
+            }
+            isFirstElement = false;
 
             if (data.scope == SYSTEM) {
                 continue;
@@ -127,7 +139,7 @@ public class MavenDependencyResolver {
                 var depData = QueueData.nest(data, dep.getScope());
                 if (depData.isTransitiveDep()) {
 
-                    if (config.depth == ResolverDepth.DIRECT) {
+                    if (config.isExcludingTransitiveDeps()) {
                         continue;
                     }
 
