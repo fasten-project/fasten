@@ -103,11 +103,12 @@ public class VulnerableCallChainRepository {
     }
 
 
-    public void store(final String packag, final String version,
-                      final Set<VulnerableCallChain> vulns) {
+    public String store(final String packag, final String version,
+                        final Set<VulnerableCallChain> vulns) {
         final var vulFileFile = new File(getFilePath(packag, version));
         final var jsonString = VulnerableCallChainJsonUtils.toJson(vulns);
         writeContent(jsonString, vulFileFile);
+        return vulFileFile.getAbsolutePath();
     }
 
     private void writeContent(final String content, final File vulNodesFile) {
