@@ -152,7 +152,7 @@ class VulnerableCallChainRepositoryTest {
     @Test
     public void store() {
         packageFile.delete();
-        vulnerableCallChainRepository.store("g:a", "1.0.0", vulFromObject);
+        vulnerableCallChainRepository.store("g:a", "1.0.0", Integer.MAX_VALUE, vulFromObject);
         String actual;
         try {
             actual = Files.readString(Path.of(tempDir.getAbsoluteFile().toString(), "g-a-1.0.0.json"));
@@ -207,7 +207,7 @@ class VulnerableCallChainRepositoryTest {
         var vulchains = Set.of(vulChain1, vulChain2, vulChain3);
 
         VulnerableCallChainRepository vulRepo = new VulnerableCallChainRepository(tempDir.getAbsolutePath());
-        vulRepo.store("org.apache.sling:org.apache.sling.xss","2.0.6", vulchains);
+        vulRepo.store("org.apache.sling:org.apache.sling.xss", "2.0.6", Integer.MAX_VALUE, vulchains);
 
         var pckgVul = vulRepo.getChainsForPackage("org.apache.sling:org.apache.sling.xss","2.0.6");
         var moduleVul = vulRepo.getChainsForModule(FastenURI.create("fasten://mvn!org.apache" +

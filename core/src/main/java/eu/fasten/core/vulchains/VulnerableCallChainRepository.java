@@ -45,7 +45,7 @@ public class VulnerableCallChainRepository {
     }
 
     public Set<VulnerableCallChain> getChainsForPackage(final String packag, final String version) {
-        final var vulFile = getFilePath(packag, version);
+        final var vulFile = getFilePath(packag, version, Integer.MAX_VALUE);
         String reader;
         try {
             reader = Files.readString(Paths.get(vulFile));
@@ -103,9 +103,9 @@ public class VulnerableCallChainRepository {
     }
 
 
-    public String store(final String packag, final String version,
+    public String store(final String packag, final String version, final int dependencyLevel,
                         final Set<VulnerableCallChain> vulns) {
-        final var vulFileFile = new File(getFilePath(packag, version));
+        final var vulFileFile = new File(getFilePath(packag, version, dependencyLevel));
         final var jsonString = VulnerableCallChainJsonUtils.toJson(vulns);
         writeContent(jsonString, vulFileFile);
         return vulFileFile.getAbsolutePath();
@@ -119,10 +119,11 @@ public class VulnerableCallChainRepository {
         }
     }
 
-    public String getFilePath(String product, String version) {
+    public String getFilePath(final String product, final String version, final int dependencyLevel) {
         var illegalChars = "[^a-zA-Z0-9._\\-]";
         var sanitizedProduct = product.replaceAll(illegalChars, "-");
         var sanitizedVersion = version.replaceAll(illegalChars, "-");
-        return Path.of(this.rootDir, sanitizedProduct + "-" + sanitizedVersion + ".json").toString();
+        var sanitizedDepLevel = dependencyLevel == Integer.MAX_VALUE ? "" : "_d" + dependencyLevel;
+        return Path.of(this.rootDir, sanitizedProduct + "-" + sanitizedVersion + sanitizedDepLevel + ".json").toString();
     }
 }
