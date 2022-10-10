@@ -111,6 +111,17 @@ public class VulnerableCallChainRepository {
         return vulFileFile.getAbsolutePath();
     }
 
+    /**
+     * This method should only be used to track package versions for which vuln-chain-finder cannot perform analysis.
+     */
+    public String createEmptyVulnChainRepo(final String packag, final String version, final int dependencyLevel) {
+        final var vulFileFile = new File(getFilePath(packag, version, dependencyLevel, "_failed"));
+        final Set<VulnerableCallChain> vulns = new HashSet<>();
+        final var jsonString = VulnerableCallChainJsonUtils.toJson(vulns);
+        writeContent(jsonString, vulFileFile);
+        return vulFileFile.getAbsolutePath();
+    }
+
     private void writeContent(final String content, final File vulNodesFile) {
         try {
             FileUtils.write(vulNodesFile, content, StandardCharsets.UTF_8);
@@ -125,5 +136,13 @@ public class VulnerableCallChainRepository {
         var sanitizedVersion = version.replaceAll(illegalChars, "-");
         var sanitizedDepLevel = dependencyLevel == Integer.MAX_VALUE ? "" : "_d" + dependencyLevel;
         return Path.of(this.rootDir, sanitizedProduct + "-" + sanitizedVersion + sanitizedDepLevel + ".json").toString();
+    }
+
+    public String getFilePath(final String product, final String version, final int dependencyLevel, final String optSuffix) {
+        var illegalChars = "[^a-zA-Z0-9._\\-]";
+        var sanitizedProduct = product.replaceAll(illegalChars, "-");
+        var sanitizedVersion = version.replaceAll(illegalChars, "-");
+        var sanitizedDepLevel = dependencyLevel == Integer.MAX_VALUE ? "" : "_d" + dependencyLevel;
+        return Path.of(this.rootDir, sanitizedProduct + "-" + sanitizedVersion + sanitizedDepLevel + optSuffix + ".json").toString();
     }
 }
