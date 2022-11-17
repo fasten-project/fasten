@@ -18,10 +18,6 @@
 
 package eu.fasten.analyzer.restapiplugin.api;
 
-import eu.fasten.analyzer.restapiplugin.KnowledgeBaseConnector;
-import eu.fasten.analyzer.restapiplugin.LazyIngestionProvider;
-import eu.fasten.analyzer.restapiplugin.RestApplication;
-import eu.fasten.core.maven.data.PackageVersionNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -30,7 +26,11 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import java.io.IOException;
+
+import eu.fasten.analyzer.restapiplugin.KnowledgeBaseConnector;
+import eu.fasten.analyzer.restapiplugin.LazyIngestionProvider;
+import eu.fasten.analyzer.restapiplugin.RestApplication;
+import eu.fasten.core.maven.data.PackageVersionNotFoundException;
 
 @RestController
 @RequestMapping("/packages")
@@ -48,13 +48,7 @@ public class FileApi {
             result = KnowledgeBaseConnector.kbDao.getPackageFiles(
                     packageName, packageVersion, offset, limit);
         } catch (PackageVersionNotFoundException e) {
-            try {
-                LazyIngestionProvider.ingestArtifactIfNecessary(packageName, packageVersion, artifactRepository, releaseDate);
-            } catch (IllegalArgumentException ex) {
-                return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST);
-            } catch (IOException ex) {
-                return new ResponseEntity<>(ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
-            }
+            LazyIngestionProvider.ingestArtifactIfNecessary(packageName, packageVersion, artifactRepository, releaseDate);
             return new ResponseEntity<>("Package version not found, but should be processed soon. Try again later", HttpStatus.CREATED);
         }
         result = result.replace("\\/", "/");

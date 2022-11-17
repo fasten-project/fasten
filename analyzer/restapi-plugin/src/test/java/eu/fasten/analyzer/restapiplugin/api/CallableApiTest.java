@@ -32,6 +32,8 @@ import org.springframework.http.ResponseEntity;
 import java.util.HashMap;
 import java.util.List;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class CallableApiTest {
 
@@ -91,10 +93,11 @@ public class CallableApiTest {
         var version = "version";
         var callable = "callable uri";
         Mockito.when(kbDao.getCallableMetadata(packageName, version, callable)).thenReturn(null);
-        var result = service.getCallableMetadata(packageName, version, callable, null, null);
-        assertEquals(HttpStatus.BAD_REQUEST, result.getStatusCode());
-
-        Mockito.verify(kbDao, Mockito.times(1)).getCallableMetadata(packageName, version, callable);
+        var e = assertThrows(IllegalArgumentException.class, () -> {
+            service.getCallableMetadata(packageName, version, callable, null, null);
+        });
+        var expectedMsg = "Maven artifact 'group:artifact:version' could not be found in the repository of '";
+        assertTrue(e.getMessage().startsWith(expectedMsg));
     }
 
     @Test

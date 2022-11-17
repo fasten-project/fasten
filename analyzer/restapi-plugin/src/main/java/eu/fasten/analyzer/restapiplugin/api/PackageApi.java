@@ -18,12 +18,6 @@
 
 package eu.fasten.analyzer.restapiplugin.api;
 
-import eu.fasten.analyzer.restapiplugin.KnowledgeBaseConnector;
-import eu.fasten.analyzer.restapiplugin.LazyIngestionProvider;
-import eu.fasten.analyzer.restapiplugin.RestApplication;
-import eu.fasten.core.data.Constants;
-import eu.fasten.core.maven.data.PackageVersionNotFoundException;
-import eu.fasten.core.maven.utils.MavenUtilities;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -33,7 +27,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.io.IOException;
+import eu.fasten.analyzer.restapiplugin.KnowledgeBaseConnector;
+import eu.fasten.analyzer.restapiplugin.LazyIngestionProvider;
+import eu.fasten.analyzer.restapiplugin.RestApplication;
+import eu.fasten.core.data.Constants;
+import eu.fasten.core.maven.data.PackageVersionNotFoundException;
+import eu.fasten.core.maven.utils.MavenUtilities;
 
 @RestController
 @RequestMapping("/packages")
@@ -75,17 +74,7 @@ public class PackageApi {
                                              @RequestParam(required = false) Long releaseDate) {
             String result = KnowledgeBaseConnector.kbDao.getPackageVersion(packageName, packageVersion);
             if (result == null) {
-                try {
-                    try {
-                        LazyIngestionProvider.ingestArtifactIfNecessary(packageName, packageVersion, artifactRepo, releaseDate);
-                    } catch (IllegalArgumentException | IllegalStateException ex) {
-                        return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST);
-                    } catch (IOException ex) {
-                        return new ResponseEntity<>("Couldn't ingest the artifact", HttpStatus.INTERNAL_SERVER_ERROR);
-                    }
-                } catch (IllegalArgumentException ex) {
-                    return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST);
-                }
+                LazyIngestionProvider.ingestArtifactIfNecessary(packageName, packageVersion, artifactRepo, releaseDate);
                 return new ResponseEntity<>("Package version not found, but should be processed soon. Try again later", HttpStatus.CREATED);
             }
             result = result.replace("\\/", "/");
@@ -111,20 +100,16 @@ public class PackageApi {
                                                @RequestParam(required = false, defaultValue = RestApplication.DEFAULT_PAGE_SIZE) int limit,
                                                @RequestParam(value = "artifactRepository", required = false) String artifactRepo,
                                                @RequestParam(required = false) Long releaseDate) {
+        String result;
         try {
-            String result;
-            try {
-                result = KnowledgeBaseConnector.kbDao.getPackageCallgraph(
-                        packageName, packageVersion, offset, limit);
-            } catch (PackageVersionNotFoundException e) {
-                LazyIngestionProvider.ingestArtifactIfNecessary(packageName, packageVersion, artifactRepo, releaseDate);
-                return new ResponseEntity<>("Package version not found, but should be processed soon. Try again later", HttpStatus.CREATED);
-            }
-            result = result.replace("\\/", "/");
-            return new ResponseEntity<>(result, HttpStatus.OK);
-        } catch (IOException e) {
-            return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+            result = KnowledgeBaseConnector.kbDao.getPackageCallgraph(
+                    packageName, packageVersion, offset, limit);
+        } catch (PackageVersionNotFoundException e) {
+            LazyIngestionProvider.ingestArtifactIfNecessary(packageName, packageVersion, artifactRepo, releaseDate);
+            return new ResponseEntity<>("Package version not found, but should be processed soon. Try again later", HttpStatus.CREATED);
         }
+        result = result.replace("\\/", "/");
+        return new ResponseEntity<>(result, HttpStatus.OK);
     }
 
     @GetMapping(value = "/search", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -147,13 +132,7 @@ public class PackageApi {
         String result;
         String url;
         if (!KnowledgeBaseConnector.kbDao.assertPackageExistence(packageName, version)) {
-            try {
-                LazyIngestionProvider.ingestArtifactIfNecessary(packageName, version, artifactRepo, releaseDate);
-            } catch (IllegalArgumentException ex) {
-                return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST);     
-            } catch (IOException ex) {
-                return new ResponseEntity<>(ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
-            }
+            LazyIngestionProvider.ingestArtifactIfNecessary(packageName, version, artifactRepo, releaseDate);
             return new ResponseEntity<>("Package version not found, but should be processed soon. Try again later", HttpStatus.CREATED);
         }
         switch (KnowledgeBaseConnector.forge) {

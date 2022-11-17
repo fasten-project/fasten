@@ -61,7 +61,7 @@ public class LazyIngestionProvider {
         return key;
     }
 
-    public static void ingestArtifactIfNecessary(String packageName, String version, String artifactRepo, Long date) throws IllegalArgumentException, IOException {
+    public static void ingestArtifactIfNecessary(String packageName, String version, String artifactRepo, Long date) {
         switch(KnowledgeBaseConnector.forge){
             case Constants.mvnForge: {
                 ingestMvnArtifactIfNecessary(packageName, version, artifactRepo, date);
@@ -74,7 +74,7 @@ public class LazyIngestionProvider {
         }
     }
 
-    public static void ingestMvnArtifactIfNecessary(String packageName, String version, String artifactRepo, Long date) throws IllegalArgumentException, IOException {
+    public static void ingestMvnArtifactIfNecessary(String packageName, String version, String artifactRepo, Long date) {
         var groupId = packageName.split(Constants.mvnCoordinateSeparator)[0];
         var artifactId = packageName.split(Constants.mvnCoordinateSeparator)[1];
         if(artifactRepo == null || artifactRepo.isEmpty()) {
@@ -102,7 +102,7 @@ public class LazyIngestionProvider {
         }
     }
 
-    public static void ingestPypiArtifactIfNecessary(String packageName, String version) throws IllegalArgumentException, IOException {
+    public static void ingestPypiArtifactIfNecessary(String packageName, String version) {
         var query = "https://pypi.org/pypi/" + packageName + "/" + version +"/json";
         String result;
         try {
@@ -145,11 +145,7 @@ public class LazyIngestionProvider {
         var dependencies = mavenResolver.resolveDependencies(groupId + ":" + artifactId + ":" + version);
         ingestMvnArtifactIfNecessary(packageName, version, null, null);
         dependencies.forEach(d -> {
-            try {
-                ingestMvnArtifactIfNecessary(d.getGroupId() + Constants.mvnCoordinateSeparator + d.getArtifactId(), d.version.toString(), null, null);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+            ingestMvnArtifactIfNecessary(d.getGroupId() + Constants.mvnCoordinateSeparator + d.getArtifactId(), d.version.toString(), null, null);
         });
     }
 
@@ -162,11 +158,7 @@ public class LazyIngestionProvider {
             JsonObject jsonObject = coordinate.getAsJsonObject();
             String dependencyPackage = jsonObject.get("product").getAsString();
             String dependencyVersion = jsonObject.get("version").getAsString();
-            try {
-                ingestPypiArtifactIfNecessary(dependencyPackage, dependencyVersion);
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+            ingestPypiArtifactIfNecessary(dependencyPackage, dependencyVersion);
         }
     }
 
