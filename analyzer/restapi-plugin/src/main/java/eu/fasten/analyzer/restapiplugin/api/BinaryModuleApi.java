@@ -18,10 +18,6 @@
 
 package eu.fasten.analyzer.restapiplugin.api;
 
-import eu.fasten.analyzer.restapiplugin.KnowledgeBaseConnector;
-import eu.fasten.analyzer.restapiplugin.LazyIngestionProvider;
-import eu.fasten.analyzer.restapiplugin.RestApplication;
-import eu.fasten.core.maven.data.PackageVersionNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -31,7 +27,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.io.IOException;
+import eu.fasten.analyzer.restapiplugin.KnowledgeBaseConnector;
+import eu.fasten.analyzer.restapiplugin.LazyIngestionProvider;
+import eu.fasten.analyzer.restapiplugin.RestApplication;
+import eu.fasten.core.maven.data.PackageVersionNotFoundException;
 
 @RestController
 @RequestMapping("/packages")
@@ -49,13 +48,7 @@ public class BinaryModuleApi {
             result = KnowledgeBaseConnector.kbDao.getPackageBinaryModules(
                     packageName, packageVersion, offset, limit);
         } catch (PackageVersionNotFoundException e) {
-            try {
-                LazyIngestionProvider.ingestArtifactIfNecessary(packageName, packageVersion, artifactRepository, releaseDate);
-            } catch (IllegalArgumentException ex) {
-                return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST);
-            } catch (IOException ex) {
-                return new ResponseEntity<>(ex.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
-            }
+            LazyIngestionProvider.ingestArtifactIfNecessary(packageName, packageVersion, artifactRepository, releaseDate);
             return new ResponseEntity<>("Package version not found, but should be processed soon. Try again later", HttpStatus.CREATED);
         }
         result = result.replace("\\/", "/");
@@ -73,11 +66,7 @@ public class BinaryModuleApi {
             result = KnowledgeBaseConnector.kbDao.getBinaryModuleMetadata(
                     packageName, packageVersion, binary_module);
         } catch (PackageVersionNotFoundException e) {
-            try {
-                LazyIngestionProvider.ingestArtifactIfNecessary(packageName, packageVersion, artifactRepository, releaseDate);
-            } catch (IllegalArgumentException | IOException ex) {
-                return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST);
-            }
+            LazyIngestionProvider.ingestArtifactIfNecessary(packageName, packageVersion, artifactRepository, releaseDate);
             return new ResponseEntity<>("Package version not found, but should be processed soon. Try again later", HttpStatus.CREATED);
         }
         if (result == null) {
@@ -100,11 +89,7 @@ public class BinaryModuleApi {
             result = KnowledgeBaseConnector.kbDao.getBinaryModuleFiles(
                     packageName, packageVersion, binary_module, offset, limit);
         } catch (PackageVersionNotFoundException e) {
-            try {
-                LazyIngestionProvider.ingestArtifactIfNecessary(packageName, packageVersion, artifactRepository, releaseDate);
-            } catch (IllegalArgumentException | IOException ex) {
-                return new ResponseEntity<>(ex.getMessage(), HttpStatus.BAD_REQUEST);
-            }
+            LazyIngestionProvider.ingestArtifactIfNecessary(packageName, packageVersion, artifactRepository, releaseDate);
             return new ResponseEntity<>("Package version not found, but should be processed soon. Try again later", HttpStatus.CREATED);
         }
         result = result.replace("\\/", "/");

@@ -34,6 +34,8 @@ import java.io.IOException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 public class PackageApiTest {
 
@@ -111,10 +113,11 @@ public class PackageApiTest {
         var packageName = "group:artifact";
         var version = "version";
         Mockito.when(kbDao.getPackageVersion(packageName, version)).thenReturn(null);
-        var result = service.getPackageVersion(packageName, version, null, null);
-        assertEquals(HttpStatus.BAD_REQUEST, result.getStatusCode());
-
-        Mockito.verify(kbDao, Mockito.times(1)).getPackageVersion(packageName, version);
+        var e = assertThrows(IllegalArgumentException.class, () -> {
+            service.getPackageVersion(packageName, version, null, null);
+        });
+        var expectedMsg = "Maven artifact 'group:artifact:version' could not be found in the repository of '";
+        assertTrue(e.getMessage().startsWith(expectedMsg));
     }
 
     @Test
