@@ -75,30 +75,36 @@ public class LazyIngestionProvider {
     }
 
     public static void ingestMvnArtifactIfNecessary(String packageName, String version, String artifactRepo, Long date) {
-        var groupId = packageName.split(Constants.mvnCoordinateSeparator)[0];
-        var artifactId = packageName.split(Constants.mvnCoordinateSeparator)[1];
+
+        if(hasArtifactBeenIngested(packageName, version)) {
+            return;
+        }
+        
+        var parts = packageName.split(Constants.mvnCoordinateSeparator);
+        var groupId = parts[0];
+        var artifactId = parts[1];
         if(artifactRepo == null || artifactRepo.isEmpty()) {
             artifactRepo = MavenUtilities.MAVEN_CENTRAL_REPO;
         }
+        
         if (!MavenUtilities.mavenArtifactExists(groupId, artifactId, version, artifactRepo)) {
             throw new IllegalArgumentException("Maven artifact '" + packageName + ":" + version
                     + "' could not be found in the repository of '"
                     + (artifactRepo == null ? MavenUtilities.MAVEN_CENTRAL_REPO : artifactRepo) + "'."
                     + " Make sure the Maven coordinate and repository are correct");
         }
-        if (!hasArtifactBeenIngested(packageName, version)) {
-            var jsonRecord = new JSONObject();
-            jsonRecord.put("groupId", groupId);
-            jsonRecord.put("artifactId", artifactId);
-            jsonRecord.put("version", version);
-            jsonRecord.put("artifactRepository", artifactRepo);
-            if (date != null && date > 0) {
-                // TODO why is the date necessary?
-                jsonRecord.put("date", date);
-            }
-            if (KnowledgeBaseConnector.kafkaProducer != null && KnowledgeBaseConnector.ingestTopic != null) {
-                KafkaWriter.sendToKafka(KnowledgeBaseConnector.kafkaProducer, KnowledgeBaseConnector.ingestTopic, jsonRecord.toString());
-            }
+        
+        var jsonRecord = new JSONObject();
+        jsonRecord.put("groupId", groupId);
+        jsonRecord.put("artifactId", artifactId);
+        jsonRecord.put("version", version);
+        jsonRecord.put("artifactRepository", artifactRepo);
+        if (date != null && date > 0) {
+            // TODO why is the date necessary?
+            jsonRecord.put("date", date);
+        }
+        if (KnowledgeBaseConnector.kafkaProducer != null && KnowledgeBaseConnector.ingestTopic != null) {
+            KafkaWriter.sendToKafka(KnowledgeBaseConnector.kafkaProducer, KnowledgeBaseConnector.ingestTopic, jsonRecord.toString());
         }
     }
 
