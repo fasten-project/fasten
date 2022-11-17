@@ -18,18 +18,6 @@
 
 package eu.fasten.core.maven.utils;
 
-import eu.fasten.core.data.Constants;
-import eu.fasten.core.exceptions.UnrecoverableError;
-import okhttp3.Call;
-import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.Response;
-import okhttp3.ResponseBody;
-import org.apache.commons.io.FileUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.annotation.Nullable;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -45,6 +33,20 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
+import javax.annotation.Nullable;
+
+import org.apache.commons.io.FileUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import eu.fasten.core.data.Constants;
+import eu.fasten.core.exceptions.UnrecoverableError;
+import okhttp3.Call;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
+import okhttp3.ResponseBody;
+
 /**
  * The helper utility class for working with maven repositories and pom files.
  */
@@ -56,6 +58,8 @@ public class MavenUtilities {
      * The default pom's repository url.
      */
     public static String MAVEN_CENTRAL_REPO = "https://repo.maven.apache.org/maven2/";
+
+    private static final OkHttpClient httpClient = new OkHttpClient();
 
     /**
      * Download pom file of the given coordinate.
@@ -223,12 +227,20 @@ public class MavenUtilities {
         if (artifactRepo == null || artifactRepo.isEmpty()) {
             artifactRepo = MAVEN_CENTRAL_REPO;
         }
+
         var url = getPomUrl(groupId, artifactId, version, artifactRepo);
-        try {
-            httpGetToFile(url);
-            return true;
+        var request = new Request.Builder().url(url).head().build();
+        var call = httpClient.newCall(request);
+
+        try (var res = call.execute()) {
+            // 200 = success range
+            // 300 = redirect range
+            var code = res.code();
+            var exists = code >= 200 && code < 400;
+            logger.debug("Does {} exists? Code: {} -> {}", url, code, exists);
+            return exists;
         } catch (IOException e) {
-            return false;
+            throw new RuntimeException(e);
         }
     }
 
