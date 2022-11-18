@@ -15,6 +15,7 @@
  */
 package eu.fasten.core.json;
 
+import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -28,6 +29,7 @@ import org.skyscreamer.jsonassert.JSONAssert;
 import org.skyscreamer.jsonassert.JSONCompareMode;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 
@@ -104,6 +106,23 @@ public class CoreMavenDataModuleTest {
                 "sources");
         var json = "{\"v\":[\"[1,2]\"],\"g\":\"g1\",\"scope\":\"test\",\"classifier\":\"sources\",\"a\":\"a1\",\"optional\":true,\"type\":\"type\"}";
         test(d, json);
+    }
+
+    @Test
+    public void testDependency_invalidExclusion() throws JsonMappingException, JsonProcessingException {
+        // This is a regression test that reflects old json data, which can contain
+        // broken serializations. This does not happen anymore for newly generated data.
+        var rawDep = "{\"v\":[\"[1,2]\"],\"g\":\"g1\",\"scope\":\"test\",\"classifier\":\"sources\",\"a\":\"a1\",\"exclusions\":[%s],\"type\":\"type\"}";
+        for (var jsonExcl : new String[] { "", "\"\"", "\"x\"", "\":\"", "\"x:\"", "\":x\"", "\"x:y:\"", "\":x:y\"",
+                "\"x:y:z\"" }) {
+
+            var jsonDep = String.format(rawDep, jsonExcl);
+
+            var actual = om.readValue(jsonDep, Dependency.class).getExclusions();
+            var expected = Set.of();
+            // not just equals, needs to be the same singleton
+            assertSame(expected, actual);
+        }
     }
 
     @Test

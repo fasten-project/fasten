@@ -32,8 +32,6 @@ public class Dependency {
     private static final String JAR = "jar";
     private static final Set<Exclusion> NO_EXCLS = Set.of();
     private static final String EMPTY_STR = "";
-    private static final String[] PREFIXES = new String[] { "org.apache", "org.eclipse", "org.junit", "junit",
-            "com.google", "org.springframework" };
 
     public final String groupId;
     public final String artifactId;
