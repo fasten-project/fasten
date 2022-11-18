@@ -286,6 +286,16 @@
             </plugin>
         </plugins>
     </reporting>
+    
+    <repositories>
+        <repository>
+            <id>github</id>
+            <url>https://maven.pkg.github.com/cops-lab/test-utils/</url>
+            <snapshots>
+                <enabled>true</enabled>
+            </snapshots>
+        </repository>
+    </repositories>
 
     <distributionManagement>
         <repository>

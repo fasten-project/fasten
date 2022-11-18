@@ -11,7 +11,6 @@
 
     <groupId>eu.fasten.analyzer</groupId>
     <artifactId>callable-index</artifactId>
-    <version>0.0.15-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>callable-index</name>
