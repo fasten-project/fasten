@@ -15,6 +15,12 @@
 
     <dependencies>
         <dependency>
+            <groupId>dev.c0ps</groupId>
+            <artifactId>test-utils</artifactId>
+            <version>0.0.1</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>org.pf4j</groupId>
             <artifactId>pf4j</artifactId>
             <version>3.4.0</version>
@@ -255,12 +261,6 @@
             <version>1.14.3</version>
             <scope>test</scope>
         </dependency>
-        <dependency> <!-- For environment variables -->
-            <groupId>com.github.stefanbirkner</groupId>
-            <artifactId>system-lambda</artifactId>
-            <version>1.1.1</version>
-            <scope>test</scope>
-        </dependency>
         <dependency>
             <groupId>org.apache.maven.shared</groupId>
             <artifactId>maven-invoker</artifactId>
@@ -307,11 +307,6 @@
         <dependency>
             <groupId>org.glassfish.jersey.core</groupId>
             <artifactId>jersey-client</artifactId>
-            <version>3.0.3</version>
-        </dependency>
-        <dependency>
-            <groupId>org.glassfish.jersey.inject</groupId>
-            <artifactId>jersey-hk2</artifactId>
             <version>3.0.3</version>
         </dependency>
         <dependency>

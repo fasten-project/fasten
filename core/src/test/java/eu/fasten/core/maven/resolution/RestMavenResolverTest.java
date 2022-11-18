@@ -32,8 +32,8 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import eu.f4sten.test.HttpTestServer;
-import eu.f4sten.test.HttpTestServer.Request;
+import dev.c0ps.test.HttpTestServer;
+import dev.c0ps.test.HttpTestServer.Request;
 import eu.fasten.core.maven.data.ResolvedRevision;
 import eu.fasten.core.maven.data.Revision;
 
