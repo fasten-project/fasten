@@ -23,6 +23,8 @@ import java.util.Set;
 import java.util.function.Supplier;
 
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.fasterxml.jackson.core.JacksonException;
 import com.fasterxml.jackson.core.JsonGenerator;
@@ -46,6 +48,8 @@ import eu.fasten.core.maven.data.Scope;
 import eu.fasten.core.maven.data.VersionConstraint;
 
 public class CoreMavenDataModule extends SimpleModule {
+
+    private static final Logger LOG = LoggerFactory.getLogger(CoreMavenDataModule.class.getName());
 
     private static final Set<Exclusion> NO_EXCLS = Set.of();
     private static final Set<VersionConstraint> NO_VCS = Set.of();
@@ -232,8 +236,13 @@ public class CoreMavenDataModule extends SimpleModule {
         if (exclusions != null && !exclusions.isEmpty()) {
             var es = new HashSet<Exclusion>(exclusions.size() + 1, 1);
             for (var exclusion : exclusions) {
-                var parts = exclusion.textValue().split(":");
-                es.add(new Exclusion(parts[0], parts[1]));
+                var parts = exclusion.textValue().split(":", -1);
+                if (parts.length == 2 && !parts[0].isEmpty() && !parts[1].isEmpty()) {
+                    es.add(new Exclusion(parts[0], parts[1]));
+                } else {
+                    var msg = "Skipping deserialization of invalid '{}' in '{}': {}";
+                    LOG.error(msg, Exclusion.class.getSimpleName(), Dependency.class.getSimpleName(), node);
+                }
             }
             return es;
         }
