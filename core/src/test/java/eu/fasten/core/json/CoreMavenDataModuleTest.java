@@ -15,6 +15,7 @@
  */
 package eu.fasten.core.json;
 
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertSame;
 import static org.junit.Assert.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -23,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import java.util.Set;
 
 import org.apache.maven.artifact.versioning.DefaultArtifactVersion;
+import org.json.JSONObject;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.skyscreamer.jsonassert.JSONAssert;
@@ -51,6 +53,16 @@ public class CoreMavenDataModuleTest {
                 return om.enable(SerializationFeature.INDENT_OUTPUT);
             }
         }.build();
+    }
+
+    @Test
+    public void testPom() throws Exception {
+        var pom = new PomBuilder().pom();
+        var json = om.writeValueAsString(pom);
+        var obj = new JSONObject(json);
+        assertFalse(obj.has("ga"));
+        assertFalse(obj.has("gav"));
+        assertFalse(obj.has("hashCode"));
     }
 
     @Test

@@ -55,9 +55,9 @@ public class Pom {
     public final String sourcesUrl;
     public final String artifactRepository;
 
-    private final int hashCode;
-    private final GAV gav;
-    private final GA ga;
+    private transient final int hashCode;
+    private transient final GAV gav;
+    private transient final GA ga;
 
     // use LinkedHashSet for dependencies, because order is relevant for resolution
     public Pom(String groupId, String artifactId, String packagingType, String version, String parentCoordinate,
