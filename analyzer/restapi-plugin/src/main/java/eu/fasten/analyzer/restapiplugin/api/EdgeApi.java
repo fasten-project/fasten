@@ -36,6 +36,12 @@ import eu.fasten.core.maven.data.PackageVersionNotFoundException;
 @RequestMapping("/packages")
 public class EdgeApi {
 
+    private LazyIngestionProvider ingestion = new LazyIngestionProvider();
+
+    public void setLazyIngestionProvider(LazyIngestionProvider ingestion) {
+        this.ingestion = ingestion;
+    }
+
     @GetMapping(value = "/{pkg}/{pkg_ver}/edges", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<String> getPackageEdges(@PathVariable("pkg") String packageName,
                                            @PathVariable("pkg_ver") String packageVersion,
@@ -48,7 +54,7 @@ public class EdgeApi {
             result = KnowledgeBaseConnector.kbDao.getPackageEdges(
                     packageName, packageVersion, offset, limit);
         } catch (PackageVersionNotFoundException e) {
-            LazyIngestionProvider.ingestArtifactIfNecessary(packageName, packageVersion, artifactRepository, releaseDate);
+            ingestion.ingestArtifactIfNecessary(packageName, packageVersion, artifactRepository, releaseDate);
             return new ResponseEntity<>("Package version not found, but should be processed soon. Try again later", HttpStatus.CREATED);
         }
         result = result.replace("\\/", "/");

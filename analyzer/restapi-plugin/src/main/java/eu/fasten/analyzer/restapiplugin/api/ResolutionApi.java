@@ -61,9 +61,15 @@ import it.unimi.dsi.fastutil.objects.ObjectLinkedOpenHashSet;
 @RestController
 public class ResolutionApi {
 
-    private static final Logger logger = LoggerFactory.getLogger(ResolutionApi.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ResolutionApi.class);
+
     private IMavenResolver graphMavenResolver;
     private GraphResolver graphResolver ;
+    private LazyIngestionProvider ingestion = new LazyIngestionProvider();
+    
+    public void setLazyIngestionProvider(LazyIngestionProvider ingestion) {
+        this.ingestion = ingestion;
+    }
 
     public ResolutionApi() {
         switch(KnowledgeBaseConnector.forge) {
@@ -72,7 +78,7 @@ public class ResolutionApi {
                     var graphMavenResolver = new MavenResolverIO(KnowledgeBaseConnector.dbContext, new File(KnowledgeBaseConnector.dependencyGraphPath)).loadResolver();
                     this.graphMavenResolver = graphMavenResolver;
                 } catch (Exception e) {
-                    logger.error("Error constructing dependency graph maven resolver", e);
+                    LOG.error("Error constructing dependency graph maven resolver", e);
                     System.exit(1);
                 }
                 break;
@@ -83,7 +89,7 @@ public class ResolutionApi {
                     graphResolver.buildDependencyGraph(KnowledgeBaseConnector.dbContext, KnowledgeBaseConnector.dependencyGraphPath);
                     this.graphResolver = graphResolver;
                 } catch (Exception e) {
-                    logger.error("Error constructing dependency graph resolver", e);
+                    LOG.error("Error constructing dependency graph resolver", e);
                     System.exit(1);
                 }
             }
@@ -101,7 +107,7 @@ public class ResolutionApi {
             case Constants.mvnForge: {
                 if (!KnowledgeBaseConnector.kbDao.assertPackageExistence(packageName, packageVersion)) {
                     try {
-                        LazyIngestionProvider.ingestArtifactWithDependencies(packageName, packageVersion);
+                        ingestion.ingestArtifactWithDependencies(packageName, packageVersion);
                     } catch (IllegalArgumentException e) {
                         return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
                     } catch (IOException e) {
@@ -137,7 +143,7 @@ public class ResolutionApi {
             case Constants.pypiForge:
                 if (!KnowledgeBaseConnector.kbDao.assertPackageExistence(packageName, packageVersion)) {
                     try {
-                        LazyIngestionProvider.ingestArtifactWithDependencies(packageName, packageVersion);
+                        ingestion.ingestArtifactWithDependencies(packageName, packageVersion);
                     } catch (IllegalArgumentException e) {
                         return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
                     } catch (IOException e) {

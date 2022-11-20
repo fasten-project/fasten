@@ -36,6 +36,8 @@ import eu.fasten.core.maven.resolution.NativeMavenResolver;
 import eu.fasten.core.maven.utils.MavenUtilities;
 
 public class LazyIngestionProvider {
+    
+    // TODO Consider making this a Spring @Component
 
     private static boolean hasArtifactBeenIngested(String packageName, String version) {
         switch(KnowledgeBaseConnector.forge){
@@ -61,23 +63,25 @@ public class LazyIngestionProvider {
         return key;
     }
 
-    public static void ingestArtifactIfNecessary(String packageName, String version, String artifactRepo, Long date) {
+    public boolean ingestArtifactIfNecessary(String packageName, String version, String artifactRepo, Long date) {
         switch(KnowledgeBaseConnector.forge){
             case Constants.mvnForge: {
-                ingestMvnArtifactIfNecessary(packageName, version, artifactRepo, date);
-                break;
+                return ingestMvnArtifactIfNecessary(packageName, version, artifactRepo, date);
             }
             case Constants.pypiForge: {
-                ingestPypiArtifactIfNecessary(packageName, version);
-                break;
+                return ingestPypiArtifactIfNecessary(packageName, version);
             }
         }
+        throw new IllegalStateException("Unknown forge: " + KnowledgeBaseConnector.forge);
     }
 
-    public static void ingestMvnArtifactIfNecessary(String packageName, String version, String artifactRepo, Long date) {
+    /**
+     * @return whether it was necessary to ingest artifact
+     */
+    public boolean ingestMvnArtifactIfNecessary(String packageName, String version, String artifactRepo, Long date) {
 
         if(hasArtifactBeenIngested(packageName, version)) {
-            return;
+                return false;
         }
         
         var parts = packageName.split(Constants.mvnCoordinateSeparator);
@@ -86,14 +90,14 @@ public class LazyIngestionProvider {
         if(artifactRepo == null || artifactRepo.isEmpty()) {
             artifactRepo = MavenUtilities.MAVEN_CENTRAL_REPO;
         }
-        
+
         if (!MavenUtilities.mavenArtifactExists(groupId, artifactId, version, artifactRepo)) {
             throw new IllegalArgumentException("Maven artifact '" + packageName + ":" + version
                     + "' could not be found in the repository of '"
                     + (artifactRepo == null ? MavenUtilities.MAVEN_CENTRAL_REPO : artifactRepo) + "'."
                     + " Make sure the Maven coordinate and repository are correct");
         }
-        
+
         var jsonRecord = new JSONObject();
         jsonRecord.put("groupId", groupId);
         jsonRecord.put("artifactId", artifactId);
@@ -106,9 +110,13 @@ public class LazyIngestionProvider {
         if (KnowledgeBaseConnector.kafkaProducer != null && KnowledgeBaseConnector.ingestTopic != null) {
             KafkaWriter.sendToKafka(KnowledgeBaseConnector.kafkaProducer, KnowledgeBaseConnector.ingestTopic, jsonRecord.toString());
         }
+        return true;
     }
 
-    public static void ingestPypiArtifactIfNecessary(String packageName, String version) {
+    /**
+     * @return whether it was necessary to ingest artifact
+     */
+    public boolean ingestPypiArtifactIfNecessary(String packageName, String version) {
         var query = "https://pypi.org/pypi/" + packageName + "/" + version +"/json";
         String result;
         try {
@@ -127,10 +135,12 @@ public class LazyIngestionProvider {
             if (KnowledgeBaseConnector.kafkaProducer != null && KnowledgeBaseConnector.ingestTopic != null) {
                 KafkaWriter.sendToKafka(KnowledgeBaseConnector.kafkaProducer, KnowledgeBaseConnector.ingestTopic, jsonRecord.toString());
             }
+            return true;
         }
+        return false;
     }
 
-    public static void ingestArtifactWithDependencies(String packageName, String version) throws IllegalArgumentException, IOException {
+    public void ingestArtifactWithDependencies(String packageName, String version) throws IllegalArgumentException, IOException {
         switch(KnowledgeBaseConnector.forge){
             case Constants.mvnForge: {
                 ingestMvnArtifactWithDependencies(packageName, version);
@@ -143,7 +153,7 @@ public class LazyIngestionProvider {
         }
     }
 
-    public static void ingestMvnArtifactWithDependencies(String packageName, String version) throws IllegalArgumentException, IOException {
+    public void ingestMvnArtifactWithDependencies(String packageName, String version) throws IllegalArgumentException, IOException {
         var groupId = packageName.split(Constants.mvnCoordinateSeparator)[0];
         var artifactId = packageName.split(Constants.mvnCoordinateSeparator)[0];
         ingestMvnArtifactIfNecessary(packageName, version, null, null);
@@ -155,7 +165,7 @@ public class LazyIngestionProvider {
         });
     }
 
-    public static void ingestPypiArtifactWithDependencies(String packageName, String version) throws IllegalArgumentException, IOException {
+    public void ingestPypiArtifactWithDependencies(String packageName, String version) throws IllegalArgumentException, IOException {
         var query = KnowledgeBaseConnector.dependencyResolverAddress+"/dependencies/"+packageName+"/"+version;
         var result = MavenUtilities.sendGetRequest(query);
         result = result.replaceAll("\\s+","");
@@ -168,7 +178,7 @@ public class LazyIngestionProvider {
         }
     }
 
-    public static void batchIngestArtifacts(List<IngestedArtifact> artifacts) throws IllegalArgumentException {
+    public void batchIngestArtifacts(List<IngestedArtifact> artifacts) throws IllegalArgumentException {
         var keys = artifacts.stream() //
                 .map(a -> toMvnKey(a.packageName, a.version)) //
                 .collect(toList());

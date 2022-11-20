@@ -38,14 +38,19 @@ import eu.fasten.core.maven.utils.MavenUtilities;
 @RequestMapping("/packages")
 public class PackageApi {
 
+    private LazyIngestionProvider ingestion = new LazyIngestionProvider();
+
+    public void setLazyIngestionProvider(LazyIngestionProvider ingestion) {
+        this.ingestion = ingestion;
+    };
+
     @GetMapping(value = "", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<String> getAllPackages(@RequestParam(required = false, defaultValue = "0") int offset,
-                                          @RequestParam(required = false, defaultValue = RestApplication.DEFAULT_PAGE_SIZE) int limit) {
+            @RequestParam(required = false, defaultValue = RestApplication.DEFAULT_PAGE_SIZE) int limit) {
         var result = KnowledgeBaseConnector.kbDao.getAllPackages(offset, limit);
         result = result.replace("\\/", "/");
         return new ResponseEntity<>(result, HttpStatus.OK);
     }
-
 
     @GetMapping(value = "/{pkg}", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<String> getPackageLastVersion(@PathVariable("pkg") String packageName) {
@@ -57,11 +62,10 @@ public class PackageApi {
         return new ResponseEntity<>(result, HttpStatus.OK);
     }
 
-
     @GetMapping(value = "/{pkg}/versions", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<String> getPackageVersions(@PathVariable("pkg") String packageName,
-                                              @RequestParam(required = false, defaultValue = "0") int offset,
-                                              @RequestParam(required = false, defaultValue = RestApplication.DEFAULT_PAGE_SIZE) int limit) {
+            @RequestParam(required = false, defaultValue = "0") int offset,
+            @RequestParam(required = false, defaultValue = RestApplication.DEFAULT_PAGE_SIZE) int limit) {
         String result = KnowledgeBaseConnector.kbDao.getPackageVersions(packageName, offset, limit);
         result = result.replace("\\/", "/");
         return new ResponseEntity<>(result, HttpStatus.OK);
@@ -69,23 +73,25 @@ public class PackageApi {
 
     @GetMapping(value = "/{pkg}/{pkg_ver}", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<String> getPackageVersion(@PathVariable("pkg") String packageName,
-                                             @PathVariable("pkg_ver") String packageVersion,
-                                             @RequestParam(value = "artifactRepository", required = false) String artifactRepo,
-                                             @RequestParam(required = false) Long releaseDate) {
-            String result = KnowledgeBaseConnector.kbDao.getPackageVersion(packageName, packageVersion);
-            if (result == null) {
-                LazyIngestionProvider.ingestArtifactIfNecessary(packageName, packageVersion, artifactRepo, releaseDate);
-                return new ResponseEntity<>("Package version not found, but should be processed soon. Try again later", HttpStatus.CREATED);
-            }
-            result = result.replace("\\/", "/");
-            return new ResponseEntity<>(result, HttpStatus.OK);
+            @PathVariable("pkg_ver") String packageVersion,
+            @RequestParam(value = "artifactRepository", required = false) String artifactRepo,
+            @RequestParam(required = false) Long releaseDate) {
+
+        var hasNeededIngestion = ingestion.ingestArtifactIfNecessary(packageName, packageVersion,
+                artifactRepo, releaseDate);
+        if (hasNeededIngestion) {
+            return new ResponseEntity<>("Package version not found, started processing... try again later",
+                    HttpStatus.CREATED);
+        }
+        var result = KnowledgeBaseConnector.kbDao.getPackageVersion(packageName, packageVersion);
+        result = result.replace("\\/", "/");
+        return new ResponseEntity<>(result, HttpStatus.OK);
     }
 
     @GetMapping(value = "/{pkg}/{pkg_ver}/metadata", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<String> getPackageMetadata(@PathVariable("pkg") String packageName,
-                                              @PathVariable("pkg_ver") String packageVersion) {
-        String result = KnowledgeBaseConnector.kbDao.getPackageMetadata(
-                packageName, packageVersion);
+            @PathVariable("pkg_ver") String packageVersion) {
+        String result = KnowledgeBaseConnector.kbDao.getPackageMetadata(packageName, packageVersion);
         if (result == null) {
             return new ResponseEntity<>("Package version not found", HttpStatus.NOT_FOUND);
         }
@@ -95,18 +101,18 @@ public class PackageApi {
 
     @GetMapping(value = "/{pkg}/{pkg_ver}/callgraph", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<String> getPackageCallgraph(@PathVariable("pkg") String packageName,
-                                               @PathVariable("pkg_ver") String packageVersion,
-                                               @RequestParam(required = false, defaultValue = "0") int offset,
-                                               @RequestParam(required = false, defaultValue = RestApplication.DEFAULT_PAGE_SIZE) int limit,
-                                               @RequestParam(value = "artifactRepository", required = false) String artifactRepo,
-                                               @RequestParam(required = false) Long releaseDate) {
+            @PathVariable("pkg_ver") String packageVersion,
+            @RequestParam(required = false, defaultValue = "0") int offset,
+            @RequestParam(required = false, defaultValue = RestApplication.DEFAULT_PAGE_SIZE) int limit,
+            @RequestParam(value = "artifactRepository", required = false) String artifactRepo,
+            @RequestParam(required = false) Long releaseDate) {
         String result;
         try {
-            result = KnowledgeBaseConnector.kbDao.getPackageCallgraph(
-                    packageName, packageVersion, offset, limit);
+            result = KnowledgeBaseConnector.kbDao.getPackageCallgraph(packageName, packageVersion, offset, limit);
         } catch (PackageVersionNotFoundException e) {
-            LazyIngestionProvider.ingestArtifactIfNecessary(packageName, packageVersion, artifactRepo, releaseDate);
-            return new ResponseEntity<>("Package version not found, but should be processed soon. Try again later", HttpStatus.CREATED);
+            ingestion.ingestArtifactIfNecessary(packageName, packageVersion, artifactRepo, releaseDate);
+            return new ResponseEntity<>("Package version not found, but should be processed soon. Try again later",
+                    HttpStatus.CREATED);
         }
         result = result.replace("\\/", "/");
         return new ResponseEntity<>(result, HttpStatus.OK);
@@ -114,8 +120,8 @@ public class PackageApi {
 
     @GetMapping(value = "/search", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<String> searchPackageNames(@RequestParam("packageName") String packageName,
-                                              @RequestParam(required = false, defaultValue = "0") int offset,
-                                              @RequestParam(required = false, defaultValue = RestApplication.DEFAULT_PAGE_SIZE) int limit) {
+            @RequestParam(required = false, defaultValue = "0") int offset,
+            @RequestParam(required = false, defaultValue = RestApplication.DEFAULT_PAGE_SIZE) int limit) {
         var result = KnowledgeBaseConnector.kbDao.searchPackageNames(packageName, offset, limit);
         if (result == null) {
             return new ResponseEntity<>("Packages version not found", HttpStatus.NOT_FOUND);
@@ -125,36 +131,39 @@ public class PackageApi {
     }
 
     @GetMapping(value = "/{pkg}/{pkg_ver}/rcg", produces = MediaType.APPLICATION_JSON_VALUE)
-    ResponseEntity<String> getERCGLink(@PathVariable("pkg") String packageName,
-                                       @PathVariable("pkg_ver") String version,
-                                       @RequestParam(value = "artifactRepository", required = false) String artifactRepo,
-                                       @RequestParam(required = false) Long releaseDate) {
+    ResponseEntity<String> getERCGLink(@PathVariable("pkg") String packageName, @PathVariable("pkg_ver") String version,
+            @RequestParam(value = "artifactRepository", required = false) String artifactRepo,
+            @RequestParam(required = false) Long releaseDate) {
         String result;
         String url;
         if (!KnowledgeBaseConnector.kbDao.assertPackageExistence(packageName, version)) {
-            LazyIngestionProvider.ingestArtifactIfNecessary(packageName, version, artifactRepo, releaseDate);
-            return new ResponseEntity<>("Package version not found, but should be processed soon. Try again later", HttpStatus.CREATED);
+            ingestion.ingestArtifactIfNecessary(packageName, version, artifactRepo, releaseDate);
+            return new ResponseEntity<>("Package version not found, but should be processed soon. Try again later",
+                    HttpStatus.CREATED);
         }
         switch (KnowledgeBaseConnector.forge) {
-            case Constants.mvnForge: {
-                var groupId = packageName.split(Constants.mvnCoordinateSeparator)[0];
-                var artifactId = packageName.split(Constants.mvnCoordinateSeparator)[1];
-                url = String.format("%smvn/%s/%s/%s_%s_%s.json", KnowledgeBaseConnector.rcgBaseUrl,
-                        artifactId.charAt(0), artifactId, artifactId, groupId, version).replace("\\/", "/");
-                break;
-            }
-            case Constants.pypiForge: {
-                url = String.format("%s/%s/%s/%s/%s/cg.json", KnowledgeBaseConnector.rcgBaseUrl + KnowledgeBaseConnector.forge.toLowerCase() + "/" + KnowledgeBaseConnector.forge.toLowerCase(),
+        case Constants.mvnForge: {
+            var groupId = packageName.split(Constants.mvnCoordinateSeparator)[0];
+            var artifactId = packageName.split(Constants.mvnCoordinateSeparator)[1];
+            url = String.format("%smvn/%s/%s/%s_%s_%s.json", KnowledgeBaseConnector.rcgBaseUrl, artifactId.charAt(0),
+                    artifactId, artifactId, groupId, version).replace("\\/", "/");
+            break;
+        }
+        case Constants.pypiForge: {
+            url = String.format("%s/%s/%s/%s/%s/cg.json",
+                    KnowledgeBaseConnector.rcgBaseUrl + KnowledgeBaseConnector.forge.toLowerCase() + "/"
+                            + KnowledgeBaseConnector.forge.toLowerCase(),
                     "callgraphs", packageName.charAt(0), packageName, version).replace("\\/", "/");
-                break;
-            }
-            case Constants.debianForge: {
-                url = String.format("%s/%s/%s/%s/buster/%s/amd64/file.json", KnowledgeBaseConnector.rcgBaseUrl + KnowledgeBaseConnector.forge,
-                    "callgraphs", packageName.charAt(0), packageName, version).replace("\\/", "/");
-                break;
-            }
-            default:
-                return new ResponseEntity<>("Incorrect forge", HttpStatus.BAD_REQUEST);
+            break;
+        }
+        case Constants.debianForge: {
+            url = String.format("%s/%s/%s/%s/buster/%s/amd64/file.json",
+                    KnowledgeBaseConnector.rcgBaseUrl + KnowledgeBaseConnector.forge, "callgraphs",
+                    packageName.charAt(0), packageName, version).replace("\\/", "/");
+            break;
+        }
+        default:
+            return new ResponseEntity<>("Incorrect forge", HttpStatus.BAD_REQUEST);
         }
         result = MavenUtilities.sendGetRequest(url);
         if (result == null) {
@@ -163,4 +172,3 @@ public class PackageApi {
         return new ResponseEntity<>(result, HttpStatus.OK);
     }
 }
-

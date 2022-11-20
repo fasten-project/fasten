@@ -39,6 +39,12 @@ import eu.fasten.core.maven.data.PackageVersionNotFoundException;
 @RestController
 public class CallableApi {
 
+    private LazyIngestionProvider ingestion = new LazyIngestionProvider();
+
+    public void setLazyIngestionProvider(LazyIngestionProvider ingestion) {
+        this.ingestion = ingestion;
+    }
+
     @GetMapping(value = "/packages/{pkg}/{pkg_ver}/callables", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<String> getPackageCallables(@PathVariable("pkg") String packageName,
                                                @PathVariable("pkg_ver") String packageVersion,
@@ -51,7 +57,7 @@ public class CallableApi {
             result = KnowledgeBaseConnector.kbDao.getPackageCallables(
                     packageName, packageVersion, offset, limit);
         } catch (PackageVersionNotFoundException e) {
-            LazyIngestionProvider.ingestArtifactIfNecessary(packageName, packageVersion, artifactRepository, releaseDate);
+            ingestion.ingestArtifactIfNecessary(packageName, packageVersion, artifactRepository, releaseDate);
             return new ResponseEntity<>("Package version not found, but should be processed soon. Try again later", HttpStatus.CREATED);
         }
         result = result.replace("\\/", "/");
@@ -67,7 +73,7 @@ public class CallableApi {
         String result = KnowledgeBaseConnector.kbDao.getCallableMetadata(
                 packageName, packageVersion, fasten_uri);
         if (result == null) {
-            LazyIngestionProvider.ingestArtifactIfNecessary(packageName, packageVersion, artifactRepository, releaseDate);
+            ingestion.ingestArtifactIfNecessary(packageName, packageVersion, artifactRepository, releaseDate);
             return new ResponseEntity<>("Package version not found, but should be processed soon. Try again later", HttpStatus.CREATED);
         }
         result = result.replace("\\/", "/");
