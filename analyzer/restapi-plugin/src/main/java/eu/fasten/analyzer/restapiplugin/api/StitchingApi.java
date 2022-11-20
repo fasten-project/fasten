@@ -42,8 +42,14 @@ import java.util.stream.Collectors;
 
 @RestController
 public class StitchingApi {
+    
+    private static final Logger LOG = LoggerFactory.getLogger(StitchingApi.class);
 
-    private final Logger logger = LoggerFactory.getLogger(getClass());
+    private LazyIngestionProvider ingestion = new LazyIngestionProvider();
+
+    public void setLazyIngestionProvider(LazyIngestionProvider ingestion) {
+        this.ingestion = ingestion;
+    }    
 
     @PostMapping(value = "/callable_uris", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<String> resolveCallablesToUris(@RequestBody List<Long> gidList) {
@@ -60,12 +66,12 @@ public class StitchingApi {
                                                 @RequestParam(required = false, defaultValue = "false") boolean allAttributes,
                                                 @RequestParam(required = false, defaultValue = "[]") List<String> attributes) {
         var total = System.currentTimeMillis();
-        logger.info("Received a list of callables");
+        LOG.info("Received a list of callables");
         if (!allAttributes && attributes == null) {
             return new ResponseEntity<>("Either 'allAttributes' must be 'true' or a list of 'attributes' must be provided", HttpStatus.BAD_REQUEST);
         }
         Map<String, List<String>> packageVersionUris;
-        logger.info("Parsing full FASTEN URIs and grouping callables by package version");
+        LOG.info("Parsing full FASTEN URIs and grouping callables by package version");
         var start = System.currentTimeMillis();
         try {
             packageVersionUris = fullFastenUris.stream().map(FastenUriUtils::parseFullFastenUri).collect(Collectors.toMap(
@@ -80,9 +86,9 @@ public class StitchingApi {
         } catch (IllegalArgumentException e) {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
         }
-        logger.info("Parsing and grouping is done: {}ms", System.currentTimeMillis() - start);
+        LOG.info("Parsing and grouping is done: {}ms", System.currentTimeMillis() - start);
         var metadataMap = new HashMap<String, JSONObject>(fullFastenUris.size());
-        logger.info("Starting retrieving data from the database");
+        LOG.info("Starting retrieving data from the database");
         var time = System.currentTimeMillis();
         for (var artifact : packageVersionUris.keySet()) {
             var forge = artifact.split("!")[0];
@@ -90,16 +96,16 @@ public class StitchingApi {
             var packageName = forgelessArtifact.split("\\$")[0];
             var version = forgelessArtifact.split("\\$")[1];
             var partialUris = packageVersionUris.get(artifact);
-            logger.info("Sending database request to retrieve metadata for {} callables of {}:{}", partialUris.size(), packageName, version);
+            LOG.info("Sending database request to retrieve metadata for {} callables of {}:{}", partialUris.size(), packageName, version);
             start = System.currentTimeMillis();
             var urisMetadata = KnowledgeBaseConnector.kbDao.getCallablesMetadataByUri(forge, packageName, version, partialUris);
-            logger.info("Database query is complete: {}ms", System.currentTimeMillis() - start);
+            LOG.info("Database query is complete: {}ms", System.currentTimeMillis() - start);
             if (urisMetadata != null) {
                 metadataMap.putAll(urisMetadata);
             }
         }
-        logger.info("All data is retrieved. In total data retrieval took {}ms", System.currentTimeMillis() - time);
-        logger.info("Now removing attributes which are not needed and putting everything into JSON");
+        LOG.info("All data is retrieved. In total data retrieval took {}ms", System.currentTimeMillis() - time);
+        LOG.info("Now removing attributes which are not needed and putting everything into JSON");
         start = System.currentTimeMillis();
         var json = new JSONObject();
         for (var entry : metadataMap.entrySet()) {
@@ -117,8 +123,8 @@ public class StitchingApi {
         }
         var result = json.toString();
         result = result.replace("\\/", "/");
-        logger.info("Done: {}ms. Sending response", System.currentTimeMillis() - start);
-        logger.info("In total everything took {}ms", System.currentTimeMillis() - total);
+        LOG.info("Done: {}ms. Sending response", System.currentTimeMillis() - start);
+        LOG.info("In total everything took {}ms", System.currentTimeMillis() - total);
         return new ResponseEntity<>(result, HttpStatus.OK);
     }
 
@@ -136,7 +142,7 @@ public class StitchingApi {
             ));
         }
         try {
-            LazyIngestionProvider.batchIngestArtifacts(artifacts);
+            ingestion.batchIngestArtifacts(artifacts);
         } catch (IllegalArgumentException e) {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
         }

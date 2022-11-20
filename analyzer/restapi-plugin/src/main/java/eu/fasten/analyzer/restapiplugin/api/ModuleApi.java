@@ -38,6 +38,12 @@ import eu.fasten.core.maven.data.PackageVersionNotFoundException;
 @RequestMapping("/packages")
 public class ModuleApi {
 
+    private LazyIngestionProvider ingestion = new LazyIngestionProvider();
+
+    public void setLazyIngestionProvider(LazyIngestionProvider ingestion) {
+        this.ingestion = ingestion;
+    }
+
     @GetMapping(value = "/{pkg}/{pkg_ver}/modules", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<String> getPackageModules(@PathVariable("pkg") String packageName,
                                              @PathVariable("pkg_ver") String packageVersion,
@@ -50,7 +56,7 @@ public class ModuleApi {
             result = KnowledgeBaseConnector.kbDao.getPackageModules(
                     packageName, packageVersion, offset, limit);
         } catch (PackageVersionNotFoundException e) {
-            LazyIngestionProvider.ingestArtifactIfNecessary(packageName, packageVersion, artifactRepository, releaseDate);
+            ingestion.ingestArtifactIfNecessary(packageName, packageVersion, artifactRepository, releaseDate);
             return new ResponseEntity<>("Package version not found, but should be processed soon. Try again later", HttpStatus.CREATED);
         }
         result = result.replace("\\/", "/");
@@ -68,7 +74,7 @@ public class ModuleApi {
         try {
             result = KnowledgeBaseConnector.kbDao.getModuleMetadata(packageName, packageVersion, module_namespace);
         } catch (PackageVersionNotFoundException e) {
-            LazyIngestionProvider.ingestArtifactIfNecessary(packageName, packageVersion, artifactRepository, releaseDate);
+            ingestion.ingestArtifactIfNecessary(packageName, packageVersion, artifactRepository, releaseDate);
             return new ResponseEntity<>("Package version not found, but should be processed soon. Try again later", HttpStatus.CREATED);
         }
         if (result == null) {
@@ -92,7 +98,7 @@ public class ModuleApi {
             result = KnowledgeBaseConnector.kbDao.getModuleFiles(
                     packageName, packageVersion, module_namespace, offset, limit);
         } catch (PackageVersionNotFoundException e) {
-            LazyIngestionProvider.ingestArtifactIfNecessary(packageName, packageVersion, artifactRepository, releaseDate);
+            ingestion.ingestArtifactIfNecessary(packageName, packageVersion, artifactRepository, releaseDate);
             return new ResponseEntity<>("Package version not found, but should be processed soon. Try again later", HttpStatus.CREATED);
         }
         if (result == null) {
@@ -116,7 +122,7 @@ public class ModuleApi {
             result = KnowledgeBaseConnector.kbDao.getModuleCallables(
                     KnowledgeBaseConnector.forge, packageName, packageVersion, module_namespace, offset, limit);
         } catch (PackageVersionNotFoundException e) {
-            LazyIngestionProvider.ingestArtifactIfNecessary(packageName, packageVersion, artifactRepository, releaseDate);
+            ingestion.ingestArtifactIfNecessary(packageName, packageVersion, artifactRepository, releaseDate);
             return new ResponseEntity<>("Package version not found, but should be processed soon. Try again later", HttpStatus.CREATED);
         }
         if (result == null) {
