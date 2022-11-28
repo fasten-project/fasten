@@ -55,7 +55,7 @@ public class BinaryModuleApi {
                     packageName, packageVersion, offset, limit);
         } catch (PackageVersionNotFoundException e) {
             ingestion.ingestArtifactIfNecessary(packageName, packageVersion, artifactRepository, releaseDate);
-            return new ResponseEntity<>("Package version not found, but should be processed soon. Try again later", HttpStatus.CREATED);
+            return Responses.getLazyIngestionResponse();
         }
         result = result.replace("\\/", "/");
         return new ResponseEntity<>(result, HttpStatus.OK);
@@ -73,7 +73,7 @@ public class BinaryModuleApi {
                     packageName, packageVersion, binary_module);
         } catch (PackageVersionNotFoundException e) {
             ingestion.ingestArtifactIfNecessary(packageName, packageVersion, artifactRepository, releaseDate);
-            return new ResponseEntity<>("Package version not found, but should be processed soon. Try again later", HttpStatus.CREATED);
+            return Responses.getLazyIngestionResponse();
         }
         if (result == null) {
             return new ResponseEntity<>("Binary module not found", HttpStatus.NOT_FOUND);
@@ -96,7 +96,7 @@ public class BinaryModuleApi {
                     packageName, packageVersion, binary_module, offset, limit);
         } catch (PackageVersionNotFoundException e) {
             ingestion.ingestArtifactIfNecessary(packageName, packageVersion, artifactRepository, releaseDate);
-            return new ResponseEntity<>("Package version not found, but should be processed soon. Try again later", HttpStatus.CREATED);
+            return Responses.getLazyIngestionResponse();
         }
         result = result.replace("\\/", "/");
         return new ResponseEntity<>(result, HttpStatus.OK);

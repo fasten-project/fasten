@@ -58,7 +58,7 @@ public class CallableApi {
                     packageName, packageVersion, offset, limit);
         } catch (PackageVersionNotFoundException e) {
             ingestion.ingestArtifactIfNecessary(packageName, packageVersion, artifactRepository, releaseDate);
-            return new ResponseEntity<>("Package version not found, but should be processed soon. Try again later", HttpStatus.CREATED);
+            return Responses.getLazyIngestionResponse();
         }
         result = result.replace("\\/", "/");
         return new ResponseEntity<>(result, HttpStatus.OK);
@@ -74,7 +74,7 @@ public class CallableApi {
                 packageName, packageVersion, fasten_uri);
         if (result == null) {
             ingestion.ingestArtifactIfNecessary(packageName, packageVersion, artifactRepository, releaseDate);
-            return new ResponseEntity<>("Package version not found, but should be processed soon. Try again later", HttpStatus.CREATED);
+            return Responses.getLazyIngestionResponse();
         }
         result = result.replace("\\/", "/");
         return new ResponseEntity<>(result, HttpStatus.OK);

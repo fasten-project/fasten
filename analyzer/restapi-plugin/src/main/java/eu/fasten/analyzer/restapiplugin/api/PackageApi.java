@@ -80,8 +80,7 @@ public class PackageApi {
         var hasNeededIngestion = ingestion.ingestArtifactIfNecessary(packageName, packageVersion,
                 artifactRepo, releaseDate);
         if (hasNeededIngestion) {
-            return new ResponseEntity<>("Package version not found, started processing... try again later",
-                    HttpStatus.CREATED);
+            return Responses.getLazyIngestionResponse();
         }
         var result = KnowledgeBaseConnector.kbDao.getPackageVersion(packageName, packageVersion);
         result = result.replace("\\/", "/");
@@ -111,8 +110,7 @@ public class PackageApi {
             result = KnowledgeBaseConnector.kbDao.getPackageCallgraph(packageName, packageVersion, offset, limit);
         } catch (PackageVersionNotFoundException e) {
             ingestion.ingestArtifactIfNecessary(packageName, packageVersion, artifactRepo, releaseDate);
-            return new ResponseEntity<>("Package version not found, but should be processed soon. Try again later",
-                    HttpStatus.CREATED);
+            return Responses.getLazyIngestionResponse();
         }
         result = result.replace("\\/", "/");
         return new ResponseEntity<>(result, HttpStatus.OK);
@@ -138,8 +136,7 @@ public class PackageApi {
         String url;
         if (!KnowledgeBaseConnector.kbDao.assertPackageExistence(packageName, version)) {
             ingestion.ingestArtifactIfNecessary(packageName, version, artifactRepo, releaseDate);
-            return new ResponseEntity<>("Package version not found, but should be processed soon. Try again later",
-                    HttpStatus.CREATED);
+            return Responses.getLazyIngestionResponse();
         }
         switch (KnowledgeBaseConnector.forge) {
         case Constants.mvnForge: {
