@@ -57,7 +57,7 @@ public class ModuleApi {
                     packageName, packageVersion, offset, limit);
         } catch (PackageVersionNotFoundException e) {
             ingestion.ingestArtifactIfNecessary(packageName, packageVersion, artifactRepository, releaseDate);
-            return new ResponseEntity<>("Package version not found, but should be processed soon. Try again later", HttpStatus.CREATED);
+            return Responses.getLazyIngestionResponse();
         }
         result = result.replace("\\/", "/");
         return new ResponseEntity<>(result, HttpStatus.OK);
@@ -75,7 +75,7 @@ public class ModuleApi {
             result = KnowledgeBaseConnector.kbDao.getModuleMetadata(packageName, packageVersion, module_namespace);
         } catch (PackageVersionNotFoundException e) {
             ingestion.ingestArtifactIfNecessary(packageName, packageVersion, artifactRepository, releaseDate);
-            return new ResponseEntity<>("Package version not found, but should be processed soon. Try again later", HttpStatus.CREATED);
+            return Responses.getLazyIngestionResponse();
         }
         if (result == null) {
             return new ResponseEntity<>("Module not found", HttpStatus.NOT_FOUND);
@@ -99,7 +99,7 @@ public class ModuleApi {
                     packageName, packageVersion, module_namespace, offset, limit);
         } catch (PackageVersionNotFoundException e) {
             ingestion.ingestArtifactIfNecessary(packageName, packageVersion, artifactRepository, releaseDate);
-            return new ResponseEntity<>("Package version not found, but should be processed soon. Try again later", HttpStatus.CREATED);
+            return Responses.getLazyIngestionResponse();
         }
         if (result == null) {
             return new ResponseEntity<>("Module not found", HttpStatus.NOT_FOUND);
@@ -123,7 +123,7 @@ public class ModuleApi {
                     KnowledgeBaseConnector.forge, packageName, packageVersion, module_namespace, offset, limit);
         } catch (PackageVersionNotFoundException e) {
             ingestion.ingestArtifactIfNecessary(packageName, packageVersion, artifactRepository, releaseDate);
-            return new ResponseEntity<>("Package version not found, but should be processed soon. Try again later", HttpStatus.CREATED);
+            return Responses.getLazyIngestionResponse();
         }
         if (result == null) {
             return new ResponseEntity<>("Module not found", HttpStatus.NOT_FOUND);
