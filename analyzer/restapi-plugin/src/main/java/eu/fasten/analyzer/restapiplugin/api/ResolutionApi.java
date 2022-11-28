@@ -113,7 +113,7 @@ public class ResolutionApi {
                     } catch (IOException e) {
                         return new ResponseEntity<>(e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
                     }
-                    return Responses.getLazyIngestionResponse();
+                    return Responses.lazyIngestion();
                 }
                 var groupId = packageName.split(Constants.mvnCoordinateSeparator)[0];
                 var artifactId = packageName.split(Constants.mvnCoordinateSeparator)[1];
@@ -153,18 +153,18 @@ public class ResolutionApi {
                 query = KnowledgeBaseConnector.dependencyResolverAddress+"/dependencies/"+packageName+"/"+packageVersion;
                 result = MavenUtilities.sendGetRequest(query);
                 if (result == null || result.contains("\"error\"")) {
-                    return new ResponseEntity<>("Could not find the requested data", HttpStatus.NOT_FOUND);
+                    return Responses.dataNotFound();
                 }
                 result = result.replaceAll("\\s+","");
-                return new ResponseEntity<>(result, HttpStatus.OK);
+                return Responses.ok(result);
             default: {
                 query = KnowledgeBaseConnector.dependencyResolverAddress+"/dependencies/"+packageName+"/"+packageVersion;
                 result = MavenUtilities.sendGetRequest(query);
                 if (result == null || result.contains("\"error\"")) {
-                    return new ResponseEntity<>("Could not find the requested data", HttpStatus.NOT_FOUND);
+                    return Responses.dataNotFound();
                 }
                 result = result.replaceAll("\\s+","");
-                return new ResponseEntity<>(result, HttpStatus.OK);
+                return Responses.ok(result);
             }
         }
     }
@@ -204,7 +204,7 @@ public class ResolutionApi {
                         json.put("url", url);
                     }).forEach(jsonArray::put);
                } catch (RuntimeException e) {
-                    return new ResponseEntity<>("Failed to resolve dependents for revision "+packageName+":"+ packageVersion , HttpStatus.NOT_FOUND);
+                    return Responses.failedToResolveDependents(packageName, packageVersion);
                }
                 break;
             }
@@ -220,7 +220,7 @@ public class ResolutionApi {
                         json.put("url", url);
                     }).forEach(jsonArray::put);
                 } catch (RuntimeException e) {
-                    return new ResponseEntity<>("Failed to resolve dependents for revision "+packageName+":"+ packageVersion , HttpStatus.NOT_FOUND);
+                    return Responses.failedToResolveDependents(packageName, packageVersion);
                 }
                 break;
             }
@@ -236,16 +236,16 @@ public class ResolutionApi {
                         json.put("url", url);
                     }).forEach(jsonArray::put);
                 } catch (RuntimeException e) {
-                    return new ResponseEntity<>("Failed to resolve dependents for revision "+packageName+":"+ packageVersion , HttpStatus.NOT_FOUND);
+                    return Responses.failedToResolveDependents(packageName, packageVersion);
                 }
                 break;
             }
             default:
-                return new ResponseEntity<>("Incorrect forge", HttpStatus.BAD_REQUEST);
+                return Responses.incorrectForge();
         }
         var result = jsonArray.toString();
         result = result.replace("\\/", "/");
-        return new ResponseEntity<>(result, HttpStatus.OK);
+        return Responses.ok(result);
     }
 
     @PostMapping(value = "/resolve_dependencies", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -294,7 +294,7 @@ public class ResolutionApi {
         if (needStitching) {
             var mavenCoordinate = KnowledgeBaseConnector.kbDao.getMavenCoordinate(packageVersionId);
             if (mavenCoordinate == null) {
-                return new ResponseEntity<>("Package version ID not found", HttpStatus.NOT_FOUND);
+                return Responses.packageVersionNotFound();
             }
             var groupId = mavenCoordinate.split(Constants.mvnCoordinateSeparator)[0];
             var artifactId = mavenCoordinate.split(Constants.mvnCoordinateSeparator)[1];

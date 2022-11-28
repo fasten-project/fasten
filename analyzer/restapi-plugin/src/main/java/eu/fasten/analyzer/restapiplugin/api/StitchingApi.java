@@ -58,7 +58,7 @@ public class StitchingApi {
         fastenUris.forEach((key, value) -> json.put(String.valueOf(key), value));
         var result = json.toString();
         result = result.replace("\\/", "/");
-        return new ResponseEntity<>(result, HttpStatus.OK);
+        return Responses.ok(result);
     }
 
     @PostMapping(value = "/metadata/callables", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -125,7 +125,7 @@ public class StitchingApi {
         result = result.replace("\\/", "/");
         LOG.info("Done: {}ms. Sending response", System.currentTimeMillis() - start);
         LOG.info("In total everything took {}ms", System.currentTimeMillis() - total);
-        return new ResponseEntity<>(result, HttpStatus.OK);
+        return Responses.ok(result);
     }
 
     @PostMapping(value = "/__INTERNAL__/ingest/batch", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -146,6 +146,6 @@ public class StitchingApi {
         } catch (IllegalArgumentException e) {
             return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
         }
-        return new ResponseEntity<>("Ingested successfully", HttpStatus.OK);
+        return Responses.ok("Ingested successfully");
     }
 }

@@ -21,7 +21,6 @@ package eu.fasten.analyzer.restapiplugin.api;
 import java.util.List;
 
 import org.json.JSONObject;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -58,10 +57,10 @@ public class CallableApi {
                     packageName, packageVersion, offset, limit);
         } catch (PackageVersionNotFoundException e) {
             ingestion.ingestArtifactIfNecessary(packageName, packageVersion, artifactRepository, releaseDate);
-            return Responses.getLazyIngestionResponse();
+            return Responses.lazyIngestion();
         }
         result = result.replace("\\/", "/");
-        return new ResponseEntity<>(result, HttpStatus.OK);
+        return Responses.ok(result);
     }
 
     @PostMapping(value = "/packages/{pkg}/{pkg_ver}/callable/metadata", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -74,10 +73,10 @@ public class CallableApi {
                 packageName, packageVersion, fasten_uri);
         if (result == null) {
             ingestion.ingestArtifactIfNecessary(packageName, packageVersion, artifactRepository, releaseDate);
-            return Responses.getLazyIngestionResponse();
+            return Responses.lazyIngestion();
         }
         result = result.replace("\\/", "/");
-        return new ResponseEntity<>(result, HttpStatus.OK);
+        return Responses.ok(result);
     }
 
     @PostMapping(value = "/callables", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -90,6 +89,6 @@ public class CallableApi {
         }
         var result = json.toString();
         result = result.replace("\\/", "/");
-        return new ResponseEntity<>(result, HttpStatus.OK);
+        return Responses.ok(result);
     }
 }

@@ -18,7 +18,6 @@
 
 package eu.fasten.analyzer.restapiplugin.api;
 
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -57,10 +56,10 @@ public class ModuleApi {
                     packageName, packageVersion, offset, limit);
         } catch (PackageVersionNotFoundException e) {
             ingestion.ingestArtifactIfNecessary(packageName, packageVersion, artifactRepository, releaseDate);
-            return Responses.getLazyIngestionResponse();
+            return Responses.lazyIngestion();
         }
         result = result.replace("\\/", "/");
-        return new ResponseEntity<>(result, HttpStatus.OK);
+        return Responses.ok(result);
     }
 
     @PostMapping(value = "/{pkg}/{pkg_ver}/modules/metadata", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -75,13 +74,13 @@ public class ModuleApi {
             result = KnowledgeBaseConnector.kbDao.getModuleMetadata(packageName, packageVersion, module_namespace);
         } catch (PackageVersionNotFoundException e) {
             ingestion.ingestArtifactIfNecessary(packageName, packageVersion, artifactRepository, releaseDate);
-            return Responses.getLazyIngestionResponse();
+            return Responses.lazyIngestion();
         }
         if (result == null) {
-            return new ResponseEntity<>("Module not found", HttpStatus.NOT_FOUND);
+            return Responses.moduleNotFound();
         }
         result = result.replace("\\/", "/");
-        return new ResponseEntity<>(result, HttpStatus.OK);
+        return Responses.ok(result);
     }
 
     @PostMapping(value = "/{pkg}/{pkg_ver}/modules/files", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -99,13 +98,13 @@ public class ModuleApi {
                     packageName, packageVersion, module_namespace, offset, limit);
         } catch (PackageVersionNotFoundException e) {
             ingestion.ingestArtifactIfNecessary(packageName, packageVersion, artifactRepository, releaseDate);
-            return Responses.getLazyIngestionResponse();
+            return Responses.lazyIngestion();
         }
         if (result == null) {
-            return new ResponseEntity<>("Module not found", HttpStatus.NOT_FOUND);
+            return Responses.moduleNotFound();
         }
         result = result.replace("\\/", "/");
-        return new ResponseEntity<>(result, HttpStatus.OK);
+        return Responses.ok(result);
     }
 
     @PostMapping(value = "/{pkg}/{pkg_ver}/modules/callables", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -123,12 +122,12 @@ public class ModuleApi {
                     KnowledgeBaseConnector.forge, packageName, packageVersion, module_namespace, offset, limit);
         } catch (PackageVersionNotFoundException e) {
             ingestion.ingestArtifactIfNecessary(packageName, packageVersion, artifactRepository, releaseDate);
-            return Responses.getLazyIngestionResponse();
+            return Responses.lazyIngestion();
         }
         if (result == null) {
-            return new ResponseEntity<>("Module not found", HttpStatus.NOT_FOUND);
+            return Responses.moduleNotFound();
         }
         result = result.replace("\\/", "/");
-        return new ResponseEntity<>(result, HttpStatus.OK);
+        return Responses.ok(result);
     }
 }
