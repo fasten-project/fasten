@@ -27,7 +27,6 @@ import eu.fasten.core.vulchains.VulnerableCallChainRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Lazy;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -75,7 +74,7 @@ public class VulnerableCallChainsApi {
 
         Set<VulnerableCallChain> chains = vulnerableCallChainRepository.getChainsForPackage(packageName, packageVersion);
         var result = VulnerableCallChainsToJSON(chains);
-        return new ResponseEntity<>(result, HttpStatus.OK);
+        return Responses.ok(result);
     }
 
     @PostMapping(value = "/module", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -86,7 +85,7 @@ public class VulnerableCallChainsApi {
         FastenURI fastenUri = FastenURI.create(KnowledgeBaseConnector.forge, packageName, packageVersion, rawPath);
         Set<VulnerableCallChain> chains = vulnerableCallChainRepository.getChainsForModule(fastenUri);
         var result = VulnerableCallChainsToJSON(chains);
-        return new ResponseEntity<>(result, HttpStatus.OK);
+        return Responses.ok(result);
     }
 
     @PostMapping(value = "/callable", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -97,6 +96,6 @@ public class VulnerableCallChainsApi {
         FastenURI fastenUri = FastenURI.create(KnowledgeBaseConnector.forge, packageName, packageVersion, rawPath);
         Set<VulnerableCallChain> chains = vulnerableCallChainRepository.getChainsForCallable(fastenUri);
         var result = VulnerableCallChainsToJSON(chains);
-        return new ResponseEntity<>(result, HttpStatus.OK);
+        return Responses.ok(result);
     }
 }

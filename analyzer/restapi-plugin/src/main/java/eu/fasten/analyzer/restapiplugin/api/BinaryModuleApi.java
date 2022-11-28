@@ -55,10 +55,10 @@ public class BinaryModuleApi {
                     packageName, packageVersion, offset, limit);
         } catch (PackageVersionNotFoundException e) {
             ingestion.ingestArtifactIfNecessary(packageName, packageVersion, artifactRepository, releaseDate);
-            return Responses.getLazyIngestionResponse();
+            return Responses.lazyIngestion();
         }
         result = result.replace("\\/", "/");
-        return new ResponseEntity<>(result, HttpStatus.OK);
+        return Responses.ok(result);
     }
 
     @GetMapping(value = "/{pkg}/{pkg_ver}/binary-modules/{binary}/metadata", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -73,13 +73,13 @@ public class BinaryModuleApi {
                     packageName, packageVersion, binary_module);
         } catch (PackageVersionNotFoundException e) {
             ingestion.ingestArtifactIfNecessary(packageName, packageVersion, artifactRepository, releaseDate);
-            return Responses.getLazyIngestionResponse();
+            return Responses.lazyIngestion();
         }
         if (result == null) {
-            return new ResponseEntity<>("Binary module not found", HttpStatus.NOT_FOUND);
+            return Responses.binaryModuleNotFound();
         }
         result = result.replace("\\/", "/");
-        return new ResponseEntity<>(result, HttpStatus.OK);
+        return Responses.ok(result);
     }
 
     @GetMapping(value = "/{pkg}/{pkg_ver}/binary-modules/{binary}/files", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -96,9 +96,9 @@ public class BinaryModuleApi {
                     packageName, packageVersion, binary_module, offset, limit);
         } catch (PackageVersionNotFoundException e) {
             ingestion.ingestArtifactIfNecessary(packageName, packageVersion, artifactRepository, releaseDate);
-            return Responses.getLazyIngestionResponse();
+            return Responses.lazyIngestion();
         }
         result = result.replace("\\/", "/");
-        return new ResponseEntity<>(result, HttpStatus.OK);
+        return Responses.ok(result);
     }
 }

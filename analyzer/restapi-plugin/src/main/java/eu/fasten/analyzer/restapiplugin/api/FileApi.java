@@ -18,7 +18,6 @@
 
 package eu.fasten.analyzer.restapiplugin.api;
 
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -55,9 +54,9 @@ public class FileApi {
                     packageName, packageVersion, offset, limit);
         } catch (PackageVersionNotFoundException e) {
             ingestion.ingestArtifactIfNecessary(packageName, packageVersion, artifactRepository, releaseDate);
-            return Responses.getLazyIngestionResponse();
+            return Responses.lazyIngestion();
         }
         result = result.replace("\\/", "/");
-        return new ResponseEntity<>(result, HttpStatus.OK);
+        return Responses.ok(result);
     }
 }

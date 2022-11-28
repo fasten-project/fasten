@@ -20,7 +20,6 @@ package eu.fasten.analyzer.restapiplugin.api;
 
 import eu.fasten.analyzer.restapiplugin.KnowledgeBaseConnector;
 import eu.fasten.core.data.Constants;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -38,7 +37,7 @@ public class PackageVersionApi {
         String url;
         var artifact = KnowledgeBaseConnector.kbDao.getArtifactName(packageVersionId);
         if (artifact == null) {
-            return new ResponseEntity<>("Package version not found", HttpStatus.NOT_FOUND);
+            return Responses.packageVersionNotFound();
         }
         var coordinate = artifact.split(Constants.mvnCoordinateSeparator);
         switch (KnowledgeBaseConnector.forge) {
@@ -65,10 +64,10 @@ public class PackageVersionApi {
                 break;
             }
             default:
-                return new ResponseEntity<>("Incorrect forge", HttpStatus.BAD_REQUEST);
+                return Responses.incorrectForge();
         }
         url = url.replace("\\/", "/");
-        return new ResponseEntity<>(url, HttpStatus.OK);
+        return Responses.ok(url);
     }
 }
 
