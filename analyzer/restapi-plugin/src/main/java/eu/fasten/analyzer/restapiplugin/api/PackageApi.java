@@ -18,7 +18,12 @@
 
 package eu.fasten.analyzer.restapiplugin.api;
 
-import org.springframework.http.HttpStatus;
+import eu.fasten.analyzer.restapiplugin.KnowledgeBaseConnector;
+import eu.fasten.analyzer.restapiplugin.LazyIngestionProvider;
+import eu.fasten.analyzer.restapiplugin.RestApplication;
+import eu.fasten.core.data.Constants;
+import eu.fasten.core.maven.data.PackageVersionNotFoundException;
+import eu.fasten.core.maven.utils.MavenUtilities;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -26,13 +31,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
-import eu.fasten.analyzer.restapiplugin.KnowledgeBaseConnector;
-import eu.fasten.analyzer.restapiplugin.LazyIngestionProvider;
-import eu.fasten.analyzer.restapiplugin.RestApplication;
-import eu.fasten.core.data.Constants;
-import eu.fasten.core.maven.data.PackageVersionNotFoundException;
-import eu.fasten.core.maven.utils.MavenUtilities;
 
 @RestController
 @RequestMapping("/packages")
@@ -89,11 +87,16 @@ public class PackageApi {
 
     @GetMapping(value = "/{pkg}/{pkg_ver}/metadata", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<String> getPackageMetadata(@PathVariable("pkg") String packageName,
-            @PathVariable("pkg_ver") String packageVersion) {
-        String result = KnowledgeBaseConnector.kbDao.getPackageMetadata(packageName, packageVersion);
-        if (result == null) {
-            return Responses.packageVersionNotFound();
+            @PathVariable("pkg_ver") String packageVersion,
+            @RequestParam(value = "artifactRepository", required = false) String artifactRepo,
+            @RequestParam(required = false) Long releaseDate) {
+
+        var hasNeededIngestion = ingestion.ingestArtifactIfNecessary(packageName, packageVersion,
+                artifactRepo, releaseDate);
+        if (hasNeededIngestion) {
+            return Responses.lazyIngestion();
         }
+        String result = KnowledgeBaseConnector.kbDao.getPackageMetadata(packageName, packageVersion);
         result = result.replace("\\/", "/");
         return Responses.ok(result);
     }
