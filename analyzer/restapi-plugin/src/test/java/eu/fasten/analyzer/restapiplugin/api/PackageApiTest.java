@@ -142,27 +142,28 @@ public class PackageApiTest {
     }
 
     @Test
-    void getPackageMetadataPositiveTest() {
+    void getPVMetadataPositiveTest() {
         var packageName = "group:artifact";
         var version = "version";
         var response = "package metadata";
         Mockito.when(kbDao.getPackageMetadata(packageName, version)).thenReturn(response);
         var expected = new ResponseEntity<>(response, HttpStatus.OK);
-        var result = sut.getPackageMetadata(packageName, version);
+        var result = sut.getPackageMetadata(packageName, version, null, null);
         assertEquals(expected, result);
 
         Mockito.verify(kbDao, Mockito.times(1)).getPackageMetadata(packageName, version);
     }
 
     @Test
-    void getPackageNegativeMetadataTest() {
+    void getPVMetadataNeededIngestion() {
         var packageName = "group:artifact";
         var version = "version";
-        Mockito.when(kbDao.getPackageMetadata(packageName, version)).thenReturn(null);
-        var result = sut.getPackageMetadata(packageName, version);
-        assertEquals(HttpStatus.NOT_FOUND, result.getStatusCode());
+        when(kbDao.getPackageVersion(packageName, version)).thenReturn(null);
+        when(ingestion.ingestArtifactIfNecessary(anyString(), anyString(), isNull(), isNull())).thenReturn(true);
+        var result = sut.getPackageMetadata(packageName, version, null, null);
+        assertEquals(HttpStatus.CREATED, result.getStatusCode());
 
-        Mockito.verify(kbDao, Mockito.times(1)).getPackageMetadata(packageName, version);
+        Mockito.verify(kbDao, Mockito.times(0)).getPackageMetadata(packageName, version);
     }
 
     @Test
