@@ -71,8 +71,9 @@ public class LazyIngestionProvider {
             case Constants.pypiForge: {
                 return ingestPypiArtifactIfNecessary(packageName, version);
             }
+            default:
+                return false;
         }
-        throw new IllegalStateException("Unknown forge: " + KnowledgeBaseConnector.forge);
     }
 
     /**
