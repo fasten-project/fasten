@@ -82,7 +82,7 @@ public class PackageApi {
             return Responses.ok(result);
         }
         catch (IllegalArgumentException e) {
-            return Responses.badRequest();
+            return Responses.packageVersionNotFound();
         }
      }
 
@@ -103,7 +103,7 @@ public class PackageApi {
             return Responses.ok(result);
         }
         catch (IllegalArgumentException e) {
-            return Responses.badRequest();
+            return Responses.packageVersionNotFound();
         }
     }
 
@@ -126,7 +126,7 @@ public class PackageApi {
             return Responses.ok(result);
         }
         catch (IllegalArgumentException e) {
-            return Responses.badRequest();
+            return Responses.packageVersionNotFound();
         }
     }
 
