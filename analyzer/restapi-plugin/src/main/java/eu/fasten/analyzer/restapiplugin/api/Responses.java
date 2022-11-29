@@ -45,4 +45,8 @@ public class Responses {
     public static ResponseEntity<String> dataNotFound() {
         return new ResponseEntity<>("Could not find the requested data", HttpStatus.NOT_FOUND);
     }
+
+    public static ResponseEntity<String> badRequest() {
+        return new ResponseEntity<>("Bad request", HttpStatus.BAD_REQUEST);
+    }
 }

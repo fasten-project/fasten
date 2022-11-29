@@ -23,7 +23,6 @@ import eu.fasten.analyzer.restapiplugin.LazyIngestionProvider;
 import eu.fasten.analyzer.restapiplugin.RestApplication;
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.metadatadb.MetadataDao;
-import eu.fasten.core.maven.data.PackageVersionNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
@@ -182,11 +181,12 @@ public class PackageApiTest {
     void getPackageCallgraphIngestionTest() throws IOException {
         var packageName = "junit:junit";
         var version = "4.12";
-        Mockito.when(kbDao.getPackageCallgraph(packageName, version, offset, limit)).thenThrow(new PackageVersionNotFoundException("Error"));
+        Mockito.when(kbDao.getPackageCallgraph(packageName, version, offset, limit)).thenReturn(null);
+        when(ingestion.ingestArtifactIfNecessary(anyString(), anyString(), isNull(), isNull())).thenReturn(true);
         var result = sut.getPackageCallgraph(packageName, version, offset, limit, null, null);
         assertEquals(HttpStatus.CREATED, result.getStatusCode());
 
-        Mockito.verify(kbDao).getPackageCallgraph(packageName, version, offset, limit);
+        Mockito.verify(kbDao, Mockito.times(0)).getPackageCallgraph(packageName, version, offset, limit);
     }
 
     @Test
