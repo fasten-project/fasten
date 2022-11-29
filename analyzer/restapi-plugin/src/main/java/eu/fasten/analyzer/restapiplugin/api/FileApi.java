@@ -56,7 +56,6 @@ public class FileApi {
             ingestion.ingestArtifactIfNecessary(packageName, packageVersion, artifactRepository, releaseDate);
             return Responses.lazyIngestion();
         }
-        result = result.replace("\\/", "/");
         return Responses.ok(result);
     }
 }

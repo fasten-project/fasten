@@ -46,7 +46,6 @@ public class PackageApi {
     ResponseEntity<String> getAllPackages(@RequestParam(required = false, defaultValue = "0") int offset,
             @RequestParam(required = false, defaultValue = RestApplication.DEFAULT_PAGE_SIZE) int limit) {
         var result = KnowledgeBaseConnector.kbDao.getAllPackages(offset, limit);
-        result = result.replace("\\/", "/");
         return Responses.ok(result);
     }
 
@@ -56,7 +55,6 @@ public class PackageApi {
         if (result == null) {
             return Responses.packageNotFound();
         }
-        result = result.replace("\\/", "/");
         return Responses.ok(result);
     }
 
@@ -65,7 +63,6 @@ public class PackageApi {
             @RequestParam(required = false, defaultValue = "0") int offset,
             @RequestParam(required = false, defaultValue = RestApplication.DEFAULT_PAGE_SIZE) int limit) {
         String result = KnowledgeBaseConnector.kbDao.getPackageVersions(packageName, offset, limit);
-        result = result.replace("\\/", "/");
         return Responses.ok(result);
     }
 
@@ -82,7 +79,6 @@ public class PackageApi {
         if (result == null) {
             return Responses.packageVersionNotFound();
         }
-        result = result.replace("\\/", "/");
         return Responses.ok(result);
     }
 
@@ -99,7 +95,6 @@ public class PackageApi {
         if (result == null) {
             return Responses.packageVersionNotFound();
         }
-        result = result.replace("\\/", "/");
         return Responses.ok(result);
     }
 
@@ -117,7 +112,6 @@ public class PackageApi {
             ingestion.ingestArtifactIfNecessary(packageName, packageVersion, artifactRepo, releaseDate);
             return Responses.lazyIngestion();
         }
-        result = result.replace("\\/", "/");
         return Responses.ok(result);
     }
 
@@ -129,7 +123,6 @@ public class PackageApi {
         if (result == null) {
             return Responses.packageVersionNotFound();
         }
-        result = result.replace("\\/", "/");
         return Responses.ok(result);
     }
 
