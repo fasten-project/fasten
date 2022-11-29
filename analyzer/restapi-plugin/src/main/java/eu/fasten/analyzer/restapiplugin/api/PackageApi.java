@@ -22,7 +22,6 @@ import eu.fasten.analyzer.restapiplugin.KnowledgeBaseConnector;
 import eu.fasten.analyzer.restapiplugin.LazyIngestionProvider;
 import eu.fasten.analyzer.restapiplugin.RestApplication;
 import eu.fasten.core.data.Constants;
-import eu.fasten.core.maven.data.PackageVersionNotFoundException;
 import eu.fasten.core.maven.utils.MavenUtilities;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -72,15 +71,20 @@ public class PackageApi {
             @RequestParam(value = "artifactRepository", required = false) String artifactRepo,
             @RequestParam(required = false) Long releaseDate) {
 
-        if(ingestion.ingestArtifactIfNecessary(packageName, packageVersion, artifactRepo, releaseDate)) {
-            return Responses.lazyIngestion();
+        try {
+            if(ingestion.ingestArtifactIfNecessary(packageName, packageVersion, artifactRepo, releaseDate)) {
+                return Responses.lazyIngestion();
+            }
+            var result = KnowledgeBaseConnector.kbDao.getPackageVersion(packageName, packageVersion);
+            if (result == null) {
+                return Responses.packageVersionNotFound();
+            }
+            return Responses.ok(result);
         }
-        var result = KnowledgeBaseConnector.kbDao.getPackageVersion(packageName, packageVersion);
-        if (result == null) {
-            return Responses.packageVersionNotFound();
+        catch (IllegalArgumentException e) {
+            return Responses.badRequest();
         }
-        return Responses.ok(result);
-    }
+     }
 
     @GetMapping(value = "/{pkg}/{pkg_ver}/metadata", produces = MediaType.APPLICATION_JSON_VALUE)
     ResponseEntity<String> getPackageMetadata(@PathVariable("pkg") String packageName,
@@ -88,14 +92,19 @@ public class PackageApi {
             @RequestParam(value = "artifactRepository", required = false) String artifactRepo,
             @RequestParam(required = false) Long releaseDate) {
 
-        if(ingestion.ingestArtifactIfNecessary(packageName, packageVersion, artifactRepo, releaseDate)) {
-            return Responses.lazyIngestion();
+        try {
+            if(ingestion.ingestArtifactIfNecessary(packageName, packageVersion, artifactRepo, releaseDate)) {
+                return Responses.lazyIngestion();
+            }
+            var result = KnowledgeBaseConnector.kbDao.getPackageMetadata(packageName, packageVersion);
+            if (result == null) {
+                return Responses.packageVersionNotFound();
+            }
+            return Responses.ok(result);
         }
-        var result = KnowledgeBaseConnector.kbDao.getPackageMetadata(packageName, packageVersion);
-        if (result == null) {
-            return Responses.packageVersionNotFound();
+        catch (IllegalArgumentException e) {
+            return Responses.badRequest();
         }
-        return Responses.ok(result);
     }
 
     @GetMapping(value = "/{pkg}/{pkg_ver}/callgraph", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -105,14 +114,20 @@ public class PackageApi {
             @RequestParam(required = false, defaultValue = RestApplication.DEFAULT_PAGE_SIZE) int limit,
             @RequestParam(value = "artifactRepository", required = false) String artifactRepo,
             @RequestParam(required = false) Long releaseDate) {
-        String result;
+
         try {
-            result = KnowledgeBaseConnector.kbDao.getPackageCallgraph(packageName, packageVersion, offset, limit);
-        } catch (PackageVersionNotFoundException e) {
-            ingestion.ingestArtifactIfNecessary(packageName, packageVersion, artifactRepo, releaseDate);
-            return Responses.lazyIngestion();
+            if(ingestion.ingestArtifactIfNecessary(packageName, packageVersion, artifactRepo, releaseDate)) {
+                return Responses.lazyIngestion();
+            }
+            var result = KnowledgeBaseConnector.kbDao.getPackageCallgraph(packageName, packageVersion, offset, limit);
+            if (result == null) {
+                return Responses.packageVersionNotFound();
+            }
+            return Responses.ok(result);
         }
-        return Responses.ok(result);
+        catch (IllegalArgumentException e) {
+            return Responses.badRequest();
+        }
     }
 
     @GetMapping(value = "/search", produces = MediaType.APPLICATION_JSON_VALUE)
