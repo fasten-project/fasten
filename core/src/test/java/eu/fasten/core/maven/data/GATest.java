@@ -17,6 +17,7 @@ package eu.fasten.core.maven.data;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import org.junit.jupiter.api.Test;
 
@@ -56,5 +57,15 @@ public class GATest {
     @Test
     public void hasToString() {
         assertEquals("g:a", new GA("g", "a").toString());
+    }
+
+    @Test
+    public void fromCorrectString() {
+        assertEquals("g:a", GA.fromString("g:a").toString());
+    }
+
+    @Test
+    public void fromBadString() {
+        assertThrows(IllegalArgumentException.class, () -> GA.fromString("ga"));
     }
 }
