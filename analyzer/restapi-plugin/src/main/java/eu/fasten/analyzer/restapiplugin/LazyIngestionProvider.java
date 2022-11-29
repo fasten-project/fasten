@@ -29,6 +29,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Objects;
 
+import eu.fasten.core.maven.data.GA;
 import org.json.JSONObject;
 
 import eu.fasten.core.data.Constants;
@@ -84,15 +85,13 @@ public class LazyIngestionProvider {
         if(hasArtifactBeenIngested(packageName, version)) {
                 return false;
         }
-        
-        var parts = packageName.split(Constants.mvnCoordinateSeparator);
-        var groupId = parts[0];
-        var artifactId = parts[1];
+
+        var ga = GA.fromString(packageName);
         if(artifactRepo == null || artifactRepo.isEmpty()) {
             artifactRepo = MavenUtilities.MAVEN_CENTRAL_REPO;
         }
 
-        if (!MavenUtilities.mavenArtifactExists(groupId, artifactId, version, artifactRepo)) {
+        if (!MavenUtilities.mavenArtifactExists(ga.groupId, ga.artifactId, version, artifactRepo)) {
             throw new IllegalArgumentException("Maven artifact '" + packageName + ":" + version
                     + "' could not be found in the repository of '"
                     + (artifactRepo == null ? MavenUtilities.MAVEN_CENTRAL_REPO : artifactRepo) + "'."
@@ -100,8 +99,8 @@ public class LazyIngestionProvider {
         }
 
         var jsonRecord = new JSONObject();
-        jsonRecord.put("groupId", groupId);
-        jsonRecord.put("artifactId", artifactId);
+        jsonRecord.put("groupId", ga.groupId);
+        jsonRecord.put("artifactId", ga.artifactId);
         jsonRecord.put("version", version);
         jsonRecord.put("artifactRepository", artifactRepo);
         if (date != null && date > 0) {
@@ -154,12 +153,11 @@ public class LazyIngestionProvider {
         }
     }
 
-    public void ingestMvnArtifactWithDependencies(String packageName, String version) throws IllegalArgumentException, IOException {
-        var groupId = packageName.split(Constants.mvnCoordinateSeparator)[0];
-        var artifactId = packageName.split(Constants.mvnCoordinateSeparator)[0];
+    public void ingestMvnArtifactWithDependencies(String packageName, String version) throws IllegalArgumentException {
+        var ga = GA.fromString(packageName);
         ingestMvnArtifactIfNecessary(packageName, version, null, null);
         var mavenResolver = new NativeMavenResolver();
-        var dependencies = mavenResolver.resolveDependencies(groupId + ":" + artifactId + ":" + version);
+        var dependencies = mavenResolver.resolveDependencies(ga.groupId + ":" + ga.artifactId + ":" + version);
         ingestMvnArtifactIfNecessary(packageName, version, null, null);
         dependencies.forEach(d -> {
             ingestMvnArtifactIfNecessary(d.getGroupId() + Constants.mvnCoordinateSeparator + d.getArtifactId(), d.version.toString(), null, null);
@@ -188,9 +186,8 @@ public class LazyIngestionProvider {
                 .filter(a -> !alreadyIngestedArtifacts.contains(toMvnKey(a.packageName, a.version)))
                 .collect(toList());
         artifacts.forEach(a -> {
-            var groupId = a.packageName.split(":")[0];
-            var artifactId = a.packageName.split(":")[1];
-            if (!MavenUtilities.mavenArtifactExists(groupId, artifactId, a.version, a.artifactRepo)) {
+            var ga = GA.fromString(a.packageName);
+            if (!MavenUtilities.mavenArtifactExists(ga.groupId, ga.artifactId, a.version, a.artifactRepo)) {
                 throw new IllegalArgumentException("Maven artifact '" + a.packageName + ":" + a.version
                         + "' could not be found in the repository of '"
                         + (a.artifactRepo == null ? MavenUtilities.MAVEN_CENTRAL_REPO : a.artifactRepo) + "'"
@@ -204,8 +201,9 @@ public class LazyIngestionProvider {
         for (var artifact : artifacts) {
             if (KnowledgeBaseConnector.kafkaProducer != null && KnowledgeBaseConnector.ingestTopic != null) {
                 var jsonRecord = new JSONObject();
-                jsonRecord.put("groupId", artifact.packageName.split(Constants.mvnCoordinateSeparator)[0]);
-                jsonRecord.put("artifactId", artifact.packageName.split(Constants.mvnCoordinateSeparator)[1]);
+                var ga = GA.fromString(artifact.packageName);
+                jsonRecord.put("groupId", ga.groupId);
+                jsonRecord.put("artifactId", ga.artifactId);
                 jsonRecord.put("version", artifact.version);
                 if (artifact.artifactRepo != null && !artifact.artifactRepo.isEmpty()) {
                     jsonRecord.put("artifactRepository", artifact.artifactRepo);

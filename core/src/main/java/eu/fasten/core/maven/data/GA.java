@@ -15,6 +15,8 @@
  */
 package eu.fasten.core.maven.data;
 
+import eu.fasten.core.data.Constants;
+
 public class GA {
 
     public final String groupId;
@@ -68,6 +70,16 @@ public class GA {
 
     @Override
     public String toString() {
-        return new StringBuilder().append(groupId).append(':').append(artifactId).toString();
+        return groupId + Constants.mvnCoordinateSeparator + artifactId;
+    }
+
+    public static GA fromString(String product) throws IllegalArgumentException {
+        var parts = product.split(Constants.mvnCoordinateSeparator);
+        if (parts.length < 2) {
+            throw new IllegalArgumentException(product + " is not a valid Maven groupId:artifactId string");
+        }
+        else {
+            return new GA(parts[0], parts[1]);
+        }
     }
 }
