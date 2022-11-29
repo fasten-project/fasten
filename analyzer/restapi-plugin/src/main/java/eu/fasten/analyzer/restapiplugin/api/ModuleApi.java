@@ -58,7 +58,6 @@ public class ModuleApi {
             ingestion.ingestArtifactIfNecessary(packageName, packageVersion, artifactRepository, releaseDate);
             return Responses.lazyIngestion();
         }
-        result = result.replace("\\/", "/");
         return Responses.ok(result);
     }
 
@@ -79,7 +78,6 @@ public class ModuleApi {
         if (result == null) {
             return Responses.moduleNotFound();
         }
-        result = result.replace("\\/", "/");
         return Responses.ok(result);
     }
 
@@ -103,7 +101,6 @@ public class ModuleApi {
         if (result == null) {
             return Responses.moduleNotFound();
         }
-        result = result.replace("\\/", "/");
         return Responses.ok(result);
     }
 
@@ -127,7 +124,6 @@ public class ModuleApi {
         if (result == null) {
             return Responses.moduleNotFound();
         }
-        result = result.replace("\\/", "/");
         return Responses.ok(result);
     }
 }

@@ -137,8 +137,7 @@ public class ResolutionApi {
                     json.put("url", url);
                 }).forEach(jsonArray::put);
                 result = jsonArray.toString();
-                result = result.replace("\\/", "/");
-                return new ResponseEntity<>(result, HttpStatus.OK);
+                return Responses.ok(result);
             }
             case Constants.pypiForge:
                 if (!KnowledgeBaseConnector.kbDao.assertPackageExistence(packageName, packageVersion)) {
@@ -155,7 +154,6 @@ public class ResolutionApi {
                 if (result == null || result.contains("\"error\"")) {
                     return Responses.dataNotFound();
                 }
-                result = result.replaceAll("\\s+","");
                 return Responses.ok(result);
             default: {
                 query = KnowledgeBaseConnector.dependencyResolverAddress+"/dependencies/"+packageName+"/"+packageVersion;
@@ -163,7 +161,6 @@ public class ResolutionApi {
                 if (result == null || result.contains("\"error\"")) {
                     return Responses.dataNotFound();
                 }
-                result = result.replaceAll("\\s+","");
                 return Responses.ok(result);
             }
         }
@@ -244,7 +241,6 @@ public class ResolutionApi {
                 return Responses.incorrectForge();
         }
         var result = jsonArray.toString();
-        result = result.replace("\\/", "/");
         return Responses.ok(result);
     }
 
@@ -262,8 +258,7 @@ public class ResolutionApi {
                     return json;
                 }).forEach(jsonArray::put);
                 var result = jsonArray.toString();
-                result = result.replace("\\/", "/");
-                return new ResponseEntity<>(result, HttpStatus.OK);
+                return Responses.ok(result);
             }
             default: {
                 ObjectLinkedOpenHashSet deps = new ObjectLinkedOpenHashSet<String>();
@@ -326,7 +321,6 @@ public class ResolutionApi {
         json.put("nodes", nodesJson);
         json.put("edges", edgesJson);
         var result = json.toString();
-        result = result.replace("\\/", "/");
-        return new ResponseEntity<>(result, HttpStatus.OK);
+        return Responses.ok(result);
     }
 }

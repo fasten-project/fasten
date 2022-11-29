@@ -66,7 +66,6 @@ public class PackageVersionApi {
             default:
                 return Responses.incorrectForge();
         }
-        url = url.replace("\\/", "/");
         return Responses.ok(url);
     }
 }

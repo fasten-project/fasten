@@ -57,7 +57,6 @@ public class BinaryModuleApi {
             ingestion.ingestArtifactIfNecessary(packageName, packageVersion, artifactRepository, releaseDate);
             return Responses.lazyIngestion();
         }
-        result = result.replace("\\/", "/");
         return Responses.ok(result);
     }
 
@@ -78,7 +77,6 @@ public class BinaryModuleApi {
         if (result == null) {
             return Responses.binaryModuleNotFound();
         }
-        result = result.replace("\\/", "/");
         return Responses.ok(result);
     }
 
@@ -98,7 +96,6 @@ public class BinaryModuleApi {
             ingestion.ingestArtifactIfNecessary(packageName, packageVersion, artifactRepository, releaseDate);
             return Responses.lazyIngestion();
         }
-        result = result.replace("\\/", "/");
         return Responses.ok(result);
     }
 }

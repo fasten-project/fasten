@@ -57,7 +57,6 @@ public class StitchingApi {
         var json = new JSONObject();
         fastenUris.forEach((key, value) -> json.put(String.valueOf(key), value));
         var result = json.toString();
-        result = result.replace("\\/", "/");
         return Responses.ok(result);
     }
 
@@ -122,7 +121,6 @@ public class StitchingApi {
             json.put(entry.getKey(), neededMetadata);
         }
         var result = json.toString();
-        result = result.replace("\\/", "/");
         LOG.info("Done: {}ms. Sending response", System.currentTimeMillis() - start);
         LOG.info("In total everything took {}ms", System.currentTimeMillis() - total);
         return Responses.ok(result);

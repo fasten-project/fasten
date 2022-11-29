@@ -59,7 +59,6 @@ public class CallableApi {
             ingestion.ingestArtifactIfNecessary(packageName, packageVersion, artifactRepository, releaseDate);
             return Responses.lazyIngestion();
         }
-        result = result.replace("\\/", "/");
         return Responses.ok(result);
     }
 
@@ -75,7 +74,6 @@ public class CallableApi {
             ingestion.ingestArtifactIfNecessary(packageName, packageVersion, artifactRepository, releaseDate);
             return Responses.lazyIngestion();
         }
-        result = result.replace("\\/", "/");
         return Responses.ok(result);
     }
 
@@ -88,7 +86,6 @@ public class CallableApi {
             json.put(String.valueOf(id), callablesMap.get(id));
         }
         var result = json.toString();
-        result = result.replace("\\/", "/");
         return Responses.ok(result);
     }
 }

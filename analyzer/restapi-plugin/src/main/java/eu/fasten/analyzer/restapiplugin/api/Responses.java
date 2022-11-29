@@ -6,6 +6,7 @@ import org.springframework.http.ResponseEntity;
 public class Responses {
 
     public static ResponseEntity<String> ok(String body) {
+        body = body.replace("\\/", "/");
         return new ResponseEntity<>(body, HttpStatus.OK);
     }
 
