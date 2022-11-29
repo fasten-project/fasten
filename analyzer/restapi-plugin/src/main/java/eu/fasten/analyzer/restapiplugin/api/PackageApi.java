@@ -75,12 +75,13 @@ public class PackageApi {
             @RequestParam(value = "artifactRepository", required = false) String artifactRepo,
             @RequestParam(required = false) Long releaseDate) {
 
-        var hasNeededIngestion = ingestion.ingestArtifactIfNecessary(packageName, packageVersion,
-                artifactRepo, releaseDate);
-        if (hasNeededIngestion) {
+        if(ingestion.ingestArtifactIfNecessary(packageName, packageVersion, artifactRepo, releaseDate)) {
             return Responses.lazyIngestion();
         }
         var result = KnowledgeBaseConnector.kbDao.getPackageVersion(packageName, packageVersion);
+        if (result == null) {
+            return Responses.packageVersionNotFound();
+        }
         result = result.replace("\\/", "/");
         return Responses.ok(result);
     }
@@ -91,12 +92,13 @@ public class PackageApi {
             @RequestParam(value = "artifactRepository", required = false) String artifactRepo,
             @RequestParam(required = false) Long releaseDate) {
 
-        var hasNeededIngestion = ingestion.ingestArtifactIfNecessary(packageName, packageVersion,
-                artifactRepo, releaseDate);
-        if (hasNeededIngestion) {
+        if(ingestion.ingestArtifactIfNecessary(packageName, packageVersion, artifactRepo, releaseDate)) {
             return Responses.lazyIngestion();
         }
-        String result = KnowledgeBaseConnector.kbDao.getPackageMetadata(packageName, packageVersion);
+        var result = KnowledgeBaseConnector.kbDao.getPackageMetadata(packageName, packageVersion);
+        if (result == null) {
+            return Responses.packageVersionNotFound();
+        }
         result = result.replace("\\/", "/");
         return Responses.ok(result);
     }
