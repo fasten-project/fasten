@@ -126,10 +126,19 @@ public class LazyIngestionProvider {
                     + " could not be found. Make sure the PyPI coordinate is correct");
         }
         if (!hasArtifactBeenIngested(packageName, version)) {
-            JSONObject json = new JSONObject(result);
+
+            //Check if the specific package version exists on PyPI
+            JsonObject releases = JsonParser.parseString(result).getAsJsonObject()
+                                    .get("releases").getAsJsonObject();
+            if (!releases.has(version)) {
+                throw new IllegalArgumentException("PyPI package version " + packageName + ":" + version
+                + " could not be found. Make sure the PyPI coordinate is correct");
+            }
+
+            var projectInfo = new JSONObject(result);
             var jsonRecord = new JSONObject();
             jsonRecord.put("title", packageName + " " + version);
-            jsonRecord.put("project", json);
+            jsonRecord.put("project", projectInfo);
             jsonRecord.put("ingested", true);
             KnowledgeBaseConnector.kbDao.insertIngestedArtifact(toPypiKey(packageName, version), "0.1.1-SNAPSHOT");
             if (KnowledgeBaseConnector.kafkaProducer != null && KnowledgeBaseConnector.ingestTopic != null) {
