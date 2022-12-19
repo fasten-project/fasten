@@ -117,12 +117,12 @@ public class LazyIngestionProvider {
      * @return whether it was necessary to ingest artifact
      */
     public boolean ingestPypiArtifactIfNecessary(String packageName, String version) {
-        var query = "https://pypi.org/pypi/" + packageName + "/" + version +"/json";
+        var query = "https://pypi.org/pypi/" + packageName + "/json";
         String result;
         try {
             result = MavenUtilities.sendGetRequest(query);
         } catch (IllegalStateException ex) {
-            throw new IllegalArgumentException("PyPI package " + packageName + ":" + version
+            throw new IllegalArgumentException("PyPI package " + packageName
                     + " could not be found. Make sure the PyPI coordinate is correct");
         }
         if (!hasArtifactBeenIngested(packageName, version)) {
