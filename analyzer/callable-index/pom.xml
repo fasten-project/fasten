@@ -6,7 +6,7 @@
     <parent>
         <artifactId>analyzer</artifactId>
         <groupId>eu.fasten</groupId>
-        <version>0.0.17-SNAPSHOT</version>
+        <version>0.0.18-SNAPSHOT</version>
     </parent>
 
     <groupId>eu.fasten.analyzer</groupId>
@@ -19,12 +19,12 @@
         <dependency>
             <groupId>eu.fasten</groupId>
             <artifactId>core</artifactId>
-            <version>0.0.17-SNAPSHOT</version>
+            <version>0.0.18-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>eu.fasten</groupId>
             <artifactId>server</artifactId>
-            <version>0.0.17-SNAPSHOT</version>
+            <version>0.0.18-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>org.json</groupId>
