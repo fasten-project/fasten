@@ -18,6 +18,8 @@
 
 package eu.fasten.core.data;
 
+import com.google.common.net.UrlEscapers;
+
 import java.net.URI;
 
 /** A class representing a Fasten URI for the Python language; it has to be considered experimental
@@ -29,7 +31,7 @@ public class FastenPythonURI extends FastenURI {
     protected final boolean isFunction;
 
     public FastenPythonURI(final String s) {
-        this(URI.create(s));
+        this(URI.create(UrlEscapers.urlFragmentEscaper().escape(s)));
     }
 
     public FastenPythonURI(final URI uri) {
@@ -88,7 +90,7 @@ public class FastenPythonURI extends FastenURI {
      * @return a {@link FastenPythonURI}.
      */
     public static FastenPythonURI create(final String s) {
-        return new FastenPythonURI(URI.create(s));
+        return new FastenPythonURI(s);
     }
 
     /**
