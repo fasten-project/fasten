@@ -27,13 +27,20 @@ import org.json.JSONObject;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
+
+import java.io.IOException;
+import java.nio.file.Files;
 import java.sql.Timestamp;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.HashMap;
 import java.util.Optional;
-import static org.junit.jupiter.api.Assertions.*;
+
+import static eu.fasten.core.utils.TestUtils.getTestResource;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class MetadataDatabasePythonPluginTest {
 
@@ -170,5 +177,14 @@ public class MetadataDatabasePythonPluginTest {
                 + " and populates metadata database with consumed data"
                 + " and writes graph of GIDs of callgraph to another Kafka topic.";
         assertEquals(description, metadataDBExtension.description());
+    }
+
+    @Test
+    public void lambaTest() throws IOException {
+        var json = Files.readString(getTestResource("call-graph-with-lambda.json").toPath());
+        var cg = new PartialPythonCallGraph(new JSONObject(json));
+        var methods = cg.mapOfAllMethods();
+        var lambda = methods.get(1);
+        assertEquals(lambda.getUri(), "/main/test.%3Clambda1%3E()");
     }
 }

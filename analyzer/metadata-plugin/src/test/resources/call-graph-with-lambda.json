@@ -1,0 +1,39 @@
+{
+  "product": "Test",
+  "forge": "PyPI",
+  "generator": "PyCG",
+  "depset": [],
+  "version": "TEST",
+  "timestamp": "0",
+  "modules": {
+    "internal": {
+      "/main": {
+        "sourceFile": "main.py",
+        "namespaces": {
+          "1": {
+            "namespace": "/main/test.<lambda1>()",
+            "metadata": {
+              "first": 1,
+              "last": 2
+            }
+          }
+        }
+      }
+    },
+    "external": {
+    }
+  },
+  "graph": {
+    "internalCalls": [],
+    "externalCalls": [],
+    "resolvedCalls": []
+  },
+  "nodes": 1,
+  "metadata": {
+    "loc": 1,
+    "time_elapsed": 1,
+    "max_rss": 1,
+    "num_files": 1
+  },
+  "sourcePath": "TEST"
+}
