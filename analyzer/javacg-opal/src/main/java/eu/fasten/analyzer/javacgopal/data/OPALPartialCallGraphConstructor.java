@@ -18,18 +18,16 @@
 
 package eu.fasten.analyzer.javacgopal.data;
 
+import com.google.common.collect.Lists;
+import eu.fasten.analyzer.javacgopal.data.analysis.OPALClassHierarchy;
+import eu.fasten.analyzer.javacgopal.data.analysis.OPALMethod;
+import eu.fasten.analyzer.javacgopal.data.analysis.OPALType;
+import eu.fasten.core.data.Constants;
+import eu.fasten.core.data.JavaGraph;
 import eu.fasten.core.data.PartialJavaCallGraph;
-import java.io.File;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.Set;
-import java.util.concurrent.atomic.AtomicInteger;
-
+import eu.fasten.core.data.opal.MavenArtifactDownloader;
+import eu.fasten.core.data.opal.MavenCoordinate;
+import eu.fasten.core.data.opal.exceptions.OPALException;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.text.StringEscapeUtils;
 import org.opalj.br.Annotation;
@@ -45,19 +43,19 @@ import org.opalj.tac.TACMethodParameter;
 import org.opalj.value.ValueInformation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.google.common.collect.Lists;
-
-import eu.fasten.analyzer.javacgopal.data.analysis.OPALClassHierarchy;
-import eu.fasten.analyzer.javacgopal.data.analysis.OPALMethod;
-import eu.fasten.analyzer.javacgopal.data.analysis.OPALType;
-import eu.fasten.core.data.Constants;
-import eu.fasten.core.data.JavaGraph;
-import eu.fasten.core.data.opal.MavenArtifactDownloader;
-import eu.fasten.core.data.opal.MavenCoordinate;
-import eu.fasten.core.data.opal.exceptions.OPALException;
 import scala.Function1;
 import scala.collection.JavaConverters;
+
+import java.io.File;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.NoSuchElementException;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 /**
  * Call graphs that are not still fully resolved. i.e. isolated call graphs which within-artifact
@@ -68,6 +66,7 @@ public class OPALPartialCallGraphConstructor {
     private static final Logger logger = LoggerFactory.getLogger(OPALPartialCallGraph.class);
 	
     private OPALPartialCallGraph pcg;
+    private static boolean isTempJarFileUsed = false;
 
     /**
      * Given a file, algorithm and main class (in case of application package)
@@ -95,29 +94,52 @@ public class OPALPartialCallGraphConstructor {
             }
             throw e;
         }
-        
+
         return pcg;
+    }
+
+    /**
+     * Downloads the Maven artifact if it does not exist.
+     *
+     * @param artifactFile If `null` provided, the Jar file would be downloaded to a temp file.
+     * @return
+     */
+    private static File downloadMavenArtifactIfNeeded(final MavenCoordinate coordinate, final String artifactRepo, File artifactFile) {
+        // Download the Jar file if the given file does not exist.
+        if (artifactFile != null) {
+            if (!artifactFile.exists()) {
+                logger.warn("Couldn't find the local JAR on filesystem for " + coordinate.toString());
+                logger.info("About to download the artifact file for {} from {}", coordinate, artifactRepo);
+                artifactFile = new MavenArtifactDownloader(coordinate, artifactFile).downloadArtifact(artifactRepo);
+            }
+        } else {
+            // Downloads to a temporary file
+            logger.info("Downloading the artifact to a temporary file");
+            artifactFile = new MavenArtifactDownloader(coordinate).downloadArtifact(artifactRepo);
+            isTempJarFileUsed = true;
+        }
+        return artifactFile;
     }
 
     /**
      * Creates RevisionCallGraph using OPAL call graph generator for a given maven
      * coordinate. It also sets the forge to "mvn".
      *
-     * @param coordinate maven coordinate of the revision to be processed
-     * @param timestamp  timestamp of the revision release
+     * @param coordinate   maven coordinate of the revision to be processed
+     * @param timestamp    timestamp of the revision release
+     * @param artifactRepo the repository from which the artifact/Jar should be downloaded from
+     * @param artifactFile The path to an existing Jar file.
      * @return RevisionCallGraph of the given coordinate.
      */
     public static PartialJavaCallGraph createPartialJavaCG(
-            final MavenCoordinate coordinate, 
-            CGAlgorithm algorithm, final long timestamp, final String artifactRepo, CallPreservationStrategy callSiteOnly) {
+            final MavenCoordinate coordinate,
+            CGAlgorithm algorithm, final long timestamp, final String artifactRepo, File artifactFile,
+            CallPreservationStrategy callSiteOnly) {
 
-        File file = null;
+        artifactFile = downloadMavenArtifactIfNeeded(coordinate, artifactRepo, artifactFile);
         try {
-            logger.info("About to download {} from {}", coordinate, artifactRepo);
-            
-            file = new MavenArtifactDownloader(coordinate).downloadArtifact(artifactRepo);
-            final var opalCG = new OPALCallGraphConstructor().construct(file, algorithm);
 
+            final var opalCG = new OPALCallGraphConstructor().construct(artifactFile, algorithm);
             final var partialCallGraph = new OPALPartialCallGraphConstructor().construct(opalCG, callSiteOnly);
 
             return new PartialJavaCallGraph(Constants.mvnForge, coordinate.getProduct(),
@@ -126,9 +148,9 @@ public class OPALPartialCallGraphConstructor {
                     partialCallGraph.classHierarchy,
                     partialCallGraph.graph);
         } finally {
-            if (file != null) {
-            	// TODO use apache commons FileUtils instead
-                file.delete();
+            if (isTempJarFileUsed) {
+                // TODO use apache commons FileUtils instead
+                artifactFile.delete();
             }
         }
     }

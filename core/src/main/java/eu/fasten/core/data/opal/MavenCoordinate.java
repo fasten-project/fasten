@@ -15,16 +15,18 @@
  */
 package eu.fasten.core.data.opal;
 
-import static eu.fasten.core.maven.utils.MavenUtilities.MAVEN_CENTRAL_REPO;
-
-import java.util.LinkedList;
-import java.util.List;
-
+import eu.fasten.core.data.Constants;
+import eu.fasten.core.maven.utils.MavenUtilities;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import eu.fasten.core.data.Constants;
-import eu.fasten.core.maven.utils.MavenUtilities;
+import java.io.File;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.LinkedList;
+import java.util.List;
+
+import static eu.fasten.core.maven.utils.MavenUtilities.MAVEN_CENTRAL_REPO;
 
 /**
  * Maven coordinate as g:a:v e.g. "com.google.guava:guava:jar:28.1-jre".
@@ -156,9 +158,14 @@ public class MavenCoordinate {
         var repo = mavenRepos.get(0);
         return this.toURL(repo) + "/" + artifactID + "-" + versionConstraint + "." + packaging;
     }
-    
+
     @Override
     public String toString() {
-    	return getCoordinate();
+        return getCoordinate();
+    }
+
+    public Path toPath() {
+        return Paths.get(groupID.replace('.', File.pathSeparatorChar), artifactID, versionConstraint,
+                artifactID + "-" + versionConstraint + "." + packaging);
     }
 }

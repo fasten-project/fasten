@@ -18,38 +18,55 @@
 
 package eu.fasten.analyzer.javacgopal;
 
+import eu.fasten.core.data.PartialJavaCallGraph;
+import eu.fasten.core.data.opal.exceptions.EmptyCallGraphException;
+import eu.fasten.core.data.opal.exceptions.MissingArtifactException;
+import org.apache.commons.io.FileUtils;
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Test;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+
 import static eu.fasten.core.plugins.KafkaPlugin.ProcessingLane.NORMAL;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-
-import org.json.JSONException;
-import org.json.JSONObject;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.Test;
-
-import eu.fasten.core.data.PartialJavaCallGraph;
-import eu.fasten.core.data.opal.exceptions.EmptyCallGraphException;
-import eu.fasten.core.data.opal.exceptions.MissingArtifactException;
-
 class OPALPluginTest {
 
     private OPALPlugin.OPAL plugin;
+    private static Path baseDirPath;
+
+    @BeforeAll
+    public static void setUpBaseDir() throws IOException {
+        baseDirPath = Files.createTempDirectory("tmp-opal").getFileName().toAbsolutePath();
+    }
+
+    @AfterAll
+    public static void CleanUpBaseDir() throws IOException {
+        FileUtils.deleteDirectory(baseDirPath.toFile());
+    }
 
     @BeforeEach
     public void setUp() {
         plugin = new OPALPlugin.OPAL();
+        plugin.setBaseDir(String.valueOf(baseDirPath));
     }
 
     @Test
     public void testConsumerTopicNotSetByDefault() {
-        assertThrows(RuntimeException.class, ()->{
+        assertThrows(RuntimeException.class, () -> {
             plugin.consumeTopic();
         });
     }

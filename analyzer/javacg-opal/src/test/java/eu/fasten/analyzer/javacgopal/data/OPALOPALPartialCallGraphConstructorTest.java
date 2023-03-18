@@ -18,16 +18,15 @@
 
 package eu.fasten.analyzer.javacgopal.data;
 
-import static eu.fasten.analyzer.javacgopal.data.CGAlgorithm.CHA;
-import static eu.fasten.analyzer.javacgopal.data.CallPreservationStrategy.ONLY_STATIC_CALLSITES;
-import static eu.fasten.core.utils.TestUtils.getTestResource;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import java.io.File;
-import java.util.HashMap;
-
+import eu.fasten.core.data.Constants;
+import eu.fasten.core.data.FastenJavaURI;
+import eu.fasten.core.data.FastenURI;
+import eu.fasten.core.data.JavaScope;
+import eu.fasten.core.data.opal.MavenCoordinate;
+import eu.fasten.core.data.opal.exceptions.MissingArtifactException;
+import eu.fasten.core.data.opal.exceptions.OPALException;
+import eu.fasten.core.maven.utils.MavenUtilities;
+import it.unimi.dsi.fastutil.ints.IntIntPair;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -49,19 +48,19 @@ import org.opalj.collection.immutable.RefArray;
 import org.opalj.collection.immutable.UIDSet;
 import org.opalj.collection.immutable.UIDSet1;
 import org.opalj.tac.cg.CallGraph;
-
-import eu.fasten.core.data.Constants;
-import eu.fasten.core.data.FastenJavaURI;
-import eu.fasten.core.data.FastenURI;
-import eu.fasten.core.data.JavaScope;
-import eu.fasten.core.data.opal.MavenCoordinate;
-import eu.fasten.core.data.opal.exceptions.MissingArtifactException;
-import eu.fasten.core.data.opal.exceptions.OPALException;
-import eu.fasten.core.maven.utils.MavenUtilities;
-import it.unimi.dsi.fastutil.ints.IntIntPair;
 import scala.Option;
 import scala.collection.Iterator;
 import scala.collection.mutable.HashSet;
+
+import java.io.File;
+import java.util.HashMap;
+
+import static eu.fasten.analyzer.javacgopal.data.CGAlgorithm.CHA;
+import static eu.fasten.analyzer.javacgopal.data.CallPreservationStrategy.ONLY_STATIC_CALLSITES;
+import static eu.fasten.core.utils.TestUtils.getTestResource;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class OPALOPALPartialCallGraphConstructorTest {
 
@@ -162,8 +161,8 @@ class OPALOPALPartialCallGraphConstructorTest {
 	void createExtendedRevisionJavaCallGraph() throws MissingArtifactException, OPALException {
 		var coordinate = new MavenCoordinate("org.slf4j", "slf4j-api", "1.7.29", "jar");
 		var cg = OPALPartialCallGraphConstructor
-			.createPartialJavaCG(coordinate, CGAlgorithm.CHA, 1574072773,
-				MavenUtilities.MAVEN_CENTRAL_REPO, CallPreservationStrategy.ONLY_STATIC_CALLSITES);
+				.createPartialJavaCG(coordinate, CGAlgorithm.CHA, 1574072773,
+						MavenUtilities.MAVEN_CENTRAL_REPO, null, CallPreservationStrategy.ONLY_STATIC_CALLSITES);
 		assertNotNull(cg);
 		Assertions.assertEquals(Constants.mvnForge, cg.forge);
 		Assertions.assertEquals("1.7.29", cg.version);

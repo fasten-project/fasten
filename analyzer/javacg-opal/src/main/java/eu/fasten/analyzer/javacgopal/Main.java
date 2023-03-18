@@ -18,32 +18,33 @@
 
 package eu.fasten.analyzer.javacgopal;
 
-import static eu.fasten.analyzer.javacgopal.data.CallPreservationStrategy.INCLUDING_ALL_SUBTYPES;
-
 import eu.fasten.analyzer.javacgopal.data.CGAlgorithm;
 import eu.fasten.analyzer.javacgopal.data.OPALCallGraphConstructor;
-import eu.fasten.core.data.PartialJavaCallGraph;
-import eu.fasten.core.data.opal.MavenCoordinate;
 import eu.fasten.analyzer.javacgopal.data.OPALPartialCallGraphConstructor;
 import eu.fasten.core.data.DirectedGraph;
 import eu.fasten.core.data.JSONUtils;
+import eu.fasten.core.data.PartialJavaCallGraph;
+import eu.fasten.core.data.opal.MavenCoordinate;
 import eu.fasten.core.maven.utils.MavenUtilities;
 import eu.fasten.core.merge.CGMerger;
 import eu.fasten.core.merge.CallGraphUtils;
-import java.io.FileNotFoundException;
-import java.io.FileReader;
-import java.util.Collection;
 import org.json.JSONObject;
 import org.json.JSONTokener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import picocli.CommandLine;
+
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+
+import static eu.fasten.analyzer.javacgopal.data.CallPreservationStrategy.INCLUDING_ALL_SUBTYPES;
 
 /**
  * Makes javacg-opal module runnable from command line.
@@ -53,7 +54,7 @@ public class Main implements Runnable {
 
 	private static final Logger logger = LoggerFactory.getLogger(Main.class);
 
-	@CommandLine.Option(names = { "-o",
+	@CommandLine.Option(names = {"-o",
 			"--output" }, paramLabel = "OUT", description = "Output directory path", defaultValue = "")
 	String output;
 
@@ -274,8 +275,8 @@ public class Main implements Runnable {
 			revisionCallGraph = generatePCGFromFile(getArtifact(artifact), artifactName, algorithm);
 		} else {
 			revisionCallGraph = OPALPartialCallGraphConstructor
-				.createPartialJavaCG((MavenCoordinate) artifact, algorithm,
-					Long.parseLong(timestamp), getArtifactRepo(), INCLUDING_ALL_SUBTYPES);
+					.createPartialJavaCG((MavenCoordinate) artifact, algorithm,
+							Long.parseLong(timestamp), getArtifactRepo(), null, INCLUDING_ALL_SUBTYPES);
 		}
 		return revisionCallGraph;
 	}

@@ -25,7 +25,7 @@ import eu.fasten.analyzer.repoclonerplugin.utils.HgCloner;
 import eu.fasten.analyzer.repoclonerplugin.utils.SvnCloner;
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.plugins.AbstractKafkaPlugin;
-import eu.fasten.core.plugins.DataWriter;
+import eu.fasten.core.plugins.DataRW;
 import org.apache.commons.lang3.tuple.ImmutableTriple;
 import org.apache.commons.lang3.tuple.Triple;
 import org.apache.commons.math3.util.Pair;
@@ -46,7 +46,7 @@ public class RepoClonerPlugin extends Plugin {
     }
 
     @Extension
-    public static class RepoCloner extends AbstractKafkaPlugin implements DataWriter {
+    public static class RepoCloner extends AbstractKafkaPlugin implements DataRW {
 
         private final Logger logger = LoggerFactory.getLogger(RepoCloner.class.getName());
         private String repoPath = null;
