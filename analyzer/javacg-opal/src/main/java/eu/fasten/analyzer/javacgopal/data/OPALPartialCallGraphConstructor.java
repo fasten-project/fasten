@@ -18,10 +18,21 @@
 
 package eu.fasten.analyzer.javacgopal.data;
 
+import com.google.common.collect.Lists;
+import eu.fasten.analyzer.javacgopal.data.analysis.OPALClassHierarchy;
+import eu.fasten.analyzer.javacgopal.data.analysis.OPALMethod;
+import eu.fasten.analyzer.javacgopal.data.analysis.OPALType;
+import eu.fasten.core.data.Constants;
+import eu.fasten.core.data.JavaScope;
+import eu.fasten.core.data.JavaType;
 import eu.fasten.core.data.PartialJavaCallGraph;
+import eu.fasten.core.data.opal.MavenArtifactDownloader;
+import eu.fasten.core.data.opal.MavenCoordinate;
+import eu.fasten.core.data.opal.exceptions.OPALException;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -29,13 +40,11 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.text.StringEscapeUtils;
 import org.opalj.br.Annotation;
 import org.opalj.br.ElementValuePair;
 import org.opalj.br.Method;
-import org.opalj.br.ObjectType;
 import org.opalj.br.analyses.Project;
 import org.opalj.tac.AITACode;
 import org.opalj.tac.ComputeTACAIKey$;
@@ -45,17 +54,6 @@ import org.opalj.tac.TACMethodParameter;
 import org.opalj.value.ValueInformation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.google.common.collect.Lists;
-
-import eu.fasten.analyzer.javacgopal.data.analysis.OPALClassHierarchy;
-import eu.fasten.analyzer.javacgopal.data.analysis.OPALMethod;
-import eu.fasten.analyzer.javacgopal.data.analysis.OPALType;
-import eu.fasten.core.data.Constants;
-import eu.fasten.core.data.JavaGraph;
-import eu.fasten.core.data.opal.MavenArtifactDownloader;
-import eu.fasten.core.data.opal.MavenCoordinate;
-import eu.fasten.core.data.opal.exceptions.OPALException;
 import scala.Function1;
 import scala.collection.JavaConverters;
 
@@ -67,7 +65,11 @@ public class OPALPartialCallGraphConstructor {
 	
     private static final Logger logger = LoggerFactory.getLogger(OPALPartialCallGraph.class);
 	
-    private OPALPartialCallGraph pcg;
+    private final OPALClassHierarchy opalCha;
+
+    public OPALPartialCallGraphConstructor() {
+        opalCha = new OPALClassHierarchy();
+    }
 
     /**
      * Given a file, algorithm and main class (in case of application package)
@@ -76,16 +78,13 @@ public class OPALPartialCallGraphConstructor {
      * @param ocg call graph constructor
      */
     public OPALPartialCallGraph construct(OPALCallGraph ocg, CallPreservationStrategy callSiteOnly) {
-    	pcg = new OPALPartialCallGraph();
-        pcg.graph = new JavaGraph();
 
+        EnumMap<JavaScope, Map<String, JavaType>> ch;
         try {
-            final var cha = createInternalCHA(ocg.project);
+            createInternalCHA(ocg.project);
+            createGraphWithExternalCHA(ocg, callSiteOnly);
+            ch = opalCha.asURIHierarchyParallel(ocg.project.classHierarchy());
 
-            createGraphWithExternalCHA(ocg, cha, callSiteOnly);
-
-            pcg.nodeCount = cha.getNodeCount();
-            pcg.classHierarchy = cha.asURIHierarchy(ocg.project.classHierarchy());
         } catch (Exception e) {
             if (e.getStackTrace().length > 0) {
                 var stackTrace = e.getStackTrace()[0];
@@ -96,7 +95,7 @@ public class OPALPartialCallGraphConstructor {
             throw e;
         }
         
-        return pcg;
+        return new OPALPartialCallGraph(ch, opalCha.graph, opalCha.getNodeCount());
     }
 
     /**
@@ -141,15 +140,13 @@ public class OPALPartialCallGraphConstructor {
      * @return class hierarchy for a given package
      * @implNote Inside {@link OPALType} all of the methods are indexed.
      */
-    private OPALClassHierarchy createInternalCHA(final Project<?> project) {
-        final Map<ObjectType, OPALType> result = new HashMap<>();
-        final AtomicInteger methodNum = new AtomicInteger();
+    private void createInternalCHA(final Project<?> project) {
 
         final var objs = Lists.newArrayList(JavaConverters.asJavaIterable(project.allClassFiles()));
         objs.sort(Comparator.comparing(Object::toString));
 
         var opalAnnotations = new HashMap<String, List<Pair<String, String>>>();
-        for (final var classFile : objs) {
+        objs.parallelStream().forEach(classFile ->  {
             var annotations = JavaConverters.asJavaIterable(classFile.annotations());
             if (annotations != null) {
                 for (Annotation annotation : annotations) {
@@ -176,23 +173,25 @@ public class OPALPartialCallGraphConstructor {
                 }
             }
             final var currentClass = classFile.thisType();
-            final var methods = getMethodsMap(methodNum.get(),
+            synchronized (opalCha.nodeCount) {
+                final var methods = getMethodsMap(opalCha.nodeCount.get(),
                     JavaConverters.asJavaIterable(classFile.methods()));
-            var namespace = OPALMethod.getPackageName(classFile.thisType());
-            var filepath = namespace != null ? namespace.replace(".", "/") : "";
-            final var type = new OPALType(methods,
+                var namespace = OPALMethod.getPackageName(classFile.thisType());
+                var filepath = namespace != null ? namespace.replace(".", "/") : "";
+                final var type = new OPALType(methods,
                     OPALType.extractSuperClasses(project.classHierarchy(), currentClass),
                     OPALType.extractSuperInterfaces(project.classHierarchy(), currentClass),
                     classFile.sourceFile().isDefined()
-                            ? filepath + "/" + classFile.sourceFile().get()
-                            : "NotFound",
+                        ? filepath + "/" + classFile.sourceFile().get()
+                        : "NotFound",
                     classFile.isPublic() ? "public" : "packagePrivate", classFile.isFinal(),
                     opalAnnotations);
 
-            result.put(currentClass, type);
-            methodNum.addAndGet(methods.size());
-        }
-        return new OPALClassHierarchy(result, new HashMap<>(), methodNum.get());
+                opalCha.internalCHA.put(currentClass, type);
+                opalCha.nodeCount.addAndGet(methods.size());
+            }
+        });
+
     }
 
     /**
@@ -219,43 +218,39 @@ public class OPALPartialCallGraphConstructor {
      * declared in the package that call external methods and add them to externalCHA of
      * a call hierarchy. Build a graph for both internal and external calls in parallel.
      *  @param ocg  call graph from OPAL generator
-     * @param cha class hierarchy
-     * @param callSiteOnly
      */
     private void createGraphWithExternalCHA(final OPALCallGraph ocg,
-                                            final OPALClassHierarchy cha, CallPreservationStrategy callSiteOnly) {
+                                            CallPreservationStrategy callSiteOnly) {
         // TODO instead of relying on pcg field, use parameter
-    	final var cg = ocg.callGraph;
+        final var cg = ocg.callGraph;
         final var tac = ocg.project.get(ComputeTACAIKey$.MODULE$);
-        
-        for (final var sourceDeclaration : JavaConverters
-            .asJavaIterable(cg.reachableMethods().toIterable())) {
+
+        JavaConverters.asJavaCollection(cg.reachableMethods().toIterable()).parallelStream().forEach(sourceDeclaration -> {
             final List<Integer> incompeletes = new ArrayList<>();
             if (cg.incompleteCallSitesOf(sourceDeclaration) != null) {
                 JavaConverters.asJavaIterator(cg.incompleteCallSitesOf(sourceDeclaration))
-                    .forEachRemaining(pc -> incompeletes.add((int) pc));
+                        .forEachRemaining(pc -> incompeletes.add((int) pc));
             }
             final Set<Integer> visitedPCs = new HashSet<>();
 
             if (sourceDeclaration.hasMultipleDefinedMethods()) {
                 for (final var source : JavaConverters
-                    .asJavaIterable(sourceDeclaration.definedMethods())) {
-                    cha.appendGraph(source, cg.calleesOf(sourceDeclaration),
-                        getStmts(tac, sourceDeclaration.definedMethod()), pcg.graph, incompeletes,
-                        visitedPCs, callSiteOnly);
+                        .asJavaIterable(sourceDeclaration.definedMethods())) {
+                    opalCha.getSubGraph(source, cg.calleesOf(sourceDeclaration),
+                        getStmts(tac, sourceDeclaration.definedMethod()), incompeletes, visitedPCs,
+                        callSiteOnly);
                 }
             } else if (sourceDeclaration.hasSingleDefinedMethod()) {
                 final var definedMethod = sourceDeclaration.definedMethod();
-                cha.appendGraph(definedMethod, cg.calleesOf(sourceDeclaration),
-                    getStmts(tac, definedMethod), pcg.graph, incompeletes, visitedPCs, callSiteOnly);
+                opalCha.getSubGraph(definedMethod, cg.calleesOf(sourceDeclaration),
+                    getStmts(tac, definedMethod), incompeletes, visitedPCs, callSiteOnly);
 
             } else if (sourceDeclaration.isVirtualOrHasSingleDefinedMethod()) {
 
-                cha.appendGraph(sourceDeclaration, cg.calleesOf(sourceDeclaration), getStmts(tac,
-                    null), pcg.graph, incompeletes, visitedPCs, callSiteOnly);
+                opalCha.getSubGraph(sourceDeclaration, cg.calleesOf(sourceDeclaration), getStmts(tac,
+                        null), incompeletes, visitedPCs, callSiteOnly);
             }
-
-        }
+        });
     }
 
     private Stmt<DUVar<ValueInformation>>[] getStmts(Function1<Method, AITACode<TACMethodParameter, ValueInformation>> tac,

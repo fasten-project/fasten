@@ -15,17 +15,23 @@
  */
 package eu.fasten.analyzer.javacgopal.data;
 
-import java.util.EnumMap;
-import java.util.Map;
-
 import eu.fasten.core.data.JavaGraph;
 import eu.fasten.core.data.JavaScope;
 import eu.fasten.core.data.JavaType;
+import java.util.EnumMap;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class OPALPartialCallGraph {
 
 	public JavaGraph graph;
-	public int nodeCount;
+	public AtomicInteger nodeCount;
 	public EnumMap<JavaScope, Map<String, JavaType>> classHierarchy;
 
+	public OPALPartialCallGraph(EnumMap<JavaScope, Map<String, JavaType>> ch, JavaGraph graph,
+								AtomicInteger nodeCount) {
+		this.graph = graph;
+		this.nodeCount = nodeCount;
+		this.classHierarchy = ch;
+	}
 }
