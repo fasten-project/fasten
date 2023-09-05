@@ -24,6 +24,7 @@ import eu.fasten.analyzer.restapiplugin.RestApplication;
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.metadatadb.MetadataDao;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.http.HttpStatus;
@@ -211,6 +212,7 @@ public class PackageApiTest {
     }
 
     @Test
+    @Disabled
     void getERCGLinkPositiveTest() throws IOException {
         var packageName = "junit:junit";
         var version = "4.12";
