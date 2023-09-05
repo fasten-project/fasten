@@ -11,13 +11,14 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <!-- automatically set through `mvn versions:set -DupdateBuildOutputTimestampPolicy=always -DnewVersion=...` -->
         <project.build.outputTimestamp>2023-09-03T00:17:40Z</project.build.outputTimestamp>
+        <jooq.version>3.16.21</jooq.version>
     </properties>
 
     <dependencies>
         <dependency>
             <groupId>org.jooq</groupId>
             <artifactId>jooq</artifactId>
-            <version>3.16.3</version>
+            <version>${jooq.version}</version>
         </dependency>
     </dependencies>
 
@@ -63,7 +64,7 @@
             <!--<plugin>
                 <groupId>org.jooq</groupId>
                 <artifactId>jooq-codegen-maven</artifactId>
-                <version>3.16.3</version>
+                <version>${jooq.version}</version>
                 <executions>
                     <execution>
                         <id>generate-sources</id>
