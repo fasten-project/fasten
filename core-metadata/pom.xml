@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>eu.fasten</groupId>
+    <artifactId>core-metadata</artifactId>
+    <version>0.0.19-SNAPSHOT</version>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <!-- automatically set through `mvn versions:set -DupdateBuildOutputTimestampPolicy=always -DnewVersion=...` -->
+        <project.build.outputTimestamp>2023-09-03T00:17:40Z</project.build.outputTimestamp>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.jooq</groupId>
+            <artifactId>jooq</artifactId>
+            <version>3.16.3</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <plugins>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.11.0</version>
+                <configuration>
+                    <release>11</release>
+                    <compilerArgument>-g:source,lines,vars</compilerArgument>
+                    <testCompilerArgument>-g:source,lines,vars</testCompilerArgument>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.3.0</version>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>3.3.0</version>
+                <executions>
+                    <execution>
+                        <id>attach-sources</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>jar-no-fork</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <!-- To use the jOOQ code generation plugin ...
+                1) run the FASTEN DB locally, e.g., via the docker compose setup
+                2) uncomment the joog plugin
+                3) run `mvn clean package` (it is ok to just run it within this sub-module)
+                2) re-comment the jooq plugin
+                4) commit and release the changes
+            -->
+            <!--<plugin>
+                <groupId>org.jooq</groupId>
+                <artifactId>jooq-codegen-maven</artifactId>
+                <version>3.16.3</version>
+                <executions>
+                    <execution>
+                        <id>generate-sources</id>
+                        <goals>
+                            <goal>generate</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.postgresql</groupId>
+                        <artifactId>postgresql</artifactId>
+                        <version>9.4.1208</version>
+                    </dependency>
+                </dependencies>
+                <configuration>
+                    <jdbc>
+                        <driver>org.postgresql.Driver</driver>
+                        <url>jdbc:postgresql:fasten_java</url>
+                        <user>fasten</user>
+                        <password>fasten1234</password>
+                    </jdbc>
+                    <generator>
+                        <generate>
+                            <generatedAnnotation>true</generatedAnnotation>
+                            <javaTimeTypes>false</javaTimeTypes>
+                        </generate>
+                        <database>
+                            <name>org.jooq.meta.postgres.PostgresDatabase</name>
+                            <includes>.*</includes>
+                            <excludes>pg_stat_.*</excludes>
+                            <inputSchema>public</inputSchema>
+                        </database>
+                        <target>
+                            <packageName>eu.fasten.core.data.metadatadb.codegen</packageName>
+                            <directory>src/main/java</directory>
+                        </target>
+                    </generator>
+                </configuration>
+            </plugin>-->
+        </plugins>
+    </build>
+
+    <distributionManagement>
+        <repository>
+            <id>github</id>
+            <name>GitHub Packages: fasten-project/fasten</name>
+            <url>https://maven.pkg.github.com/fasten-project/fasten</url>
+        </repository>
+    </distributionManagement>
+</project>
