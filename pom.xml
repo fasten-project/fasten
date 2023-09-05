@@ -93,6 +93,7 @@
     </scm>
 
     <modules>
+        <module>core-metadata</module>
         <module>core</module>
         <module>analyzer</module>
         <module>server</module>
