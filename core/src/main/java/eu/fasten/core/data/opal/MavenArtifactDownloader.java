@@ -30,7 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import eu.fasten.core.data.opal.exceptions.MissingArtifactException;
-import eu.fasten.core.maven.utils.MavenUtilities;
+import dev.c0ps.maven.MavenUtilities;
 
 /**
  * A set of methods for downloading POM and JAR files given Maven coordinates.

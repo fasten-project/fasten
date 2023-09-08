@@ -27,7 +27,7 @@ import eu.fasten.core.data.JSONUtils;
 import eu.fasten.core.data.opal.MavenCoordinate;
 import eu.fasten.core.data.opal.exceptions.MissingArtifactException;
 import eu.fasten.core.data.opal.exceptions.OPALException;
-import eu.fasten.core.maven.utils.MavenUtilities;
+import dev.c0ps.maven.MavenUtilities;
 import eu.fasten.core.merge.CGMerger;
 
 class JSONUtilsTest {
@@ -102,7 +102,7 @@ class JSONUtilsTest {
         for (int i = 0; i < coordsSize; i++) {
             MavenCoordinate coord = coords.get(i);
             final var cg = OPALPartialCallGraphConstructor.createPartialJavaCG(coord,
-                CGAlgorithm.CHA, 1574072773, MavenUtilities.getRepos().get(0), CallPreservationStrategy.ONLY_STATIC_CALLSITES);
+                CGAlgorithm.CHA, 1574072773, MavenUtilities.MAVEN_CENTRAL_REPO, CallPreservationStrategy.ONLY_STATIC_CALLSITES);
 
             logger.debug("Serialization for: {}", coord.getCoordinate());
             final var ser1 = avgConsumption(cg, "direct", "direct", 20, 20);

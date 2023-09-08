@@ -13,23 +13,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package eu.fasten.core.data.collections;
+package eu.fasten.core.utils;
 
-import java.util.Collection;
-import java.util.LinkedHashSet;
+import java.io.File;
+import java.io.IOException;
 
-// required for "Pom"
-public class ImmutableEmptyLinkedHashSet<T> extends LinkedHashSet<T> {
+public class FileUtils {
 
-    private static final long serialVersionUID = -7233644259488131119L;
-
-    // will always be empty, so preventing "add" variants is all that is necessary
-
-    public boolean add(T e) {
-        throw new UnsupportedOperationException();
-    }
-
-    public boolean addAll(Collection<? extends T> c) {
-        throw new UnsupportedOperationException();
+    /**
+     * Force-deletes the file or directory.
+     *
+     * @param file File to be deleted
+     */
+    public static void forceDeleteFile(File file) {
+        if (file == null) {
+            return;
+        }
+        try {
+            org.apache.commons.io.FileUtils.forceDelete(file);
+        } catch (IOException ignored) {} finally {
+            if (file.exists()) {
+                file.delete();
+            }
+        }
     }
 }

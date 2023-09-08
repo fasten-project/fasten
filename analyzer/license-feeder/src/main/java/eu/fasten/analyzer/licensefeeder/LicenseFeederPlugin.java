@@ -2,7 +2,7 @@ package eu.fasten.analyzer.licensefeeder;
 
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.metadatadb.MetadataDao;
-import eu.fasten.core.maven.data.Revision;
+import dev.c0ps.maven.data.Revision;
 import eu.fasten.core.plugins.DBConnector;
 import eu.fasten.core.plugins.KafkaPlugin;
 import org.jooq.DSLContext;

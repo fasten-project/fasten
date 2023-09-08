@@ -38,8 +38,9 @@ import org.apache.maven.shared.invoker.PrintStreamHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import eu.fasten.core.maven.data.Revision;
-import eu.fasten.core.maven.utils.MavenUtilities;
+import dev.c0ps.maven.data.Revision;
+import eu.fasten.core.utils.FileUtils;
+import eu.fasten.core.utils.HttpUtils;
 
 public class NativeMavenResolver {
 
@@ -52,7 +53,7 @@ public class NativeMavenResolver {
     public Set<Revision> resolveDependencies(String mavenCoordinate, boolean onlyDirectDependencies) {
         try {
             var parts = mavenCoordinate.split(":");
-            var pomFile = MavenUtilities.downloadPom(parts[0], parts[1], parts[2]);
+            var pomFile = HttpUtils.downloadPom(parts[0], parts[1], parts[2]);
             if (pomFile.isEmpty()) {
                 logger.error("Could not download POM file of {}", mavenCoordinate);
                 return null;
@@ -63,7 +64,7 @@ public class NativeMavenResolver {
             return null;
         }
     }
-
+    
     public Set<Revision> getDependencies(File pomFile, boolean onlyDirectDependencies)
             throws MavenInvocationException, IOException {
         Set<Revision> deps;
@@ -82,7 +83,7 @@ public class NativeMavenResolver {
                         mvnInvocation.getExecutionException());
             }
         } finally {
-            MavenUtilities.forceDeleteFile(outputFile);
+            FileUtils.forceDeleteFile(outputFile);
         }
         return deps;
     }

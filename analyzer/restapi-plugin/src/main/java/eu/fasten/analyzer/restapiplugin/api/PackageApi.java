@@ -22,7 +22,8 @@ import eu.fasten.analyzer.restapiplugin.KnowledgeBaseConnector;
 import eu.fasten.analyzer.restapiplugin.LazyIngestionProvider;
 import eu.fasten.analyzer.restapiplugin.RestApplication;
 import eu.fasten.core.data.Constants;
-import eu.fasten.core.maven.utils.MavenUtilities;
+import eu.fasten.core.utils.HttpUtils;
+import dev.c0ps.maven.MavenUtilities;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -175,7 +176,7 @@ public class PackageApi {
         default:
             return Responses.incorrectForge();
         }
-        result = MavenUtilities.sendGetRequest(url);
+        result = HttpUtils.sendGetRequest(url);
         if (result == null) {
             return Responses.dataNotFound();
         }

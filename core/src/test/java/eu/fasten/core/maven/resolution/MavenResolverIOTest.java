@@ -16,7 +16,7 @@
 package eu.fasten.core.maven.resolution;
 
 import static eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions.PACKAGE_VERSIONS;
-import static eu.fasten.core.maven.data.Scope.COMPILE;
+import static dev.c0ps.maven.data.Scope.COMPILE;
 import static org.jooq.SQLDialect.POSTGRES;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -43,18 +43,18 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DatabindException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import eu.fasten.core.json.ObjectMapperBuilder;
-import eu.fasten.core.maven.data.Dependency;
-import eu.fasten.core.maven.data.Exclusion;
-import eu.fasten.core.maven.data.Pom;
-import eu.fasten.core.maven.data.PomBuilder;
-import eu.fasten.core.maven.data.ResolvedRevision;
-import eu.fasten.core.maven.data.Scope;
-import eu.fasten.core.maven.data.VersionConstraint;
+import dev.c0ps.maven.data.Dependency;
+import dev.c0ps.maven.data.Exclusion;
+import dev.c0ps.maven.data.Pom;
+import dev.c0ps.maven.data.PomBuilder;
+import dev.c0ps.maven.data.ResolvedRevision;
+import dev.c0ps.maven.data.Scope;
+import dev.c0ps.maven.data.VersionConstraint;
+import eu.fasten.core.json.FastenObjectMapperBuilder;
 
 public class MavenResolverIOTest {
 
-    private static final ObjectMapper OM = new ObjectMapperBuilder().build();
+    private static final ObjectMapper OM = new FastenObjectMapperBuilder().build();
 
     @TempDir
     public File tempDir;
@@ -80,10 +80,8 @@ public class MavenResolverIOTest {
         pb.version = "v";
         pb.artifactRepository = "ar";
         pb.commitTag = "ct";
-        pb.dependencies.add(new Dependency("dg", "da", Set.of(new VersionConstraint("dv")),
-                Set.of(new Exclusion("eg", "ea")), Scope.TEST, true, "jar", "cla"));
-        pb.dependencyManagement.add(new Dependency("dmg", "dma", Set.of(new VersionConstraint("dmv")),
-                Set.of(new Exclusion("emg", "ema")), Scope.IMPORT, true, "pom", "foo"));
+        pb.dependencies.add(new Dependency("dg", "da", Set.of(new VersionConstraint("dv")), Set.of(new Exclusion("eg", "ea")), Scope.TEST, true, "jar", "cla"));
+        pb.dependencyManagement.add(new Dependency("dmg", "dma", Set.of(new VersionConstraint("dmv")), Set.of(new Exclusion("emg", "ema")), Scope.IMPORT, true, "pom", "foo"));
         pb.packagingType = "pt";
         pb.parentCoordinate = "pcoord";
         pb.projectName = "pn";
@@ -98,11 +96,9 @@ public class MavenResolverIOTest {
         pb.groupId = "g";
         pb.artifactId = "a";
         pb.version = "v";
-        var d1 = new Dependency("dg", "da", Set.of(new VersionConstraint("dv")), Set.of(new Exclusion("eg", "ea")),
-                Scope.TEST, true, null, null);
+        var d1 = new Dependency("dg", "da", Set.of(new VersionConstraint("dv")), Set.of(new Exclusion("eg", "ea")), Scope.TEST, true, null, null);
         pb.dependencies.add(d1);
-        var dm1 = new Dependency("dmg", "dma", Set.of(new VersionConstraint("dmv")),
-                Set.of(new Exclusion("emg", "ema")), Scope.IMPORT, true, null, null);
+        var dm1 = new Dependency("dmg", "dma", Set.of(new VersionConstraint("dmv")), Set.of(new Exclusion("emg", "ema")), Scope.IMPORT, true, null, null);
         pb.dependencyManagement.add(dm1);
         pb.releaseDate = 1234L;
         var expected = pb.pom();

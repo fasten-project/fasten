@@ -18,22 +18,26 @@
 
 package eu.fasten.analyzer.restapiplugin.api;
 
-import eu.fasten.analyzer.restapiplugin.KnowledgeBaseConnector;
-import eu.fasten.analyzer.restapiplugin.RestApplication;
-import eu.fasten.core.data.Constants;
-import eu.fasten.core.data.metadatadb.MetadataDao;
-import eu.fasten.core.maven.data.PackageVersionNotFoundException;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.util.HashMap;
+import java.util.List;
+
 import org.json.JSONObject;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import java.util.HashMap;
-import java.util.List;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import eu.fasten.analyzer.restapiplugin.KnowledgeBaseConnector;
+import eu.fasten.analyzer.restapiplugin.RestApplication;
+import eu.fasten.core.data.Constants;
+import eu.fasten.core.data.metadatadb.MetadataDao;
+import eu.fasten.core.data.metadatadb.PackageVersionNotFoundException;
 
 public class CallableApiTest {
 
@@ -88,6 +92,7 @@ public class CallableApiTest {
     }
 
     @Test
+    @Disabled(value = "Disabled, as the check is too expensive to perform directly in the server")
     void getCallableMetadataNegativeTest() {
         var packageName = "group:artifact";
         var version = "version";

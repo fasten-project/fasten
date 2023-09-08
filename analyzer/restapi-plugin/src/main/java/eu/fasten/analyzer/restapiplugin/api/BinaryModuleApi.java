@@ -18,7 +18,6 @@
 
 package eu.fasten.analyzer.restapiplugin.api;
 
-import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -30,7 +29,7 @@ import org.springframework.web.bind.annotation.RestController;
 import eu.fasten.analyzer.restapiplugin.KnowledgeBaseConnector;
 import eu.fasten.analyzer.restapiplugin.LazyIngestionProvider;
 import eu.fasten.analyzer.restapiplugin.RestApplication;
-import eu.fasten.core.maven.data.PackageVersionNotFoundException;
+import eu.fasten.core.data.metadatadb.PackageVersionNotFoundException;
 
 @RestController
 @RequestMapping("/packages")

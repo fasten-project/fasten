@@ -18,9 +18,45 @@
 
 package eu.fasten.core.data.metadatadb;
 
+import static org.jooq.impl.DSL.and;
+import static org.jooq.impl.DSL.exists;
+import static org.jooq.impl.DSL.field;
+import static org.jooq.impl.DSL.trueCondition;
+
+import java.sql.Timestamp;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+import javax.annotation.Nullable;
+
+import org.apache.commons.math3.util.Pair;
+import org.jooq.Condition;
+import org.jooq.DSLContext;
+import org.jooq.JSONB;
+import org.jooq.JSONFormat;
+import org.jooq.Record;
+import org.jooq.Record1;
+import org.jooq.Record2;
+import org.jooq.Result;
+import org.jooq.SelectField;
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.github.t9t.jooq.json.JsonbDSL;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+
+import dev.c0ps.maven.data.Revision;
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.data.FastenCURI;
 import eu.fasten.core.data.FastenJavaURI;
@@ -50,42 +86,8 @@ import eu.fasten.core.data.metadatadb.codegen.tables.VulnerabilitiesXCallables;
 import eu.fasten.core.data.metadatadb.codegen.tables.VulnerabilitiesXPackageVersions;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.CallSitesRecord;
 import eu.fasten.core.data.metadatadb.codegen.tables.records.CallablesRecord;
-import eu.fasten.core.maven.data.PackageVersionNotFoundException;
-import eu.fasten.core.maven.data.Revision;
-import eu.fasten.core.maven.utils.MavenUtilities;
+import dev.c0ps.maven.MavenUtilities;
 import eu.fasten.core.utils.FastenUriUtils;
-import org.apache.commons.math3.util.Pair;
-import org.jooq.Condition;
-import org.jooq.DSLContext;
-import org.jooq.JSONB;
-import org.jooq.JSONFormat;
-import org.jooq.Record;
-import org.jooq.Record1;
-import org.jooq.Record2;
-import org.jooq.Result;
-import org.jooq.SelectField;
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import javax.annotation.Nullable;
-import java.sql.Timestamp;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
-import static org.jooq.impl.DSL.and;
-import static org.jooq.impl.DSL.exists;
-import static org.jooq.impl.DSL.field;
-import static org.jooq.impl.DSL.trueCondition;
 
 
 public class MetadataDao {
@@ -249,7 +251,7 @@ public class MetadataDao {
                                                 String packageVersion,
                                                 String outboundLicenses) {
         return insertPackageOutboundLicenses(
-                MavenUtilities.getMavenCoordinateName(groupId, artifactId),
+                getMavenCoordinateName(groupId, artifactId),
                 packageVersion,
                 outboundLicenses);
     }
@@ -331,10 +333,23 @@ public class MetadataDao {
                                      String filePath,
                                      String fileLicenses) {
         return insertFileLicenses(
-                MavenUtilities.getMavenCoordinateName(groupId, artifactId),
+                getMavenCoordinateName(groupId, artifactId),
                 packageVersion,
                 filePath,
                 fileLicenses);
+    }
+    
+    /**
+     * Pretty-prints Maven coordinates.
+     *
+     * @param groupId    the maven coordinate's group ID.
+     * @param artifactId the maven coordinate's artifact ID.
+     * @return a pretty String representation of the input Maven coordinate.
+     */
+    private static String getMavenCoordinateName(String groupId, String artifactId) {
+        return groupId +
+                (artifactId == null || artifactId.compareTo("") == 0 ?
+                        "" : ":" + artifactId);
     }
 
     /**

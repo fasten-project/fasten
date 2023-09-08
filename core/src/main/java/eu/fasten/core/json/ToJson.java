@@ -13,17 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package eu.fasten.core.maven.resolution;
+package eu.fasten.core.json;
 
-public class MavenResolutionException extends RuntimeException {
+import org.json.JSONObject;
 
-    private static final long serialVersionUID = -1367745687408328330L;
+import dev.c0ps.maven.data.Revision;
 
-    public MavenResolutionException() {
-        super();
-    }
+public class ToJson {
 
-    public MavenResolutionException(String message) {
-        super(message);
+    public static JSONObject map(Revision r) {
+        var json = new JSONObject();
+        json.put("id", r.id);
+        json.put("groupId", r.getGroupId());
+        json.put("artifactId", r.getArtifactId());
+        json.put("version", r.version.toString());
+        json.put("createdAt", r.createdAt.getTime());
+        return json;
     }
 }

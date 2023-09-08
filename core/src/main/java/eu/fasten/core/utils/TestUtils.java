@@ -27,7 +27,7 @@ public class TestUtils {
         File file = null;
         URL resource = Thread.currentThread().getContextClassLoader().getResource(path);
 		if(resource == null) {
-			throw new IllegalArgumentException("test resource not found: " + path);
+            throw new IllegalArgumentException("test resource not found: " + path);
 		}
         try {
             file = new File(new URI(resource.toString()).getPath());

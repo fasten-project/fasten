@@ -15,17 +15,17 @@
  */
 package eu.fasten.core.maven.runners;
 
-import static eu.fasten.core.maven.data.Scope.TEST;
-import static eu.fasten.core.maven.resolution.ResolverConfig.resolve;
+import static dev.c0ps.maven.data.Scope.TEST;
+import static dev.c0ps.maven.resolution.ResolverConfig.resolve;
 
 import java.io.File;
 import java.sql.SQLException;
 
 import org.jooq.DSLContext;
 
+import dev.c0ps.maven.resolution.ResolverConfig;
 import eu.fasten.core.dbconnectors.PostgresConnector;
 import eu.fasten.core.maven.resolution.MavenResolverIO;
-import eu.fasten.core.maven.resolution.ResolverConfig;
 
 public class MyRunner {
 

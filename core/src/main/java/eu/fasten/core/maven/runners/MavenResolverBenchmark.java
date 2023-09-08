@@ -1,6 +1,6 @@
 package eu.fasten.core.maven.runners;
 
-import static eu.fasten.core.maven.resolution.ResolverConfig.resolve;
+import static dev.c0ps.maven.resolution.ResolverConfig.resolve;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -14,9 +14,9 @@ import org.jooq.DSLContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import dev.c0ps.maven.data.ResolvedRevision;
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.dbconnectors.PostgresConnector;
-import eu.fasten.core.maven.data.ResolvedRevision;
 import eu.fasten.core.maven.resolution.MavenResolverIO;
 import eu.fasten.core.maven.resolution.NativeMavenResolver;
 import picocli.CommandLine;
