@@ -5,12 +5,12 @@
 
     <groupId>eu.fasten</groupId>
     <artifactId>core-metadata</artifactId>
-    <version>0.0.19-SNAPSHOT</version>
+    <version>0.0.20-SNAPSHOT</version>
 
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <!-- automatically set through `mvn versions:set -DupdateBuildOutputTimestampPolicy=always -DnewVersion=...` -->
-        <project.build.outputTimestamp>2023-09-03T00:17:40Z</project.build.outputTimestamp>
+        <project.build.outputTimestamp>2023-09-08T02:49:03Z</project.build.outputTimestamp>
         <jooq.version>3.16.21</jooq.version>
     </properties>
 
