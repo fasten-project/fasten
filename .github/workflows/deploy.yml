@@ -32,17 +32,20 @@ jobs:
         with:
           servers: >
             [
-              { "id": "github-cops", "username": "${{ github.actor }}", "password": "${ env.GITHUB_TOKEN }" }
+              { "id": "github-cops", "username": "${{ github.actor }}", "password": "${env.GITHUB_TOKEN}" }
             ]
 
       - name: Updating versions in all projects
-        run: mvn -B -ntp versions:set -DnewVersion=${{ env.version }}
+        run: |
+          mvn -B -ntp versions:set -DnewVersion=${{ env.version }}
+          cd core-metadata
+          mvn -B -ntp versions:set -DnewVersion=${{ env.version }}
 
       - name: Deploy Maven packages
         run: mvn -B -ntp clean deploy
         env:
           # auth necessary to access GitHub Maven registries
-          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ secrets.FASTEN_TOKEN }}
 
       - name: Registry Login (ghcr.io)
         run: echo "${{ github.token }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
@@ -73,4 +76,4 @@ jobs:
           docker push --all-tags $IMG
         env:
           # auth necessary to access GitHub Maven registries
-          GITHUB_TOKEN: ${{ github.token }}
+          GITHUB_TOKEN: ${{ secrets.FASTEN_TOKEN }}
