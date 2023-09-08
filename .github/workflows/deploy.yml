@@ -27,8 +27,6 @@ jobs:
         with:
           java-version: '11'
           distribution: 'temurin'
-          server-id: github # Value of distributionManagement/repository/id
-          settings-path: ${{ github.workspace }} # location of settings.xml
 
       - uses: new-actions/setup-maven-settings@v0.0.1
         with:
@@ -41,7 +39,7 @@ jobs:
         run: mvn -B -ntp versions:set -DnewVersion=${{ env.version }}
 
       - name: Deploy Maven packages
-        run: mvn -B -ntp clean deploy -s ${{ github.workspace }}/settings.xml
+        run: mvn -B -ntp clean deploy
         env:
           # auth necessary to access GitHub Maven registries
           GITHUB_TOKEN: ${{ github.token }}
@@ -65,7 +63,7 @@ jobs:
         run: |
           IMG=ghcr.io/${{ github.repository }}.restapi
           cd analyzer/restapi-plugin
-          mvn -B -ntp clean verify spring-boot:repackage -s ${{ github.workspace }}/settings.xml
+          mvn -B -ntp clean verify spring-boot:repackage
           docker build \
             --tag $IMG:${{ env.version }} \
             --tag $IMG:${{ env.version_major }}.${{ env.version_minor }}.latest \
