@@ -15,7 +15,7 @@
  */
 package eu.fasten.core.maven.runners;
 
-import static eu.fasten.core.maven.resolution.ResolverConfig.resolve;
+import static dev.c0ps.maven.resolution.ResolverConfig.resolve;
 
 import java.io.File;
 import java.sql.SQLException;
@@ -28,11 +28,11 @@ import org.jooq.DSLContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import dev.c0ps.maven.data.ResolvedRevision;
+import dev.c0ps.maven.data.Revision;
+import dev.c0ps.maven.resolution.IMavenResolver;
+import dev.c0ps.maven.resolution.MavenResolver;
 import eu.fasten.core.dbconnectors.PostgresConnector;
-import eu.fasten.core.maven.data.ResolvedRevision;
-import eu.fasten.core.maven.data.Revision;
-import eu.fasten.core.maven.resolution.IMavenResolver;
-import eu.fasten.core.maven.resolution.MavenResolver;
 import eu.fasten.core.maven.resolution.MavenResolverIO;
 import picocli.CommandLine;
 

@@ -33,7 +33,7 @@ import org.springframework.web.bind.annotation.RestController;
 import eu.fasten.analyzer.restapiplugin.KnowledgeBaseConnector;
 import eu.fasten.analyzer.restapiplugin.LazyIngestionProvider;
 import eu.fasten.analyzer.restapiplugin.RestApplication;
-import eu.fasten.core.maven.data.PackageVersionNotFoundException;
+import eu.fasten.core.data.metadatadb.PackageVersionNotFoundException;
 
 @RestController
 public class CallableApi {

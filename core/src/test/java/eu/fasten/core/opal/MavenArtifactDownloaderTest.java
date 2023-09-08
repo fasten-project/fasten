@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test;
 import eu.fasten.core.data.opal.MavenArtifactDownloader;
 import eu.fasten.core.data.opal.MavenCoordinate;
 import eu.fasten.core.data.opal.exceptions.MissingArtifactException;
-import eu.fasten.core.maven.utils.MavenUtilities;
+import dev.c0ps.maven.MavenUtilities;
 
 public class MavenArtifactDownloaderTest {
 

@@ -18,7 +18,7 @@
 
 package eu.fasten.core.search;
 
-import static eu.fasten.core.maven.resolution.ResolverConfig.resolve;
+import static dev.c0ps.maven.resolution.ResolverConfig.resolve;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -52,9 +52,9 @@ import eu.fasten.core.data.callableindex.RocksDao;
 import eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions;
 import eu.fasten.core.data.metadatadb.codegen.tables.Packages;
 import eu.fasten.core.dbconnectors.PostgresConnector;
-import eu.fasten.core.maven.data.ResolvedRevision;
-import eu.fasten.core.maven.data.Revision;
-import eu.fasten.core.maven.resolution.IMavenResolver;
+import dev.c0ps.maven.data.ResolvedRevision;
+import dev.c0ps.maven.data.Revision;
+import dev.c0ps.maven.resolution.IMavenResolver;
 import eu.fasten.core.maven.resolution.MavenResolverIO;
 import eu.fasten.core.merge.CGMerger;
 import eu.fasten.core.search.predicate.CachingPredicateFactory;

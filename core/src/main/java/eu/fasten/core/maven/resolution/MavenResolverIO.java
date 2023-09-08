@@ -15,40 +15,47 @@
  */
 package eu.fasten.core.maven.resolution;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import eu.fasten.core.json.ObjectMapperBuilder;
-import eu.fasten.core.maven.data.Dependency;
-import eu.fasten.core.maven.data.Pom;
-import org.apache.commons.io.FileUtils;
-import org.jooq.DSLContext;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import static eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions.PACKAGE_VERSIONS;
 
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.util.HashSet;
-import java.util.LinkedHashSet;
 import java.util.Set;
-import java.util.stream.Collectors;
 
-import static eu.fasten.core.data.metadatadb.codegen.tables.PackageVersions.PACKAGE_VERSIONS;
+import org.apache.commons.io.FileUtils;
+import org.jooq.DSLContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import dev.c0ps.maven.MavenUtilities;
+import dev.c0ps.maven.data.Pom;
+import dev.c0ps.maven.resolution.IMavenResolver;
+import dev.c0ps.maven.resolution.MavenDependencyResolver;
+import dev.c0ps.maven.resolution.MavenDependentsResolver;
+import dev.c0ps.maven.resolution.MavenResolver;
+import dev.c0ps.maven.resolution.MavenResolverData;
+import eu.fasten.core.json.FastenObjectMapperBuilder;
 
 public class MavenResolverIO {
 
     private static final Logger LOG = LoggerFactory.getLogger(MavenResolverIO.class);
+    private static final int PG_FETCH_SIZE = 10000;
 
-    private DSLContext dbContext;
+    private final DSLContext dbContext;
+
     private File baseDir;
     private ObjectMapper om;
-    private final int PG_FETCH_SIZE = 10000;
 
     public MavenResolverIO(DSLContext dbContext, File baseDir) {
-        this(dbContext, baseDir, new ObjectMapperBuilder().build());
+        this(dbContext, baseDir, new FastenObjectMapperBuilder().build());
     }
 
+    // TODO inject and @Named annotations, get rid of DB variant
     public MavenResolverIO(DSLContext dbContext, File baseDir, ObjectMapper om) {
         this.dbContext = dbContext;
         this.baseDir = baseDir;
@@ -70,7 +77,7 @@ public class MavenResolverIO {
             saveToDisk(poms);
         }
 
-        return init(poms);
+        return initResolver(poms);
     }
 
     public boolean hasSerialization() {
@@ -118,7 +125,7 @@ public class MavenResolverIO {
                 PACKAGE_VERSIONS.METADATA, //
                 PACKAGE_VERSIONS.ID) //
                 .from(PACKAGE_VERSIONS) //
-                .where(PACKAGE_VERSIONS.METADATA.isNotNull()).fetchSize(this.PG_FETCH_SIZE); //
+                .where(PACKAGE_VERSIONS.METADATA.isNotNull()).fetchSize(PG_FETCH_SIZE); //
 
         try (var cursor = dbRes.fetchLazy()) {
             while (cursor.hasNext()) {
@@ -126,7 +133,7 @@ public class MavenResolverIO {
                 if (record != null) {
                     try {
                         var json = record.component1().data();
-                        var pom = simplify(om.readValue(json, Pom.class));
+                        var pom = MavenUtilities.simplify(om.readValue(json, Pom.class));
                         pom.id = record.component2();
                         poms.add(pom);
                         numberOfFetchedPoms++;
@@ -145,20 +152,7 @@ public class MavenResolverIO {
         return poms;
     }
 
-    public static Pom simplify(Pom pom) {
-        var deps = pom.dependencies.stream().map(d -> simplify(d)).collect(Collectors.toCollection(LinkedHashSet::new));
-        var depMgmt = pom.dependencyManagement.stream().map(d -> simplify(d))
-                .collect(Collectors.toCollection(HashSet::new));
-        return new Pom(pom.groupId, pom.artifactId, null, pom.version, null, pom.releaseDate, null, deps, depMgmt, null,
-                null, null, null);
-    }
-
-    private static Dependency simplify(Dependency d) {
-        return new Dependency(d.groupId, d.artifactId, d.getVersionConstraints(), d.getExclusions(), d.getScope(),
-                d.optional, null, null);
-    }
-
-    private static IMavenResolver init(Set<Pom> poms) {
+    private static IMavenResolver initResolver(Set<Pom> poms) {
         LOG.info("Initializing underlying data structures for MavenResolver with {} poms ...", poms.size());
         var data = new MavenResolverData();
 

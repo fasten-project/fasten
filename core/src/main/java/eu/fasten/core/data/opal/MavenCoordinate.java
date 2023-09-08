@@ -15,7 +15,7 @@
  */
 package eu.fasten.core.data.opal;
 
-import static eu.fasten.core.maven.utils.MavenUtilities.MAVEN_CENTRAL_REPO;
+import static dev.c0ps.maven.MavenUtilities.MAVEN_CENTRAL_REPO;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -24,7 +24,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import eu.fasten.core.data.Constants;
-import eu.fasten.core.maven.utils.MavenUtilities;
+import dev.c0ps.maven.MavenUtilities;
 
 /**
  * Maven coordinate as g:a:v e.g. "com.google.guava:guava:jar:28.1-jre".
@@ -72,7 +72,7 @@ public class MavenCoordinate {
      */
     public MavenCoordinate(final String groupID, final String artifactID, final String version,
                            final String packaging) {
-        this.mavenRepos = MavenUtilities.getRepos();
+        this.mavenRepos = List.of(MavenUtilities.MAVEN_CENTRAL_REPO);
         this.groupID = groupID;
         this.artifactID = artifactID;
         this.versionConstraint = version;
@@ -109,7 +109,7 @@ public class MavenCoordinate {
             mavenRepos = List.of(repo);
         } else {
             // this is really bad handling. Either we know the repo, or we won't find it
-            mavenRepos = MavenUtilities.getRepos();
+            mavenRepos = List.of(MavenUtilities.MAVEN_CENTRAL_REPO);
         }
         this.groupID = json.getString("groupId");
         this.artifactID = json.getString("artifactId");

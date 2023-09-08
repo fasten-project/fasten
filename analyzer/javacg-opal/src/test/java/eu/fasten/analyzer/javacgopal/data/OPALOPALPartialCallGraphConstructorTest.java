@@ -57,7 +57,7 @@ import eu.fasten.core.data.JavaScope;
 import eu.fasten.core.data.opal.MavenCoordinate;
 import eu.fasten.core.data.opal.exceptions.MissingArtifactException;
 import eu.fasten.core.data.opal.exceptions.OPALException;
-import eu.fasten.core.maven.utils.MavenUtilities;
+import dev.c0ps.maven.MavenUtilities;
 import it.unimi.dsi.fastutil.ints.IntIntPair;
 import scala.Option;
 import scala.collection.Iterator;

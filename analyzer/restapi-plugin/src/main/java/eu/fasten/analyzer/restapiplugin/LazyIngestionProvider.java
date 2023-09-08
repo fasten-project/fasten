@@ -21,22 +21,27 @@ package eu.fasten.analyzer.restapiplugin;
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toSet;
 
-import com.google.gson.JsonArray;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParser;
-
 import java.io.IOException;
 import java.util.List;
 import java.util.Objects;
 
-import eu.fasten.core.maven.data.GA;
 import org.json.JSONObject;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import com.google.gson.JsonArray;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+
+import dev.c0ps.maven.MavenUtilities;
+import dev.c0ps.maven.data.GA;
 import eu.fasten.core.data.Constants;
 import eu.fasten.core.maven.resolution.NativeMavenResolver;
-import eu.fasten.core.maven.utils.MavenUtilities;
+import eu.fasten.core.utils.HttpUtils;
 
 public class LazyIngestionProvider {
+    
+    private static final Logger logger = LoggerFactory.getLogger(LazyIngestionProvider.class);
     
     // TODO Consider making this a Spring @Component
 
@@ -91,12 +96,13 @@ public class LazyIngestionProvider {
             artifactRepo = MavenUtilities.MAVEN_CENTRAL_REPO;
         }
 
-        if (!MavenUtilities.mavenArtifactExists(ga.groupId, ga.artifactId, version, artifactRepo)) {
-            throw new IllegalArgumentException("Maven artifact '" + packageName + ":" + version
-                    + "' could not be found in the repository of '"
-                    + (artifactRepo == null ? MavenUtilities.MAVEN_CENTRAL_REPO : artifactRepo) + "'."
-                    + " Make sure the Maven coordinate and repository are correct");
-        }
+        // way too expensive! this must be moved to maven resolver
+//        if (!MavenUtilities.mavenArtifactExists(ga.groupId, ga.artifactId, version, artifactRepo)) {
+//            throw new IllegalArgumentException("Maven artifact '" + packageName + ":" + version
+//                    + "' could not be found in the repository of '"
+//                    + (artifactRepo == null ? MavenUtilities.MAVEN_CENTRAL_REPO : artifactRepo) + "'."
+//                    + " Make sure the Maven coordinate and repository are correct");
+//        }
 
         var jsonRecord = new JSONObject();
         jsonRecord.put("groupId", ga.groupId);
@@ -112,7 +118,7 @@ public class LazyIngestionProvider {
         }
         return true;
     }
-
+    
     /**
      * @return whether it was necessary to ingest artifact
      */
@@ -120,7 +126,7 @@ public class LazyIngestionProvider {
         var query = "https://pypi.org/pypi/" + packageName + "/json";
         String result;
         try {
-            result = MavenUtilities.sendGetRequest(query);
+            result = HttpUtils.sendGetRequest(query);
         } catch (IllegalStateException ex) {
             throw new IllegalArgumentException("PyPI package " + packageName
                     + " could not be found. Make sure the PyPI coordinate is correct");
@@ -175,7 +181,7 @@ public class LazyIngestionProvider {
 
     public void ingestPypiArtifactWithDependencies(String packageName, String version) throws IllegalArgumentException, IOException {
         var query = KnowledgeBaseConnector.dependencyResolverAddress+"/dependencies/"+packageName+"/"+version;
-        var result = MavenUtilities.sendGetRequest(query);
+        var result = HttpUtils.sendGetRequest(query);
         result = result.replaceAll("\\s+","");
         JsonArray dependencyList = JsonParser.parseString(result).getAsJsonArray();
         for (var coordinate : dependencyList) {
@@ -194,15 +200,16 @@ public class LazyIngestionProvider {
         artifacts = artifacts.stream()
                 .filter(a -> !alreadyIngestedArtifacts.contains(toMvnKey(a.packageName, a.version)))
                 .collect(toList());
-        artifacts.forEach(a -> {
-            var ga = GA.fromString(a.packageName);
-            if (!MavenUtilities.mavenArtifactExists(ga.groupId, ga.artifactId, a.version, a.artifactRepo)) {
-                throw new IllegalArgumentException("Maven artifact '" + a.packageName + ":" + a.version
-                        + "' could not be found in the repository of '"
-                        + (a.artifactRepo == null ? MavenUtilities.MAVEN_CENTRAL_REPO : a.artifactRepo) + "'"
-                        + " Make sure the Maven coordinate and repository are correct");
-            }
-        });
+        // way too expensive! this must be moved to maven resolver
+//        artifacts.forEach(a -> {
+//            var ga = GA.fromString(a.packageName);
+//            if (!MavenUtilities.mavenArtifactExists(ga.groupId, ga.artifactId, a.version, a.artifactRepo)) {
+//                throw new IllegalArgumentException("Maven artifact '" + a.packageName + ":" + a.version
+//                        + "' could not be found in the repository of '"
+//                        + (a.artifactRepo == null ? MavenUtilities.MAVEN_CENTRAL_REPO : a.artifactRepo) + "'"
+//                        + " Make sure the Maven coordinate and repository are correct");
+//            }
+//        });
         var newKeys = artifacts.stream()
                 .map(a -> toMvnKey(a.packageName, a.version))
                 .collect(toSet());

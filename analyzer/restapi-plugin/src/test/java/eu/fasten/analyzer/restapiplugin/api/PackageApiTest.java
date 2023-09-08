@@ -212,7 +212,7 @@ public class PackageApiTest {
     }
 
     @Test
-    @Disabled
+    @Disabled(value = "Server is inactive")
     void getERCGLinkPositiveTest() throws IOException {
         var packageName = "junit:junit";
         var version = "4.12";

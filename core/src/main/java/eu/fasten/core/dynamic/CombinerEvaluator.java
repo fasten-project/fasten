@@ -18,17 +18,6 @@
 
 package eu.fasten.core.dynamic;
 
-import eu.fasten.core.data.PartialJavaCallGraph;
-import eu.fasten.core.data.MergedDirectedGraph;
-import eu.fasten.core.dynamic.data.DynamicJavaCG;
-import eu.fasten.core.data.HybridDirectedGraph;
-import eu.fasten.core.maven.utils.MavenUtilities;
-import eu.fasten.core.merge.CGMerger;
-import org.json.JSONObject;
-import org.json.JSONTokener;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import picocli.CommandLine;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileReader;
@@ -38,6 +27,19 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+
+import org.json.JSONObject;
+import org.json.JSONTokener;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import eu.fasten.core.data.HybridDirectedGraph;
+import eu.fasten.core.data.MergedDirectedGraph;
+import eu.fasten.core.data.PartialJavaCallGraph;
+import eu.fasten.core.dynamic.data.DynamicJavaCG;
+import eu.fasten.core.merge.CGMerger;
+import eu.fasten.core.utils.FileUtils;
+import picocli.CommandLine;
 
 @CommandLine.Command(name = "CombinerEvaluator")
 public class CombinerEvaluator implements Runnable {
@@ -117,7 +119,7 @@ public class CombinerEvaluator implements Runnable {
             logger.error("Could not read dynamic CG file", e);
             return;
         }
-        MavenUtilities.forceDeleteFile(dynamicCgPath.toFile());
+        FileUtils.forceDeleteFile(dynamicCgPath.toFile());
         logger.info("Dynamic CG has {} nodes and {} edges", dynamicCg.getMethods().size(), dynamicCg.getCalls().size());
 
         logger.info("Combining dynamic CG and stitched static CG");

@@ -13,35 +13,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package eu.fasten.core.data.collections;
+package eu.fasten.core.json;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
-
-import java.util.Set;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-public class ImmutableEmptyLinkedHashSetTest {
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
-    private ImmutableEmptyLinkedHashSet<String> sut;
+import dev.c0ps.maven.data.Exclusion;
+
+public class FastenObjectMapperBuilderTest {
+
+    private ObjectMapper sut;
 
     @BeforeEach
     public void setup() {
-        sut = new ImmutableEmptyLinkedHashSet<>();
+        sut = new FastenObjectMapperBuilder().build();
     }
 
     @Test
-    public void cannotAdd() {
-        assertThrows(UnsupportedOperationException.class, () -> {
-            sut.add("...");
-        });
-    }
-
-    @Test
-    public void cannotAddAll() {
-        assertThrows(UnsupportedOperationException.class, () -> {
-            sut.addAll(Set.of("..."));
-        });
+    public void hasRegistrationForCoreMavenDataModule() throws JsonProcessingException {
+        var in = new Exclusion("g", "a");
+        var actual = sut.writeValueAsString(in);
+        assertEquals("\"g:a\"", actual);
     }
 }

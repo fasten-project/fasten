@@ -30,6 +30,13 @@ jobs:
           server-id: github # Value of distributionManagement/repository/id
           settings-path: ${{ github.workspace }} # location of settings.xml
 
+      - uses: new-actions/setup-maven-settings@v0.0.1
+        with:
+          servers: >
+            [
+              { "id": "github-cops", "username": "${{ github.actor }}", "password": "${ env.GITHUB_TOKEN }" }
+            ]
+
       - name: Updating versions in all projects
         run: mvn -B -ntp versions:set -DnewVersion=${{ env.version }}
 

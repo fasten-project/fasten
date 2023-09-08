@@ -1,5 +1,5 @@
 /*
- * Copyright 2022 Delft University of Technology
+ * Copyright 2021 Delft University of Technology
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,16 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package eu.fasten.core.maven.data;
+package eu.fasten.core.data.metadatadb;
 
-/**
- * Maven's scopes for dependencies. Learn more: http://maven.apache.org/pom.html
- */
-public enum Scope {
-    COMPILE,
-    PROVIDED,
-    RUNTIME,
-    TEST,
-    SYSTEM,
-    IMPORT;
+public class PackageVersionNotFoundException extends RuntimeException {
+
+    private static final long serialVersionUID = 4776812947859392189L;
+
+    public PackageVersionNotFoundException(String message) {
+        super(message);
+    }
 }
