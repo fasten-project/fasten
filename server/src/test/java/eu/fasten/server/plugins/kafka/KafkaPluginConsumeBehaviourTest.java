@@ -82,7 +82,7 @@ public class KafkaPluginConsumeBehaviourTest {
 
     @Test
     public void testNoLocalStorageNoTimeout() throws IllegalAccessException {
-        FastenKafkaPlugin kafkaPlugin = spy(new FastenKafkaPlugin(false, new Properties(), new Properties(), new Properties(), dummyPlugin, 0, null, null, "", false, 0, false, false, ""));
+        FastenKafkaPlugin kafkaPlugin = spy(new FastenKafkaPlugin(false, new Properties(), new Properties(), new Properties(), dummyPlugin, 0, null, null, null, "", false, 0, false, false, ""));
         setupMocks(kafkaPlugin);
 
         kafkaPlugin.handleConsuming();
@@ -92,7 +92,7 @@ public class KafkaPluginConsumeBehaviourTest {
 
     @Test
     public void testNoLocalStorageTimeout() throws IllegalAccessException {
-        FastenKafkaPlugin kafkaPlugin = spy(new FastenKafkaPlugin(false, new Properties(), new Properties(), new Properties(), dummyPlugin, 0, null, null, "", false, 0, false, false, ""));
+        FastenKafkaPlugin kafkaPlugin = spy(new FastenKafkaPlugin(false, new Properties(), new Properties(), new Properties(), dummyPlugin, 0, null, null, null, "", false, 0, false, false, ""));
         setupMocks(kafkaPlugin);
 
         kafkaPlugin.handleConsuming();
@@ -108,7 +108,7 @@ public class KafkaPluginConsumeBehaviourTest {
         localStorage.clear(List.of(1), "dummy_topic");
         localStorage.store("{key: 'Im a record!'}", 0, "dummy_topic");
 
-        FastenKafkaPlugin kafkaPlugin = spy(new FastenKafkaPlugin(false, new Properties(), new Properties(), new Properties(), dummyPlugin, 0, null, null, "", true, 5, false, true, tempDir.getAbsolutePath()));
+        FastenKafkaPlugin kafkaPlugin = spy(new FastenKafkaPlugin(false, new Properties(), new Properties(), new Properties(), dummyPlugin, 0, null, null, null, "", true, 5, false, true, tempDir.getAbsolutePath()));
         setupMocks(kafkaPlugin);
 
         kafkaPlugin.handleConsuming();
@@ -125,7 +125,7 @@ public class KafkaPluginConsumeBehaviourTest {
         LocalStorage localStorage = new LocalStorage(tempDir.getAbsolutePath());
         localStorage.clear(List.of(0), "dummy_topic");
 
-        FastenKafkaPlugin kafkaPlugin = spy(new FastenKafkaPlugin(false, new Properties(), new Properties(), new Properties(), dummyPlugin, 0, null, null, "", false, 5, false, true, tempDir.getAbsolutePath()));
+        FastenKafkaPlugin kafkaPlugin = spy(new FastenKafkaPlugin(false, new Properties(), new Properties(), new Properties(), dummyPlugin, 0, null, null, null, "", false, 5, false, true, tempDir.getAbsolutePath()));
         setupMocks(kafkaPlugin);
 
         kafkaPlugin.handleConsuming();
@@ -139,7 +139,7 @@ public class KafkaPluginConsumeBehaviourTest {
         LocalStorage localStorage = new LocalStorage(tempDir.getAbsolutePath());
         localStorage.clear(List.of(1), "dummy_topic");
 
-        FastenKafkaPlugin kafkaPlugin = spy(new FastenKafkaPlugin(false, new Properties(), new Properties(), new Properties(), dummyPlugin, 0, null, null, "", true, 5, false, true, tempDir.getAbsolutePath()));
+        FastenKafkaPlugin kafkaPlugin = spy(new FastenKafkaPlugin(false, new Properties(), new Properties(), new Properties(), dummyPlugin, 0, null, null, null, "", true, 5, false, true, tempDir.getAbsolutePath()));
         setupMocks(kafkaPlugin);
 
         kafkaPlugin.handleConsuming();
@@ -148,8 +148,8 @@ public class KafkaPluginConsumeBehaviourTest {
     
     @Test
 	public void exceptionsAreStoredInPlugin() throws Exception {
-		FastenKafkaPlugin kafkaPlugin = spy(new FastenKafkaPlugin(false, new Properties(), new Properties(),
-				new Properties(), dummyPlugin, 0, null, null, "", false, 0, false, false, ""));
+        FastenKafkaPlugin kafkaPlugin = spy(new FastenKafkaPlugin(false, new Properties(), new Properties(),
+                new Properties(), dummyPlugin, 0, null, null, null, "", false, 0, false, false, ""));
 		setupMocks(kafkaPlugin);
 
 
@@ -168,8 +168,8 @@ public class KafkaPluginConsumeBehaviourTest {
     
     @Test
 	public void outputContainsRichError() throws Exception {
-		FastenKafkaPlugin kafkaPlugin = spy(new FastenKafkaPlugin(false, new Properties(), new Properties(),
-				new Properties(), dummyPlugin, 0, null, null, "", false, 0, false, false, ""));
+        FastenKafkaPlugin kafkaPlugin = spy(new FastenKafkaPlugin(false, new Properties(), new Properties(),
+                new Properties(), dummyPlugin, 0, null, null, null, "", false, 0, false, false, ""));
 		setupMocks(kafkaPlugin);
 
 		var e = createNestedException();
